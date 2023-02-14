@@ -86,7 +86,7 @@
                                     modules_06_b
                                     []
                                     b
-                                    Private
+                                    Public
                                 )
                         })
                     modules_06_a

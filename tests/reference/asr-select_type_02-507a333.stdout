@@ -2,6 +2,16 @@
     (SymbolTable
         1
         {
+            1_point:
+                (ExternalSymbol
+                    1
+                    1_point
+                    2 point
+                    derived_type_collection
+                    []
+                    point
+                    Public
+                ),
             derived_type_collection:
                 (Module
                     (SymbolTable
@@ -218,7 +228,7 @@
                                                     7
                                                     1_point_x
                                                     3 x
-                                                    point
+                                                    1_point
                                                     []
                                                     x
                                                     Public
@@ -228,7 +238,7 @@
                                                     7
                                                     1_point_y
                                                     3 y
-                                                    point
+                                                    1_point
                                                     []
                                                     y
                                                     Public
@@ -291,7 +301,7 @@
                                                     8
                                                     1_point_x
                                                     3 x
-                                                    point
+                                                    1_point
                                                     []
                                                     x
                                                     Public
@@ -301,7 +311,7 @@
                                                     8
                                                     1_point_y
                                                     3 y
-                                                    point
+                                                    1_point
                                                     []
                                                     y
                                                     Public

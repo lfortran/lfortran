@@ -23,7 +23,7 @@
                                     template_nested_m
                                     []
                                     add_generic
-                                    Private
+                                    Public
                                 ),
                             call_add_generic:
                                 (ExternalSymbol
@@ -33,7 +33,7 @@
                                     template_nested_m
                                     []
                                     call_add_generic
-                                    Private
+                                    Public
                                 ),
                             f:
                                 (ExternalSymbol
@@ -43,7 +43,7 @@
                                     template_nested_m
                                     []
                                     f
-                                    Private
+                                    Public
                                 ),
                             func_arg_real:
                                 (ExternalSymbol
@@ -53,7 +53,7 @@
                                     template_nested_m
                                     []
                                     func_arg_real
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -63,7 +63,7 @@
                                     template_nested_m
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_template:
                                 (ExternalSymbol
@@ -73,7 +73,7 @@
                                     template_nested_m
                                     []
                                     test_template
-                                    Private
+                                    Public
                                 )
                         })
                     template_nested
@@ -90,7 +90,7 @@
                     (SymbolTable
                         2
                         {
-                            __lfortran_generic_add_generic:
+                            __asr_generic_add_generic:
                                 (Function
                                     (SymbolTable
                                         11
@@ -141,7 +141,7 @@
                                                     .false.
                                                 )
                                         })
-                                    __lfortran_generic_add_generic
+                                    __asr_generic_add_generic
                                     (FunctionType
                                         [(Real 4 [])
                                         (Real 4 [])]
@@ -381,13 +381,13 @@
                                         []
                                         .false.
                                     )
-                                    [__lfortran_generic_add_generic]
+                                    [__asr_generic_add_generic]
                                     [(Var 10 x)
                                     (Var 10 y)]
                                     [(=
                                         (Var 10 z)
                                         (FunctionCall
-                                            2 __lfortran_generic_add_generic
+                                            2 __asr_generic_add_generic
                                             ()
                                             [((Var 10 x))
                                             ((Var 10 y))]

@@ -203,6 +203,53 @@ public:
                     if( PassUtils::is_array(s->m_return_var) ) {
                         ASR::symbol_t* s_sub = create_subroutine_from_function(s);
                         replace_vec.push_back(std::make_pair(item.first, s_sub));
+                        bool is_arg = false;
+                        size_t arg_index = 0;
+                        for( size_t i = 0; i < xx.n_body; i++ ) {
+                            ASR::stmt_t* stm = xx.m_body[i];
+                            if( stm->type == ASR::stmtType::SubroutineCall ) {
+                                ASR::SubroutineCall_t *subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(stm);
+                                for ( size_t j = 0; j < subrout_call->n_args; j++ ) {
+                                    ASR::expr_t* arg_value = subrout_call->m_args[i].m_value;
+                                    if( arg_value->type == ASR::exprType::Var ) {
+                                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg_value);
+                                        ASR::symbol_t* sym = var->m_v;
+                                        if ( sym->type == ASR::symbolType::Function ) {
+                                            ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(sym);
+                                            std::string subrout_name = std::string(subrout->m_name);
+                                            if ( subrout_name == item.first ) {
+                                                is_arg = true;
+                                                arg_index = j;
+                                                ASR::call_arg_t new_call_arg;
+                                                new_call_arg.loc = subrout_call->m_args[i].loc;
+                                                new_call_arg.m_value = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, var->base.base.loc, s_sub));
+                                                ASR::down_cast<ASR::SubroutineCall_t>(x.m_body[i])->m_args[j] = new_call_arg;
+                                            }
+                                        }
+
+                                    }
+                                }
+                                if ( is_arg ) {
+                                    ASR::symbol_t* subrout = subrout_call->m_name;
+                                    if ( subrout->type == ASR::symbolType::Function ) {
+                                        ASR::Function_t* subrout_func = ASR::down_cast<ASR::Function_t>(subrout);
+                                        std::string subrout_func_name = std::string(subrout_func->m_name);
+                                        ASR::expr_t* arg = subrout_func->m_args[arg_index];
+                                        if( arg->type == ASR::exprType::Var ) {
+                                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(arg);
+                                            ASR::symbol_t* sym = var->m_v;
+                                            if ( sym->type == ASR::symbolType::Function ) {
+                                                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
+                                                ASR::symbol_t* s_func = create_subroutine_from_function(ASR::down_cast<ASR::Function_t>(sym));
+                                                subrout_func->m_symtab->add_symbol(func->m_name, s_func);
+                                                subrout_func->m_args[arg_index] = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, var->base.base.loc, s_func));   
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

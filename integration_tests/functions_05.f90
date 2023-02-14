@@ -20,7 +20,8 @@ contains
 
     integer function f(a) result(b)
     integer, intent(in) :: a
-    integer :: x = 2
+    integer :: x
+    x = 2
     b = a + x
     end function
 

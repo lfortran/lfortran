@@ -107,9 +107,9 @@
                                                     x
                                                     []
                                                     Local
-                                                    (IntegerConstant 6 (Integer 4 []))
                                                     ()
-                                                    Save
+                                                    ()
+                                                    Default
                                                     (Integer 4 [])
                                                     Source
                                                     Public
@@ -122,12 +122,9 @@
                                                     y
                                                     []
                                                     Local
-                                                    (RealConstant
-                                                        5.500000
-                                                        (Real 4 [])
-                                                    )
                                                     ()
-                                                    Save
+                                                    ()
+                                                    Default
                                                     (Real 4 [])
                                                     Source
                                                     Public
@@ -153,7 +150,20 @@
                                     )
                                     [c]
                                     []
-                                    [(Print
+                                    [(=
+                                        (Var 3 x)
+                                        (IntegerConstant 6 (Integer 4 []))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 3 y)
+                                        (RealConstant
+                                            5.500000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )
+                                    (Print
                                         ()
                                         [(Var 3 x)]
                                         ()

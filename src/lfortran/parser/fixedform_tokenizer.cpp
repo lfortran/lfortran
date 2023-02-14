@@ -1,3 +1,11 @@
+/*
+This is a fixed-form tokenizer. It accepts a prescanned source code that removes
+all whitespace.  It uses a hand written recursive descent parser to figure out
+how to properly tokenize the input. It returns a list of tokens that are then
+fed ioto our Bison parser, that is shared with the free-form parser.
+
+Note: The prescanner removes CR, so we only handle LF here.
+*/
 #include <limits>
 #include <utility>
 
@@ -336,10 +344,9 @@ struct FixedFormRecursiveDescent {
     bool next_is_eol(unsigned char *cur) {
         if (*cur == '\n') {
             return true;
-        } else if (*cur == '\r' && *(cur+1) == '\n') {
-            return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     bool is_integer(const std::string &s) const {
@@ -872,7 +879,7 @@ struct FixedFormRecursiveDescent {
                 // If we are at the end of the statement, then this must
                 // be a function call. Otherwise it's something else,
                 // such as assignment (=, or =>).
-                if (*cur == '\n' || *cur == ';') {
+                if (next_is_eol(cur) || *cur == ';') {
                     return true;
                 }
             }
@@ -972,6 +979,13 @@ struct FixedFormRecursiveDescent {
         }
 
         if (next_is(cur, "stop")) {
+            push_token_advance(cur, "stop");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "errorstop")) {
+            push_token_advance(cur, "error");
             push_token_advance(cur, "stop");
             tokenize_line(cur);
             return true;
@@ -1366,7 +1380,7 @@ struct FixedFormRecursiveDescent {
 
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            if (*iter == "real*8") {
+            if (*iter == "real*8" || *iter == "complex*8" || *iter == "complex*16") {
                 tokenize_until(cur+(*iter).size());
             } else {
                 push_token_advance(cur, *iter);
@@ -1407,7 +1421,7 @@ struct FixedFormRecursiveDescent {
             "elemental"};
         std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental",
-            "real*8", "real", "character", "complex", "integer", "logical",
+            "real*8", "real", "character", "complex*16", "complex*8", "complex", "integer", "logical",
             "doubleprecision", "doublecomplex"};
 
         if (next_is(cur, "include")) {

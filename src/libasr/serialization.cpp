@@ -6,6 +6,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/bwriter.h>
 #include <libasr/string_utils.h>
+#include <libasr/exception.h>
 
 using LCompilers::ASRUtils::symbol_parent_symtab;
 using LCompilers::ASRUtils::symbol_name;
@@ -231,6 +232,17 @@ public:
         current_symtab = parent_symtab;
     }
 
+    void visit_EnumType(const EnumType_t &x) {
+        SymbolTable *parent_symtab = current_symtab;
+        current_symtab = x.m_symtab;
+        x.m_symtab->parent = parent_symtab;
+        x.m_symtab->asr_owner = (asr_t*)&x;
+        for (auto &a : x.m_symtab->get_scope()) {
+            this->visit_symbol(*a.second);
+        }
+        current_symtab = parent_symtab;
+    }
+
 };
 
 class FixExternalSymbolsVisitor : public BaseWalkVisitor<FixExternalSymbolsVisitor>
@@ -268,6 +280,13 @@ public:
         current_scope = current_scope_copy;
     }
 
+    void visit_AssociateBlock(const AssociateBlock_t& x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        BaseWalkVisitor<FixExternalSymbolsVisitor>::visit_AssociateBlock(x);
+        current_scope = current_scope_copy;
+    }
+
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
         if (x.m_external != nullptr) {
             // Nothing to do, the external symbol is already resolved
@@ -282,6 +301,7 @@ public:
         if (startswith(module_name, "lfortran_intrinsic_iso")) {
             module_name = module_name.substr(19);
         }
+
         if (global_symtab->get_symbol(module_name) != nullptr) {
             Module_t *m = down_cast<Module_t>(global_symtab->get_symbol(module_name));
             symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
@@ -313,8 +333,17 @@ public:
                 fixed_external_syms = false;
                 return ;
             }
-            StructType_t *m = down_cast<StructType_t>(m_sym);
-            symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
+
+            symbol_t *sym = nullptr;
+            if( ASR::is_a<ASR::StructType_t>(*m_sym) ) {
+                StructType_t *m = down_cast<StructType_t>(m_sym);
+                sym = m->m_symtab->find_scoped_symbol(original_name,
+                        x.n_scope_names, x.m_scope_names);
+            } else if( ASR::is_a<ASR::EnumType_t>(*m_sym) ) {
+                EnumType_t *m = down_cast<EnumType_t>(m_sym);
+                sym = m->m_symtab->find_scoped_symbol(original_name,
+                        x.n_scope_names, x.m_scope_names);
+            }
             if (sym) {
                 // FIXME: this is a hack, we need to pass in a non-const `x`.
                 ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
@@ -370,8 +399,13 @@ ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
     ASR::FixParentSymtabVisitor p;
     p.visit_TranslationUnit(*tu);
 
-    diag::Diagnostics diagnostics;
-    LCOMPILERS_ASSERT(asr_verify(*tu, false, diagnostics));
+#if defined(WITH_LFORTRAN_ASSERT)
+        diag::Diagnostics diagnostics;
+        if (!asr_verify(*tu, false, diagnostics)) {
+            std::cerr << diagnostics.render2();
+            throw LCompilersException("Verify failed");
+        };
+#endif
 
     return node;
 }

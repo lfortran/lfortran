@@ -359,7 +359,7 @@
                     .false.
                     .false.
                 ),
-            template_array:
+            template_array_02:
                 (Program
                     (SymbolTable
                         13
@@ -372,7 +372,7 @@
                                     math
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -382,47 +382,47 @@
                                     math
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             mysum_t:
                                 (ExternalSymbol
                                     13
                                     mysum_t
                                     7 mysum_t
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     mysum_t
-                                    Private
+                                    Public
                                 ),
                             plus_t:
                                 (ExternalSymbol
                                     13
                                     plus_t
                                     7 plus_t
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     plus_t
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
                                     13
                                     t
                                     7 t
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_template:
                                 (ExternalSymbol
                                     13
                                     test_template
                                     7 test_template
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     test_template
-                                    Private
+                                    Public
                                 ),
                             zero_integer:
                                 (ExternalSymbol
@@ -432,7 +432,7 @@
                                     math
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -442,22 +442,22 @@
                                     math
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 ),
                             zero_t:
                                 (ExternalSymbol
                                     13
                                     zero_t
                                     7 zero_t
-                                    template_array_m
+                                    template_array_02_m
                                     []
                                     zero_t
-                                    Private
+                                    Public
                                 )
                         })
-                    template_array
+                    template_array_02
                     [math
-                    template_array_m]
+                    template_array_02_m]
                     [(SubroutineCall
                         13 test_template
                         ()
@@ -465,7 +465,7 @@
                         ()
                     )]
                 ),
-            template_array_m:
+            template_array_02_m:
                 (Module
                     (SymbolTable
                         7
@@ -478,7 +478,7 @@
                                     math
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -488,7 +488,7 @@
                                     math
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             mysum_integer:
                                 (Function
@@ -570,7 +570,7 @@
                                             [((ArrayItem
                                                 (Var 14 a)
                                                 [(()
-                                                (IntegerConstant 0 (Integer 4 []))
+                                                (IntegerConstant 1 (Integer 4 []))
                                                 ())]
                                                 (Integer 4 [])
                                                 RowMajor
@@ -723,7 +723,7 @@
                                             [((ArrayItem
                                                 (Var 11 a)
                                                 [(()
-                                                (IntegerConstant 0 (Integer 4 []))
+                                                (IntegerConstant 1 (Integer 4 []))
                                                 ())]
                                                 (TypeParameter
                                                     t
@@ -1036,7 +1036,7 @@
                                     )]
                                     ()
                                     Source
-                                    Private
+                                    Public
                                     Implementation
                                     ()
                                     .false.
@@ -1056,7 +1056,7 @@
                                     math
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -1066,7 +1066,7 @@
                                     math
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 ),
                             zero_t:
                                 (Function
@@ -1156,9 +1156,9 @@
                                     .true.
                                 )
                         })
-                    template_array_m
+                    template_array_02_m
                     [math
-                    template_array_m]
+                    template_array_02_m]
                     .false.
                     .false.
                 )

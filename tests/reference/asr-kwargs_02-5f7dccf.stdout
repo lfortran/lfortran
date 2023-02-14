@@ -275,7 +275,7 @@
                                 )
                         })
                     stdlib_logger
-                    []
+                    [stdlib_logger]
                     .false.
                     .false.
                 )

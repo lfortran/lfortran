@@ -1,0 +1,493 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            1_t_1:
+                (ExternalSymbol
+                    1
+                    1_t_1
+                    2 t_1
+                    module_1
+                    []
+                    t_1
+                    Public
+                ),
+            module_1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            multiply:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_t_1_i:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_t_1_i
+                                                    3 i
+                                                    t_1
+                                                    []
+                                                    i
+                                                    Public
+                                                ),
+                                            j:
+                                                (Variable
+                                                    4
+                                                    j
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    4
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    4
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 t_1
+                                                        []
+                                                    )
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    multiply
+                                    (FunctionType
+                                        [(Class
+                                            2 t_1
+                                            []
+                                        )
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 self)
+                                    (Var 4 j)]
+                                    [(=
+                                        (Var 4 res)
+                                        (RealBinOp
+                                            (StructInstanceMember
+                                                (Var 4 self)
+                                                4 1_t_1_i
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            Mul
+                                            (Var 4 j)
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 4 res)
+                                    Source
+                                    Private
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            sqrt_subtract:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_t_1_i:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_t_1_i
+                                                    3 i
+                                                    t_1
+                                                    []
+                                                    i
+                                                    Public
+                                                ),
+                                            j:
+                                                (Variable
+                                                    5
+                                                    j
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    5
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    5
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 t_1
+                                                        []
+                                                    )
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sqrt_subtract
+                                    (FunctionType
+                                        [(Class
+                                            2 t_1
+                                            []
+                                        )
+                                        (Integer 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 self)
+                                    (Var 5 j)]
+                                    [(=
+                                        (Var 5 res)
+                                        (RealBinOp
+                                            (StructInstanceMember
+                                                (Var 5 self)
+                                                5 1_t_1_i
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            Sub
+                                            (RealBinOp
+                                                (Cast
+                                                    (Var 5 j)
+                                                    IntegerToReal
+                                                    (Real 4 [])
+                                                    ()
+                                                )
+                                                Pow
+                                                (RealConstant
+                                                    0.500000
+                                                    (Real 4 [])
+                                                )
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 5 res)
+                                    Source
+                                    Private
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
+                            t_1:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            compute:
+                                                (GenericProcedure
+                                                    3
+                                                    compute
+                                                    [3 multiply
+                                                    3 sqrt_subtract]
+                                                    Public
+                                                ),
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            multiply:
+                                                (ClassProcedure
+                                                    3
+                                                    multiply
+                                                    ()
+                                                    multiply
+                                                    2 multiply
+                                                    Source
+                                                ),
+                                            sqrt_subtract:
+                                                (ClassProcedure
+                                                    3
+                                                    sqrt_subtract
+                                                    ()
+                                                    sqrt_subtract
+                                                    2 sqrt_subtract
+                                                    Source
+                                                )
+                                        })
+                                    t_1
+                                    []
+                                    [i]
+                                    Source
+                                    Private
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    module_1
+                    []
+                    .false.
+                    .false.
+                ),
+            name:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            1_multiply:
+                                (ExternalSymbol
+                                    6
+                                    1_multiply
+                                    3 multiply
+                                    t_1
+                                    []
+                                    multiply
+                                    Public
+                                ),
+                            1_sqrt_subtract:
+                                (ExternalSymbol
+                                    6
+                                    1_sqrt_subtract
+                                    3 sqrt_subtract
+                                    t_1
+                                    []
+                                    sqrt_subtract
+                                    Public
+                                ),
+                            1_t_1_i:
+                                (ExternalSymbol
+                                    6
+                                    1_t_1_i
+                                    3 i
+                                    1_t_1
+                                    []
+                                    i
+                                    Public
+                                ),
+                            multiply:
+                                (ExternalSymbol
+                                    6
+                                    multiply
+                                    2 multiply
+                                    module_1
+                                    []
+                                    multiply
+                                    Public
+                                ),
+                            sqrt_subtract:
+                                (ExternalSymbol
+                                    6
+                                    sqrt_subtract
+                                    2 sqrt_subtract
+                                    module_1
+                                    []
+                                    sqrt_subtract
+                                    Public
+                                ),
+                            t_1:
+                                (ExternalSymbol
+                                    6
+                                    t_1
+                                    2 t_1
+                                    module_1
+                                    []
+                                    t_1
+                                    Public
+                                ),
+                            type_1:
+                                (Variable
+                                    6
+                                    type_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        6 t_1
+                                        []
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    name
+                    [module_1]
+                    [(=
+                        (StructInstanceMember
+                            (Var 6 type_1)
+                            6 1_t_1_i
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            100.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                6 1_multiply
+                                3 compute
+                                [((Var 6 type_1))
+                                ((RealConstant
+                                    5.000000
+                                    (Real 4 [])
+                                ))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 500 (Integer 4 []))
+                                IntegerToReal
+                                (Real 4 [])
+                                (RealConstant
+                                    500.000000
+                                    (Real 4 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                6 1_sqrt_subtract
+                                3 compute
+                                [((Var 6 type_1))
+                                ((IntegerConstant 2500 (Integer 4 [])))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (Cast
+                                (IntegerConstant 50 (Integer 4 []))
+                                IntegerToReal
+                                (Real 4 [])
+                                (RealConstant
+                                    50.000000
+                                    (Real 4 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

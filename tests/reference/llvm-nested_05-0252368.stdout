@@ -26,9 +26,9 @@ source_filename = "LFortran"
 define void @__module_nested_05_a_b() {
 .entry:
   %x = alloca i32, align 4
+  %y = alloca float, align 4
   store i32 6, i32* %x, align 4
   store i32* %x, i32** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 0), align 8
-  %y = alloca float, align 4
   store float 5.500000e+00, float* %y, align 4
   store float* %y, float** getelementptr inbounds (%b_nstd_types, %b_nstd_types* @b_nstd_strct, i32 0, i32 1), align 8
   %0 = load i32, i32* %x, align 4

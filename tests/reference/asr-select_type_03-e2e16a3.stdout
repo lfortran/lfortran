@@ -5,68 +5,8 @@
             class_default_select_type:
                 (Module
                     (SymbolTable
-                        2
+                        4
                         {
-                            check_table:
-                                (Function
-                                    (SymbolTable
-                                        7
-                                        {
-                                            tab:
-                                                (Variable
-                                                    7
-                                                    tab
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Class
-                                                        2 toml_table
-                                                        []
-                                                    )
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    check_table
-                                    (FunctionType
-                                        [(Class
-                                            2 toml_table
-                                            []
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 7 tab)]
-                                    []
-                                    ()
-                                    Source
-                                    Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
-                                ),
                             enum_stat:
                                 (StructType
                                     (SymbolTable
@@ -117,26 +57,133 @@
                                     ()
                                     ()
                                 ),
+                            toml_stat:
+                                (Variable
+                                    4
+                                    toml_stat
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Parameter
+                                    (Struct
+                                        4 enum_stat
+                                        []
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    class_default_select_type
+                    []
+                    .true.
+                    .false.
+                ),
+            class_default_select_type_user:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            1_enum_stat:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_stat
+                                    4 enum_stat
+                                    class_default_select_type
+                                    []
+                                    enum_stat
+                                    Public
+                                ),
+                            check_table:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            tab:
+                                                (Variable
+                                                    9
+                                                    tab
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 toml_table
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    check_table
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_table
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 9 tab)]
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "inside check_table"
+                                            (Character 1 18 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Source
+                                    Public
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    []
+                                    .false.
+                                ),
                             get_table:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        8
                                         {
                                             1_enum_stat_fatal:
                                                 (ExternalSymbol
-                                                    6
+                                                    8
                                                     1_enum_stat_fatal
                                                     5 fatal
-                                                    enum_stat
+                                                    1_enum_stat
                                                     []
                                                     fatal
                                                     Public
                                                 ),
                                             present:
                                                 (ExternalSymbol
-                                                    6
+                                                    8
                                                     present
-                                                    10 present
+                                                    12 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present
@@ -144,7 +191,7 @@
                                                 ),
                                             ptr:
                                                 (Variable
-                                                    6
+                                                    8
                                                     ptr
                                                     []
                                                     Out
@@ -164,7 +211,7 @@
                                                 ),
                                             stat:
                                                 (Variable
-                                                    6
+                                                    8
                                                     stat
                                                     []
                                                     Out
@@ -179,7 +226,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    6
+                                                    8
                                                     table
                                                     []
                                                     InOut
@@ -197,7 +244,7 @@
                                                 ),
                                             tmp:
                                                 (Variable
-                                                    6
+                                                    8
                                                     tmp
                                                     []
                                                     Local
@@ -218,23 +265,23 @@
                                             ~select_type_block_:
                                                 (Block
                                                     (SymbolTable
-                                                        8
+                                                        10
                                                         {
                                                             1_enum_stat_success:
                                                                 (ExternalSymbol
-                                                                    8
+                                                                    10
                                                                     1_enum_stat_success
                                                                     5 success
-                                                                    enum_stat
+                                                                    1_enum_stat
                                                                     []
                                                                     success
                                                                     Public
                                                                 ),
                                                             present:
                                                                 (ExternalSymbol
-                                                                    8
+                                                                    10
                                                                     present
-                                                                    10 present
+                                                                    12 present
                                                                     lfortran_intrinsic_builtin
                                                                     []
                                                                     present
@@ -243,23 +290,23 @@
                                                         })
                                                     ~select_type_block_
                                                     [(=>
-                                                        (Var 6 ptr)
-                                                        (Var 6 tmp)
+                                                        (Var 8 ptr)
+                                                        (Var 8 tmp)
                                                     )
                                                     (If
                                                         (FunctionCall
-                                                            8 present
+                                                            10 present
                                                             ()
-                                                            [((Var 6 stat))]
+                                                            [((Var 8 stat))]
                                                             (Logical 4 [])
                                                             ()
                                                             ()
                                                         )
                                                         [(=
-                                                            (Var 6 stat)
+                                                            (Var 8 stat)
                                                             (StructInstanceMember
                                                                 (Var 2 toml_stat)
-                                                                8 1_enum_stat_success
+                                                                10 1_enum_stat_success
                                                                 (Integer 4 [])
                                                                 (IntegerConstant 0 (Integer 4 []))
                                                             )
@@ -297,15 +344,15 @@
                                     )
                                     [check_table
                                     present]
-                                    [(Var 6 table)
-                                    (Var 6 ptr)
-                                    (Var 6 stat)]
+                                    [(Var 8 table)
+                                    (Var 8 ptr)
+                                    (Var 8 stat)]
                                     [(Nullify
-                                        [6 ptr]
+                                        [8 ptr]
                                     )
                                     (If
                                         (PointerAssociated
-                                            (Var 6 tmp)
+                                            (Var 8 tmp)
                                             ()
                                             (Logical 4 [])
                                             ()
@@ -315,23 +362,23 @@
                                                 2 toml_table
                                                 [(BlockCall
                                                     -1
-                                                    6 ~select_type_block_
+                                                    8 ~select_type_block_
                                                 )]
                                             )]
                                             [(If
                                                 (FunctionCall
-                                                    6 present
+                                                    8 present
                                                     ()
-                                                    [((Var 6 stat))]
+                                                    [((Var 8 stat))]
                                                     (Logical 4 [])
                                                     ()
                                                     ()
                                                 )
                                                 [(=
-                                                    (Var 6 stat)
+                                                    (Var 8 stat)
                                                     (StructInstanceMember
                                                         (Var 2 toml_stat)
-                                                        6 1_enum_stat_fatal
+                                                        8 1_enum_stat_fatal
                                                         (Integer 4 [])
                                                         (IntegerConstant -1 (Integer 4 []))
                                                     )
@@ -343,7 +390,7 @@
                                         [(SubroutineCall
                                             2 check_table
                                             ()
-                                            [((Var 6 table))]
+                                            [((Var 8 table))]
                                             ()
                                         )]
                                     )]
@@ -362,31 +409,23 @@
                                     .false.
                                 ),
                             toml_stat:
-                                (Variable
+                                (ExternalSymbol
                                     2
                                     toml_stat
+                                    4 toml_stat
+                                    class_default_select_type
                                     []
-                                    Local
-                                    ()
-                                    ()
-                                    Parameter
-                                    (Struct
-                                        2 enum_stat
-                                        []
-                                    )
-                                    Source
+                                    toml_stat
                                     Public
-                                    Required
-                                    .false.
                                 ),
                             toml_table:
                                 (StructType
                                     (SymbolTable
-                                        4
+                                        7
                                         {
                                             implicit:
                                                 (Variable
-                                                    4
+                                                    7
                                                     implicit
                                                     []
                                                     Local
@@ -404,7 +443,7 @@
                                                 ),
                                             inline:
                                                 (Variable
-                                                    4
+                                                    7
                                                     inline
                                                     []
                                                     Local
@@ -434,11 +473,11 @@
                             toml_value:
                                 (StructType
                                     (SymbolTable
-                                        3
+                                        6
                                         {
                                             float:
                                                 (Variable
-                                                    3
+                                                    6
                                                     float
                                                     []
                                                     Local
@@ -453,7 +492,7 @@
                                                 ),
                                             int:
                                                 (Variable
-                                                    3
+                                                    6
                                                     int
                                                     []
                                                     Local
@@ -478,8 +517,9 @@
                                     ()
                                 )
                         })
-                    class_default_select_type
-                    [lfortran_intrinsic_builtin]
+                    class_default_select_type_user
+                    [class_default_select_type
+                    lfortran_intrinsic_builtin]
                     .false.
                     .false.
                 ),
