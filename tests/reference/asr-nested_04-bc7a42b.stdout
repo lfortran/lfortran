@@ -151,18 +151,7 @@
                                                         ()
                                                     )]
                                                     (Var 4 c)
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -263,18 +252,7 @@
                                         ()
                                     )]
                                     (Var 3 b)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     nested_04_a

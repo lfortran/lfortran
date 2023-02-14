@@ -121,18 +121,7 @@
                                         ()
                                     )]
                                     (Var 4 res)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             sqrt_subtract:
                                 (Function
@@ -252,18 +241,7 @@
                                         ()
                                     )]
                                     (Var 5 res)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             t_1:
                                 (StructType

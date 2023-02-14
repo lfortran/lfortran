@@ -69,18 +69,7 @@
                                     [(Var 4 self)]
                                     []
                                     (Var 4 all)
-                                    Source
                                     Private
-                                    Interface
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             bitset_type:
                                 (StructType

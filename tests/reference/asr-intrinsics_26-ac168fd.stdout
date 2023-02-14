@@ -210,18 +210,7 @@
                                         )]
                                     )]
                                     (Var 3 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     stdlib_bitsets_64

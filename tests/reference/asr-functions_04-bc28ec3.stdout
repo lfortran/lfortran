@@ -203,18 +203,7 @@
                                         )]
                                     )]
                                     (Var 3 neg_int)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     stdlib_int

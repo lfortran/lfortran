@@ -179,18 +179,7 @@
                                         [38 cpath]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             getcwd:
                                 (Function
@@ -267,18 +256,7 @@
                                     (Var 37 bufsize)]
                                     []
                                     (Var 37 path)
-                                    BindC
                                     Public
-                                    Interface
-                                    "getcwd"
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     array12

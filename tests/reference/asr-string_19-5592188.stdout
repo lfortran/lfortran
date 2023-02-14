@@ -99,18 +99,7 @@
                                     [(Var 5 string)]
                                     []
                                     (Var 5 character_string)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             len:
                                 (GenericProcedure
@@ -181,18 +170,7 @@
                                     [(Var 4 string)]
                                     []
                                     (Var 4 length)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (StructType
@@ -338,18 +316,7 @@
                                     [(Var 7 string)]
                                     []
                                     (Var 7 lps_array)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             compute_lps_use:
                                 (Function
@@ -438,18 +405,7 @@
                                         ()
                                     )]
                                     (Var 36 l)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             compute_lps_use1:
                                 (Function
@@ -553,18 +509,7 @@
                                         ()
                                     )]
                                     (Var 37 l)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             len:
                                 (ExternalSymbol
@@ -736,18 +681,7 @@
                                         ()
                                     )]
                                     (Var 40 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             padl_char_pad_with:
                                 (Function
@@ -916,18 +850,7 @@
                                     (Var 41 pad_with)]
                                     []
                                     (Var 41 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             padl_string_default:
                                 (Function
@@ -1125,18 +1048,7 @@
                                         ()
                                     )]
                                     (Var 38 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             padl_string_pad_with:
                                 (Function
@@ -1348,18 +1260,7 @@
                                         ()
                                     )]
                                     (Var 39 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (ExternalSymbol

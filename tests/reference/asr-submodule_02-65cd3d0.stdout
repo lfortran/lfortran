@@ -146,18 +146,7 @@
                                     (Var 7 b)]
                                     []
                                     (Var 7 distance)
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             point_dist_subrout:
                                 (Function
@@ -246,18 +235,7 @@
                                     (Var 8 distance)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             rkind:
                                 (ExternalSymbol
@@ -502,18 +480,7 @@
                                         ()
                                     )]
                                     (Var 10 distance)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             point_dist_subrout:
                                 (Function
@@ -719,18 +686,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             rkind:
                                 (ExternalSymbol

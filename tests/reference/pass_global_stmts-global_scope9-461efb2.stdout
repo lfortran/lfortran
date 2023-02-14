@@ -57,18 +57,7 @@
                         ()
                     )]
                     (Var 2 f1)
-                    BindC
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             x:
                 (Variable

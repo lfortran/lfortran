@@ -219,18 +219,7 @@
                                         ()
                                     )]
                                     (Var 7 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             enum_type:
                                 (ExternalSymbol
@@ -477,18 +466,7 @@
                                         ()
                                     )]
                                     (Var 6 vtype)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_type:
                                 (ExternalSymbol

@@ -120,18 +120,7 @@
                                                     []
                                                     []
                                                     (Var 4 f)
-                                                    Source
                                                     Public
-                                                    Interface
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 ),
                                             f_val:
                                                 (Variable
@@ -278,18 +267,7 @@
                                         ()
                                     )]
                                     (Var 3 solver)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             sub1:
                                 (Function
@@ -351,18 +329,7 @@
                                                         ()
                                                     )]
                                                     (Var 6 getx)
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 ),
                                             iter:
                                                 (Variable
@@ -517,18 +484,7 @@
                                         ()
                                     )]
                                     (Var 5 sub1)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     recursion_02

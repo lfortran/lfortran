@@ -101,18 +101,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (StructType
@@ -242,18 +231,7 @@
                                         )
                                     )]
                                     (Var 5 trimmed_string)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             ~assign:
                                 (CustomOperator
@@ -376,18 +354,7 @@
                                     [(Var 7 string)]
                                     []
                                     (Var 7 chomped_string)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (ExternalSymbol

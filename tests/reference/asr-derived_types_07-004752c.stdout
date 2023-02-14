@@ -110,18 +110,7 @@
                                     [(Var 4 self)]
                                     []
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             logger_type:
                                 (StructType

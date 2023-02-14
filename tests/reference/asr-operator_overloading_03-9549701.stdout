@@ -447,18 +447,7 @@
                                         )]
                                     )]
                                     (Var 3 greater_than_inverse)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             less_than_inverse:
                                 (Function
@@ -575,18 +564,7 @@
                                         )]
                                     )]
                                     (Var 4 less_than_inverse)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             less_than_overload_use:
                                 (Function
@@ -680,18 +658,7 @@
                                         ()
                                     )]
                                     (Var 5 less_than_overload_use)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             ~gt:
                                 (CustomOperator

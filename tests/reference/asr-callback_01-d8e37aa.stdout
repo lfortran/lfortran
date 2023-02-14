@@ -113,18 +113,7 @@
                                                     [(Var 4 x)]
                                                     []
                                                     (Var 4 f)
-                                                    Source
                                                     Public
-                                                    Interface
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 )
                                         })
                                     cb
@@ -201,18 +190,7 @@
                                         ()
                                     )]
                                     (Var 3 cb)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             foo:
                                 (Function
@@ -323,18 +301,7 @@
                                                         ()
                                                     )]
                                                     (Var 6 f)
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 )
                                         })
                                     foo
@@ -373,18 +340,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     callback_01

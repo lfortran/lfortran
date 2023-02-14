@@ -88,18 +88,7 @@
                                     (Var 229 alnorm_arg_1)]
                                     []
                                     (Var 229 alnorm_return_var_name)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -191,18 +180,7 @@
                                     (Var 230 dgetrf_arg_2)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             exp:
                                 (ExternalSymbol
@@ -490,18 +468,7 @@
                     )
                     (Return)]
                     (Var 2 prho)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

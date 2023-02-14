@@ -95,18 +95,7 @@
                                     (Var 3 lsame_arg_1)]
                                     []
                                     (Var 3 lsame_return_var_name)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             uplo:
                                 (Variable
@@ -198,18 +187,7 @@
                     )
                     (Return)]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

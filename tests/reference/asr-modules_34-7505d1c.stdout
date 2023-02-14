@@ -300,18 +300,7 @@
                                         [5 version]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             package_config_t:
                                 (ExternalSymbol
@@ -412,18 +401,7 @@
                                         (Var 12 self)
                                     )]
                                     (Var 12 string)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             char:
                                 (GenericProcedure
@@ -496,18 +474,7 @@
                                     (Var 13 string)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             version_t:
                                 (StructType

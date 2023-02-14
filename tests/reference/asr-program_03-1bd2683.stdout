@@ -73,18 +73,7 @@
                                         ()
                                     )]
                                     (Var 5 y)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             apply:
                                 (Function
@@ -147,18 +136,7 @@
                                                     [(Var 4 x)]
                                                     []
                                                     (Var 4 fun)
-                                                    Source
                                                     Public
-                                                    Interface
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -238,18 +216,7 @@
                                         ()
                                     )]
                                     (Var 3 y)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             z:
                                 (Variable

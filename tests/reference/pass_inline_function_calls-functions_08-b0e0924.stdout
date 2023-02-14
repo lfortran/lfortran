@@ -297,18 +297,7 @@
                                         ()
                                     )]
                                     (Var 4 b)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             f_real:
                                 (Function
@@ -552,18 +541,7 @@
                                         )]
                                     )]
                                     (Var 5 b)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             p:
                                 (Variable

@@ -149,18 +149,7 @@
                                     (Var 6 dot_is_token)]
                                     []
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             parse_select:
                                 (ExternalSymbol
@@ -318,18 +307,7 @@
                                     (Var 12 dot_is_token)]
                                     []
                                     ()
-                                    Source
                                     Private
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             parse_select:
                                 (Function
@@ -424,18 +402,7 @@
                                         (Var 13 table)
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_table:
                                 (StructType

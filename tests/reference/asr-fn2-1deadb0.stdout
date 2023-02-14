@@ -43,18 +43,7 @@
                     []
                     []
                     (Var 2 a)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             b:
                 (Function
@@ -97,18 +86,7 @@
                     []
                     []
                     (Var 3 b)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             c:
                 (Function
@@ -151,18 +129,7 @@
                     []
                     []
                     (Var 4 c)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             d:
                 (Function
@@ -205,18 +172,7 @@
                     []
                     []
                     (Var 5 r)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             e:
                 (Function
@@ -259,18 +215,7 @@
                     []
                     []
                     (Var 6 r)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             f:
                 (Function
@@ -313,18 +258,7 @@
                     []
                     []
                     (Var 7 r)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

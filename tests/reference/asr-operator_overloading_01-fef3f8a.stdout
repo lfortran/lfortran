@@ -411,18 +411,7 @@
                                         )]
                                     )]
                                     (Var 4 bin_add)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             logical_and:
                                 (Function
@@ -507,18 +496,7 @@
                                         ()
                                     )]
                                     (Var 3 logical_and)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             ~add:
                                 (CustomOperator

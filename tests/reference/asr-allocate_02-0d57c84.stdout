@@ -492,18 +492,7 @@
                                         3 ca]
                                     )]
                                     (Var 3 status)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     allocate_01

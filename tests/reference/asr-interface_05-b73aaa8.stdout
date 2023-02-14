@@ -256,18 +256,7 @@
                                         ()
                                     )]
                                     (Var 3 a1)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             a2:
                                 (Function
@@ -343,18 +332,7 @@
                                         ()
                                     )]
                                     (Var 4 a2)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     interface_05_mod

@@ -145,18 +145,7 @@
                                         )]
                                     )]
                                     (Var 4 length)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             maybe:
                                 (Function
@@ -288,18 +277,7 @@
                                         )]
                                     )]
                                     (Var 5 maybe_string)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (StructType

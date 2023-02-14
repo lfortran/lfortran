@@ -241,18 +241,7 @@
                         ()
                     )]
                     (Var 2 f8)
-                    BindC
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

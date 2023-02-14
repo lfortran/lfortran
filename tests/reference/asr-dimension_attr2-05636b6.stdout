@@ -76,18 +76,7 @@
                     [(Var 2 x)]
                     []
                     (Var 2 f)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

@@ -98,18 +98,7 @@
                                         ()
                                     )]
                                     (Var 3 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             max_integer:
                                 (Function
@@ -216,18 +205,7 @@
                                         ()
                                     )]
                                     (Var 5 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             min_integer:
                                 (Function
@@ -334,18 +312,7 @@
                                         ()
                                     )]
                                     (Var 6 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             minus_integer:
                                 (Function
@@ -430,18 +397,7 @@
                                         ()
                                     )]
                                     (Var 4 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             one_integer:
                                 (Function
@@ -488,18 +444,7 @@
                                         ()
                                     )]
                                     (Var 8 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             zero_integer:
                                 (Function
@@ -546,18 +491,7 @@
                                         ()
                                     )]
                                     (Var 7 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     math_integer_m
@@ -653,18 +587,7 @@
                                         ()
                                     )]
                                     (Var 10 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             max_real:
                                 (Function
@@ -771,18 +694,7 @@
                                         ()
                                     )]
                                     (Var 13 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             min_real:
                                 (Function
@@ -889,18 +801,7 @@
                                         ()
                                     )]
                                     (Var 14 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             minus_real:
                                 (Function
@@ -985,18 +886,7 @@
                                         ()
                                     )]
                                     (Var 11 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             one_real:
                                 (Function
@@ -1046,18 +936,7 @@
                                         ()
                                     )]
                                     (Var 16 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             slash_real:
                                 (Function
@@ -1142,18 +1021,7 @@
                                         ()
                                     )]
                                     (Var 12 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             zero_real:
                                 (Function
@@ -1203,18 +1071,7 @@
                                         ()
                                     )]
                                     (Var 15 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     math_real_m
@@ -1548,21 +1405,7 @@
                                     (Var 19 r)]
                                     []
                                     (Var 19 total)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
-                                    .true.
                                 ),
                             t:
                                 (StructType
@@ -1677,21 +1520,7 @@
                                         ()
                                     )]
                                     (Var 20 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
-                                    .false.
                                 ),
                             triple_r:
                                 (Function
@@ -1790,21 +1619,7 @@
                                         ()
                                     )]
                                     (Var 21 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
-                                    .false.
                                 )
                         })
                     triple_m
@@ -2042,18 +1857,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             test_max_triples:
                                 (Function
@@ -2156,18 +1960,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             test_minus_triples:
                                 (Function
@@ -2270,18 +2063,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             triple_add_l:
                                 (Function
@@ -2359,18 +2141,7 @@
                                         ()
                                     )]
                                     (Var 124 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             triple_add_r:
                                 (Function
@@ -2448,18 +2219,7 @@
                                         ()
                                     )]
                                     (Var 125 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             triple_l:
                                 (ExternalSymbol
@@ -2547,18 +2307,7 @@
                                         ()
                                     )]
                                     (Var 128 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             triple_max_r:
                                 (Function
@@ -2636,18 +2385,7 @@
                                         ()
                                     )]
                                     (Var 129 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             triple_minus_l:
                                 (Function
@@ -2725,18 +2463,7 @@
                                         ()
                                     )]
                                     (Var 126 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             triple_minus_r:
                                 (Function
@@ -2814,18 +2541,7 @@
                                         ()
                                     )]
                                     (Var 127 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             triple_r:
                                 (ExternalSymbol
