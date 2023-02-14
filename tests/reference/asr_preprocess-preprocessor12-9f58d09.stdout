@@ -44,6 +44,22 @@
                                                 )
                                         })
                                     f90_assert
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 file)
                                     (Var 4 line)]
@@ -74,18 +90,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             fn:
                                 (Function
@@ -139,6 +144,22 @@
                                                 )
                                         })
                                     fn
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)]
@@ -154,18 +175,7 @@
                                         ()
                                     )]
                                     (Var 3 fn)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     preprocessor12

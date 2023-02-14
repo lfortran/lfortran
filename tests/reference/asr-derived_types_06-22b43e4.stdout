@@ -83,6 +83,25 @@
                                                 )
                                         })
                                     date_to_string
+                                    (FunctionType
+                                        [(Character 1 -2 () [])
+                                        (Class
+                                            7 toml_date
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 11 lhs)
                                     (Var 11 rhs)]
@@ -125,18 +144,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             datetime_to_string:
                                 (Function
@@ -233,6 +241,25 @@
                                                 )
                                         })
                                     datetime_to_string
+                                    (FunctionType
+                                        [(Character 1 -2 () [])
+                                        (Class
+                                            7 toml_datetime
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [allocated
                                     1_to_string
                                     allocated
@@ -366,18 +393,7 @@
                                         [12 temporary]
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new_toml_time:
                                 (Function
@@ -539,6 +555,28 @@
                                                 )
                                         })
                                     new_toml_time
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])
+                                        (Integer 4 [])
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])]
+                                        (Struct
+                                            7 toml_time
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [present
                                     present
                                     present
@@ -655,18 +693,7 @@
                                         []
                                     )]
                                     (Var 13 self)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             time_to_string:
                                 (Function
@@ -788,6 +815,25 @@
                                                 )
                                         })
                                     time_to_string
+                                    (FunctionType
+                                        [(Character 1 -2 () [])
+                                        (Class
+                                            7 toml_time
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [allocated
                                     allocated
                                     trim
@@ -942,18 +988,7 @@
                                         []
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_date:
                                 (StructType
@@ -1450,6 +1485,25 @@
                                                 )
                                         })
                                     toml_raw_to_timestamp
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Struct
+                                            4 toml_datetime
+                                            []
+                                        )]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 raw)
                                     (Var 5 timestamp)]
@@ -1491,18 +1545,7 @@
                                         ()
                                     )]
                                     (Var 5 stat)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_time:
                                 (ExternalSymbol

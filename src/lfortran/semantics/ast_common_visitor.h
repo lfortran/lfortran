@@ -1735,6 +1735,15 @@ public:
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     type));
             }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
+            std::string func_name = to_lower(sym_type->m_name);
+            ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
+            if( !v ) {
+                throw SemanticError("Procedure type '" + func_name
+                                    + "' not declared", loc);
+            }
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
+            type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
         } else {
             throw SemanticError("Type not implemented yet.",
                     loc);
@@ -2146,7 +2155,9 @@ public:
         }
         ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+            func->n_args == 1 &&
+            ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2240,7 +2251,9 @@ public:
         ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
-        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+            func->n_args == 1 &&
+            ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2275,7 +2288,9 @@ public:
 
             ASR::ttype_t *type = nullptr;
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                func->n_args == 1 &&
+                ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             } else {
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2319,7 +2334,9 @@ public:
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                func->n_args == 1 &&
+                ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             } else {
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2346,7 +2363,9 @@ public:
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
-        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+            func->n_args == 1 &&
+            ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2382,6 +2401,15 @@ public:
             args.p, args.size(), return_type, value, nullptr);
     }
 
+    ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
+        ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
+        ASR::ttype_t *return_type = func->m_return_var_type;
+        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
+        return ASR::make_FunctionCall_t(al, loc, v, nullptr,
+            args.p, args.size(), return_type, nullptr, nullptr);
+    }
+
     // `fn` is a local Function or GenericProcedure (that resolves to a
     // Function), or an ExternalSymbol that points to a Function or
     // GenericProcedure (that resolves to a Function). This function resolves
@@ -2408,6 +2436,8 @@ public:
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(x.base.base.loc, args, v);
+        } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
+            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, args, v);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2))
             return create_GenericProcedureWithASTNode(x, args, v);
@@ -3374,7 +3404,7 @@ public:
                 ASR::down_cast<ASR::symbol_t>(return_var)));
         }
 
-        tmp = ASR::make_Function_t(
+        tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, sym_name),
@@ -3495,7 +3525,10 @@ public:
                 }
             }
         }
-        if (ASR::is_a<ASR::Function_t>(*f2) || ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
+        if (ASR::is_a<ASR::Function_t>(*f2) ||
+            ASR::is_a<ASR::GenericProcedure_t>(*f2) ||
+            (ASR::is_a<ASR::Variable_t>(*f2) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(f2))) ) {
             if (ASRUtils::is_intrinsic_symbol(f2)) {
                 // Here we handle all intrinsic functions that are implemented
                 // in Fortran, but have different interface (API), e.g.,
@@ -3642,7 +3675,7 @@ public:
                     }
                 }
                 // check whether the requirement function is included in the template
-                if (f->m_is_restriction) {
+                if (ASRUtils::get_FunctionType(f)->m_is_restriction) {
                     if (!is_template) {
                         throw SemanticError("A requirement function must be called from a template",
                                             x.base.base.loc);
@@ -4060,7 +4093,8 @@ public:
                                 x.base.base.loc);
                         }
                         ASR::ttype_t *return_type = nullptr;
-                        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(
+                        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                            func->n_args == 1 && ASRUtils::is_array(
                                 ASRUtils::expr_type(a_args[0].m_value)) ) {
                             return_type = ASRUtils::duplicate_type(al,
                                 ASRUtils::expr_type(a_args[0].m_value));

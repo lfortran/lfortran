@@ -110,6 +110,21 @@
                                                                 )
                                                         })
                                                     c
+                                                    (FunctionType
+                                                        [(Integer 4 [])]
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     [(Var 4 z)]
                                                     [(Print
@@ -136,18 +151,7 @@
                                                         ()
                                                     )]
                                                     (Var 4 c)
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -196,6 +200,21 @@
                                                 )
                                         })
                                     b
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [c]
                                     [(Var 3 x)]
                                     [(=
@@ -233,18 +252,7 @@
                                         ()
                                     )]
                                     (Var 3 b)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     nested_04_a

@@ -67,6 +67,24 @@
                                                 )
                                         })
                                     add
+                                    (FunctionType
+                                        []
+                                        (Struct
+                                            2 t_1
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -96,18 +114,7 @@
                                         ()
                                     )]
                                     (Var 4 self)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             subtract:
                                 (Function
@@ -144,6 +151,24 @@
                                                 )
                                         })
                                     subtract
+                                    (FunctionType
+                                        []
+                                        (Struct
+                                            2 t_1
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -173,18 +198,7 @@
                                         ()
                                     )]
                                     (Var 5 self)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             t_1:
                                 (StructType
@@ -254,6 +268,21 @@
                                                 )
                                         })
                                     sub_2
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [add
                                     subtract]
                                     []
@@ -290,18 +319,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             subtract:
                                 (ExternalSymbol

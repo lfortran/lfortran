@@ -94,25 +94,60 @@
                                                                 )
                                                         })
                                                     f
+                                                    (FunctionType
+                                                        [(Real 4 [])]
+                                                        (Real 4 [])
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     [(Var 4 x)]
                                                     []
                                                     (Var 4 f)
-                                                    Source
                                                     Public
-                                                    Interface
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 )
                                         })
                                     cb
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Real 4 [])]
+                                            (Real 4 [])
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )
+                                        (Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f]
                                     [(Var 3 f)
                                     (Var 3 a)
@@ -155,18 +190,7 @@
                                         ()
                                     )]
                                     (Var 3 cb)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             foo:
                                 (Function
@@ -240,6 +264,21 @@
                                                                 )
                                                         })
                                                     f
+                                                    (FunctionType
+                                                        [(Real 4 [])]
+                                                        (Real 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     [(Var 6 x)]
                                                     [(=
@@ -262,21 +301,26 @@
                                                         ()
                                                     )]
                                                     (Var 6 f)
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 )
                                         })
                                     foo
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [cb]
                                     [(Var 5 c)
                                     (Var 5 d)]
@@ -296,18 +340,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     callback_01

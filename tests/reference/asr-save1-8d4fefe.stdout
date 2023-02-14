@@ -156,22 +156,26 @@
                                 )
                         })
                     save_fun
+                    (FunctionType
+                        []
+                        (Real 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []
                     (Var 3 save_fun)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             save_module:
                 (Module
@@ -261,22 +265,26 @@
                                                 )
                                         })
                                     fun_save
+                                    (FunctionType
+                                        []
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
                                     (Var 6 fun_save)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             sub_save:
                                 (Function
@@ -346,22 +354,26 @@
                                                 )
                                         })
                                     sub_save
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -498,22 +510,26 @@
                                 )
                         })
                     save_sub
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

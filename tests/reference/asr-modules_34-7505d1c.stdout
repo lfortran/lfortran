@@ -273,6 +273,24 @@
                                                 )
                                         })
                                     build_model
+                                    (FunctionType
+                                        [(Struct
+                                            4 package_config_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_to_string]
                                     [(Var 5 package)]
                                     [(AssociateBlockCall
@@ -282,18 +300,7 @@
                                         [5 version]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             package_config_t:
                                 (ExternalSymbol
@@ -367,6 +374,24 @@
                                                 )
                                         })
                                     as_string
+                                    (FunctionType
+                                        [(Class
+                                            10 version_t
+                                            []
+                                        )]
+                                        (Character 1 -2 () [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_to_string]
                                     [(Var 12 self)]
                                     [(SubroutineCall
@@ -376,18 +401,7 @@
                                         (Var 12 self)
                                     )]
                                     (Var 12 string)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             char:
                                 (GenericProcedure
@@ -436,23 +450,31 @@
                                                 )
                                         })
                                     to_string
+                                    (FunctionType
+                                        [(Class
+                                            10 version_t
+                                            []
+                                        )
+                                        (Character 1 -2 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 13 self)
                                     (Var 13 string)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             version_t:
                                 (StructType

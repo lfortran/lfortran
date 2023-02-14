@@ -200,6 +200,27 @@
                                                 )
                                         })
                                     triad
+                                    (FunctionType
+                                        [(Real 4 [(()
+                                        ())])
+                                        (Real 4 [(()
+                                        ())])
+                                        (Real 4 [])
+                                        (Real 4 [(()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)
@@ -263,18 +284,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     kokkos_program2

@@ -286,7 +286,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                 Str a;
                 a.from_str_view(s.name);
                 char *name = a.c_str(al);
-                ASR::asr_t *asr = ASR::make_Function_t(al, loc,
+                ASR::asr_t *asr = ASRUtils::make_Function_t_util(al, loc,
                     proc_symtab, name,
                     nullptr, 0,
                     nullptr, 0,

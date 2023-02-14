@@ -99,6 +99,22 @@
                                                 )
                                         })
                                     dfloat
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Real 8 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 13 i)
                                     (Var 13 j)]
@@ -119,18 +135,7 @@
                                         ()
                                     )]
                                     (Var 13 dfloat_return_var_name)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -224,6 +229,22 @@
                                                 )
                                         })
                                     ifloat
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 14 i)
                                     (Var 14 j)]
@@ -239,18 +260,7 @@
                                         ()
                                     )]
                                     (Var 14 ifloat_return_var_name)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -329,6 +339,22 @@
                                                 )
                                         })
                                     sfloat
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 12 i)
                                     (Var 12 j)]
@@ -349,18 +375,7 @@
                                         ()
                                     )]
                                     (Var 12 sfloat_return_var_name)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             sum:
                                 (Variable

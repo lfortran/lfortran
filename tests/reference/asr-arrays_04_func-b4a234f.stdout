@@ -60,6 +60,21 @@
                                                 )
                                         })
                                     abs
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 a)]
                                     [(Print
@@ -103,18 +118,7 @@
                                         )]
                                     )]
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -184,6 +188,22 @@
                                                 )
                                         })
                                     sum
+                                    (FunctionType
+                                        [(Real 4 [(()
+                                        ())])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)]
                                     [(Print
@@ -239,18 +259,7 @@
                                         )]
                                     )]
                                     (Var 3 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     arrays_04_func

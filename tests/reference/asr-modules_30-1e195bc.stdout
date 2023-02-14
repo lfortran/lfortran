@@ -77,6 +77,25 @@
                                                 )
                                         })
                                     default_executable
+                                    (FunctionType
+                                        [(Struct
+                                            7 executable_config
+                                            []
+                                        )
+                                        (Character 1 -1 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 9 self)
                                     (Var 9 name)]
@@ -117,18 +136,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             executable_config:
                                 (StructType
@@ -303,6 +311,25 @@
                                                 )
                                         })
                                     package_defaults
+                                    (FunctionType
+                                        [(Struct
+                                            2 package_config_t
+                                            []
+                                        )
+                                        (Character 1 -1 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [default_executable]
                                     [(Var 10 package)
                                     (Var 10 root)]
@@ -356,18 +383,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     fpm_manifest_modules_30

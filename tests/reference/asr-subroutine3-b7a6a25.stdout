@@ -24,6 +24,21 @@
                                 )
                         })
                     f
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(=
@@ -32,18 +47,7 @@
                         ()
                     )]
                     (Var 2 f)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

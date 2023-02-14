@@ -24,6 +24,21 @@
                                 )
                         })
                     f
+                    (FunctionType
+                        [(Integer 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     [(Var 2 a)]
                     [(Print
@@ -33,18 +48,7 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             main:
                 (Program

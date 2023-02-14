@@ -89,6 +89,21 @@
                                                 )
                                         })
                                     q
+                                    (FunctionType
+                                        [(Real 8 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)]
                                     [(=
@@ -130,18 +145,7 @@
                                         ()
                                     )]
                                     (Var 3 q_return_var_name)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -160,22 +164,26 @@
                                 )
                         })
                     statement1
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     []
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

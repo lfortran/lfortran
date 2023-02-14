@@ -54,6 +54,26 @@
                                                 )
                                         })
                                     f
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 c)]
                                     [(Allocate
@@ -88,18 +108,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             g:
                                 (Function
@@ -143,6 +152,26 @@
                                                 )
                                         })
                                     g
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f]
                                     [(Var 4 x)]
                                     [(Print
@@ -219,18 +248,7 @@
                                         ()
                                     )]
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             h:
                                 (Function
@@ -259,6 +277,26 @@
                                                 )
                                         })
                                     h
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f]
                                     [(Var 5 c)]
                                     [(Print
@@ -330,18 +368,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             r:
                                 (Variable

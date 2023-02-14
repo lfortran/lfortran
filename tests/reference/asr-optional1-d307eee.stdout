@@ -41,6 +41,21 @@
                                                 )
                                         })
                                     optional_argument
+                                    (FunctionType
+                                        [(Character 1 10 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [present]
                                     [(Var 3 name)]
                                     [(If
@@ -77,18 +92,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     optmod

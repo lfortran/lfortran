@@ -24,6 +24,21 @@
                                 )
                         })
                     f
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        BindC
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(=
@@ -38,18 +53,7 @@
                         ()
                     )]
                     (Var 2 f1)
-                    BindC
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

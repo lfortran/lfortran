@@ -69,22 +69,37 @@
                                                 )
                                         })
                                     char_string
-                                    [len_string]
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len_string
+                                            2 len
+                                            [((Var 5 string))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [len_string
+                                    len_string]
                                     [(Var 5 string)]
                                     []
                                     (Var 5 character_string)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             len:
                                 (GenericProcedure
@@ -133,22 +148,29 @@
                                                 )
                                         })
                                     len_string
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 string)]
                                     []
                                     (Var 4 length)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (StructType
@@ -266,22 +288,35 @@
                                                 )
                                         })
                                     compute_lps
-                                    [len]
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (FunctionCall
+                                            7 len
+                                            ()
+                                            [((Var 7 string))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ))])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [len
+                                    len]
                                     [(Var 7 string)]
                                     []
                                     (Var 7 lps_array)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             compute_lps_use:
                                 (Function
@@ -330,6 +365,21 @@
                                                 )
                                         })
                                     compute_lps_use
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [compute_lps
                                     len]
                                     [(Var 36 string)]
@@ -355,18 +405,7 @@
                                         ()
                                     )]
                                     (Var 36 l)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             compute_lps_use1:
                                 (Function
@@ -428,6 +467,24 @@
                                                 )
                                         })
                                     compute_lps_use1
+                                    (FunctionType
+                                        [(Struct
+                                            6 string_type
+                                            []
+                                        )]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [char@char_string
                                     len_string]
                                     [(Var 37 string)]
@@ -452,18 +509,7 @@
                                         ()
                                     )]
                                     (Var 37 l)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             len:
                                 (ExternalSymbol
@@ -572,7 +618,31 @@
                                                 )
                                         })
                                     padl_char_default
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])]
+                                        (Character 1 -3 (FunctionCall
+                                            40 len
+                                            ()
+                                            [((Var 40 string))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
+                                    len
                                     imax
                                     len
                                     padl_char_pad_with]
@@ -611,18 +681,7 @@
                                         ()
                                     )]
                                     (Var 40 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             padl_char_pad_with:
                                 (Function
@@ -752,6 +811,38 @@
                                                 )
                                         })
                                     padl_char_pad_with
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])
+                                        (Character 1 1 () [])]
+                                        (Character 1 -3 (FunctionCall
+                                            41 max@imax
+                                            41 max
+                                            [((FunctionCall
+                                                41 len
+                                                ()
+                                                [((Var 41 string))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ))
+                                            ((Var 41 output_length))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
                                     max@imax]
                                     [(Var 41 string)
@@ -759,18 +850,7 @@
                                     (Var 41 pad_with)]
                                     []
                                     (Var 41 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             padl_string_default:
                                 (Function
@@ -870,6 +950,28 @@
                                                 )
                                         })
                                     padl_string_default
+                                    (FunctionType
+                                        [(Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        (Integer 4 [])]
+                                        (Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [char@char_string
                                     imax
                                     len
@@ -946,18 +1048,7 @@
                                         ()
                                     )]
                                     (Var 38 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             padl_string_pad_with:
                                 (Function
@@ -1072,6 +1163,29 @@
                                                 )
                                         })
                                     padl_string_pad_with
+                                    (FunctionType
+                                        [(Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        (Integer 4 [])
+                                        (Character 1 1 () [])]
+                                        (Struct
+                                            6 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [char@char_string
                                     imax
                                     len
@@ -1146,18 +1260,7 @@
                                         ()
                                     )]
                                     (Var 39 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (ExternalSymbol
@@ -1172,6 +1275,8 @@
                         })
                     stdlib_strings
                     [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
                     stdlib_string_type
                     lfortran_intrinsic_math2

@@ -47,22 +47,29 @@
                                                 )
                                         })
                                     f
+                                    (FunctionType
+                                        [(Class
+                                            8 t1
+                                            []
+                                        )]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 10 self)]
                                     []
                                     (Var 10 match)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             t1:
                                 (StructType
@@ -164,6 +171,24 @@
                                                 )
                                         })
                                     sub
+                                    (FunctionType
+                                        [(Class
+                                            4 t2
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_f]
                                     [(Var 6 self)]
                                     [(If
@@ -192,18 +217,7 @@
                                         []
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             t1:
                                 (ExternalSymbol

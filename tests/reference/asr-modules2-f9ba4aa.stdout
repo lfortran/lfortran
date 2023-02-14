@@ -65,22 +65,29 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            10 toml_structure
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 13 self)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_ordered:
                                 (StructType
@@ -218,6 +225,24 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_array
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_destroy
                                     allocated]
                                     [(Var 15 self)]
@@ -290,18 +315,7 @@
                                         []
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new:
                                 (GenericProcedure
@@ -335,22 +349,29 @@
                                                 )
                                         })
                                     new_array
+                                    (FunctionType
+                                        [(Struct
+                                            2 toml_array
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 16 self)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_array:
                                 (StructType
@@ -453,22 +474,29 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            4 toml_value
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 6 self)]
                                     []
                                     ()
-                                    Source
                                     Private
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_value:
                                 (StructType

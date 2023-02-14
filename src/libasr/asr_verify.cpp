@@ -805,6 +805,8 @@ public:
             if (check_external) {
                 const ASR::symbol_t *fn = ASRUtils::symbol_get_past_external(x.m_name);
                 require(ASR::is_a<ASR::Function_t>(*fn) ||
+                        (ASR::is_a<ASR::Variable_t>(*fn) &&
+                        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(fn))) ||
                         ASR::is_a<ASR::ClassProcedure_t>(*fn),
                     "FunctionCall::m_name must be a Function or Variable with FunctionType");
             }

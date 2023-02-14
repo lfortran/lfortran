@@ -193,6 +193,21 @@
                                                 )
                                         })
                                     check
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 raw)]
                                     [(=
@@ -204,18 +219,7 @@
                                         ()
                                     )]
                                     (Var 7 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             enum_type:
                                 (ExternalSymbol
@@ -324,6 +328,21 @@
                                                 )
                                         })
                                     toml_get_value_type
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [check]
                                     [(Var 6 raw)]
                                     [(If
@@ -447,18 +466,7 @@
                                         ()
                                     )]
                                     (Var 6 vtype)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_type:
                                 (ExternalSymbol

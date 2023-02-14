@@ -80,6 +80,22 @@
                                                 )
                                         })
                                     imodulo
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [sfloor]
                                     [(Var 4 x)
                                     (Var 4 y)]
@@ -107,18 +123,7 @@
                                         ()
                                     )]
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             sfloor:
                                 (Function
@@ -157,6 +162,21 @@
                                                 )
                                         })
                                     sfloor
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)]
                                     [(=
@@ -170,18 +190,7 @@
                                         ()
                                     )]
                                     (Var 3 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     issue532_mod

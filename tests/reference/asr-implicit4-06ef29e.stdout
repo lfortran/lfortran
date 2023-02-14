@@ -147,6 +147,26 @@
                                 )
                         })
                     idd_random_transf
+                    (FunctionType
+                        [(Real 4 [(()
+                        ())])
+                        (Real 4 [(()
+                        ())])
+                        (Real 4 [(()
+                        ())])]
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     [(Var 2 x)
                     (Var 2 y)
@@ -242,18 +262,7 @@
                         ()
                     )]
                     (Var 2 idd_random_transf)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

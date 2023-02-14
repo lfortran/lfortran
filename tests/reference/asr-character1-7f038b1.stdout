@@ -24,6 +24,21 @@
                                 )
                         })
                     xerror
+                    (FunctionType
+                        [(Character 1 1 () [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     [(Var 2 mess)]
                     [(Print
@@ -42,18 +57,7 @@
                     )
                     (Return)]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

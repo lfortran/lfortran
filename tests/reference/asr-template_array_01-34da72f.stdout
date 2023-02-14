@@ -105,6 +105,23 @@
                                                 )
                                         })
                                     insert_int
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 lst)
                                     (Var 7 i)]
@@ -135,18 +152,7 @@
                                         ()
                                     )]
                                     (Var 7 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             insert_t:
                                 (Function
@@ -210,6 +216,35 @@
                                                 )
                                         })
                                     insert_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            [(()
+                                            ())]
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 lst)
                                     (Var 4 i)]
@@ -246,21 +281,7 @@
                                         ()
                                     )]
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
-                                    .false.
                                 ),
                             t:
                                 (StructType
@@ -331,6 +352,21 @@
                                                 )
                                         })
                                     test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [insert_int]
                                     []
                                     [(=
@@ -393,18 +429,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     template_array_01_m

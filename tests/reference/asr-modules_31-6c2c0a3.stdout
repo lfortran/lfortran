@@ -153,6 +153,24 @@
                                                 )
                                         })
                                     cmd_update
+                                    (FunctionType
+                                        [(Struct
+                                            4 fpm_update_settings
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_update_dependency]
                                     [(Var 7 settings)]
                                     [(SubroutineCall
@@ -180,18 +198,7 @@
                                         [7 error]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             dependency_tree_t:
                                 (ExternalSymbol
@@ -684,24 +691,36 @@
                                                 )
                                         })
                                     update_dependency
+                                    (FunctionType
+                                        [(Class
+                                            9 dependency_tree_t
+                                            []
+                                        )
+                                        (Character 1 -1 () [])
+                                        (Struct
+                                            9 error_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 14 self)
                                     (Var 14 name)
                                     (Var 14 error)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     fpm_dependency_modules_31

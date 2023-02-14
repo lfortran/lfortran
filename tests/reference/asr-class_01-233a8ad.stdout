@@ -213,6 +213,24 @@
                                                 )
                                         })
                                     circle_area
+                                    (FunctionType
+                                        [(Class
+                                            2 circle
+                                            []
+                                        )]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 this)]
                                     [(=
@@ -246,18 +264,7 @@
                                         ()
                                     )]
                                     (Var 4 area)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             circle_print:
                                 (Function
@@ -319,6 +326,24 @@
                                                 )
                                         })
                                     circle_print
+                                    (FunctionType
+                                        [(Class
+                                            2 circle
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_area]
                                     [(Var 5 this)]
                                     [(=
@@ -354,18 +379,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             pi:
                                 (Variable

@@ -89,24 +89,39 @@
                                                 )
                                         })
                                     add_project
+                                    (FunctionType
+                                        [(Class
+                                            7 dependency_tree_t
+                                            []
+                                        )
+                                        (Struct
+                                            7 package_config_t
+                                            []
+                                        )
+                                        (Struct
+                                            7 error_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 13 self)
                                     (Var 13 package)
                                     (Var 13 error)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             add_project_dependencies:
                                 (Function
@@ -181,6 +196,30 @@
                                                 )
                                         })
                                     add_project_dependencies
+                                    (FunctionType
+                                        [(Class
+                                            7 dependency_tree_t
+                                            []
+                                        )
+                                        (Character 1 -1 () [])
+                                        (Logical 4 [])
+                                        (Struct
+                                            7 error_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 14 self)
                                     (Var 14 root)
@@ -188,18 +227,7 @@
                                     (Var 14 error)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             dependency_config_t:
                                 (StructType
@@ -605,24 +633,36 @@
                                                 )
                                         })
                                     update_dependency
+                                    (FunctionType
+                                        [(Class
+                                            7 dependency_tree_t
+                                            []
+                                        )
+                                        (Character 1 -1 () [])
+                                        (Struct
+                                            7 error_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 15 self)
                                     (Var 15 name)
                                     (Var 15 error)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     fpm_dependency_modules_33
@@ -925,6 +965,32 @@
                                                 )
                                         })
                                     build_model
+                                    (FunctionType
+                                        [(Struct
+                                            4 fpm_model_t
+                                            []
+                                        )
+                                        (Struct
+                                            4 package_config_t
+                                            []
+                                        )
+                                        (Struct
+                                            4 error_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_add_project]
                                     [(Var 5 model)
                                     (Var 5 package)
@@ -945,18 +1011,7 @@
                                         )
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             error_t:
                                 (ExternalSymbol

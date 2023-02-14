@@ -376,7 +376,7 @@ end function)";
     LCompilers::SymbolTable::reset_global_counter();
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options));
-    CHECK(LCompilers::LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
+    CHECK(LCompilers::LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f (FunctionType [] (Integer 4 []) Source Implementation () .false. .false. .false. .false. .false. [] [] .false.) [] [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Public)}) [])");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -418,7 +418,7 @@ end function)";
     // AST -> ASR
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options));
-    CHECK(LCompilers::LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f [] [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Source Public Implementation () .false. .false. .false. .false. .false. [] [] .false.)}) [])");
+    CHECK(LCompilers::LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f (FunctionType [] (Integer 4 []) Source Implementation () .false. .false. .false. .false. .false. [] [] .false.) [] [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Public)}) [])");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;

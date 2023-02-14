@@ -384,6 +384,22 @@
                                                 )
                                         })
                                     greater_than_inverse
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Logical 4 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 log1)
                                     (Var 3 log2)]
@@ -431,18 +447,7 @@
                                         )]
                                     )]
                                     (Var 3 greater_than_inverse)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             less_than_inverse:
                                 (Function
@@ -496,6 +501,22 @@
                                                 )
                                         })
                                     less_than_inverse
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Logical 4 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 log1)
                                     (Var 4 log2)]
@@ -543,18 +564,7 @@
                                         )]
                                     )]
                                     (Var 4 less_than_inverse)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             less_than_overload_use:
                                 (Function
@@ -608,6 +618,22 @@
                                                 )
                                         })
                                     less_than_overload_use
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Logical 4 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [less_than_inverse]
                                     [(Var 5 log1)
                                     (Var 5 log2)]
@@ -632,18 +658,7 @@
                                         ()
                                     )]
                                     (Var 5 less_than_overload_use)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             ~gt:
                                 (CustomOperator

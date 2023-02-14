@@ -416,6 +416,28 @@
                                                 )
                                         })
                                     initialize_subrout
+                                    (FunctionType
+                                        [(Class
+                                            2 shape
+                                            []
+                                        )
+                                        (Integer 4 [])
+                                        (Logical 4 [])
+                                        (Integer 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 sh)
                                     (Var 5 color)
@@ -463,18 +485,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             rectangle:
                                 (StructType

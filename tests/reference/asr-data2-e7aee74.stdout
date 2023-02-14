@@ -45,6 +45,21 @@
                                 )
                         })
                     a
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [b]
                     []
                     [(=
@@ -80,18 +95,7 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             b:
                 (Function
@@ -115,6 +119,21 @@
                                 )
                         })
                     b
+                    (FunctionType
+                        [(Real 8 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     [(Var 4 factor)]
                     [(Print
@@ -128,18 +147,7 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             main:
                 (Program

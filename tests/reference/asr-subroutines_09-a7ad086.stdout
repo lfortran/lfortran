@@ -199,6 +199,26 @@
                                                 )
                                         })
                                     get_elem_table
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])
+                                        (Pointer
+                                            (Integer 4 [])
+                                        )
+                                        (Logical 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 array)
                                     (Var 3 pos)
@@ -216,18 +236,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             get_elem_value_string:
                                 (Function
@@ -313,6 +322,27 @@
                                                 )
                                         })
                                     get_elem_value_string
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Integer 4 [])
+                                        (Pointer
+                                            (Integer 4 [])
+                                        )
+                                        (Integer 4 [])
+                                        (Logical 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 array)
                                     (Var 4 pos)
@@ -331,18 +361,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             get_value:
                                 (GenericProcedure

@@ -136,6 +136,29 @@
                                                 )
                                         })
                                     matveca
+                                    (FunctionType
+                                        [(Complex 4 [(()
+                                        ())])
+                                        (Integer 4 [])
+                                        (Complex 4 [(()
+                                        ())])
+                                        (Complex 4 [])
+                                        (Complex 4 [])
+                                        (Complex 4 [])
+                                        (Complex 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 matveca_arg_0)
                                     (Var 3 matveca_arg_1)
@@ -146,18 +169,7 @@
                                     (Var 3 matveca_arg_6)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -268,6 +280,22 @@
                                 )
                         })
                     variable01
+                    (FunctionType
+                        [(Integer 4 [])
+                        (Integer 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [matveca]
                     [(Var 2 m)
                     (Var 2 n)]
@@ -284,18 +312,7 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

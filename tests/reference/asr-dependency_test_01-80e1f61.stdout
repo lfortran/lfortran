@@ -75,6 +75,28 @@
                                                 )
                                         })
                                     add_dependency
+                                    (FunctionType
+                                        [(Class
+                                            2 dependency_tree_t
+                                            []
+                                        )
+                                        (Struct
+                                            2 dependency_config_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_find_dependency]
                                     [(Var 6 self)
                                     (Var 6 dependency)]
@@ -92,18 +114,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             dependency_config_t:
                                 (StructType
@@ -439,23 +450,34 @@
                                                 )
                                         })
                                     find_dependency
+                                    (FunctionType
+                                        [(Class
+                                            2 dependency_tree_t
+                                            []
+                                        )
+                                        (Class
+                                            2 dependency_config_t
+                                            []
+                                        )]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 self)
                                     (Var 7 dependency)]
                                     []
                                     (Var 7 pos)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     fpm_dependency

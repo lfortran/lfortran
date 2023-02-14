@@ -100,6 +100,21 @@
                                                 )
                                         })
                                     elemental_cos
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [cos@dcos
                                     verify2d]
                                     []
@@ -190,18 +205,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             elemental_sin:
                                 (Function
@@ -347,6 +351,21 @@
                                                 )
                                         })
                                     elemental_sin
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [sin@dsin
                                     verify1d
                                     verifynd]
@@ -515,18 +534,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             elemental_trig_identity:
                                 (Function
@@ -746,6 +754,21 @@
                                                 )
                                         })
                                     elemental_trig_identity
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [abs@dabs
                                     cos@dcos
                                     sin@dsin]
@@ -1027,18 +1050,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             verify1d:
                                 (Function
@@ -1164,6 +1176,25 @@
                                                 )
                                         })
                                     verify1d
+                                    (FunctionType
+                                        [(Real 8 [(()
+                                        ())])
+                                        (Real 8 [(()
+                                        ())])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [abs@dabs
                                     sin@dsin]
                                     [(Var 3 array)
@@ -1248,18 +1279,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             verify2d:
                                 (Function
@@ -1419,6 +1439,30 @@
                                                 )
                                         })
                                     verify2d
+                                    (FunctionType
+                                        [(Real 8 [(()
+                                        ())
+                                        (()
+                                        ())])
+                                        (Real 8 [(()
+                                        ())
+                                        (()
+                                        ())])
+                                        (Integer 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [abs@dabs
                                     cos@dcos]
                                     [(Var 5 array)
@@ -1523,18 +1567,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             verifynd:
                                 (Function
@@ -1728,6 +1761,35 @@
                                                 )
                                         })
                                     verifynd
+                                    (FunctionType
+                                        [(Real 8 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])
+                                        (Real 8 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])
+                                        (Integer 4 [])
+                                        (Integer 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [abs@dabs
                                     sin@dsin]
                                     [(Var 4 array)
@@ -1845,18 +1907,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     arrays_elemental_15

@@ -146,6 +146,22 @@
                                                 )
                                         })
                                     all_set
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [btest@btest32]
                                     [(Var 3 x)
                                     (Var 3 num_bits)]
@@ -194,18 +210,7 @@
                                         )]
                                     )]
                                     (Var 3 res)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     stdlib_bitsets_64

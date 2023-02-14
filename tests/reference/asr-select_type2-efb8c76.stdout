@@ -192,6 +192,25 @@
                                                 )
                                         })
                                     get_sum
+                                    (FunctionType
+                                        [(Class
+                                            3 ~abstract_type
+                                            [(()
+                                            ())]
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 generic)]
                                     [(SelectType
@@ -220,18 +239,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     select_type2

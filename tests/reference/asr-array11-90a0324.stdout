@@ -107,6 +107,25 @@
                                                 )
                                         })
                                     add_context
+                                    (FunctionType
+                                        [(Character 1 -2 () [])
+                                        (Struct
+                                            2 toml_context
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len_trim]
                                     [(Var 4 message)
                                     (Var 4 context)]
@@ -213,18 +232,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_context:
                                 (StructType

@@ -58,22 +58,29 @@
                                                 )
                                         })
                                     new_string
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 string)]
                                     []
                                     (Var 4 new)
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new_string_from_integer_int32:
                                 (Function
@@ -115,22 +122,29 @@
                                                 )
                                         })
                                     new_string_from_integer_int32
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 val)]
                                     []
                                     (Var 5 new)
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new_string_from_integer_int64:
                                 (Function
@@ -172,22 +186,29 @@
                                                 )
                                         })
                                     new_string_from_integer_int64
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 6 val)]
                                     []
                                     (Var 6 new)
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new_string_from_logical_lk:
                                 (Function
@@ -229,22 +250,29 @@
                                                 )
                                         })
                                     new_string_from_logical_lk
+                                    (FunctionType
+                                        [(Logical 4 [])]
+                                        (Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 val)]
                                     []
                                     (Var 7 new)
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (StructType
@@ -337,22 +365,29 @@
                                                 )
                                         })
                                     new_string
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Struct
+                                            8 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 9 string)]
                                     []
                                     (Var 9 new)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new_string_from_integer_int32:
                                 (Function
@@ -394,22 +429,29 @@
                                                 )
                                         })
                                     new_string_from_integer_int32
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Struct
+                                            8 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 10 val)]
                                     []
                                     (Var 10 new)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new_string_from_integer_int64:
                                 (Function
@@ -451,22 +493,29 @@
                                                 )
                                         })
                                     new_string_from_integer_int64
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Struct
+                                            8 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 11 val)]
                                     []
                                     (Var 11 new)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new_string_from_logical_lk:
                                 (Function
@@ -508,22 +557,29 @@
                                                 )
                                         })
                                     new_string_from_logical_lk
+                                    (FunctionType
+                                        [(Logical 4 [])]
+                                        (Struct
+                                            8 string_type
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 12 val)]
                                     []
                                     (Var 12 new)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (ExternalSymbol

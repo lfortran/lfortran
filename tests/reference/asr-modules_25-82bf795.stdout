@@ -125,23 +125,31 @@
                                                 )
                                         })
                                     next_token
+                                    (FunctionType
+                                        [(Class
+                                            4 toml_character_tokenizer
+                                            []
+                                        )
+                                        (Logical 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 6 de)
                                     (Var 6 dot_is_token)]
                                     []
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             parse_select:
                                 (ExternalSymbol
@@ -275,23 +283,31 @@
                                                 )
                                         })
                                     next_token
+                                    (FunctionType
+                                        [(Class
+                                            8 toml_tokenizer
+                                            []
+                                        )
+                                        (Logical 4 [])]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 12 de)
                                     (Var 12 dot_is_token)]
                                     []
                                     ()
-                                    Source
                                     Private
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             parse_select:
                                 (Function
@@ -348,6 +364,24 @@
                                                 )
                                         })
                                     parse_select
+                                    (FunctionType
+                                        [(Class
+                                            8 toml_tokenizer
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 13 de)]
                                     [(Nullify
@@ -368,18 +402,7 @@
                                         (Var 13 table)
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_table:
                                 (StructType

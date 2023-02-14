@@ -47,22 +47,29 @@
                                                 )
                                         })
                                     all_abstract
+                                    (FunctionType
+                                        [(Class
+                                            2 bitset_type
+                                            []
+                                        )]
+                                        (Logical 4 [])
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 self)]
                                     []
                                     (Var 4 all)
-                                    Source
                                     Private
-                                    Interface
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             bitset_type:
                                 (StructType

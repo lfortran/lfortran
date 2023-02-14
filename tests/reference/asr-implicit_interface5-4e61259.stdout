@@ -78,23 +78,30 @@
                                                 )
                                         })
                                     driver
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 driver_arg_0)
                                     (Var 3 driver_arg_1)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -113,6 +120,25 @@
                                 )
                         })
                     implicit_interface5
+                    (FunctionType
+                        [(Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                        (Var 2 n))])
+                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                        (Var 2 n))])
+                        (Integer 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [driver]
                     [(Var 2 a)
                     (Var 2 b)
@@ -125,18 +151,7 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

@@ -217,7 +217,7 @@ public:
             return ;
         }
 
-        if( !is_fast && !func->m_inline ) {
+        if( !is_fast && !ASRUtils::get_FunctionType(func)->m_inline ) {
             return ;
         }
 

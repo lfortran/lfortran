@@ -74,6 +74,22 @@
                                 )
                         })
                     f1
+                    (FunctionType
+                        [(Complex 8 [])
+                        (Complex 8 [])]
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [dimag@zaimag]
                     [(Var 2 z)
                     (Var 2 i)]
@@ -109,18 +125,7 @@
                         ()
                     )]
                     (Var 2 f1)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             f2:
                 (Function
@@ -159,6 +164,22 @@
                                 )
                         })
                     f2
+                    (FunctionType
+                        [(Complex 8 [])
+                        (Complex 8 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     [(Var 3 z)
                     (Var 3 i)]
@@ -173,18 +194,7 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 ),
             iso_c_binding:
                 (IntrinsicModule lfortran_intrinsic_iso_c_binding),

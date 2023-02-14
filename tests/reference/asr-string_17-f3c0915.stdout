@@ -86,6 +86,24 @@
                                                 )
                                         })
                                     len_string
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [allocated
                                     len]
                                     [(Var 4 string)]
@@ -127,18 +145,7 @@
                                         )]
                                     )]
                                     (Var 4 length)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             maybe:
                                 (Function
@@ -207,7 +214,33 @@
                                                 )
                                         })
                                     maybe
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )]
+                                        (Character 1 -3 (FunctionCall
+                                            2 len_string
+                                            2 len
+                                            [((Var 5 string))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len_string
+                                    len_string
                                     allocated]
                                     [(Var 5 string)]
                                     [(If
@@ -244,18 +277,7 @@
                                         )]
                                     )]
                                     (Var 5 maybe_string)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (StructType

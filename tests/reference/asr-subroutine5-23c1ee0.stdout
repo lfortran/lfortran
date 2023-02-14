@@ -54,6 +54,23 @@
                                 )
                         })
                     add
+                    (FunctionType
+                        [(Real 4 [])
+                        (Real 4 [])
+                        (Real 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     [(Var 2 a)
                     (Var 2 b)
@@ -70,18 +87,7 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

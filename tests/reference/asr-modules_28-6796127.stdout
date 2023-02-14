@@ -82,6 +82,25 @@
                                                 )
                                         })
                                     git_target_branch
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Character 1 -1 () [])]
+                                        (Struct
+                                            11 git_target_t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 13 url)
                                     (Var 13 branch)]
@@ -106,18 +125,7 @@
                                         ()
                                     )]
                                     (Var 13 self)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             git_target_t:
                                 (StructType
@@ -368,6 +376,34 @@
                                                 )
                                         })
                                     new_dependencies
+                                    (FunctionType
+                                        [(Struct
+                                            4 dependency_config_t
+                                            [(()
+                                            ())]
+                                        )
+                                        (Struct
+                                            4 toml_table
+                                            []
+                                        )
+                                        (Character 1 -1 () [])
+                                        (Struct
+                                            4 error_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 8 deps)
                                     (Var 8 table)
@@ -375,18 +411,7 @@
                                     (Var 8 error)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new_dependency:
                                 (Function
@@ -453,6 +478,24 @@
                                                 )
                                         })
                                     new_dependency
+                                    (FunctionType
+                                        [(Struct
+                                            4 dependency_config_t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [git_target_branch]
                                     [(Var 9 self)]
                                     [(=
@@ -484,18 +527,7 @@
                                         9 url]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_table:
                                 (StructType

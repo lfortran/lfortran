@@ -82,6 +82,25 @@
                                                 )
                                         })
                                     multiply
+                                    (FunctionType
+                                        [(Class
+                                            2 t_1
+                                            []
+                                        )
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 self)
                                     (Var 4 j)]
@@ -102,18 +121,7 @@
                                         ()
                                     )]
                                     (Var 4 res)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             sqrt_subtract:
                                 (Function
@@ -180,6 +188,25 @@
                                                 )
                                         })
                                     sqrt_subtract
+                                    (FunctionType
+                                        [(Class
+                                            2 t_1
+                                            []
+                                        )
+                                        (Integer 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 self)
                                     (Var 5 j)]
@@ -214,18 +241,7 @@
                                         ()
                                     )]
                                     (Var 5 res)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             t_1:
                                 (StructType

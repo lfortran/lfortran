@@ -297,6 +297,26 @@
                                                 )
                                         })
                                     whole_square
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)
@@ -472,18 +492,7 @@
                                         3 ca]
                                     )]
                                     (Var 3 status)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     allocate_01

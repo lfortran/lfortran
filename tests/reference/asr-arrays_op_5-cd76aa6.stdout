@@ -184,6 +184,27 @@
                                                 )
                                         })
                                     check
+                                    (FunctionType
+                                        [(Complex 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 c)
                                     (Var 3 op_code)]
@@ -472,18 +493,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             i:
                                 (Variable

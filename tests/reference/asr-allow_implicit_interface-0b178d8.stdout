@@ -67,23 +67,28 @@
                                                 )
                                         })
                                     alnorm
+                                    (FunctionType
+                                        [(Real 8 [])
+                                        (Logical 4 [])]
+                                        (Real 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 229 alnorm_arg_0)
                                     (Var 229 alnorm_arg_1)]
                                     []
                                     (Var 229 alnorm_return_var_name)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -152,24 +157,30 @@
                                                 )
                                         })
                                     dgetrf
+                                    (FunctionType
+                                        [(Real 8 [])
+                                        (Real 8 [])
+                                        (Real 8 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 230 dgetrf_arg_0)
                                     (Var 230 dgetrf_arg_1)
                                     (Var 230 dgetrf_arg_2)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             exp:
                                 (ExternalSymbol
@@ -325,6 +336,21 @@
                                 )
                         })
                     prho
+                    (FunctionType
+                        []
+                        (Real 8 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [alnorm
                     dgetrf
                     exp@dexp]
@@ -442,18 +468,7 @@
                     )
                     (Return)]
                     (Var 2 prho)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

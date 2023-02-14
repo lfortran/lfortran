@@ -206,7 +206,31 @@
                                                 )
                                         })
                                     int_return
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (FunctionCall
+                                            4 len
+                                            ()
+                                            [((Var 4 s))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ))])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
+                                    len
                                     len]
                                     [(Var 4 s)]
                                     [(DoLoop
@@ -236,18 +260,7 @@
                                         )]
                                     )]
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             real_return:
                                 (Function
@@ -319,7 +332,31 @@
                                                 )
                                         })
                                     real_return
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (FunctionCall
+                                            33 len
+                                            ()
+                                            [((Var 33 s))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ))])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
+                                    len
                                     len]
                                     [(Var 33 s)]
                                     [(DoLoop
@@ -352,18 +389,7 @@
                                         )]
                                     )]
                                     (Var 33 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             trim_wrapper:
                                 (Function
@@ -439,7 +465,30 @@
                                                 )
                                         })
                                     trim_wrapper
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Character 1 -3 (FunctionCall
+                                            3 len
+                                            ()
+                                            [((Var 3 s))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
+                                    len
                                     len_trim
                                     trim]
                                     [(Var 3 s)]
@@ -463,22 +512,14 @@
                                         ()
                                     )]
                                     (Var 3 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     functions_06_m
                     [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
                     lfortran_intrinsic_builtin
                     lfortran_intrinsic_string]

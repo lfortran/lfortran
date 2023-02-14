@@ -159,6 +159,24 @@
                                                 )
                                         })
                                     parse_select
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_tokenizer
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 6 de)]
                                     [(Nullify
@@ -179,18 +197,7 @@
                                         (Var 6 table)
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_table:
                                 (StructType

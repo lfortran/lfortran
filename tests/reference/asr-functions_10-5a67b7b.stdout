@@ -86,24 +86,33 @@
                                                 )
                                         })
                                     mergei32
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)
                                     (Var 3 m)]
                                     []
                                     (Var 3 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             merger32:
                                 (Function
@@ -175,24 +184,33 @@
                                                 )
                                         })
                                     merger32
+                                    (FunctionType
+                                        [(Real 4 [(()
+                                        ())])
+                                        (Real 4 [(()
+                                        ())])
+                                        (Real 4 [(()
+                                        ())])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 a)
                                     (Var 4 b)
                                     (Var 4 m)]
                                     []
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             merger64:
                                 (Function
@@ -264,24 +282,33 @@
                                                 )
                                         })
                                     merger64
+                                    (FunctionType
+                                        [(Real 8 [(()
+                                        ())])
+                                        (Real 8 [(()
+                                        ())])
+                                        (Real 8 [(()
+                                        ())])]
+                                        (Real 8 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 a)
                                     (Var 5 b)
                                     (Var 5 m)]
                                     []
                                     (Var 5 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     kwarg_gp

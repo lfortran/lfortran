@@ -130,6 +130,22 @@
                                                 )
                                         })
                                     logical_gets_integer
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 tf)
                                     (Var 3 i)]
@@ -145,18 +161,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             logical_gets_integer_use:
                                 (Function
@@ -195,6 +200,22 @@
                                                 )
                                         })
                                     logical_gets_integer_use
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [logical_gets_integer]
                                     [(Var 4 tf)
                                     (Var 4 i)]
@@ -210,18 +231,7 @@
                                         )
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             ~assign:
                                 (CustomOperator

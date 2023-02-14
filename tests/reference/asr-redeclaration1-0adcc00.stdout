@@ -40,23 +40,29 @@
                                 )
                         })
                     redeclare1
+                    (FunctionType
+                        [(Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                        (Var 2 k))])
+                        (Integer 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     [(Var 2 piv)
                     (Var 2 k)]
                     []
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

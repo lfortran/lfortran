@@ -139,23 +139,27 @@
                                                 )
                                         })
                                     decodebase
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [huge@i32huge
                                     len]
                                     [(Var 3 string)]
                                     []
                                     (Var 3 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     functions_12

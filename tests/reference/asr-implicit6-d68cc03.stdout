@@ -69,6 +69,22 @@
                                 )
                         })
                     ch12n
+                    (FunctionType
+                        [(Integer 4 [])
+                        (Real 4 [])]
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     [(Var 2 n)
                     (Var 2 z)]
@@ -101,18 +117,7 @@
                         ()
                     )]
                     (Var 2 ch12n)
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

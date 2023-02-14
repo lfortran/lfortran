@@ -130,6 +130,30 @@
                                                 )
                                         })
                                     read_formatted
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])
+                                        (Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 string)
                                     (Var 5 unit)
@@ -141,18 +165,7 @@
                                         [5 line]
                                     )]
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             string_type:
                                 (StructType
@@ -285,6 +298,30 @@
                                                 )
                                         })
                                     write_formatted
+                                    (FunctionType
+                                        [(Struct
+                                            2 string_type
+                                            []
+                                        )
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])
+                                        (Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 string)
                                     (Var 4 unit)
@@ -294,18 +331,7 @@
                                     (Var 4 iomsg)]
                                     []
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     stdlib_string_type

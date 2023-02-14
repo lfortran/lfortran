@@ -204,6 +204,54 @@
                                                 )
                                         })
                                     journal
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Class
+                                            6 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            6 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            6 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            6 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            6 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            6 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            6 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            6 ~abstract_type
+                                            []
+                                        )
+                                        (Character 1 -1 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [msg_scalar]
                                     [(Var 6 where)
                                     (Var 6 g0)
@@ -245,18 +293,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             msg_scalar:
                                 (Function
@@ -861,6 +898,24 @@
                                                                 )
                                                         })
                                                     print_generic
+                                                    (FunctionType
+                                                        [(Class
+                                                            3 ~abstract_type
+                                                            []
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     [len_trim
                                                     trim]
                                                     [(Var 5 generic)]
@@ -973,18 +1028,7 @@
                                                         ()
                                                     )]
                                                     ()
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
-                                                    .false.
                                                 ),
                                             sep:
                                                 (Variable
@@ -1044,6 +1088,53 @@
                                                 )
                                         })
                                     msg_scalar
+                                    (FunctionType
+                                        [(Class
+                                            3 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            3 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            3 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            3 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            3 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            3 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            3 ~abstract_type
+                                            []
+                                        )
+                                        (Class
+                                            3 ~abstract_type
+                                            []
+                                        )
+                                        (Character 1 -1 () [])]
+                                        (Character 1 -2 () [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
                                     len_trim
                                     present
@@ -1276,18 +1367,7 @@
                                         [3 sep_local]
                                     )]
                                     (Var 3 msg_scalar)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             str:
                                 (GenericProcedure

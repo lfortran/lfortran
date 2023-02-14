@@ -44,23 +44,28 @@
                                                 )
                                         })
                                     assign_large
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 set1)
                                     (Var 3 set2)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .true.
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             assign_logint8_large:
                                 (Function
@@ -100,23 +105,29 @@
                                                 )
                                         })
                                     assign_logint8_large
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Logical 4 [(()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 self)
                                     (Var 4 logical_vector)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .true.
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             error_handler:
                                 (Function
@@ -200,6 +211,25 @@
                                                 )
                                         })
                                     error_handler
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])
+                                        (Character 1 -1 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 6 message)
                                     (Var 6 error)
@@ -214,18 +244,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             error_handler~genericprocedure:
                                 (Function
@@ -309,6 +328,25 @@
                                                 )
                                         })
                                     error_handler~genericprocedure
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])
+                                        (Character 1 -1 () [])]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 message)
                                     (Var 5 error)
@@ -317,18 +355,7 @@
                                     (Var 5 procedure)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             ~assign:
                                 (CustomOperator

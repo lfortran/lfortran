@@ -59,6 +59,22 @@
                                                 )
                                         })
                                     add_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
@@ -74,18 +90,7 @@
                                         ()
                                     )]
                                     (Var 3 total)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             slash_real:
                                 (Function
@@ -139,6 +144,22 @@
                                                 )
                                         })
                                     slash_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 x)
                                     (Var 4 y)]
@@ -154,18 +175,7 @@
                                         ()
                                     )]
                                     (Var 4 total)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     math
@@ -395,6 +405,24 @@
                                                 )
                                         })
                                     __asr_generic_avg_s_from_t
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])
+                                        (Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [add_real
                                     slash_real]
                                     [(Var 20 d1)
@@ -431,18 +459,7 @@
                                         ()
                                     )]
                                     (Var 20 avg)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -536,6 +553,24 @@
                                                 )
                                         })
                                     avg_real_s_from_s
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])
+                                        (Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [__asr_generic_avg_s_from_t
                                     slash_real]
                                     [(Var 19 d1)
@@ -574,18 +609,7 @@
                                         ()
                                     )]
                                     (Var 19 avg)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             avg_real_s_from_t:
                                 (Function
@@ -669,6 +693,24 @@
                                                 )
                                         })
                                     avg_real_s_from_t
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])
+                                        (Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [add_real
                                     slash_real]
                                     [(Var 18 d1)
@@ -705,18 +747,7 @@
                                         ()
                                     )]
                                     (Var 18 avg)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             avg_s_from_s:
                                 (ExternalSymbol
@@ -855,6 +886,21 @@
                                                 )
                                         })
                                     test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [avg_real_s_from_s
                                     avg_real_s_from_t]
                                     []
@@ -933,18 +979,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 )
                         })
                     template_travel_m
@@ -1066,6 +1101,50 @@
                                                 )
                                         })
                                     avg_s_from_s
+                                    (FunctionType
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )
+                                        (TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     [avg_s_from_t
                                     d_divided_by_s]
                                     [(Var 14 d1)
@@ -1113,29 +1192,7 @@
                                         ()
                                     )]
                                     (Var 14 avg)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        d
-                                        []
-                                    )
-                                    (TypeParameter
-                                        s
-                                        []
-                                    )
-                                    (TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
-                                    .false.
                                 ),
                             avg_s_from_t:
                                 (Function
@@ -1234,6 +1291,50 @@
                                                 )
                                         })
                                     avg_s_from_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     [d_divided_by_t
                                     plus_d
                                     plus_t]
@@ -1280,29 +1381,7 @@
                                         ()
                                     )]
                                     (Var 13 avg)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        d
-                                        []
-                                    )
-                                    (TypeParameter
-                                        s
-                                        []
-                                    )
-                                    (TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
-                                    .false.
                                 ),
                             d:
                                 (StructType
@@ -1381,34 +1460,48 @@
                                                 )
                                         })
                                     d_divided_by_s
+                                    (FunctionType
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 12 n)
                                     (Var 12 d)]
                                     []
                                     (Var 12 quotient)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        d
-                                        []
-                                    )
-                                    (TypeParameter
-                                        t
-                                        []
-                                    )
-                                    (TypeParameter
-                                        s
-                                        []
-                                    )]
-                                    []
-                                    .true.
                                 ),
                             d_divided_by_t:
                                 (Function
@@ -1471,34 +1564,48 @@
                                                 )
                                         })
                                     d_divided_by_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 11 n)
                                     (Var 11 d)]
                                     []
                                     (Var 11 quotient)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        d
-                                        []
-                                    )
-                                    (TypeParameter
-                                        t
-                                        []
-                                    )
-                                    (TypeParameter
-                                        s
-                                        []
-                                    )]
-                                    []
-                                    .true.
                                 ),
                             plus_d:
                                 (Function
@@ -1561,34 +1668,48 @@
                                                 )
                                         })
                                     plus_d
+                                    (FunctionType
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            d
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            d
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 9 l)
                                     (Var 9 r)]
                                     []
                                     (Var 9 total)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        d
-                                        []
-                                    )
-                                    (TypeParameter
-                                        t
-                                        []
-                                    )
-                                    (TypeParameter
-                                        s
-                                        []
-                                    )]
-                                    []
-                                    .true.
                                 ),
                             plus_t:
                                 (Function
@@ -1651,34 +1772,48 @@
                                                 )
                                         })
                                     plus_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            d
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            s
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 10 l)
                                     (Var 10 r)]
                                     []
                                     (Var 10 total)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        d
-                                        []
-                                    )
-                                    (TypeParameter
-                                        t
-                                        []
-                                    )
-                                    (TypeParameter
-                                        s
-                                        []
-                                    )]
-                                    []
-                                    .true.
                                 ),
                             s:
                                 (StructType

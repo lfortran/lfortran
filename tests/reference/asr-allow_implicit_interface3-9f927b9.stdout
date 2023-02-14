@@ -74,23 +74,28 @@
                                                 )
                                         })
                                     lsame
+                                    (FunctionType
+                                        [(Character 1 1 () [])
+                                        (Character 1 1 () [])]
+                                        (Logical 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 lsame_arg_0)
                                     (Var 3 lsame_arg_1)]
                                     []
                                     (Var 3 lsame_return_var_name)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             uplo:
                                 (Variable
@@ -109,6 +114,21 @@
                                 )
                         })
                     ssyr2
+                    (FunctionType
+                        [(Character 1 1 () [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [lsame]
                     [(Var 2 uplo)]
                     [(=
@@ -167,18 +187,7 @@
                     )
                     (Return)]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
-                    .false.
                 )
         })
     []

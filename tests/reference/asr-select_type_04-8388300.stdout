@@ -121,6 +121,24 @@
                                                 )
                                         })
                                     check_table
+                                    (FunctionType
+                                        [(Class
+                                            4 toml_table
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 tab)]
                                     [(Print
@@ -133,18 +151,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             get_table:
                                 (Function
@@ -299,6 +306,31 @@
                                                 )
                                         })
                                     get_table
+                                    (FunctionType
+                                        [(Class
+                                            4 toml_table
+                                            []
+                                        )
+                                        (Pointer
+                                            (Struct
+                                                4 toml_table
+                                                []
+                                            )
+                                        )
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [present
                                     present
                                     present
@@ -354,18 +386,7 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_stat:
                                 (ExternalSymbol
