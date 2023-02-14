@@ -3180,7 +3180,7 @@ public:
             func_args.size(), type, nullptr, nullptr);
     }
 
-    ASR::asr_t* create_All(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_ArrayAll(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"dim"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "all");
@@ -3212,7 +3212,7 @@ public:
                     array->base.base.loc, false, type));
             }
         }
-        return ASR::make_All_t(al, x.base.base.loc, mask, dim, type, value);
+        return ASR::make_ArrayAll_t(al, x.base.base.loc, mask, dim, type, value);
     }
 
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
@@ -3256,7 +3256,7 @@ public:
             } else if( var_name == "_lfortran_sqrt" ) {
                 tmp = create_IntrinsicFunctionSqrt(x);
             } else if( var_name == "all" ) {
-                tmp = create_All(x);
+                tmp = create_ArrayAll(x);
             } else {
                 LCompilersException("create_" + var_name + " not implemented yet.");
             }

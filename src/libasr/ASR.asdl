@@ -286,6 +286,7 @@ expr
     | ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
     | ArrayReshape(expr array, expr shape, ttype type, expr? value)
     | ArrayMaxloc(expr array, expr? dim, expr? mask, expr? kind, expr? back, ttype type, expr? value)
+    | ArrayAll(expr mask, expr? dim, ttype type, expr? value)
 
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
@@ -312,7 +313,6 @@ expr
     | IntegerBitLen(expr a, ttype type, expr? value)
     | Ichar(expr arg, ttype type, expr? value)
     | Iachar(expr arg, ttype type, expr? value)
-    | All(expr arg, expr? dim, ttype type, expr? value)
 
     | SizeOfType(ttype arg, ttype type, expr? value)
 
