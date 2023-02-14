@@ -47,6 +47,14 @@ static inline ASR::ttype_t* TYPE(const ASR::asr_t *f)
     return ASR::down_cast<ASR::ttype_t>(f);
 }
 
+static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t* x) {
+    return ASR::down_cast<ASR::FunctionType_t>(x->m_function_signature);
+}
+
+static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t& x) {
+    return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
+}
+
 static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
 {
     if (f && f->type == ASR::symbolType::ExternalSymbol) {
@@ -553,7 +561,8 @@ static inline bool is_intrinsic_function2(const ASR::Function_t *fn) {
     ASR::Module_t *m = get_sym_module0(sym);
     if (m != nullptr) {
         if (m->m_intrinsic ||
-            fn->m_abi == ASR::abiType::Intrinsic) {
+            ASRUtils::get_FunctionType(fn)->m_abi ==
+            ASR::abiType::Intrinsic) {
                 return true;
         }
     }
@@ -1366,7 +1375,8 @@ static inline bool is_generic_function(ASR::symbol_t *x) {
     switch (x2->type) {
         case ASR::symbolType::Function: {
             ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x2);
-            return func_sym->n_type_params > 0 && !func_sym->m_is_restriction;
+            return (ASRUtils::get_FunctionType(func_sym)->n_type_params > 0 &&
+                   !ASRUtils::get_FunctionType(func_sym)->m_is_restriction);
         }
         default: return false;
     }
@@ -1377,7 +1387,7 @@ static inline bool is_restriction_function(ASR::symbol_t *x) {
     switch (x2->type) {
         case ASR::symbolType::Function: {
             ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x2);
-            return func_sym->m_is_restriction;
+            return ASRUtils::get_FunctionType(func_sym)->m_is_restriction;
         }
         default: return false;
     }
@@ -2646,9 +2656,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
         m_is_restriction));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
-        a_args, n_args, m_body, n_body, m_return_var, m_abi, m_access, m_deftype,
-        m_bindc_name, m_elemental, m_pure, m_module, m_inline, m_static, m_type_params,
-        n_type_params, m_restrictions, n_restrictions, m_is_restriction);
+        a_args, n_args, m_body, n_body, m_return_var, m_access);
 }
 
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,

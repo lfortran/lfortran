@@ -544,8 +544,8 @@ public:
                 f2 = ASR::down_cast<ASR::Function_t>(f1);
             }
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                f2->m_abi == ASR::abiType::Interactive ||
-                f2->m_deftype == ASR::deftypeType::Interface) {
+                ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive ||
+                ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
             } else {
@@ -858,7 +858,7 @@ public:
                 f2 = ASR::down_cast<ASR::Function_t>(f1);
             }
             if ((f1->type == ASR::symbolType::ExternalSymbol && in_submodule) ||
-                f2->m_abi == ASR::abiType::Interactive) {
+                ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::Interactive) {
                 // Previous declaration will be shadowed
                 parent_scope->erase_symbol(sym_name);
             } else {

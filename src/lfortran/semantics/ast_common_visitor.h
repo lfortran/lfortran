@@ -2155,7 +2155,9 @@ public:
         }
         ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+            func->n_args == 1 &&
+            ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2249,7 +2251,9 @@ public:
         ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
-        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+            func->n_args == 1 &&
+            ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2284,7 +2288,9 @@ public:
 
             ASR::ttype_t *type = nullptr;
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                func->n_args == 1 &&
+                ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             } else {
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2328,7 +2334,9 @@ public:
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                func->n_args == 1 &&
+                ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             } else {
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -2355,7 +2363,9 @@ public:
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         ASR::ttype_t *return_type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
-        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+            func->n_args == 1 &&
+            ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
             return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
         } else {
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
@@ -3665,7 +3675,7 @@ public:
                     }
                 }
                 // check whether the requirement function is included in the template
-                if (f->m_is_restriction) {
+                if (ASRUtils::get_FunctionType(f)->m_is_restriction) {
                     if (!is_template) {
                         throw SemanticError("A requirement function must be called from a template",
                                             x.base.base.loc);
@@ -4083,7 +4093,8 @@ public:
                                 x.base.base.loc);
                         }
                         ASR::ttype_t *return_type = nullptr;
-                        if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(
+                        if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                            func->n_args == 1 && ASRUtils::is_array(
                                 ASRUtils::expr_type(a_args[0].m_value)) ) {
                             return_type = ASRUtils::duplicate_type(al,
                                 ASRUtils::expr_type(a_args[0].m_value));

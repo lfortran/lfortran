@@ -214,8 +214,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     if (ASR::is_a<ASR::Function_t>(*item.second)) {
                         ASR::Function_t *fn =
                             ASR::down_cast<ASR::Function_t>(item.second);
-                        if (fn->m_abi == ASR::abiType::BindC &&
-                            fn->m_deftype == ASR::deftypeType::Interface &&
+                        if (ASRUtils::get_FunctionType(fn)->m_abi == ASR::abiType::BindC &&
+                            ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface &&
                             !ASRUtils::is_intrinsic_function2(fn)) {
                             wasm::emit_import_fn(m_import_section, m_al, "js",
                                                  fn->m_name, no_of_types);
@@ -227,8 +227,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *fn =
                     ASR::down_cast<ASR::Function_t>(item.second);
-                if (fn->m_abi == ASR::abiType::BindC &&
-                    fn->m_deftype == ASR::deftypeType::Interface &&
+                if (ASRUtils::get_FunctionType(fn)->m_abi == ASR::abiType::BindC &&
+                    ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface &&
                     !ASRUtils::is_intrinsic_function2(fn)) {
                     wasm::emit_import_fn(m_import_section, m_al, "js",
                                             fn->m_name, no_of_types);
@@ -625,8 +625,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (!x.n_body) {
             return true;
         }
-        if (x.m_abi == ASR::abiType::BindC &&
-            x.m_deftype == ASR::deftypeType::Interface) {
+        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+            ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
             if (ASRUtils::is_intrinsic_function2(&x)) {
                 diag.codegen_warning_label(
                     "WASM: C Intrinsic Functions not yet spported",
@@ -639,8 +639,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 auto sub_call = (const ASR::SubroutineCall_t &)(*x.m_body[i]);
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
                     ASRUtils::symbol_get_past_external(sub_call.m_name));
-                if (s->m_abi == ASR::abiType::BindC &&
-                    s->m_deftype == ASR::deftypeType::Interface &&
+                if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC &&
+                    ASRUtils::get_FunctionType(s)->m_deftype == ASR::deftypeType::Interface &&
                     ASRUtils::is_intrinsic_function2(s)) {
                     diag.codegen_warning_label(
                         "WASM: Calls to C Intrinsic Functions are not yet "
