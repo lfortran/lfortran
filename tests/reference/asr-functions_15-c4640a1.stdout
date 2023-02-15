@@ -1,0 +1,350 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            functions_15:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            a:
+                                (Variable
+                                    4
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    4
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            sub_1:
+                                (ExternalSymbol
+                                    4
+                                    sub_1
+                                    2 sub_1
+                                    module_1
+                                    []
+                                    sub_1
+                                    Public
+                                )
+                        })
+                    functions_15
+                    [module_1]
+                    [(=
+                        (Var 4 a)
+                        (IntegerConstant 1 (Integer 4 []))
+                        ()
+                    )
+                    (=
+                        (Var 4 b)
+                        (Cast
+                            (IntegerConstant 2 (Integer 4 []))
+                            IntegerToReal
+                            (Real 4 [])
+                            (RealConstant
+                                2.000000
+                                (Real 4 [])
+                            )
+                        )
+                        ()
+                    )
+                    (SubroutineCall
+                        4 sub_1
+                        ()
+                        [((Var 4 a))
+                        ((Var 4 b))
+                        ((LogicalConstant
+                            .true.
+                            (Logical 4 [])
+                        ))
+                        ((StringConstant
+                            "12"
+                            (Character 1 2 () [])
+                        ))
+                        ((IntegerConstant 5 (Integer 4 [])))
+                        ((RealConstant
+                            6.000000
+                            (Real 4 [])
+                        ))]
+                        ()
+                    )
+                    (SubroutineCall
+                        4 sub_1
+                        ()
+                        [((Var 4 a))
+                        ((Var 4 b))
+                        ((LogicalConstant
+                            .false.
+                            (Logical 4 [])
+                        ))
+                        (())
+                        (())
+                        ((RealConstant
+                            6.000000
+                            (Real 4 [])
+                        ))]
+                        ()
+                    )
+                    (SubroutineCall
+                        4 sub_1
+                        ()
+                        [((Var 4 a))
+                        ((Var 4 b))
+                        ((LogicalConstant
+                            .true.
+                            (Logical 4 [])
+                        ))
+                        (())
+                        ((IntegerConstant 78 (Integer 4 [])))
+                        ((RealConstant
+                            117.000000
+                            (Real 4 [])
+                        ))]
+                        ()
+                    )
+                    (SubroutineCall
+                        4 sub_1
+                        ()
+                        [((Var 4 a))
+                        ((Var 4 b))
+                        ((LogicalConstant
+                            .false.
+                            (Logical 4 [])
+                        ))
+                        ((StringConstant
+                            "a"
+                            (Character 1 1 () [])
+                        ))
+                        (())
+                        ((RealConstant
+                            123.000000
+                            (Real 4 [])
+                        ))]
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 4 a)
+                            NotEq
+                            (IntegerConstant 70963776 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (Var 4 b)
+                            NotEq
+                            (RealConstant
+                                1036152.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                ),
+            module_1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            sub_1:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    3
+                                                    b
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            c:
+                                                (Variable
+                                                    3
+                                                    c
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            d:
+                                                (Variable
+                                                    3
+                                                    d
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            e:
+                                                (Variable
+                                                    3
+                                                    e
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            f:
+                                                (Variable
+                                                    3
+                                                    f
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sub_1
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [])
+                                        (Logical 4 [])
+                                        (Character 1 -1 () [])
+                                        (Integer 4 [])
+                                        (Real 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 a)
+                                    (Var 3 b)
+                                    (Var 3 c)
+                                    (Var 3 d)
+                                    (Var 3 e)
+                                    (Var 3 f)]
+                                    [(=
+                                        (Var 3 a)
+                                        (Cast
+                                            (RealBinOp
+                                                (Var 3 b)
+                                                Pow
+                                                (Cast
+                                                    (IntegerConstant 2 (Integer 4 []))
+                                                    IntegerToReal
+                                                    (Real 4 [])
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 4 [])
+                                                    )
+                                                )
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            RealToInteger
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (=
+                                        (Var 3 b)
+                                        (RealBinOp
+                                            (Var 3 b)
+                                            Mul
+                                            (Var 3 f)
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                )
+                        })
+                    module_1
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
