@@ -328,25 +328,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s =
                     ASR::down_cast<ASR::Function_t>(item.second);
-                bool hasTypeParameter = false;
-                for (size_t i = 0; (i < s->n_args) && (!hasTypeParameter); i++) {
-                    ASR::Variable_t *arg = ASRUtils::EXPR2VAR(s->m_args[i]);
-                    if (arg->m_type->type == ASR::ttypeType::TypeParameter) {
-                        hasTypeParameter = true;
-                    }
-                }
 
-                auto &fn_scope = s->m_symtab->get_scope();
-                for (auto itr = fn_scope.begin(); (itr != fn_scope.end()) && (!hasTypeParameter); itr++ ) {
-                    if (ASR::is_a<ASR::Variable_t>(*itr->second)) {
-                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(itr->second);
-                        if (v->m_type->type == ASR::ttypeType::TypeParameter) {
-                            hasTypeParameter = true;
-                        }
-                    }
-                }
-
-                if (!hasTypeParameter) {
+                if (ASRUtils::get_FunctionType(s)->n_type_params == 0) {
                     this->visit_Function(*s);
                 }
             }
