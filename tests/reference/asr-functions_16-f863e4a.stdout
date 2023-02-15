@@ -1,0 +1,1135 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            functions_16:
+                (Program
+                    (SymbolTable
+                        9
+                        {
+                            
+                        })
+                    functions_16
+                    []
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "running functions_16 program"
+                            (Character 1 28 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                ),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            tomlf_utils_sort:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            compare_keys_less:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            1_toml_key_key:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_toml_key_key
+                                                    3 key
+                                                    toml_key
+                                                    []
+                                                    key
+                                                    Public
+                                                ),
+                                            less:
+                                                (Variable
+                                                    8
+                                                    less
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            lhs:
+                                                (Variable
+                                                    8
+                                                    lhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 toml_key
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    8
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 toml_key
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    compare_keys_less
+                                    (FunctionType
+                                        [(Struct
+                                            2 toml_key
+                                            []
+                                        )
+                                        (Struct
+                                            2 toml_key
+                                            []
+                                        )]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 8 lhs)
+                                    (Var 8 rhs)]
+                                    [(=
+                                        (Var 8 less)
+                                        (StringCompare
+                                            (StructInstanceMember
+                                                (Var 8 lhs)
+                                                8 1_toml_key_key
+                                                (Character 1 -2 () [])
+                                                ()
+                                            )
+                                            Lt
+                                            (StructInstanceMember
+                                                (Var 8 rhs)
+                                                8 1_toml_key_key
+                                                (Character 1 -2 () [])
+                                                ()
+                                            )
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 8 less)
+                                    Public
+                                ),
+                            compare_less:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            less:
+                                                (Variable
+                                                    4
+                                                    less
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            lhs:
+                                                (Variable
+                                                    4
+                                                    lhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 toml_key
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    4
+                                                    rhs
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 toml_key
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    compare_less
+                                    (FunctionType
+                                        [(Struct
+                                            2 toml_key
+                                            []
+                                        )
+                                        (Struct
+                                            2 toml_key
+                                            []
+                                        )]
+                                        (Logical 4 [])
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 lhs)
+                                    (Var 4 rhs)]
+                                    []
+                                    (Var 4 less)
+                                    Public
+                                ),
+                            quicksort:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            high:
+                                                (Variable
+                                                    6
+                                                    high
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    6
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            idx:
+                                                (Variable
+                                                    6
+                                                    idx
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            last:
+                                                (Variable
+                                                    6
+                                                    last
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            less:
+                                                (Variable
+                                                    6
+                                                    less
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        [(Struct
+                                                            2 toml_key
+                                                            []
+                                                        )
+                                                        (Struct
+                                                            2 toml_key
+                                                            []
+                                                        )]
+                                                        (Logical 4 [])
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            list:
+                                                (Variable
+                                                    6
+                                                    list
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 toml_key
+                                                        [(()
+                                                        ())]
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            low:
+                                                (Variable
+                                                    6
+                                                    low
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            pivot:
+                                                (Variable
+                                                    6
+                                                    pivot
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    quicksort
+                                    (FunctionType
+                                        [(Struct
+                                            2 toml_key
+                                            [(()
+                                            ())]
+                                        )
+                                        (Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [])
+                                        (Integer 4 [])
+                                        (FunctionType
+                                            [(Struct
+                                                2 toml_key
+                                                []
+                                            )
+                                            (Struct
+                                                2 toml_key
+                                                []
+                                            )]
+                                            (Logical 4 [])
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [less
+                                    quicksort
+                                    swap]
+                                    [(Var 6 list)
+                                    (Var 6 idx)
+                                    (Var 6 low)
+                                    (Var 6 high)
+                                    (Var 6 less)]
+                                    [(If
+                                        (IntegerCompare
+                                            (Var 6 low)
+                                            Lt
+                                            (Var 6 high)
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            2 swap
+                                            ()
+                                            [((ArrayItem
+                                                (Var 6 idx)
+                                                [(()
+                                                (Var 6 low)
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            ))
+                                            ((ArrayItem
+                                                (Var 6 idx)
+                                                [(()
+                                                (IntegerBinOp
+                                                    (IntegerBinOp
+                                                        (Var 6 low)
+                                                        Add
+                                                        (Var 6 high)
+                                                        (Integer 4 [])
+                                                        ()
+                                                    )
+                                                    Div
+                                                    (IntegerConstant 2 (Integer 4 []))
+                                                    (Integer 4 [])
+                                                    ()
+                                                )
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            ))]
+                                            ()
+                                        )
+                                        (=
+                                            (Var 6 last)
+                                            (Var 6 low)
+                                            ()
+                                        )
+                                        (DoLoop
+                                            ((Var 6 i)
+                                            (IntegerBinOp
+                                                (Var 6 low)
+                                                Add
+                                                (IntegerConstant 1 (Integer 4 []))
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            (Var 6 high)
+                                            ())
+                                            [(If
+                                                (FunctionCall
+                                                    6 less
+                                                    ()
+                                                    [((ArrayItem
+                                                        (Var 6 list)
+                                                        [(()
+                                                        (ArrayItem
+                                                            (Var 6 idx)
+                                                            [(()
+                                                            (Var 6 i)
+                                                            ())]
+                                                            (Integer 4 [])
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Struct
+                                                            2 toml_key
+                                                            []
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                    ))
+                                                    ((ArrayItem
+                                                        (Var 6 list)
+                                                        [(()
+                                                        (ArrayItem
+                                                            (Var 6 idx)
+                                                            [(()
+                                                            (Var 6 low)
+                                                            ())]
+                                                            (Integer 4 [])
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Struct
+                                                            2 toml_key
+                                                            []
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                    ))]
+                                                    (Logical 4 [])
+                                                    ()
+                                                    ()
+                                                )
+                                                [(=
+                                                    (Var 6 last)
+                                                    (IntegerBinOp
+                                                        (Var 6 last)
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        (Integer 4 [])
+                                                        ()
+                                                    )
+                                                    ()
+                                                )
+                                                (SubroutineCall
+                                                    2 swap
+                                                    ()
+                                                    [((ArrayItem
+                                                        (Var 6 idx)
+                                                        [(()
+                                                        (Var 6 last)
+                                                        ())]
+                                                        (Integer 4 [])
+                                                        ColMajor
+                                                        ()
+                                                    ))
+                                                    ((ArrayItem
+                                                        (Var 6 idx)
+                                                        [(()
+                                                        (Var 6 i)
+                                                        ())]
+                                                        (Integer 4 [])
+                                                        ColMajor
+                                                        ()
+                                                    ))]
+                                                    ()
+                                                )]
+                                                []
+                                            )]
+                                        )
+                                        (SubroutineCall
+                                            2 swap
+                                            ()
+                                            [((ArrayItem
+                                                (Var 6 idx)
+                                                [(()
+                                                (Var 6 low)
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            ))
+                                            ((ArrayItem
+                                                (Var 6 idx)
+                                                [(()
+                                                (Var 6 last)
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            ))]
+                                            ()
+                                        )
+                                        (=
+                                            (Var 6 pivot)
+                                            (Var 6 last)
+                                            ()
+                                        )
+                                        (SubroutineCall
+                                            2 quicksort
+                                            ()
+                                            [((Var 6 list))
+                                            ((Var 6 idx))
+                                            ((Var 6 low))
+                                            ((IntegerBinOp
+                                                (Var 6 pivot)
+                                                Sub
+                                                (IntegerConstant 1 (Integer 4 []))
+                                                (Integer 4 [])
+                                                ()
+                                            ))
+                                            ((Var 6 less))]
+                                            ()
+                                        )
+                                        (SubroutineCall
+                                            2 quicksort
+                                            ()
+                                            [((Var 6 list))
+                                            ((Var 6 idx))
+                                            ((IntegerBinOp
+                                                (Var 6 pivot)
+                                                Add
+                                                (IntegerConstant 1 (Integer 4 []))
+                                                (Integer 4 [])
+                                                ()
+                                            ))
+                                            ((Var 6 high))
+                                            ((Var 6 less))]
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                ),
+                            sort:
+                                (GenericProcedure
+                                    2
+                                    sort
+                                    [2 sort_keys]
+                                    Public
+                                ),
+                            sort_keys:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            compare:
+                                                (Variable
+                                                    5
+                                                    compare
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        [(Struct
+                                                            2 toml_key
+                                                            []
+                                                        )
+                                                        (Struct
+                                                            2 toml_key
+                                                            []
+                                                        )]
+                                                        (Logical 4 [])
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            high:
+                                                (Variable
+                                                    5
+                                                    high
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    5
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            idx:
+                                                (Variable
+                                                    5
+                                                    idx
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            indexarray:
+                                                (Variable
+                                                    5
+                                                    indexarray
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            list:
+                                                (Variable
+                                                    5
+                                                    list
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 toml_key
+                                                        [(()
+                                                        ())]
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            low:
+                                                (Variable
+                                                    5
+                                                    low
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            present:
+                                                (ExternalSymbol
+                                                    5
+                                                    present
+                                                    11 present
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    present
+                                                    Private
+                                                ),
+                                            sorted:
+                                                (Variable
+                                                    5
+                                                    sorted
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Struct
+                                                        2 toml_key
+                                                        [(()
+                                                        ())]
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    sort_keys
+                                    (FunctionType
+                                        [(Struct
+                                            2 toml_key
+                                            [(()
+                                            ())]
+                                        )
+                                        (Integer 4 [(()
+                                        ())])
+                                        (FunctionType
+                                            [(Struct
+                                                2 toml_key
+                                                []
+                                            )
+                                            (Struct
+                                                2 toml_key
+                                                []
+                                            )]
+                                            (Logical 4 [])
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [present
+                                    quicksort]
+                                    [(Var 5 list)
+                                    (Var 5 idx)
+                                    (Var 5 compare)]
+                                    [(=
+                                        (Var 5 low)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 5 high)
+                                        (ArraySize
+                                            (Var 5 list)
+                                            ()
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (=
+                                        (Var 5 sorted)
+                                        (Var 5 list)
+                                        ()
+                                    )
+                                    (Allocate
+                                        [((Var 5 indexarray)
+                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (Var 5 high))])]
+                                        ()
+                                        ()
+                                        (ArrayConstant
+                                            [(ImpliedDoLoop
+                                                [(Var 5 i)]
+                                                (Var 5 i)
+                                                (Var 5 low)
+                                                (Var 5 high)
+                                                ()
+                                                (Integer 4 [])
+                                                ()
+                                            )]
+                                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4 [])))])
+                                            ColMajor
+                                        )
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            5 present
+                                            ()
+                                            [((Var 5 compare))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(SubroutineCall
+                                            2 quicksort
+                                            ()
+                                            [((Var 5 sorted))
+                                            ((Var 5 indexarray))
+                                            ((Var 5 low))
+                                            ((Var 5 high))
+                                            ((Var 5 compare))]
+                                            ()
+                                        )]
+                                        [(SubroutineCall
+                                            2 quicksort
+                                            ()
+                                            [((Var 5 sorted))
+                                            ((Var 5 indexarray))
+                                            ((Var 5 low))
+                                            ((Var 5 high))
+                                            ((Var 2 compare_keys_less))]
+                                            ()
+                                        )]
+                                    )
+                                    (DoLoop
+                                        ((Var 5 i)
+                                        (Var 5 low)
+                                        (Var 5 high)
+                                        ())
+                                        [(=
+                                            (ArrayItem
+                                                (Var 5 list)
+                                                [(()
+                                                (Var 5 i)
+                                                ())]
+                                                (Struct
+                                                    2 toml_key
+                                                    []
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            (ArrayItem
+                                                (Var 5 sorted)
+                                                [(()
+                                                (ArrayItem
+                                                    (Var 5 indexarray)
+                                                    [(()
+                                                    (Var 5 i)
+                                                    ())]
+                                                    (Integer 4 [])
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                ())]
+                                                (Struct
+                                                    2 toml_key
+                                                    []
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            5 present
+                                            ()
+                                            [((Var 5 idx))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 5 idx)
+                                            (Var 5 indexarray)
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (ImplicitDeallocate
+                                        [5 indexarray
+                                        5 sorted]
+                                    )]
+                                    ()
+                                    Public
+                                ),
+                            swap:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            lhs:
+                                                (Variable
+                                                    7
+                                                    lhs
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            rhs:
+                                                (Variable
+                                                    7
+                                                    rhs
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            tmp:
+                                                (Variable
+                                                    7
+                                                    tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    swap
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 7 lhs)
+                                    (Var 7 rhs)]
+                                    [(=
+                                        (Var 7 tmp)
+                                        (Var 7 lhs)
+                                        ()
+                                    )
+                                    (=
+                                        (Var 7 lhs)
+                                        (Var 7 rhs)
+                                        ()
+                                    )
+                                    (=
+                                        (Var 7 rhs)
+                                        (Var 7 tmp)
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                ),
+                            toml_key:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            key:
+                                                (Variable
+                                                    3
+                                                    key
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    toml_key
+                                    []
+                                    [key]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    tomlf_utils_sort
+                    [lfortran_intrinsic_builtin]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
