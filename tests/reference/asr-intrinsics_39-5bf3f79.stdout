@@ -101,8 +101,8 @@
                         ()
                         [((Var 2 date))
                         (())
-                        (())
-                        ((Var 2 zone))]
+                        ((Var 2 zone))
+                        (())]
                         ()
                     )
                     (SubroutineCall
@@ -119,8 +119,8 @@
                         ()
                         [(())
                         (())
-                        ((Var 2 values))
-                        (())]
+                        (())
+                        ((Var 2 values))]
                         ()
                     )
                     (Print

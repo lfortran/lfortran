@@ -4345,13 +4345,10 @@ public:
     }
 
     std::vector<std::string> convert_fn_args_to_string(
-            ASR::expr_t **expr_list, size_t n, const Location &loc) {
+            ASR::expr_t **expr_list, size_t n) {
         std::vector<std::string> result;
         for (size_t i=0; i < n; i++) {
             ASR::Variable_t *v = ASRUtils::EXPR2VAR(expr_list[i]);
-            if (v->m_presence == ASR::presenceType::Optional) {
-                SemanticError("Keyword arguments with optional arguments are not implemented yet", loc);
-            }
             result.push_back(v->m_name);
         }
         return result;
@@ -4363,10 +4360,22 @@ public:
                 diag::Diagnostics& diag, size_t type_bound=0) {
         size_t n_args = args.size();
         std::string fn_name = fn->m_name;
+
+        if (n_args + n > fn_n_args) {
+            diag.semantic_error_label(
+                "Procedure" + fn_name + " accepts " + std::to_string(fn_n_args)
+                + " arguments, but " + std::to_string(n_args + n)
+                + " were provided",
+                {loc},
+                "incorrect number of arguments to " + std::string(fn_name)
+            );
+            return ;
+        }
+
         std::vector<std::string> optional_args;
         std::vector<int> optional_args_idx;
-        for( auto itr = fn->m_symtab->get_scope().begin(); itr != fn->m_symtab->get_scope().end();
-             itr++ ) {
+        for( auto itr = fn->m_symtab->get_scope().begin();
+             itr != fn->m_symtab->get_scope().end(); itr++ ) {
             ASR::symbol_t* fn_sym = itr->second;
             if( ASR::is_a<ASR::Variable_t>(*fn_sym) ) {
                 ASR::Variable_t* fn_var = ASR::down_cast<ASR::Variable_t>(fn_sym);
@@ -4382,32 +4391,8 @@ public:
             }
         }
 
-        if (n_args + n > fn_n_args) {
-            diag.semantic_error_label(
-                "Procedure accepts " + std::to_string(fn_n_args)
-                + " arguments, but " + std::to_string(n_args + n)
-                + " were provided",
-                {loc},
-                "incorrect number of arguments to " + std::string(fn_name)
-            );
-            return ;
-        }
-
         std::vector<std::string> fn_args2 = convert_fn_args_to_string(
-                fn_args, fn_n_args, loc);
-
-        for (size_t i=0; i < n; i++) {
-            std::string str = std::string(kwargs[i].m_arg);
-            if( std::find(optional_args.begin(), optional_args.end(), str) == optional_args.end() ) {
-                ASR::call_arg_t empty_arg;
-                Location loc;
-                loc.first = 1, loc.last = 1;
-                empty_arg.loc = loc;
-                empty_arg.m_value = nullptr;
-                args.push_back(al, empty_arg);
-            }
-        }
-
+                                                fn_args, fn_n_args);
 
         size_t offset = args.size();
         for (size_t i = 0; i < fn_n_args - offset - type_bound; i++) {
@@ -4416,43 +4401,37 @@ public:
             call_arg.m_value = nullptr;
             args.push_back(al, call_arg);
         }
+
         for (size_t i = 0; i < n; i++) {
             this->visit_expr(*kwargs[i].m_value);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
-            auto search_optional = std::find(optional_args.begin(), optional_args.end(), name);
-            if( search_optional != optional_args.end() ) {
-                size_t kwarg_idx = std::distance(optional_args.begin(), search_optional);
-                args.p[kwarg_idx + offset].m_value = expr;
-                args.p[kwarg_idx + offset].loc = expr->base.loc;
-            } else {
-                auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
-                if (search != fn_args2.end()) {
-                    size_t idx = std::distance(fn_args2.begin(), search);
-                    if (idx < n_args) {
-                        diag.semantic_error_label(
-                            "Keyword argument is already specified as a non-keyword argument",
-                            {loc},
-                            name + "keyword argument is already specified.");
-                        return ;
-                    }
-                    if (args[idx].m_value != nullptr) {
-                        diag.semantic_error_label(
-                            "Keyword argument is already specified as another keyword argument",
-                            {loc},
-                            name + "keyword argument is already specified.");
-                        return ;
-                    }
-                    args.p[idx].loc = expr->base.loc;
-                    args.p[idx].m_value = expr;
-                } else {
-                    diag.semantic_error_label(
-                        "Keyword argument not found " + name,
-                        {loc},
-                        name + " keyword argument not found.");
-                    return ;
-                }
+            auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
+            if (search == fn_args2.end()) {
+                diag.semantic_error_label(
+                    "Keyword argument not found " + name,
+                    {loc},
+                    name + " keyword argument not found.");
+                return ;
             }
+
+            size_t idx = std::distance(fn_args2.begin(), search) - type_bound;
+            if (idx < n_args) {
+                diag.semantic_error_label(
+                    "Keyword argument is already specified as a non-keyword argument",
+                    {loc},
+                    name + "keyword argument is already specified.");
+                return ;
+            }
+            if (args[idx].m_value != nullptr) {
+                diag.semantic_error_label(
+                    "Keyword argument " + name + " is already specified as another keyword argument",
+                    {loc},
+                    name + " keyword argument is already specified.");
+                return ;
+            }
+            args.p[idx].loc = expr->base.loc;
+            args.p[idx].m_value = expr;
         }
 
         for (size_t i=0; i < args.size(); i++) {
