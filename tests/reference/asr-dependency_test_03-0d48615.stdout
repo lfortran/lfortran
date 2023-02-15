@@ -67,8 +67,8 @@
                                                         6 get_command_argument
                                                         ()
                                                         [((IntegerConstant 0 (Integer 4 [])))
-                                                        ((Var 6 ilength))
                                                         (())
+                                                        ((Var 6 ilength))
                                                         (())]
                                                         ()
                                                     )]
