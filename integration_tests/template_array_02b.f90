@@ -86,7 +86,6 @@ end module
 
 program template_array_02b
 
-    use math
     use template_array_02b_m
     implicit none
 
