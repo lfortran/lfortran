@@ -655,13 +655,13 @@ RUN(NAME assign_to2 LABELS gfortran llvm)
 
 RUN(NAME conv_complex2real LABELS gfortran llvm)
 
-RUN(NAME template_add LABELS llvm)
-RUN(NAME template_nested LABELS llvm)
-RUN(NAME template_travel LABELS llvm)
-RUN(NAME template_triple LABELS llvm)
+RUN(NAME template_add LABELS llvm wasm)
+RUN(NAME template_nested LABELS llvm wasm)
+RUN(NAME template_travel LABELS llvm wasm)
+RUN(NAME template_triple LABELS llvm wasm)
 RUN(NAME template_array_01 LABELS llvm)
 RUN(NAME template_array_02 LABELS llvm)
-RUN(NAME template_array_03 LABELS llvm)
+RUN(NAME template_array_03 LABELS llvm wasm)
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
