@@ -87,7 +87,7 @@ end module
 program template_array_02b
 
     use math
-    use template_array_02_m
+    use template_array_02b_m
     implicit none
 
     call test_template()
