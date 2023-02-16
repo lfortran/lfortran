@@ -24,7 +24,14 @@ end subroutine hybrd
 
 program main
     implicit none
-    integer :: n = 1
+    integer :: n
+    n = -5
+    call hybrd(n)
+    if (n /= -2) error stop
+    n = 1
     call hybrd(n)
     if (n /= 15) error stop
+    n = 5
+    call hybrd(n)
+    if (n /= 8) error stop
 end program main
