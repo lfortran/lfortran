@@ -12,6 +12,21 @@
 
 namespace LCompilers {
 
+/*
+This ASR pass replaces array slice with do loops and array expression assignments.
+The function `pass_replace_arr_slice` transforms the ASR tree in-place.
+
+Converts:
+
+    x = y(1:3)
+
+to:
+
+    do i = 1, 3
+        x(i) = y(i)
+    end do
+*/
+
 class ReplaceArraySection: public ASR::BaseExprReplacer<ReplaceArraySection> {
 
     private:
