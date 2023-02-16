@@ -239,7 +239,7 @@ public:
                 calls_to.push_back(call_hash);
             }
             for (size_t i=0; i<x.n_args; i++) {
-                if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                if (x.m_args[i].m_value && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                     visit_Var(*ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value));
                 }
             }
@@ -257,7 +257,7 @@ public:
                 calls_to.push_back(call_hash);
             }
             for (size_t i=0; i<x.n_args; i++) {
-                if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                if ( x.m_args[i].m_value && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                     visit_Var(*ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value));
                 }
             }
