@@ -40,6 +40,7 @@
 #include <libasr/pass/pass_array_by_data.h>
 #include <libasr/pass/pass_list_expr.h>
 #include <libasr/pass/subroutine_from_function.h>
+#include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/asr_verify.h>
 
 #include <map>
@@ -81,7 +82,8 @@ namespace LCompilers {
             {"array_dim_intrinsics_update", &pass_update_array_dim_intrinsic_calls},
             {"pass_list_expr", &pass_list_expr},
             {"pass_array_by_data", &pass_array_by_data},
-            {"subroutine_from_function", &pass_create_subroutine_from_function}
+            {"subroutine_from_function", &pass_create_subroutine_from_function},
+            {"transform_optional_argument_functions", &pass_transform_optional_argument_functions}
         };
 
         bool is_fast;
@@ -155,7 +157,8 @@ namespace LCompilers {
                 "forall",
                 "select_case",
                 "inline_function_calls",
-                "unused_functions"
+                "unused_functions",
+                "transform_optional_argument_functions"
             };
 
             _with_optimization_passes = {
@@ -180,6 +183,7 @@ namespace LCompilers {
                 "sign_from_value",
                 "div_to_mul",
                 "fma",
+                "transform_optional_argument_functions",
                 "inline_function_calls"
             };
 

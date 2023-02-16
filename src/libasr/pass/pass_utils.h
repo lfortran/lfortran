@@ -51,7 +51,8 @@ namespace LCompilers {
             Allocator& al, SymbolTable*& current_scope, ASR::stmt_t*& assign_stmt);
 
         ASR::expr_t* create_auxiliary_variable(Location& loc, std::string& name,
-            Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type);
+            Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
+            ASR::intentType var_intent=ASR::intentType::Local);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, LCompilers::PassOptions& pass_options,
