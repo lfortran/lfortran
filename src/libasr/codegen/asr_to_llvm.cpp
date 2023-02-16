@@ -4443,6 +4443,14 @@ public:
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
+        /* The current `in_block` implementation has the following limitations:
+         * - Does not work for nested blocks. To fix it there, we should change
+         *   it to an integer and keep incrementing it for each block.
+         * - Combining blocks and loops.
+         * - The label in `exit` is currently ignored, so we only jump to the
+         *   inner most label. Instead we need to jump to the actual label
+         *   provided.
+         */
         in_block = true;
         if( x.m_label != -1 ) {
             if( llvm_goto_targets.find(x.m_label) == llvm_goto_targets.end() ) {
