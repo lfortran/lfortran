@@ -298,6 +298,9 @@ public:
     // things, it might be more readable to just use the LLVM API
     // without any extra layer on top. In some other cases, it might
     // be more readable to use this abstraction.
+    // The `if_block` and `else_block` must generate one or more blocks. In
+    // addition, the `if_block` must not be terminated, we terminate it
+    // ourselves. The `else_block` can be either terminated or not.
     template <typename IF, typename ELSE>
     void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block) {
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -310,11 +313,7 @@ public:
         builder->SetInsertPoint(thenBB); {
             if_block();
         }
-        if (!is_Exit) {
-            builder->CreateBr(mergeBB);
-        } else {
-            is_Exit = false;
-        }
+        builder->CreateBr(mergeBB);
 
         start_new_block(elseBB); {
             else_block();
@@ -4742,6 +4741,8 @@ public:
             // This is done by jumping to the end of the block.
             is_Exit = true;
             builder->CreateBr(block_end_label);
+            llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
+            start_new_block(bb);
         } else {
             builder->CreateBr(current_loopend);
             llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
