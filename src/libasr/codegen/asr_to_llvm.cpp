@@ -164,7 +164,7 @@ public:
     Allocator &al;
 
     llvm::Value *tmp;
-    llvm::BasicBlock *current_loophead, *current_loopend, *proc_return;
+    llvm::BasicBlock *current_loophead, *current_loopend, *proc_return, *block_end_label;
     std::string mangle_prefix;
     bool prototype_only;
     llvm::StructType *complex_type_4, *complex_type_8;
@@ -229,6 +229,7 @@ public:
     int64_t ptr_loads;
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
+    bool in_block = false;
 
     CompilerOptions &compiler_options;
 
@@ -296,6 +297,9 @@ public:
     // things, it might be more readable to just use the LLVM API
     // without any extra layer on top. In some other cases, it might
     // be more readable to use this abstraction.
+    // The `if_block` and `else_block` must generate one or more blocks. In
+    // addition, the `if_block` must not be terminated, we terminate it
+    // ourselves. The `else_block` can be either terminated or not.
     template <typename IF, typename ELSE>
     void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block) {
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -4439,6 +4443,15 @@ public:
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
+        /* The current `in_block` implementation has the following limitations:
+         * - Does not work for nested blocks. To fix it there, we should change
+         *   it to an integer and keep incrementing it for each block.
+         * - Combining blocks and loops.
+         * - The label in `exit` is currently ignored, so we only jump to the
+         *   inner most label. Instead we need to jump to the actual label
+         *   provided.
+         */
+        in_block = true;
         if( x.m_label != -1 ) {
             if( llvm_goto_targets.find(x.m_label) == llvm_goto_targets.end() ) {
                 llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -4449,9 +4462,27 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
         declare_vars(*block);
+        std::string block_name = std::string(block->m_name);
+        std::string block_end_name = "block_"+block_name+"_end";
+        llvm::BasicBlock *block_start = llvm::BasicBlock::Create(context, "block_"+block_name+"_start");
+        start_new_block(block_start);
+        llvm::BasicBlock *block_end = llvm::BasicBlock::Create(context, "block_"+block_name+"_end");
+        llvm::Function *fn = block_start->getParent();
+        fn->getBasicBlockList().push_back(block_end);
+        builder->SetInsertPoint(block_start);
+        block_end_label = block_end;
         for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*(block->m_body[i]));
         }
+        llvm::BasicBlock *last_bb = builder->GetInsertBlock();
+        llvm::Instruction *block_terminator = last_bb->getTerminator();
+        if (block_terminator == nullptr) {
+            // The previous block is not terminated --- terminate it by jumping
+            // to block_end
+            builder->CreateBr(block_end);
+        }
+        builder->SetInsertPoint(block_end);
+        in_block=false;
     }
 
     inline void visit_expr_wrapper(const ASR::expr_t* x, bool load_ref=false) {
@@ -4712,9 +4743,17 @@ public:
     }
 
     void visit_Exit(const ASR::Exit_t & /* x */) {
-        builder->CreateBr(current_loopend);
-        llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
-        start_new_block(bb);
+        if ( in_block ) {
+            // If we are in a block, we need to exit the block.
+            // This is done by jumping to the end of the block.
+            builder->CreateBr(block_end_label);
+            llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
+            start_new_block(bb);
+        } else {
+            builder->CreateBr(current_loopend);
+            llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
+            start_new_block(bb);
+        }
     }
 
     void visit_Cycle(const ASR::Cycle_t & /* x */) {

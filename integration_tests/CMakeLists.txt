@@ -685,3 +685,4 @@ RUN(NAME modules_26 LABELS gfortran llvm)
 RUN(NAME enum_01 LABELS gfortran llvm)
 RUN(NAME enum_02 LABELS gfortran llvm EXTRAFILES
          enum_02_module.f90)
+RUN(NAME block_05 LABELS gfortran llvm)
