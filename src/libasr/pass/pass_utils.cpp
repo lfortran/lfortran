@@ -460,9 +460,10 @@ namespace LCompilers {
         }
 
         ASR::expr_t* create_auxiliary_variable(Location& loc, std::string& name,
-            Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type) {
+            Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
+            ASR::intentType var_intent) {
             ASR::asr_t* expr_sym = ASR::make_Variable_t(al, loc, current_scope, s2c(al, name), nullptr, 0,
-                                                    ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                                                    var_intent, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     var_type, ASR::abiType::Source, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false);
             if( current_scope->get_symbol(name) == nullptr ) {

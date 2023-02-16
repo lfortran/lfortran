@@ -8,11 +8,11 @@ source_filename = "LFortran"
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [13 x i8] c"%d%s%d%s%d%s\00", align 1
 
-declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i32*, i32*, i8**)
+declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i1*, i32*, i1*, i32*, i1*, i8**, i1*)
 
-declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i32*, i32*)
+declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i1*, i32*, i1*, i32*, i1*)
 
-declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i32*, i32*, i1*)
+declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i1*, i32*, i1*, i32*, i1*, i1*, i1*)
 
 declare i32 @__module_lfortran_intrinsic_builtin_int(%array*, i32*)
 

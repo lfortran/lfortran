@@ -2498,6 +2498,7 @@ llvm = true
 [[test]]
 filename = "../integration_tests/functions_15.f90"
 asr = true
+pass = "transform_optional_argument_functions"
 
 [[test]]
 filename = "../integration_tests/functions_16.f90"

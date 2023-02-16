@@ -666,28 +666,47 @@ public:
         handle_ArrayItemSection(x);
     }
 
-    void visit_SubroutineCall(const SubroutineCall_t &x) {
-        // if (x.m_dt) {
-        //     SymbolTable *symtab = get_dt_symtab(x.m_dt);
-        //     bool result = symtab_in_scope(symtab, x.m_name);
-        //     ASR::symbol_t* parent = get_parent_type_dt(x.m_dt);
-        //     while( !result && parent ) {
-        //         symtab = get_dt_symtab(parent);
-        //         result = symtab_in_scope(symtab, x.m_name);
-        //         parent = get_parent_type_dt(parent);
-        //     }
-        //     require(symtab_in_scope(symtab, x.m_name),
-        //         "SubroutineCall::m_name cannot point outside of its symbol table");
-        // } else {
-            require(symtab_in_scope(current_symtab, x.m_name),
-                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
-            if (check_external) {
-                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
-                require(ASR::is_a<ASR::Function_t>(*s) ||
-                        ASR::is_a<ASR::ClassProcedure_t>(*s),
-                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or ClassProcedure.");
+    template <typename T>
+    void verify_args(const T& x) {
+        ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
+        ASR::Function_t* func = nullptr;
+        if( func_sym && ASR::is_a<ASR::Function_t>(*func_sym) ) {
+            func = ASR::down_cast<ASR::Function_t>(func_sym);
+        }
+
+        if( func ) {
+            for (size_t i=0; i<x.n_args; i++) {
+                ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
+                if (x.m_args[i].m_value == nullptr &&
+                    (ASR::is_a<ASR::Variable_t>(*arg_sym) &&
+                        ASR::down_cast<ASR::Variable_t>(arg_sym)->m_presence !=
+                        ASR::presenceType::Optional)) {
+
+                        require(false, "Required argument " +
+                                    std::string(ASRUtils::symbol_name(arg_sym)) +
+                                    " cannot be nullptr.");
+
+                }
             }
-        // }
+        }
+
+        for (size_t i=0; i<x.n_args; i++) {
+            if( x.m_args[i].m_value ) {
+                visit_expr(*(x.m_args[i].m_value));
+            }
+        }
+    }
+
+    void visit_SubroutineCall(const SubroutineCall_t &x) {
+        require(symtab_in_scope(current_symtab, x.m_name),
+            "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
+        if (check_external) {
+            ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+            require(ASR::is_a<ASR::Function_t>(*s) ||
+                    ASR::is_a<ASR::ClassProcedure_t>(*s),
+                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or ClassProcedure.");
+        }
+
         function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
             ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
@@ -695,11 +714,8 @@ public:
                 module_dependencies.push_back(std::string(x_m_name->m_module_name));
             }
         }
-        for (size_t i=0; i<x.n_args; i++) {
-            if( x.m_args[i].m_value ) {
-                visit_expr(*(x.m_args[i].m_value));
-            }
-        }
+
+        verify_args(x);
     }
 
     SymbolTable *get_dt_symtab(ASR::symbol_t *dt) {
@@ -791,31 +807,23 @@ public:
                 module_dependencies.push_back(std::string(x_m_name->m_module_name));
             }
         }
-        // if (x.m_dt) {
-        //     SymbolTable *symtab = get_dt_symtab(x.m_dt);
-        //     require(symtab_in_scope(symtab, x.m_name),
-        //         "FunctionCall::m_name cannot point outside of its symbol table");
-        // } else {
-            require(symtab_in_scope(current_symtab, x.m_name),
-                "FunctionCall::m_name `" + std::string(symbol_name(x.m_name)) +
-                "` cannot point outside of its symbol table");
-            // Check both `name` and `orig_name` that `orig_name` points
-            // to GenericProcedure (if applicable), both external and non
-            // external
-            if (check_external) {
-                const ASR::symbol_t *fn = ASRUtils::symbol_get_past_external(x.m_name);
-                require(ASR::is_a<ASR::Function_t>(*fn) ||
-                        (ASR::is_a<ASR::Variable_t>(*fn) &&
-                        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(fn))) ||
-                        ASR::is_a<ASR::ClassProcedure_t>(*fn),
-                    "FunctionCall::m_name must be a Function or Variable with FunctionType");
-            }
-        // }
-        for (size_t i=0; i<x.n_args; i++) {
-            if( x.m_args[i].m_value ) {
-                visit_expr(*(x.m_args[i].m_value));
-            }
+
+        require(symtab_in_scope(current_symtab, x.m_name),
+            "FunctionCall::m_name `" + std::string(symbol_name(x.m_name)) +
+            "` cannot point outside of its symbol table");
+        // Check both `name` and `orig_name` that `orig_name` points
+        // to GenericProcedure (if applicable), both external and non
+        // external
+        if (check_external) {
+            const ASR::symbol_t *fn = ASRUtils::symbol_get_past_external(x.m_name);
+            require(ASR::is_a<ASR::Function_t>(*fn) ||
+                    (ASR::is_a<ASR::Variable_t>(*fn) &&
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(fn))) ||
+                    ASR::is_a<ASR::ClassProcedure_t>(*fn),
+                "FunctionCall::m_name must be a Function or Variable with FunctionType");
         }
+
+        verify_args(x);
         visit_ttype(*x.m_type);
     }
 

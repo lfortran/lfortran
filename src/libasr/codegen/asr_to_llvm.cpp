@@ -6145,6 +6145,14 @@ public:
             } else {
                 LCOMPILERS_ASSERT(false)
             }
+
+            if( x.m_args[i].m_value == nullptr ) {
+                LCOMPILERS_ASSERT(orig_arg != nullptr);
+                llvm::Type* llvm_orig_arg_type = get_type_from_ttype_t_util(orig_arg->m_type);
+                llvm::Value* llvm_arg = builder->CreateAlloca(llvm_orig_arg_type);
+                args.push_back(llvm_arg);
+                continue ;
+            }
             if (x.m_args[i].m_value->type == ASR::exprType::Var) {
                 if (is_a<ASR::Variable_t>(*symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v))) {
@@ -6704,7 +6712,7 @@ public:
             } else {
                 if (func_name == "len") {
                     args = convert_call_args(x);
-                    LCOMPILERS_ASSERT(args.size() == 1)
+                    LCOMPILERS_ASSERT(args.size() == 3)
                     tmp = lfortran_str_len(args[0]);
                     return;
                 }
