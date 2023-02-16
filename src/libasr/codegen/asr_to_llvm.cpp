@@ -230,7 +230,6 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
     bool in_block = false;
-    bool is_Exit = false;
 
     CompilerOptions &compiler_options;
 
@@ -4739,7 +4738,6 @@ public:
         if ( in_block ) {
             // If we are in a block, we need to exit the block.
             // This is done by jumping to the end of the block.
-            is_Exit = true;
             builder->CreateBr(block_end_label);
             llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
             start_new_block(bb);
