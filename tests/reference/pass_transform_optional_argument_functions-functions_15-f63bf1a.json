@@ -1,0 +1,13 @@
+{
+    "basename": "pass_transform_optional_argument_functions-functions_15-f63bf1a",
+    "cmd": "lfortran --pass=transform_optional_argument_functions --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/functions_15.f90",
+    "infile_hash": "fe57181a494efe087852239be34faa73a7a8293120406d8a7d8eb5cc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_transform_optional_argument_functions-functions_15-f63bf1a.stdout",
+    "stdout_hash": "3453c86b6ef1a9e1259176db5b4f02f2b1241d15a1556d7ea74e31c9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

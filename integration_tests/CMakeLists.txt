@@ -217,7 +217,7 @@ RUN(NAME functions_09 LABELS gfortran)
 RUN(NAME functions_10 LABELS gfortran)
 RUN(NAME functions_11 LABELS gfortran llvm wasm)
 RUN(NAME functions_13 LABELS gfortran)
-RUN(NAME functions_15 LABELS gfortran)
+RUN(NAME functions_15 LABELS gfortran llvm)
 RUN(NAME functions_16 LABELS gfortran)
 
 

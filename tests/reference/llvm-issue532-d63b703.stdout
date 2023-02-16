@@ -1,11 +1,11 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i32*, i32*, i8**)
+declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i1*, i32*, i1*, i32*, i1*, i8**, i1*)
 
-declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i32*, i32*)
+declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i1*, i32*, i1*, i32*, i1*)
 
-declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i32*, i32*, i1*)
+declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i1*, i32*, i1*, i32*, i1*, i1*, i1*)
 
 declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
 
