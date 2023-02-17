@@ -559,20 +559,91 @@ public:
                         LCOMPILERS_ASSERT(false);
                 }
                 bool is_overloaded = ASRUtils::is_op_overloaded(op, op_name, current_scope);
+                ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
                 if (is_overloaded) {
-                    ASR::Function_t *restriction = ASR::down_cast2<ASR::Function_t>(template_param);
                     ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
                     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
                     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
                     bool found = false;
-                    // TODO: do one where operations are built in
+                    // TODO: check_restriction fails right away, should be allowed to have other options
                     for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
                         ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        ASR::symbol_t* proc2 = ASRUtils::symbol_get_past_external(proc);
-                        check_restriction(subs, restriction_subs, restriction, proc2, x.base.base.loc);
+                        check_restriction(subs, restriction_subs, restriction, proc, x.base.base.loc);
                     }
+                } else {
+                    if (restriction->n_args != 2) {
+                        // TODO: error message
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    ASR::ttype_t *ltype = ASRUtils::subs_expr_type(subs, restriction->m_args[0]);
+                    ASR::ttype_t *rtype = ASRUtils::subs_expr_type(subs, restriction->m_args[1]);
+                    ASR::ttype_t *ftype = ASRUtils::subs_expr_type(subs, restriction->m_return_var);
+                    if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
+                        // TODO: error message
+                        LCOMPILERS_ASSERT(false);
+                    }
+
+                    SymbolTable *parent_scope = current_scope;
+                    current_scope = al.make_new<SymbolTable>(parent_scope);
+                    Vec<ASR::expr_t*> args;
+                    args.reserve(al, 2);
+                    for (size_t i=0; i<2; i++) {
+                        std::string var_name = "arg" + std::to_string(i);
+                        ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
+                            s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
+                            ASR::storage_typeType::Default, ASRUtils::duplicate_type(al, ltype),
+                            ASR::abiType::Source, ASR::accessType::Private, 
+                            ASR::presenceType::Required, false);
+                        current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
+                        ASR::symbol_t *var = current_scope->get_symbol(var_name);
+                        args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var)));
+                    }
+
+                    std::string func_name;
+                    ASR::expr_t *value = nullptr;
+                    switch (ltype->type) {
+                        case ASR::ttypeType::Real: {
+                            func_name = op_name + "_intrinsic_real";
+                            ASR::expr_t *lexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                                current_scope->get_symbol("arg0")));
+                            ASR::expr_t *rexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                                current_scope->get_symbol("arg1")));        
+                            value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x.base.base.loc, lexpr, op, rexpr,
+                                ASRUtils::duplicate_type(al, ltype), nullptr));
+                            break;
+                        }
+                        default:
+                            throw LCompilersException("Not implemented " + std::to_string(ltype->type));
+                    }
+
+                    ASR::asr_t *return_v = ASR::make_Variable_t(al, x.base.base.loc,
+                        current_scope, s2c(al, "ret"), nullptr, 0,
+                        ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, ltype), ASR::abiType::Source,
+                        ASR::accessType::Private, ASR::presenceType::Required, false);
+                    current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
+                    ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                        current_scope->get_symbol("ret")));
+
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
+                    ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
+                    ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
+                        target, value, nullptr));
+                    body.push_back(al, assignment);
+
+                    ASR::asr_t *op_function = ASR::make_Function_t(
+                        al, x.base.base.loc, current_scope, s2c(al, func_name),
+                        nullptr, 0, args.p, 2, body.p, 1, return_expr,
+                        ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
+                        nullptr, false, true, false, false, false, nullptr, 0, nullptr, 0, false);
+                    
+                    ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
+                    parent_scope->add_symbol(func_name, op_sym);
+                    current_scope = parent_scope;
+                    restriction_subs[restriction->m_name] = op_sym;
                 }
-                // LCOMPILERS_ASSERT(false);
             } else {
                 LCOMPILERS_ASSERT(false);
             }
