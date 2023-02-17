@@ -29,6 +29,7 @@ program nbody
     integer, parameter :: nb = 5
     integer, parameter :: N = (nb-1)*nb/2
 
+    ! workaround
     real(kind=dp) :: mass(nb)
 
     integer :: num, i
@@ -36,6 +37,7 @@ program nbody
 
     real(kind=dp) :: e, x(3,nb), v(3,nb)
 
+    ! workaround
     jupiter = body( &
         4.84143144246472090d0,    -1.16032004402742839d0, &
         -1.03622044471123109d-01, 0.d0, 1.66007664274403694d-03 * DAYS_PER_YEAR, &
@@ -73,6 +75,7 @@ program nbody
     sun = body(0.0d0, 0.0d0, 0.0d0, 0.0d0, 0.0d0, &
             0.0d0, 0.d0, 0.d0, SOLAR_MASS)
 
+    ! workaround
     mass = (/ sun%mass, jupiter%mass, saturn%mass, &
             uranus%mass, neptune%mass /)
 
@@ -94,7 +97,7 @@ program nbody
 
     call offsetMomentum(1, v, mass)
     e = energy(x, v, mass)
-    !workaround
+    ! workaround
     print *, e
     if (abs(e + 0.16907516382852447) > 1e-8) error stop
 
@@ -102,6 +105,7 @@ program nbody
         call advance(tstep, x, v, mass)
     end do
     e = energy(x, v, mass)
+    ! workaround
     print *, e
     if (abs(e + 0.16908760523460617) > 1e-8) error stop
 
@@ -115,6 +119,7 @@ program nbody
         real(kind=dp), dimension(3) :: p
         integer :: i
 
+        ! workaround
         p(1) = sum(v(1, :) * mass(:))
         p(2) = sum(v(2, :) * mass(:))
         p(3) = sum(v(3, :) * mass(:))
