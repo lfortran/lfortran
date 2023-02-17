@@ -2992,6 +2992,7 @@ public:
                             ptr->setAlignment(align);
                         }
                     }
+
                     llvm_symtab[h] = ptr;
                     fill_array_details_(ptr, m_dims, n_dims,
                         is_malloc_array_type,
@@ -6928,7 +6929,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
 
     // Uncomment for debugging the ASR after the transformation
-    // std::cout << pickle(asr, true, true, true) << std::endl;
+    // std::cout << LFortran::pickle(asr, true, true, true) << std::endl;
 
     v.nested_func_types = pass_find_nested_vars(asr, context,
         v.nested_globals, v.nested_call_out, v.nesting_map);

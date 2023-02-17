@@ -593,6 +593,8 @@ RUN(NAME nested_04 LABELS gfortran llvm)
 RUN(NAME nested_05 LABELS gfortran llvm)
 RUN(NAME nested_06 LABELS gfortran llvm)
 
+RUN(NAME nbody LABELS gfortran llvm)
+
 RUN(NAME intent_01 LABELS gfortran llvm)
 
 RUN(NAME callback_01 LABELS gfortran llvm)
