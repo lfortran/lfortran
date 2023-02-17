@@ -29,6 +29,10 @@ namespace LCompilers {
         void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, int n_dims, const Location& loc,
                              Allocator& al, SymbolTable*& current_scope, std::string suffix="_k");
 
+        void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, ASR::array_index_t* m_args, int n_dims,
+                             std::vector<int>& value_indices, const Location& loc, Allocator& al,
+                             SymbolTable*& current_scope, std::string suffix="_k");
+
         ASR::expr_t* create_compare_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
                                             ASR::cmpopType op);
 
@@ -321,7 +325,9 @@ namespace LCompilers {
 
                 void visit_Var(const ASR::Var_t& x) {
                     if( fill_variable_dependencies ) {
-                        variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
+                        if( !present(variable_dependencies, ASRUtils::symbol_name(x.m_v)) ) {
+                            variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
+                        }
                     }
                 }
 

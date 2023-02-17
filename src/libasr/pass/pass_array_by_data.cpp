@@ -210,6 +210,11 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
             is_editing_procedure = true;
             current_proc_scope = x->m_symtab;
+            for( auto& itr: x->m_symtab->get_scope() ) {
+                if( ASR::is_a<ASR::Variable_t>(*itr.second) ) {
+                    PassVisitor::visit_ttype(*ASR::down_cast<ASR::Variable_t>(itr.second)->m_type);
+                }
+            }
             for( size_t i = 0; i < x->n_body; i++ ) {
                 visit_stmt(*x->m_body[i]);
             }
@@ -351,6 +356,7 @@ class ReplaceFunctionCalls: public ASR::BaseExprReplacer<ReplaceFunctionCalls> {
             }
         }
 
+        LCOMPILERS_ASSERT(new_args.size() == ASR::down_cast<ASR::Function_t>(new_func_sym)->n_args);
         ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
                                     x->base.base.loc, new_func_sym, new_func_sym,
                                     new_args.p, new_args.size(), x->m_type, nullptr,

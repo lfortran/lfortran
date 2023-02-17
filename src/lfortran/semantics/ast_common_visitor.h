@@ -3426,9 +3426,24 @@ public:
         ASR::expr_t *a_start, *a_end, *a_increment;
         a_start = a_end = a_increment = nullptr;
         a_values_vec.reserve(al, x.n_values);
+        ASR::ttype_t* type = nullptr;
+        Vec<ASR::ttype_t*> type_tuple;
+        type_tuple.reserve(al, 1);
+        bool unique_type = true;
         for( size_t i = 0; i < x.n_values; i++ ) {
             this->visit_expr(*(x.m_values[i]));
-            a_values_vec.push_back(al, ASRUtils::EXPR(tmp));
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            ASR::ttype_t* type_ = ASRUtils::expr_type(expr);
+            if( type == nullptr ) {
+                type = type_;
+            } else {
+                if (!unique_type || !ASRUtils::types_equal(type_, type)) {
+                    unique_type = false;
+                }
+            }
+            type_tuple.push_back(al, type_);
+
+            a_values_vec.push_back(al, expr);
         }
         this->visit_expr(*(x.m_start));
         a_start = ASRUtils::EXPR(tmp);
@@ -3447,9 +3462,12 @@ public:
                 to_lower(x.m_var) + "' is not declared", x.base.base.loc);
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        if( !unique_type ) {
+            type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
+        }
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
-                                            a_var, a_start, a_end, a_increment,
-                                            ASRUtils::expr_type(a_start), nullptr);
+                                        a_var, a_start, a_end, a_increment,
+                                        type, nullptr);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
