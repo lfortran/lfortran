@@ -218,13 +218,17 @@ public:
 
 
     void visit_Program(const ASR::Program_t &x) {
+        uint64_t cur_func_hash_copy = cur_func_hash;
         cur_func_hash = get_hash((ASR::asr_t*)&x);
         visit_procedure(x);
+        cur_func_hash = cur_func_hash_copy;
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        uint64_t cur_func_hash_copy = cur_func_hash;
         cur_func_hash = get_hash((ASR::asr_t*)&x);
         visit_procedure(x);
+        cur_func_hash = cur_func_hash_copy;
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
