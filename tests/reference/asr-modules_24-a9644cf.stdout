@@ -12,7 +12,7 @@
                                     7
                                     parse_select
                                     2 parse_select
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_24
                                     []
                                     parse_select
                                     Public
@@ -60,7 +60,7 @@
                                     7
                                     toml_table
                                     2 toml_table
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_24
                                     []
                                     toml_table
                                     Public
@@ -70,7 +70,7 @@
                                     7
                                     toml_tokenizer
                                     2 toml_tokenizer
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_24
                                     []
                                     toml_tokenizer
                                     Public
@@ -80,14 +80,14 @@
                                     7
                                     toml_tokenizer_
                                     2 toml_tokenizer_
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_24
                                     []
                                     toml_tokenizer_
                                     Public
                                 )
                         })
                     modules_24
-                    [tomlf_de_tokenizer]
+                    [tomlf_de_tokenizer_24]
                     [(=>
                         (Var 7 tokenizer_ptr)
                         (Var 7 tokenizer)
@@ -99,7 +99,7 @@
                         ()
                     )]
                 ),
-            tomlf_de_tokenizer:
+            tomlf_de_tokenizer_24:
                 (Module
                     (SymbolTable
                         2
@@ -291,7 +291,7 @@
                                     2 toml_tokenizer
                                 )
                         })
-                    tomlf_de_tokenizer
+                    tomlf_de_tokenizer_24
                     []
                     .false.
                     .false.
