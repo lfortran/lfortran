@@ -1,4 +1,4 @@
-module tomlf_de_tokenizer
+module tomlf_de_tokenizer_25
     implicit none
     private
 
@@ -37,4 +37,4 @@ module tomlf_de_tokenizer
 
     end subroutine parse_select
 
-end module tomlf_de_tokenizer
+end module tomlf_de_tokenizer_25

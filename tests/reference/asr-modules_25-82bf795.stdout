@@ -22,7 +22,7 @@
                                     2
                                     parse_select
                                     8 parse_select
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_25
                                     []
                                     parse_select
                                     Public
@@ -42,7 +42,7 @@
                                     2
                                     toml_table
                                     8 toml_table
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_25
                                     []
                                     toml_table
                                     Public
@@ -52,7 +52,7 @@
                                     2
                                     toml_tokenizer
                                     8 toml_tokenizer
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_25
                                     []
                                     toml_tokenizer
                                     Public
@@ -62,7 +62,7 @@
                                     2
                                     toml_tokenizer_
                                     8 toml_tokenizer_
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_25
                                     []
                                     toml_tokenizer_
                                     Public
@@ -156,7 +156,7 @@
                                     4
                                     parse_select
                                     8 parse_select
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_25
                                     []
                                     parse_select
                                     Public
@@ -207,7 +207,7 @@
                                     4
                                     toml_table
                                     8 toml_table
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_25
                                     []
                                     toml_table
                                     Public
@@ -217,7 +217,7 @@
                                     4
                                     toml_tokenizer
                                     8 toml_tokenizer
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_25
                                     []
                                     toml_tokenizer
                                     Public
@@ -227,18 +227,18 @@
                                     4
                                     toml_tokenizer_
                                     8 toml_tokenizer_
-                                    tomlf_de_tokenizer
+                                    tomlf_de_tokenizer_25
                                     []
                                     toml_tokenizer_
                                     Public
                                 )
                         })
                     tomlf_de_character
-                    [tomlf_de_tokenizer]
+                    [tomlf_de_tokenizer_25]
                     .true.
                     .false.
                 ),
-            tomlf_de_tokenizer:
+            tomlf_de_tokenizer_25:
                 (Module
                     (SymbolTable
                         8
@@ -505,7 +505,7 @@
                                     8 toml_tokenizer
                                 )
                         })
-                    tomlf_de_tokenizer
+                    tomlf_de_tokenizer_25
                     []
                     .true.
                     .false.

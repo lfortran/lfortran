@@ -1,5 +1,5 @@
 module tomlf_de_character
-   use tomlf_de_tokenizer
+   use tomlf_de_tokenizer_25
    implicit none
    private
 

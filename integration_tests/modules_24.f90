@@ -1,4 +1,4 @@
-module tomlf_de_tokenizer
+module tomlf_de_tokenizer_24
     implicit none
 
     type :: toml_table
@@ -24,10 +24,10 @@ module tomlf_de_tokenizer
 
     end subroutine parse_select
 
-end module tomlf_de_tokenizer
+end module tomlf_de_tokenizer_24
 
 program modules_24
-use tomlf_de_tokenizer
+use tomlf_de_tokenizer_24
 implicit none
 type(toml_tokenizer_), target :: tokenizer
 class(toml_tokenizer), pointer :: tokenizer_ptr

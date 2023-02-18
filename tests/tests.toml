@@ -1030,6 +1030,11 @@ asr = true
 extrafiles = "../integration_tests/derived_types_14_module.f90"
 
 [[test]]
+filename = "../integration_tests/derived_types_19.f90"
+asr = true
+extrafiles = "../integration_tests/derived_types_19_module.f90"
+
+[[test]]
 filename = "derived_types_07.f90"
 asr = true
 
