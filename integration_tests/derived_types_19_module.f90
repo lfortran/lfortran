@@ -1,4 +1,4 @@
-module a_foo
+module derived_types_module_19
     implicit none
 
     public :: child_value
@@ -46,4 +46,4 @@ module a_foo
        print *, "default class"
     end subroutine
 
- end module a_foo
+ end module derived_types_module_19

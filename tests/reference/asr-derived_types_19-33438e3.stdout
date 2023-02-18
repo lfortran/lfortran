@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            a_foo:
+            derived_types_module_19:
                 (Module
                     (SymbolTable
                         4
@@ -91,7 +91,23 @@
                                                 )
                                         })
                                     check_proc
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [not_ok
+                                    not_ok
                                     default_class]
                                     []
                                     [(If
@@ -120,18 +136,7 @@
                                         []
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             child_value:
                                 (StructType
@@ -171,6 +176,21 @@
                                             
                                         })
                                     default_class
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(Print
@@ -183,18 +203,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             new:
                                 (GenericProcedure
@@ -211,6 +220,21 @@
                                             
                                         })
                                     not_ok
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(Print
@@ -223,18 +247,7 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             toml_value:
                                 (StructType
@@ -267,12 +280,12 @@
                                     ()
                                 )
                         })
-                    a_foo
+                    derived_types_module_19
                     []
                     .true.
                     .false.
                 ),
-            d_foo:
+            derived_types_module_19_1:
                 (Module
                     (SymbolTable
                         2
@@ -285,6 +298,21 @@
                                             
                                         })
                                     check_here
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [check_proc]
                                     []
                                     [(SubroutineCall
@@ -294,34 +322,42 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
-                                    .false.
                                 ),
                             check_proc:
                                 (ExternalSymbol
                                     2
                                     check_proc
                                     4 check_proc
-                                    a_foo
+                                    derived_types_module_19
                                     []
                                     check_proc
                                     Public
                                 )
                         })
-                    d_foo
-                    [a_foo]
+                    derived_types_module_19_1
+                    [derived_types_module_19]
                     .false.
                     .false.
+                ),
+            main:
+                (Program
+                    (SymbolTable
+                        12
+                        {
+                            
+                        })
+                    main
+                    []
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "running derived_types_19 main program"
+                            (Character 1 37 () [])
+                        )]
+                        ()
+                        ()
+                    )]
                 )
         })
     []
