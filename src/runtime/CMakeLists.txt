@@ -4,7 +4,12 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(lfortran_unif_runtime C Fortran)
 
-add_subdirectory(legacy)
+set(LFORTRAN_NESTED_BUILD no
+    CACHE BOOL "Whether we are being called from the LFortran build system")
+
+if(NOT LFORTRAN_NESTED_BUILD)
+  add_subdirectory(legacy)
+endif()
 
 # See the TODO in the installation step below
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR})

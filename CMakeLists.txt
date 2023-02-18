@@ -316,6 +316,7 @@ message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 add_subdirectory(src)
 
 # This is called after lfortran has been installed
+# For more info https://stackoverflow.com/a/29979349/16568788
 if (WITH_RUNTIME_LIBRARY)
   add_subdirectory(cmake/postinstall)
 
@@ -328,4 +329,5 @@ if (WITH_RUNTIME_LIBRARY)
   install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
   install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
   install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
+  install(CODE "set(CMAKE_BUILD_PARALLEL_LEVEL \"${CMAKE_BUILD_PARALLEL_LEVEL}\")")
 endif()
