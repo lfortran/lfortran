@@ -512,8 +512,13 @@ public:
                 }
                 doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc, head, doloop_body.p, doloop_body.size()));
             }
-            pass_result.push_back(al, doloop);
-            tmp_val = nullptr;
+            if (n_dims > 0) {
+                pass_result.push_back(al, doloop);
+                tmp_val = nullptr;
+            } else {
+                // Assignment's value is a scalar (RealConstant)
+                tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+            }
         }
     }
 
