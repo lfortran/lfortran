@@ -60,6 +60,26 @@ jobs:
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\build_tmp.xsh
 
+      - name: Build (iOS)
+        shell: bash -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            xonsh ci/build_ios.xsh
+
+      - name: Build (Linux x86_64 -> arm64 cross compiler)
+        shell: bash -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            sudo apt-get -y install gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu g++-aarch64-linux-gnu
+            xonsh ci/build_linux_x86_64_arm64_cross_compiler.xsh
+
+      - name: Test (Linux x86_64 -> arm64 cross compiler)
+        shell: bash -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            sudo apt-get -y install qemu-user-static qemu-user libc6-arm64-cross
+            xonsh ci/test_cross_compilation_linux_x86_arm64.xsh
+
       - name: Test (Linux / macOS)
         shell: bash -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -166,10 +186,16 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -262,10 +288,16 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -303,10 +335,16 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -344,12 +382,19 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
             cmake --build . -j16 --target install
+
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
+
+            cmake --build . -j16 --target install
+
 
       - name: Test Linux
         shell: bash -l {0}
@@ -399,10 +444,16 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -500,10 +551,16 @@ jobs:
               -DWITH_LLVM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_LIBRARY=No \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+            cmake . -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+              -DWITH_RUNTIME_LIBRARY=Yes
 
             cmake --build . -j16 --target install
 
@@ -570,12 +627,18 @@ jobs:
             -DCMAKE_BUILD_TYPE=Debug \
             -DWITH_LLVM=yes \
             -DWITH_XEUS=yes \
+            -DWITH_RUNTIME_LIBRARY=No \
             -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
             -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-          ninja install
+          cmake --build . -j16 --target install
+
+          cmake . -DCMAKE_Fortran_COMPILER="${CONDA_PREFIX}/bin/lfortran" \
+            -DWITH_RUNTIME_LIBRARY=Yes
+
+          cmake --build . -j16 --target install
           ctest --output-on-failure
           jupyter kernelspec list --json
 

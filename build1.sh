@@ -12,3 +12,9 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
     .
 cmake --build . -j16 --target install
+
+cmake \
+    -DCMAKE_Fortran_COMPILER=`pwd`/inst/bin/lfortran \
+    -DWITH_RUNTIME_LIBRARY=Yes \
+    .
+cmake --build . -j16 --target install

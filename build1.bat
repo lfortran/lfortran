@@ -7,3 +7,9 @@ cmake ^
     -DCMAKE_INSTALL_PREFIX=%cd%/inst ^
     .
 cmake --build . --config Release -j2 --target install
+
+cmake ^
+    -DCMAKE_Fortran_COMPILER=%cd%/inst/bin/lfortran ^
+    -DWITH_RUNTIME_LIBRARY=Yes ^
+    .
+cmake --build . --config Release -j2 --target install
