@@ -282,6 +282,40 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         for (auto wasi_func:wasi_imports_funcs) {
             import_function(wasi_func, "wasi_snapshot_preview1");
         }
+
+        // In WASM: The indices of the imports precede the indices of other
+        // definitions in the same index space. Therefore, declare the import
+        // functions before defined functions
+        for (auto &item : global_scope->get_scope()) {
+            if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
+                for (auto &item : p->m_symtab->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                        ASR::Function_t *fn =
+                            ASR::down_cast<ASR::Function_t>(item.second);
+                        if (ASRUtils::get_FunctionType(fn)->m_abi == ASR::abiType::BindC &&
+                            ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface &&
+                            !ASRUtils::is_intrinsic_function2(fn)) {
+                            wasm::emit_import_fn(m_import_section, m_al, "js",
+                                                 fn->m_name, no_of_types);
+                            no_of_imports++;
+                            emit_function_prototype(*fn);
+                        }
+                    }
+                }
+            } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *fn =
+                    ASR::down_cast<ASR::Function_t>(item.second);
+                if (ASRUtils::get_FunctionType(fn)->m_abi == ASR::abiType::BindC &&
+                    ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface &&
+                    !ASRUtils::is_intrinsic_function2(fn)) {
+                    wasm::emit_import_fn(m_import_section, m_al, "js",
+                                            fn->m_name, no_of_types);
+                    no_of_imports++;
+                    emit_function_prototype(*fn);
+                }
+            }
+        }
     }
 
     void emit_if_else(std::function<void()> test_cond, std::function<void()> if_block, std::function<void()> else_block) {
