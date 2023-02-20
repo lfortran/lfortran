@@ -82,7 +82,7 @@ macro(RUN)
                 message(STATUS "${WASM_EXEC_RUNTIME} version: ${WASM_EXEC_VERSION}")
                 set(WASM_EXEC_FLAGS "--experimental-wasm-bigint")
             endif()
-
+            set(WASM_EXEC_FLAGS ${WASM_EXEC_FLAGS} "--experimental-wasi-unstable-preview1")
             add_test(${name} ${WASM_EXEC_RUNTIME} ${WASM_EXEC_FLAGS} ${CURRENT_BINARY_DIR}/${name}.js)
         elseif (LFORTRAN_BACKEND STREQUAL "llvm2")
             add_executable(${name} ${name}.f90 ${RUN_EXTRAFILES})
