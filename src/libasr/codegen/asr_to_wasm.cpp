@@ -524,7 +524,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         wasm::emit_get_local(m_code_section, m_al, 0);
         wasm::emit_i64_trunc_f64_s(m_code_section, m_al);
-        wasm::emit_call(m_code_section, m_al, 2 /* print_i64 */);
+        wasm::emit_call(m_code_section, m_al, no_of_imports /* print_i64 */);
         emit_call_fd_write(1, ".", 1, 0);
 
         wasm::emit_get_local(m_code_section, m_al, 0);
@@ -575,7 +575,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         });
 
         wasm::emit_get_local(m_code_section, m_al, 3);
-        wasm::emit_call(m_code_section, m_al, 2 /* print_i64 */);
+        wasm::emit_call(m_code_section, m_al, no_of_imports /* print_i64 */);
 
         wasm::emit_b8(m_code_section, m_al, 0x0F);  // emit wasm return instruction
         wasm::emit_expr_end(m_code_section, m_al);
@@ -2368,11 +2368,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 switch (a_kind) {
                     case 4: {
                         wasm::emit_i64_extend_i32_s(m_code_section, m_al);
-                        wasm::emit_call(m_code_section, m_al, 2 /* print_i64 */);
+                        wasm::emit_call(m_code_section, m_al, no_of_imports /* print_i64 */);
                         break;
                     }
                     case 8: {
-                        wasm::emit_call(m_code_section, m_al, 2  /* print_i64 */);
+                        wasm::emit_call(m_code_section, m_al, no_of_imports  /* print_i64 */);
                         break;
                     }
                     default: {
@@ -2386,11 +2386,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 switch (a_kind) {
                     case 4: {
                         wasm::emit_f64_promote_f32(m_code_section, m_al);
-                        wasm::emit_call(m_code_section, m_al, 3  /* print_f64 */);
+                        wasm::emit_call(m_code_section, m_al, no_of_imports + 1  /* print_f64 */);
                         break;
                     }
                     case 8: {
-                        wasm::emit_call(m_code_section, m_al, 3  /* print_f64 */);
+                        wasm::emit_call(m_code_section, m_al, no_of_imports + 1  /* print_f64 */);
                         break;
                     }
                     default: {
