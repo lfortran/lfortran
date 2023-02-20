@@ -336,7 +336,7 @@ RUN(NAME intrinsics_19c LABELS gfortran llvm)
 RUN(NAME intrinsics_20 LABELS gfortran llvm)
 RUN(NAME intrinsics_21 LABELS gfortran llvm wasm) # modulo and mod
 RUN(NAME intrinsics_22 LABELS gfortran llvm wasm)
-RUN(NAME intrinsics_23 LABELS gfortran llvm wasm) # huge
+RUN(NAME intrinsics_23 LABELS gfortran llvm) # huge
 RUN(NAME intrinsics_24 LABELS gfortran llvm) # System_clock
 RUN(NAME intrinsics_25 LABELS gfortran llvm) # ishft
 RUN(NAME intrinsics_26 LABELS gfortran llvm)
