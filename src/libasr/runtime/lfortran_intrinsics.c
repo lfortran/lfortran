@@ -919,7 +919,7 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int3
     return dest_char;
 }
 
-LFORTRAN_API int _lfortran_str_len(char** s)
+LFORTRAN_API int32_t _lfortran_str_len(char** s)
 {
     return strlen(*s);
 }

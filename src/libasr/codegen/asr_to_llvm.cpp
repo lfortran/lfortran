@@ -6674,6 +6674,7 @@ public:
         if (parent_function){
             push_nested_stack(parent_function);
         }
+        std::string sub_name = s->m_name;
         uint32_t h;
         ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(s->m_function_signature);
         if (s_func_type->m_abi == ASR::abiType::LFortranModule) {
@@ -6685,10 +6686,28 @@ public:
         } else if (s_func_type->m_abi == ASR::abiType::BindC) {
             h = get_hash((ASR::asr_t*)s);
         } else if (s_func_type->m_abi == ASR::abiType::Intrinsic) {
+            if (sub_name == "get_command_argument") {
+                llvm::Function *fn = module->getFunction("_lpython_get_argv");
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        character_type, {
+                            llvm::Type::getInt32Ty(context)
+                        }, false);
+                    fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, "_lpython_get_argv", *module);
+                }
+                args = convert_call_args(x);
+                LCOMPILERS_ASSERT(args.size() > 0);
+                tmp = builder->CreateCall(fn, {CreateLoad(args[0])});
+                if (args.size() > 1)
+                    builder->CreateStore(tmp, args[1]);
+                return;
+            }
             h = get_hash((ASR::asr_t*)s);
         } else {
             throw CodeGenError("ABI type not implemented yet in SubroutineCall.");
         }
+
         if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
