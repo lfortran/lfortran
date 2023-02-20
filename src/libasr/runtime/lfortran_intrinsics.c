@@ -10,8 +10,8 @@
 #include <limits.h>
 #include <ctype.h>
 
-#include "lfortran_intrinsics.h"
-#include "../config.h"
+#include <libasr/runtime/lfortran_intrinsics.h>
+#include <libasr/config.h>
 
 #ifdef HAVE_RUNTIME_STACKTRACE
 
