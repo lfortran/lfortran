@@ -68,6 +68,7 @@ std::vector<std::string> determine_module_dependencies(
 std::vector<std::string> determine_function_definition_order(
         SymbolTable* symtab) {
     std::map<std::string, std::vector<std::string>> func_dep_graph;
+    ASR::symbol_t *sym;
     for( auto itr: symtab->get_scope() ) {
         if( ASR::is_a<ASR::Function_t>(*itr.second) ) {
             std::vector<std::string> deps;
@@ -78,7 +79,8 @@ std::vector<std::string> determine_function_definition_order(
                 // This will help us to include only local dependencies, and we
                 // assume that dependencies in the parent symtab are already declared
                 // earlier.
-                if (symtab->get_symbol(dep) != nullptr)
+                sym = symtab->get_symbol(dep);
+                if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym))
                     deps.push_back(dep);
             }
             func_dep_graph[itr.first] = deps;
@@ -795,6 +797,8 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
                 intrinsic_op_name) != nullptr) {
             result = true;
         } else {
+        result = false;
+        result = false;
             result = false;
         }
     }

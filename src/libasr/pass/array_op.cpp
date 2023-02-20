@@ -134,7 +134,8 @@ public:
             nullptr, s_func_type->m_abi, s->m_access, s_func_type->m_deftype,
             nullptr, false, false, false, s_func_type->m_inline, s_func_type->m_static,
             s_func_type->m_type_params, s_func_type->n_type_params, s_func_type->m_restrictions,
-            s_func_type->n_restrictions, s_func_type->m_is_restriction);
+            s_func_type->n_restrictions, s_func_type->m_is_restriction, s->m_deterministic,
+             s->m_side_effect_free);
         ASR::symbol_t* s_sub = ASR::down_cast<ASR::symbol_t>(s_sub_asr);
         return s_sub;
     }
@@ -425,6 +426,30 @@ public:
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t& x) {
+        tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+    }
+
+    void visit_ListLen(const ASR::ListLen_t& x) {
+        tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+    }
+
+    void visit_ListItem(const ASR::ListItem_t& x) {
+        tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+    }
+
+    void visit_GetPointer(const ASR::GetPointer_t& x) {
+        tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+    }
+
+    void visit_EnumValue(const ASR::EnumValue_t& x) {
+        tmp_val = const_cast<ASR::expr_t*>(&(x.base));
+    }
+
+    void visit_ListConstant(const ASR::ListConstant_t& x) {
         tmp_val = const_cast<ASR::expr_t*>(&(x.base));
     }
 

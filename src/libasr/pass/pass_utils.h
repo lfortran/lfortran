@@ -54,7 +54,7 @@ namespace LCompilers {
         ASR::expr_t* create_auxiliary_variable_for_expr(ASR::expr_t* expr, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::stmt_t*& assign_stmt);
 
-        ASR::expr_t* create_auxiliary_variable(Location& loc, std::string& name,
+        ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
             ASR::intentType var_intent=ASR::intentType::Local);
 

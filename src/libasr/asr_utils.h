@@ -141,6 +141,9 @@ static inline ASR::abiType symbol_abi(const ASR::symbol_t *f)
         case ASR::symbolType::EnumType: {
             return ASR::down_cast<ASR::EnumType_t>(f)->m_abi;
         }
+        case ASR::symbolType::ExternalSymbol: {
+            return symbol_abi(ASR::down_cast<ASR::ExternalSymbol_t>(f)->m_external);
+        }
         default: {
             throw LCompilersException("Cannot return ABI of, " +
                                     std::to_string(f->type) + " symbol.");
@@ -486,7 +489,8 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
             return ASRUtils::get_asr_owner(ASR::down_cast<ASR::Var_t>(expr)->m_v);
         }
         case ASR::exprType::StructInstanceMember: {
-            return ASRUtils::get_asr_owner(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+            return ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m));
         }
         case ASR::exprType::GetPointer: {
             return ASRUtils::get_asr_owner(ASR::down_cast<ASR::GetPointer_t>(expr)->m_arg);
@@ -2002,6 +2006,17 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b) {
                 }
                 return false;
             }
+            case (ASR::ttypeType::Union) : {
+                ASR::Union_t *a2 = ASR::down_cast<ASR::Union_t>(a);
+                ASR::Union_t *b2 = ASR::down_cast<ASR::Union_t>(b);
+                ASR::UnionType_t *a2_type = ASR::down_cast<ASR::UnionType_t>(
+                                                ASRUtils::symbol_get_past_external(
+                                                    a2->m_union_type));
+                ASR::UnionType_t *b2_type = ASR::down_cast<ASR::UnionType_t>(
+                                                ASRUtils::symbol_get_past_external(
+                                                    b2->m_union_type));
+                return a2_type == b2_type;
+            }
             default : return false;
         }
     } else if( a->type == ASR::ttypeType::Struct &&
@@ -2439,7 +2454,7 @@ static inline bool present(Vec<ASR::symbol_t*> &v, const ASR::symbol_t* name) {
 
 // Singleton LabelGenerator so that it generates
 // unique labels for different statements, from
-// whereever it is called (be it ASR passes, be it
+// wherever it is called (be it ASR passes, be it
 // AST to ASR transition, etc).
 class LabelGenerator {
     private:
@@ -2639,7 +2654,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
     bool m_module, bool m_inline, bool m_static, ASR::ttype_t** m_type_params,
     size_t n_type_params, ASR::symbol_t** m_restrictions, size_t n_restrictions,
-    bool m_is_restriction) {
+    bool m_is_restriction, bool m_deterministic, bool m_side_effect_free) {
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     for( size_t i = 0; i < n_args; i++ ) {
@@ -2656,7 +2671,8 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
         m_is_restriction));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
-        a_args, n_args, m_body, n_body, m_return_var, m_access);
+        a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
+         m_side_effect_free);
 }
 
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,

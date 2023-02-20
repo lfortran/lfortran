@@ -43,6 +43,38 @@ struct SymbolInfo
     bool intrinsic_function = false;
 };
 
+struct DeclarationOptions {
+};
+
+struct CDeclarationOptions: public DeclarationOptions {
+    bool pre_initialise_derived_type;
+    bool use_ptr_for_derived_type;
+    bool use_static;
+    bool force_declare;
+    std::string force_declare_name;
+    bool declare_as_constant;
+    std::string const_name;
+
+    CDeclarationOptions() :
+    pre_initialise_derived_type{true},
+    use_ptr_for_derived_type{true},
+    use_static{true},
+    force_declare{false},
+    force_declare_name{""},
+    declare_as_constant{false},
+    const_name{""} {
+    }
+};
+
+struct CPPDeclarationOptions: public DeclarationOptions {
+    bool use_static;
+    bool use_templates_for_arrays;
+
+    CPPDeclarationOptions() :
+    use_static{true},
+    use_templates_for_arrays{false} {
+    }
+};
 
 template <class Struct>
 class BaseCCPPVisitor : public ASR::BaseVisitor<Struct>
@@ -83,6 +115,7 @@ public:
     std::unique_ptr<CCPPDSUtils> c_ds_api;
     std::string const_name;
     size_t const_vars_count;
+    size_t loop_end_count;
 
     SymbolTable* current_scope;
     bool is_string_concat_present;
@@ -95,7 +128,8 @@ public:
         is_c{is_c}, global_scope{nullptr}, lower_bound{default_lower_bound},
         template_number{0}, c_ds_api{std::make_unique<CCPPDSUtils>(is_c, platform)},
         const_name{"constname"},
-        const_vars_count{0}, is_string_concat_present{false} {
+        const_vars_count{0}, loop_end_count{0},
+        is_string_concat_present{false} {
         }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
@@ -376,9 +410,14 @@ R"(#include <stdio.h>
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
             if( is_c ) {
-                func += self().convert_variable_decl(*arg, false);
+                CDeclarationOptions c_decl_options;
+                c_decl_options.pre_initialise_derived_type = false;
+                func += self().convert_variable_decl(*arg, &c_decl_options);
             } else {
-                func += self().convert_variable_decl(*arg, false, true);
+                CPPDeclarationOptions cpp_decl_options;
+                cpp_decl_options.use_static = false;
+                cpp_decl_options.use_templates_for_arrays = true;
+                func += self().convert_variable_decl(*arg, &cpp_decl_options);
             }
             if (i < x.n_args-1) func += ", ";
         }
@@ -443,6 +482,7 @@ R"(#include <stdio.h>
             std::string indent(indentation_level*indentation_spaces, ' ');
             std::string decl;
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+            bool has_typevar = false;
             for (auto &item : var_order) {
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
                 if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
@@ -455,7 +495,16 @@ R"(#include <stdio.h>
                             decl += ";\n";
                         }
                     }
+                    if (ASR::is_a<ASR::TypeParameter_t>(*v->m_type)) {
+                        has_typevar = true;
+                        break;
+                    }
                 }
+            }
+            if (has_typevar) {
+                indentation_level -= 1;
+                src = "";
+                return;
             }
 
             current_function = &x;
@@ -616,7 +665,8 @@ R"(#include <stdio.h>
         bool alloc_return_var = false;
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-            visit_Var(*ASR::down_cast<ASR::Var_t>(x.m_target));
+            ASR::Var_t* x_m_target = ASR::down_cast<ASR::Var_t>(x.m_target);
+            visit_Var(*x_m_target);
             target = src;
             if (!is_c && ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
                 target += "->data";
@@ -731,8 +781,7 @@ R"(#include <stdio.h>
                 std::string alloc = "";
                 if (alloc_return_var) {
                     // char * return variable;
-                     alloc = indent + target + " = " + "(char *) malloc((strlen(" +
-                                    value + ") + 1 ) * sizeof(char));\n";
+                     alloc = indent + target + " = NULL;\n";
                 }
                 if( ASRUtils::is_array(m_target_type) && ASRUtils::is_array(m_value_type) ) {
                     ASR::dimension_t* m_target_dims = nullptr;
@@ -798,9 +847,9 @@ R"(#include <stdio.h>
             if (s[idx] == '\n') {
                 src += "\\n";
             } else if (s[idx] == '\\') {
-                src += "\\\\";
+                src += "\\";
             } else if (s[idx] == '\"') {
-                src += "\\\"";
+                src += "\"";
             } else {
                 src += s[idx];
             }
@@ -844,7 +893,12 @@ R"(#include <stdio.h>
         for( size_t i = 0; i < x.n_args; i++ ) {
             self().visit_expr(*x.m_args[i]);
             if( ASR::is_a<ASR::Character_t>(*t->m_type) ) {
-                src_tmp += indent + var_name + ".data[" + std::to_string(i) +"] = (char*) malloc(40 * sizeof(char));\n";
+                src_tmp += indent + var_name + ".data[" + std::to_string(i) +"] = NULL;\n";
+            }
+            if (ASR::is_a<ASR::ListConstant_t>(*x.m_args[i]) ||
+                    ASR::is_a<ASR::TupleConstant_t>(*x.m_args[i])) {
+                src_tmp += src;
+                src = const_var_names[get_hash((ASR::asr_t*)x.m_args[i])];
             }
             src_tmp += indent + c_ds_api->get_deepcopy(t->m_type, src,
                         var_name + ".data[" + std::to_string(i) +"]") + "\n";
@@ -869,7 +923,7 @@ R"(#include <stdio.h>
             self().visit_expr(*x.m_elements[i]);
             std::string ele = ".element_" + std::to_string(i);
             if (ASR::is_a<ASR::Character_t>(*t->m_type[i])) {
-                src_tmp += indent + var_name + ele + " = (char*) malloc(40 * sizeof(char));\n";
+                src_tmp += indent + var_name + ele + " = NULL;\n";
             }
             src_tmp += indent + c_ds_api->get_deepcopy(t->m_type[i], src, var_name + ele) + "\n";
         }
@@ -955,12 +1009,12 @@ R"(#include <stdio.h>
         const_name += std::to_string(const_vars_count);
         const_vars_count += 1;
         const_name = current_scope->get_unique_name(const_name);
-        std::string var_name = const_name, tmp_src = "";
-        tmp_src = indent + list_type_c + "* " + var_name + " = ";
-        tmp_src += list_section_func + "(&" + list_var + ", " + left + ", " +
+        std::string var_name = const_name, tmp_src_gen = "";
+        tmp_src_gen = indent + list_type_c + "* " + var_name + " = ";
+        tmp_src_gen += list_section_func + "(&" + list_var + ", " + left + ", " +
             right + ", " + step + ", " + l_present + ", " + r_present + ");\n";
         const_var_names[get_hash((ASR::asr_t*)&x)] = var_name;
-        src = tmp_src;
+        src = tmp_src_gen;
     }
 
     void visit_ListClear(const ASR::ListClear_t& x) {
@@ -1758,6 +1812,7 @@ R"(#include <stdio.h>
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         std::string current_body_copy = current_body;
         current_body = "";
+        std::string loop_end_decl = "";
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "for (";
         ASR::Variable_t *loop_var = ASRUtils::EXPR2VAR(x.m_head.m_v);
@@ -1768,34 +1823,55 @@ R"(#include <stdio.h>
         LCOMPILERS_ASSERT(a);
         LCOMPILERS_ASSERT(b);
         int increment;
+        bool is_c_constant = false;
         if (!c) {
             increment = 1;
+            is_c_constant = true;
         } else {
-            c = ASRUtils::expr_value(c);
-            bool is_c_constant = ASRUtils::extract_value(c, increment);
-            if( !is_c_constant ) {
-                throw CodeGenError("Do loop increment type not supported");
-            }
-        }
-        std::string cmp_op;
-        if (increment > 0) {
-            cmp_op = "<=";
-        } else {
-            cmp_op = ">=";
+            ASR::expr_t* c_value = ASRUtils::expr_value(c);
+            is_c_constant = ASRUtils::extract_value(c_value, increment);
         }
 
-        out += lvname + "=";
-        self().visit_expr(*a);
-        out += src + "; " + lvname + cmp_op;
-        self().visit_expr(*b);
-        out += src + "; " + lvname;
-        if (increment == 1) {
-            out += "++";
-        } else if (increment == -1) {
-            out += "--";
+        if( is_c_constant ) {
+            std::string cmp_op;
+            if (increment > 0) {
+                cmp_op = "<=";
+            } else {
+                cmp_op = ">=";
+            }
+
+            out += lvname + "=";
+            self().visit_expr(*a);
+            out += src + "; " + lvname + cmp_op;
+            self().visit_expr(*b);
+            out += src + "; " + lvname;
+            if (increment == 1) {
+                out += "++";
+            } else if (increment == -1) {
+                out += "--";
+            } else {
+                out += "+=" + std::to_string(increment);
+            }
         } else {
-            out += "+=" + std::to_string(increment);
+            this->visit_expr(*c);
+            std::string increment_ = std::move(src);
+            self().visit_expr(*b);
+            std::string do_loop_end = std::move(src);
+            std::string do_loop_end_name = current_scope->get_unique_name(
+                "loop_end___" + std::to_string(loop_end_count));
+            loop_end_count += 1;
+            loop_end_decl = indent + CUtils::get_c_type_from_ttype_t(ASRUtils::expr_type(b), is_c) +
+                            " " + do_loop_end_name + " = " + do_loop_end + ";\n";
+            out += lvname + " = ";
+            self().visit_expr(*a);
+            out += src + "; ";
+            out += "((" + increment_ + " >= 0) && (" +
+                    lvname + " <= " + do_loop_end_name + ")) || (("
+                    + increment_ + " < 0) && (" + lvname + " >= "
+                    + do_loop_end_name + ")); " + lvname;
+            out += " += " + increment_;
         }
+
         out += ") {\n";
         indentation_level += 1;
         for (size_t i=0; i<x.n_body; i++) {
@@ -1805,7 +1881,7 @@ R"(#include <stdio.h>
         out += current_body;
         out += indent + "}\n";
         indentation_level -= 1;
-        src = out;
+        src = loop_end_decl + out;
         current_body = current_body_copy;
     }
 
