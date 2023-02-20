@@ -153,6 +153,8 @@
                                     )]
                                     (Var 7 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             insert_t:
                                 (Function
@@ -282,6 +284,8 @@
                                     )]
                                     (Var 4 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             t:
                                 (StructType
@@ -430,6 +434,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     template_array_01_m

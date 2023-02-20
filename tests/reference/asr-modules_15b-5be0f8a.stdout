@@ -128,6 +128,8 @@
                                     []
                                     (Var 71 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             call_fortran_f32_value:
                                 (Function
@@ -186,6 +188,8 @@
                                     []
                                     (Var 72 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             call_fortran_f64:
                                 (Function
@@ -244,6 +248,8 @@
                                     []
                                     (Var 73 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             call_fortran_f64_value:
                                 (Function
@@ -302,6 +308,8 @@
                                     []
                                     (Var 74 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             call_fortran_i32:
                                 (Function
@@ -360,6 +368,8 @@
                                     []
                                     (Var 67 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             call_fortran_i32_value:
                                 (Function
@@ -418,6 +428,8 @@
                                     []
                                     (Var 68 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             call_fortran_i64:
                                 (Function
@@ -476,6 +488,8 @@
                                     []
                                     (Var 69 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             call_fortran_i64_value:
                                 (Function
@@ -534,6 +548,8 @@
                                     []
                                     (Var 70 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_double_complex_value_return:
                                 (Function
@@ -592,6 +608,8 @@
                                     []
                                     (Var 44 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_float_complex_value_return:
                                 (Function
@@ -650,6 +668,8 @@
                                     []
                                     (Var 43 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_double:
                                 (Function
@@ -725,6 +745,8 @@
                                     []
                                     (Var 38 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_double_complex:
                                 (Function
@@ -800,6 +822,8 @@
                                     []
                                     (Var 40 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_double_complex_value:
                                 (Function
@@ -875,6 +899,8 @@
                                     []
                                     (Var 42 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_double_value:
                                 (Function
@@ -950,6 +976,8 @@
                                     []
                                     (Var 46 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_double_value_name:
                                 (Function
@@ -1025,6 +1053,8 @@
                                     []
                                     (Var 53 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_doublearray:
                                 (Function
@@ -1102,6 +1132,8 @@
                                     []
                                     (Var 49 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_doublearray_star:
                                 (Function
@@ -1179,6 +1211,8 @@
                                     []
                                     (Var 52 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_float:
                                 (Function
@@ -1254,6 +1288,8 @@
                                     []
                                     (Var 37 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_float_complex:
                                 (Function
@@ -1329,6 +1365,8 @@
                                     []
                                     (Var 39 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_float_complex_value:
                                 (Function
@@ -1404,6 +1442,8 @@
                                     []
                                     (Var 41 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_float_value:
                                 (Function
@@ -1479,6 +1519,8 @@
                                     []
                                     (Var 45 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_floatarray:
                                 (Function
@@ -1556,6 +1598,8 @@
                                     []
                                     (Var 48 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_floatarray_star:
                                 (Function
@@ -1633,6 +1677,8 @@
                                     []
                                     (Var 51 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_intarray:
                                 (Function
@@ -1710,6 +1756,8 @@
                                     []
                                     (Var 47 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_int_intarray_star:
                                 (Function
@@ -1787,6 +1835,8 @@
                                     []
                                     (Var 50 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_string:
                                 (Function
@@ -1861,6 +1911,8 @@
                                     )]
                                     (Var 75 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_string0:
                                 (Function
@@ -1921,6 +1973,8 @@
                                     []
                                     (Var 66 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fortran_f32:
                                 (Function
@@ -1992,6 +2046,8 @@
                                     )]
                                     (Var 80 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fortran_f32_value:
                                 (Function
@@ -2063,6 +2119,8 @@
                                     )]
                                     (Var 81 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fortran_f64:
                                 (Function
@@ -2134,6 +2192,8 @@
                                     )]
                                     (Var 82 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fortran_f64_value:
                                 (Function
@@ -2205,6 +2265,8 @@
                                     )]
                                     (Var 83 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fortran_i32:
                                 (Function
@@ -2273,6 +2335,8 @@
                                     )]
                                     (Var 76 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fortran_i32_value:
                                 (Function
@@ -2341,6 +2405,8 @@
                                     )]
                                     (Var 77 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fortran_i64:
                                 (Function
@@ -2414,6 +2480,8 @@
                                     )]
                                     (Var 78 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fortran_i64_value:
                                 (Function
@@ -2487,6 +2555,8 @@
                                     )]
                                     (Var 79 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_double:
                                 (Function
@@ -2564,6 +2634,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_double_complex:
                                 (Function
@@ -2641,6 +2713,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_double_complex_value:
                                 (Function
@@ -2718,6 +2792,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_double_value:
                                 (Function
@@ -2795,6 +2871,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_double_value_name:
                                 (Function
@@ -2872,6 +2950,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_doublearray:
                                 (Function
@@ -2951,6 +3031,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_float:
                                 (Function
@@ -3028,6 +3110,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_float_complex:
                                 (Function
@@ -3105,6 +3189,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_float_complex_value:
                                 (Function
@@ -3182,6 +3268,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_float_value:
                                 (Function
@@ -3259,6 +3347,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_floatarray:
                                 (Function
@@ -3338,6 +3428,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_int_intarray:
                                 (Function
@@ -3417,6 +3509,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     modules_15b

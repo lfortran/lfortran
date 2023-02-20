@@ -99,6 +99,8 @@
                                     )]
                                     (Var 3 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             max_integer:
                                 (Function
@@ -206,6 +208,8 @@
                                     )]
                                     (Var 5 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             min_integer:
                                 (Function
@@ -313,6 +317,8 @@
                                     )]
                                     (Var 6 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             minus_integer:
                                 (Function
@@ -398,6 +404,8 @@
                                     )]
                                     (Var 4 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             one_integer:
                                 (Function
@@ -445,6 +453,8 @@
                                     )]
                                     (Var 8 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             zero_integer:
                                 (Function
@@ -492,6 +502,8 @@
                                     )]
                                     (Var 7 result)
                                     Private
+                                    .false.
+                                    .false.
                                 )
                         })
                     math_integer_m
@@ -588,6 +600,8 @@
                                     )]
                                     (Var 10 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             max_real:
                                 (Function
@@ -695,6 +709,8 @@
                                     )]
                                     (Var 13 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             min_real:
                                 (Function
@@ -802,6 +818,8 @@
                                     )]
                                     (Var 14 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             minus_real:
                                 (Function
@@ -887,6 +905,8 @@
                                     )]
                                     (Var 11 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             one_real:
                                 (Function
@@ -937,6 +957,8 @@
                                     )]
                                     (Var 16 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             slash_real:
                                 (Function
@@ -1022,6 +1044,8 @@
                                     )]
                                     (Var 12 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             zero_real:
                                 (Function
@@ -1072,6 +1096,8 @@
                                     )]
                                     (Var 15 result)
                                     Private
+                                    .false.
+                                    .false.
                                 )
                         })
                     math_real_m
@@ -1406,6 +1432,8 @@
                                     []
                                     (Var 19 total)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             t:
                                 (StructType
@@ -1521,6 +1549,8 @@
                                     )]
                                     (Var 20 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             triple_r:
                                 (Function
@@ -1620,6 +1650,8 @@
                                     )]
                                     (Var 21 result)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     triple_m
@@ -1858,6 +1890,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             test_max_triples:
                                 (Function
@@ -1961,6 +1995,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             test_minus_triples:
                                 (Function
@@ -2064,6 +2100,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             triple_add_l:
                                 (Function
@@ -2142,6 +2180,8 @@
                                     )]
                                     (Var 124 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             triple_add_r:
                                 (Function
@@ -2220,6 +2260,8 @@
                                     )]
                                     (Var 125 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             triple_l:
                                 (ExternalSymbol
@@ -2308,6 +2350,8 @@
                                     )]
                                     (Var 128 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             triple_max_r:
                                 (Function
@@ -2386,6 +2430,8 @@
                                     )]
                                     (Var 129 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             triple_minus_l:
                                 (Function
@@ -2464,6 +2510,8 @@
                                     )]
                                     (Var 126 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             triple_minus_r:
                                 (Function
@@ -2542,6 +2590,8 @@
                                     )]
                                     (Var 127 result)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             triple_r:
                                 (ExternalSymbol

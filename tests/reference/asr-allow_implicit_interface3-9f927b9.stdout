@@ -96,6 +96,8 @@
                                     []
                                     (Var 3 lsame_return_var_name)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             uplo:
                                 (Variable
@@ -188,6 +190,8 @@
                     (Return)]
                     ()
                     Public
+                    .false.
+                    .false.
                 )
         })
     []

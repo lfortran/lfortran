@@ -118,6 +118,8 @@
                                     )]
                                     (Var 45 tempfile)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             list_files:
                                 (Function
@@ -237,6 +239,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             string_t:
                                 (ExternalSymbol
@@ -362,6 +366,8 @@
                                                     []
                                                     (Var 7 r)
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 ),
                                             cptr:
                                                 (Variable
@@ -443,6 +449,8 @@
                                     )]
                                     (Var 6 s)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_string_cptr_n:
                                 (Function
@@ -518,6 +526,8 @@
                                     []
                                     (Var 8 s)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f_string~genericprocedure:
                                 (Function
@@ -578,6 +588,8 @@
                                     []
                                     (Var 9 f_string)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             string_t:
                                 (StructType

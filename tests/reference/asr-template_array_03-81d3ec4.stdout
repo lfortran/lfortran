@@ -91,6 +91,8 @@
                                     )]
                                     (Var 3 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             add_real:
                                 (Function
@@ -176,6 +178,8 @@
                                     )]
                                     (Var 6 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             mult_integer:
                                 (Function
@@ -261,6 +265,8 @@
                                     )]
                                     (Var 5 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             mult_real:
                                 (Function
@@ -346,6 +352,8 @@
                                     )]
                                     (Var 8 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             zero_integer:
                                 (Function
@@ -408,6 +416,8 @@
                                     )]
                                     (Var 4 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             zero_real:
                                 (Function
@@ -478,6 +488,8 @@
                                     )]
                                     (Var 7 r)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     math
@@ -760,6 +772,8 @@
                                     []
                                     (Var 13 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             mymatmul_int:
                                 (Function
@@ -1070,6 +1084,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             mymatmul_t:
                                 (Function
@@ -1425,6 +1441,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             plus_t:
                                 (Function
@@ -1521,6 +1539,8 @@
                                     []
                                     (Var 11 result)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             t:
                                 (StructType
@@ -1743,6 +1763,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             zero_integer:
                                 (ExternalSymbol
@@ -1836,6 +1858,8 @@
                                     []
                                     (Var 12 result)
                                     Private
+                                    .false.
+                                    .false.
                                 )
                         })
                     template_array_03_m

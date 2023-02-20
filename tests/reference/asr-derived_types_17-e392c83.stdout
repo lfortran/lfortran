@@ -115,6 +115,8 @@
                                     )]
                                     (Var 4 self)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             subtract:
                                 (Function
@@ -199,6 +201,8 @@
                                     )]
                                     (Var 5 self)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             t_1:
                                 (StructType
@@ -320,6 +324,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             subtract:
                                 (ExternalSymbol

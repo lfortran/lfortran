@@ -47,97 +47,123 @@ define i32 @__module_lfortran_intrinsic_string_index(i8** %string_, i8** %substr
   store i32 1, i32* %i, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %ifcont6, %.entry
+loop.head:                                        ; preds = %ifcont12, %.entry
   %0 = load i32, i32* %i, align 4
   %1 = alloca i32, align 4
   store i1 false, i1* %call_arg_value, align 1
   %2 = call i32 @_lfortran_str_len(i8** %string_)
   %3 = icmp slt i32 %0, %2
   %4 = load i1, i1* %found, align 1
-  %5 = and i1 %3, %4
-  br i1 %5, label %loop.body, label %loop.end7
+  %5 = icmp eq i1 %3, false
+  %6 = alloca i1, align 1
+  br i1 %5, label %then, label %else
 
-loop.body:                                        ; preds = %loop.head
+then:                                             ; preds = %loop.head
+  store i1 %3, i1* %6, align 1
+  br label %ifcont
+
+else:                                             ; preds = %loop.head
+  store i1 %4, i1* %6, align 1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %7 = load i1, i1* %6, align 1
+  br i1 %7, label %loop.body, label %loop.end13
+
+loop.body:                                        ; preds = %ifcont
   store i32 0, i32* %k, align 4
   store i32 1, i32* %j, align 4
   br label %loop.head1
 
-loop.head1:                                       ; preds = %ifcont, %loop.body
-  %6 = load i32, i32* %j, align 4
-  %7 = alloca i32, align 4
+loop.head1:                                       ; preds = %ifcont9, %loop.body
+  %8 = load i32, i32* %j, align 4
+  %9 = alloca i32, align 4
   store i1 false, i1* %call_arg_value2, align 1
-  %8 = call i32 @_lfortran_str_len(i8** %substring_)
-  %9 = icmp slt i32 %6, %8
-  %10 = load i1, i1* %found, align 1
-  %11 = and i1 %9, %10
-  br i1 %11, label %loop.body3, label %loop.end
+  %10 = call i32 @_lfortran_str_len(i8** %substring_)
+  %11 = icmp slt i32 %8, %10
+  %12 = load i1, i1* %found, align 1
+  %13 = icmp eq i1 %11, false
+  %14 = alloca i1, align 1
+  br i1 %13, label %then3, label %else4
 
-loop.body3:                                       ; preds = %loop.head1
-  %12 = load i32, i32* %i, align 4
-  %13 = load i32, i32* %k, align 4
-  %14 = add i32 %12, %13
-  store i32 %14, i32* %pos, align 4
-  %15 = load i32, i32* %pos, align 4
-  %16 = load i8*, i8** %string_, align 8
-  %17 = call i8* @_lfortran_str_copy(i8* %16, i32 %15, i32 %15)
-  %18 = alloca i8*, align 8
-  store i8* %17, i8** %18, align 8
-  %19 = load i8*, i8** %18, align 8
-  %20 = load i32, i32* %j, align 4
-  %21 = load i8*, i8** %substring_, align 8
-  %22 = call i8* @_lfortran_str_copy(i8* %21, i32 %20, i32 %20)
-  %23 = alloca i8*, align 8
-  store i8* %22, i8** %23, align 8
-  %24 = load i8*, i8** %23, align 8
-  %25 = alloca i8*, align 8
-  store i8* %19, i8** %25, align 8
-  %26 = alloca i8*, align 8
-  store i8* %24, i8** %26, align 8
-  %27 = call i1 @_lpython_str_compare_noteq(i8** %25, i8** %26)
-  br i1 %27, label %then, label %else
+then3:                                            ; preds = %loop.head1
+  store i1 %11, i1* %14, align 1
+  br label %ifcont5
 
-then:                                             ; preds = %loop.body3
+else4:                                            ; preds = %loop.head1
+  store i1 %12, i1* %14, align 1
+  br label %ifcont5
+
+ifcont5:                                          ; preds = %else4, %then3
+  %15 = load i1, i1* %14, align 1
+  br i1 %15, label %loop.body6, label %loop.end
+
+loop.body6:                                       ; preds = %ifcont5
+  %16 = load i32, i32* %i, align 4
+  %17 = load i32, i32* %k, align 4
+  %18 = add i32 %16, %17
+  store i32 %18, i32* %pos, align 4
+  %19 = load i32, i32* %pos, align 4
+  %20 = load i8*, i8** %string_, align 8
+  %21 = call i8* @_lfortran_str_copy(i8* %20, i32 %19, i32 %19)
+  %22 = alloca i8*, align 8
+  store i8* %21, i8** %22, align 8
+  %23 = load i8*, i8** %22, align 8
+  %24 = load i32, i32* %j, align 4
+  %25 = load i8*, i8** %substring_, align 8
+  %26 = call i8* @_lfortran_str_copy(i8* %25, i32 %24, i32 %24)
+  %27 = alloca i8*, align 8
+  store i8* %26, i8** %27, align 8
+  %28 = load i8*, i8** %27, align 8
+  %29 = alloca i8*, align 8
+  store i8* %23, i8** %29, align 8
+  %30 = alloca i8*, align 8
+  store i8* %28, i8** %30, align 8
+  %31 = call i1 @_lpython_str_compare_noteq(i8** %29, i8** %30)
+  br i1 %31, label %then7, label %else8
+
+then7:                                            ; preds = %loop.body6
   store i1 false, i1* %found, align 1
-  br label %ifcont
+  br label %ifcont9
 
-else:                                             ; preds = %loop.body3
-  br label %ifcont
+else8:                                            ; preds = %loop.body6
+  br label %ifcont9
 
-ifcont:                                           ; preds = %else, %then
-  %28 = load i32, i32* %k, align 4
-  %29 = add i32 %28, 1
-  store i32 %29, i32* %k, align 4
-  %30 = load i32, i32* %j, align 4
-  %31 = add i32 %30, 1
-  store i32 %31, i32* %j, align 4
+ifcont9:                                          ; preds = %else8, %then7
+  %32 = load i32, i32* %k, align 4
+  %33 = add i32 %32, 1
+  store i32 %33, i32* %k, align 4
+  %34 = load i32, i32* %j, align 4
+  %35 = add i32 %34, 1
+  store i32 %35, i32* %j, align 4
   br label %loop.head1
 
-loop.end:                                         ; preds = %loop.head1
-  %32 = load i1, i1* %found, align 1
-  br i1 %32, label %then4, label %else5
+loop.end:                                         ; preds = %ifcont5
+  %36 = load i1, i1* %found, align 1
+  br i1 %36, label %then10, label %else11
 
-then4:                                            ; preds = %loop.end
-  %33 = load i32, i32* %i, align 4
-  store i32 %33, i32* %idx, align 4
+then10:                                           ; preds = %loop.end
+  %37 = load i32, i32* %i, align 4
+  store i32 %37, i32* %idx, align 4
   store i1 false, i1* %found, align 1
-  br label %ifcont6
+  br label %ifcont12
 
-else5:                                            ; preds = %loop.end
+else11:                                           ; preds = %loop.end
   store i1 true, i1* %found, align 1
-  br label %ifcont6
+  br label %ifcont12
 
-ifcont6:                                          ; preds = %else5, %then4
-  %34 = load i32, i32* %i, align 4
-  %35 = add i32 %34, 1
-  store i32 %35, i32* %i, align 4
+ifcont12:                                         ; preds = %else11, %then10
+  %38 = load i32, i32* %i, align 4
+  %39 = add i32 %38, 1
+  store i32 %39, i32* %i, align 4
   br label %loop.head
 
-loop.end7:                                        ; preds = %loop.head
+loop.end13:                                       ; preds = %ifcont
   br label %return
 
-return:                                           ; preds = %loop.end7
-  %36 = load i32, i32* %idx, align 4
-  ret i32 %36
+return:                                           ; preds = %loop.end13
+  %40 = load i32, i32* %idx, align 4
+  ret i32 %40
 }
 
 declare i32 @_lfortran_str_len(i8**)

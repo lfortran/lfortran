@@ -105,6 +105,8 @@
                                     )]
                                     (Var 3 print_vars)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             priv:
                                 (Variable

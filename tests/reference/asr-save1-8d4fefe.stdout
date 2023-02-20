@@ -176,6 +176,8 @@
                     []
                     (Var 3 save_fun)
                     Public
+                    .false.
+                    .false.
                 ),
             save_module:
                 (Module
@@ -285,6 +287,8 @@
                                     []
                                     (Var 6 fun_save)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_save:
                                 (Function
@@ -374,6 +378,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -530,6 +536,8 @@
                     []
                     ()
                     Public
+                    .false.
+                    .false.
                 )
         })
     []

@@ -96,6 +96,8 @@
                     )]
                     (Var 2 f2)
                     Public
+                    .false.
+                    .false.
                 ),
             x:
                 (Variable

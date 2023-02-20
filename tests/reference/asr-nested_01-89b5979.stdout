@@ -128,6 +128,8 @@
                                                     )]
                                                     (Var 4 d)
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 ),
                                             e:
                                                 (Variable
@@ -191,6 +193,8 @@
                                     )]
                                     (Var 3 b)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     nested_01_a

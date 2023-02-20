@@ -74,6 +74,8 @@
                                     )]
                                     (Var 5 y)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             apply:
                                 (Function
@@ -137,6 +139,8 @@
                                                     []
                                                     (Var 4 fun)
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -217,6 +221,8 @@
                                     )]
                                     (Var 3 y)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             z:
                                 (Variable

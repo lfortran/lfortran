@@ -114,6 +114,8 @@
                                                     []
                                                     (Var 4 f)
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 )
                                         })
                                     cb
@@ -191,6 +193,8 @@
                                     )]
                                     (Var 3 cb)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             foo:
                                 (Function
@@ -302,6 +306,8 @@
                                                     )]
                                                     (Var 6 f)
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 )
                                         })
                                     foo
@@ -341,6 +347,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     callback_01

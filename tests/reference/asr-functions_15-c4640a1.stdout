@@ -115,6 +115,8 @@
                                     )]
                                     (Var 5 f)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sub_1:
                                 (ExternalSymbol
@@ -572,6 +574,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     module_1

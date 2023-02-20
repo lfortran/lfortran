@@ -199,6 +199,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             dependency_tree_t:
                                 (ExternalSymbol
@@ -721,6 +723,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     fpm_dependency_modules_31
