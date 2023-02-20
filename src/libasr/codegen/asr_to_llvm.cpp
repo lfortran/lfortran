@@ -6835,6 +6835,22 @@ public:
                     LCOMPILERS_ASSERT(args.size() == 3)
                     tmp = lfortran_str_len(args[0]);
                     return;
+                } else if (func_name == "command_argument_count") {
+                    llvm::Function *fn = module->getFunction("_lpython_get_argc");
+                    if(!fn) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                                llvm::Type::getInt32Ty(context)->getPointerTo()
+                            }, false);
+                        fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, "_lpython_get_argc", *module);
+                    }
+                    llvm::AllocaInst *result = builder->CreateAlloca(
+                                llvm::Type::getInt32Ty(context), nullptr);
+                    std::vector<llvm::Value*> args = {result};
+                    builder->CreateCall(fn, args);
+                    tmp = CreateLoad(result);
+                    return;
                 }
                 if( ASRUtils::get_FunctionType(s)->m_deftype == ASR::deftypeType::Interface ) {
                     throw CodeGenError("Intrinsic '" + func_name + "' not implemented yet and compile time value is not available.");

@@ -214,7 +214,7 @@ LFORTRAN_API int32_t _lfortran_ichar(char *c);
 LFORTRAN_API int32_t _lfortran_iachar(char *c);
 LFORTRAN_API int32_t _lfortran_all(bool *mask, int32_t n);
 LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]);
-LFORTRAN_API int32_t _lpython_get_argc();
+LFORTRAN_API void _lpython_get_argc(int32_t *res);
 LFORTRAN_API char *_lpython_get_argv(int32_t index);
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors);
 
