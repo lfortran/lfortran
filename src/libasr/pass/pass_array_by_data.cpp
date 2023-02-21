@@ -222,11 +222,12 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             current_proc_scope = nullptr;
         }
 
-        void visit_Program(const ASR::Program_t& x) {
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
-            current_scope = xx.m_symtab;
+        template <typename T>
+        void handle_functions_and_ext_symbols(const T& x) {
+            T& xx = const_cast<T&>(x);
             for( auto& item: xx.m_symtab->get_scope() ) {
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                    current_scope = xx.m_symtab;
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
                     std::vector<size_t> arg_indices;
                     if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
@@ -238,6 +239,14 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     }
                 }
             }
+        }
+
+        void visit_Program(const ASR::Program_t& x) {
+            handle_functions_and_ext_symbols(x);
+        }
+
+        void visit_Module(const ASR::Module_t& x) {
+            handle_functions_and_ext_symbols(x);
         }
 };
 
@@ -408,8 +417,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_):
             PassVisitor(al_, nullptr), v(v_) {}
 
-        void visit_Program(const ASR::Program_t& x) {
-            ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+        template <typename T>
+        void erase_symbols(const T &x) {
+            T& xx = const_cast<T&>(x);
             current_scope = xx.m_symtab;
 
             std::vector<std::string> to_be_erased;
@@ -424,6 +434,14 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             for (auto &item: to_be_erased) {
                 current_scope->erase_symbol(item);
             }
+        }
+
+        void visit_Program(const ASR::Program_t& x) {
+            erase_symbols(x);
+        }
+
+        void visit_Module(const ASR::Module_t& x) {
+            erase_symbols(x);
         }
 
 };
