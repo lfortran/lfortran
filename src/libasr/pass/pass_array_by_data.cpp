@@ -53,7 +53,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
             ASR::symbol_t* x_sym = xx.m_v;
             std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-            if( current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
+            if( current_proc_scope->get_symbol(x_sym_name) && current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
                 xx.m_v = current_proc_scope->get_symbol(x_sym_name);
             }
         }
