@@ -523,6 +523,7 @@ RUN(NAME derived_types_08 LABELS gfortran)
 RUN(NAME derived_types_09 LABELS gfortran EXTRAFILES
         derived_types_09b.f90 derived_types_09c.f90)
 RUN(NAME derived_types_10 LABELS gfortran llvm)
+RUN(NAME derived_types_11 LABELS gfortran llvm)
 RUN(NAME derived_types_12 LABELS gfortran llvm)
 RUN(NAME derived_types_15 LABELS gfortran)
 RUN(NAME derived_types_14 LABELS gfortran
