@@ -102,7 +102,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     std::to_string(tmp_expr->type));
             }
             std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-            if( current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
+            if( current_proc_scope->get_symbol(x_sym_name) && current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
                 ASR::symbol_t* x_sym_new = current_proc_scope->get_symbol(x_sym_name);
                 xx.m_a = ASRUtils::EXPR(ASR::make_Var_t(al,  x_sym_new->base.loc, x_sym_new));
             }
@@ -116,7 +116,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
             ASR::symbol_t* x_sym = xx.m_name;
             std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-            if( current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
+            if( current_proc_scope->get_symbol(x_sym_name) && current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
                 xx.m_name = current_proc_scope->get_symbol(x_sym_name);
             }
         }
