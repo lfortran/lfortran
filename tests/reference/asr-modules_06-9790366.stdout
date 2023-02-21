@@ -66,6 +66,8 @@
                                     )]
                                     (Var 5 a)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             b:
                                 (ExternalSymbol
@@ -134,6 +136,8 @@
                                     )]
                                     (Var 3 b)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     modules_06_b

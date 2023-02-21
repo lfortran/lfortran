@@ -351,6 +351,8 @@
                                     )]
                                     (Var 4 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sum:
                                 (Function
@@ -882,6 +884,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     allocate_01

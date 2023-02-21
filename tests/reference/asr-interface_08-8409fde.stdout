@@ -66,6 +66,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     interface_08

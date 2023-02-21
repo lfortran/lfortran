@@ -64,7 +64,7 @@ define i1 @verify_a_b(i32* %a, i32* %__1a, i32* %__2a, i32* %b, i32* %__1b, i32*
   store i32 0, i32* %i, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %loop.body, %.entry
+loop.head:                                        ; preds = %ifcont, %.entry
   %0 = load i32, i32* %i, align 4
   %1 = add i32 %0, 1
   %2 = load i32, i32* %__2a, align 4
@@ -96,16 +96,29 @@ loop.body:                                        ; preds = %loop.head
   %24 = getelementptr inbounds i32, i32* %b, i32 %22
   %25 = load i32, i32* %24, align 4
   %26 = icmp eq i32 %16, %25
-  %27 = and i1 %7, %26
-  store i1 %27, i1* %r, align 1
+  %27 = icmp eq i1 %7, false
+  %28 = alloca i1, align 1
+  br i1 %27, label %then, label %else
+
+then:                                             ; preds = %loop.body
+  store i1 %7, i1* %28, align 1
+  br label %ifcont
+
+else:                                             ; preds = %loop.body
+  store i1 %26, i1* %28, align 1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %29 = load i1, i1* %28, align 1
+  store i1 %29, i1* %r, align 1
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end
-  %28 = load i1, i1* %r, align 1
-  ret i1 %28
+  %30 = load i1, i1* %r, align 1
+  ret i1 %30
 }
 
 define i32 @main(i32 %0, i8** %1) {

@@ -294,6 +294,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             msg_scalar:
                                 (Function
@@ -1029,6 +1031,8 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 ),
                                             sep:
                                                 (Variable
@@ -1368,6 +1372,8 @@
                                     )]
                                     (Var 3 msg_scalar)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             str:
                                 (GenericProcedure

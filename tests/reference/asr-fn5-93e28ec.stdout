@@ -346,6 +346,8 @@
                                     )]
                                     (Var 3 strout)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             print_dictionary:
                                 (Function
@@ -861,6 +863,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     fn5

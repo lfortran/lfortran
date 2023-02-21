@@ -115,6 +115,8 @@
                                     )]
                                     ()
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             dependency_config_t:
                                 (StructType
@@ -478,6 +480,8 @@
                                     []
                                     (Var 7 pos)
                                     Private
+                                    .false.
+                                    .false.
                                 )
                         })
                     fpm_dependency

@@ -180,6 +180,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             getcwd:
                                 (Function
@@ -257,6 +259,8 @@
                                     []
                                     (Var 37 path)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     array12

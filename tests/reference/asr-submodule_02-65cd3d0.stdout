@@ -147,6 +147,8 @@
                                     []
                                     (Var 7 distance)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             point_dist_subrout:
                                 (Function
@@ -236,6 +238,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             rkind:
                                 (ExternalSymbol
@@ -481,6 +485,8 @@
                                     )]
                                     (Var 10 distance)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             point_dist_subrout:
                                 (Function
@@ -687,6 +693,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             rkind:
                                 (ExternalSymbol

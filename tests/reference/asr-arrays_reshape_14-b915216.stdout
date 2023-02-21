@@ -632,6 +632,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             test_nd_to_1d:
                                 (Function
@@ -1287,6 +1289,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             test_reshape_with_argument:
                                 (Function
@@ -1617,6 +1621,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     array_reshape_14

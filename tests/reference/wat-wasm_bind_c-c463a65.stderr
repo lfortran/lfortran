@@ -1,0 +1,29 @@
+Internal Compiler Error: Unhandled exception
+Traceback (most recent call last):
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 1878[0m
+    return emit_wat(arg_file, compiler_options);
+[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 909[0m
+    LCompilers::Result<std::string> r = fe.get_wat(input, lm, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 408[0m
+    Result<Vec<uint8_t>> wasm = get_wasm(code, lm, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 395[0m
+    return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics);
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 2609[0m
+    v.visit_asr((ASR::asr_t &)asr);
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 4477[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 4453[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 4478[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 4211[0m
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 660[0m
+    visit_symbol(*item.second);
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 4480[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 4219[0m
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 700[0m
+    emit_function_prototype(*((ASR::Function_t *)main_func));
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 940[0m
+    this->visit_stmt(*x.m_body[i]);
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 4495[0m
+[2m  File "[0m[1m[35m../libasr/asr.h[39m[0m[2m", line 4267[0m
+[2m  File "[0m[1m[35m$DIR/src/libasr/codegen/asr_to_wasm.cpp[39m[0m[2m", line 2074[0m
+    LCOMPILERS_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)s)) !=
+AssertFailed: m_func_name_idx_map.find(get_hash((ASR::asr_t *)s)) != m_func_name_idx_map.end()

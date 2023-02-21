@@ -116,6 +116,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -291,6 +293,8 @@
                                     )]
                                     (Var 4 r)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable

@@ -146,6 +146,8 @@
                                     )]
                                     (Var 3 q_return_var_name)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -184,6 +186,8 @@
                     []
                     ()
                     Public
+                    .false.
+                    .false.
                 )
         })
     []

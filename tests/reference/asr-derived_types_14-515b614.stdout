@@ -220,6 +220,8 @@
                                     )]
                                     (Var 7 res)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             enum_type:
                                 (ExternalSymbol
@@ -467,6 +469,8 @@
                                     )]
                                     (Var 6 vtype)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             toml_type:
                                 (ExternalSymbol

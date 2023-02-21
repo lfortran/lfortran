@@ -211,6 +211,8 @@
                                     )]
                                     (Var 3 res)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     stdlib_bitsets_64

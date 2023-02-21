@@ -37,7 +37,7 @@ struct dimension_descriptor
 // Implementations
 int main(int argc, char* argv[])
 {
-    char * grade = (char*) malloc(40 * sizeof(char));
+    char * grade = NULL;
     if (grade == "A") {
         printf("%s\n", "Excellent!");
     }

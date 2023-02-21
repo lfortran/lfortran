@@ -53,7 +53,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
             ASR::symbol_t* x_sym = xx.m_v;
             std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-            if( current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
+            if( current_proc_scope->get_symbol(x_sym_name) && current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
                 xx.m_v = current_proc_scope->get_symbol(x_sym_name);
             }
         }
@@ -165,7 +165,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                                             return_var, x_func_type->m_abi, x->m_access, x_func_type->m_deftype,
                                             s2c(al, new_bindc_name), x_func_type->m_elemental,
                                             x_func_type->m_pure, x_func_type->m_module, x_func_type->m_inline,
-                                            x_func_type->m_static, nullptr, 0, nullptr, 0, false);
+                                            x_func_type->m_static, nullptr, 0, nullptr, 0, false, false, false);
                 new_symbol = ASR::down_cast<ASR::symbol_t>(new_subrout);
             }
             current_scope->add_symbol(new_name, new_symbol);

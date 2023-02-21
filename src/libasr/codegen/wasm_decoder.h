@@ -59,6 +59,8 @@ class WASMDecoder {
     Vec<wasm::FuncType> func_types;
     Vec<wasm::Import> imports;
     Vec<uint32_t> type_indices;
+    Vec<std::pair<uint32_t, uint32_t>> memories;
+    Vec<wasm::Global> globals;
     Vec<wasm::Export> exports;
     Vec<wasm::Code> codes;
     Vec<wasm::Data> data_segments;
@@ -68,7 +70,7 @@ class WASMDecoder {
         var_type_to_string = {
             {0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
         kind_to_string = {
-            {0x00, "func"}, {0x01, "table"}, {0x02, "mem"}, {0x03, "global"}};
+            {0x00, "func"}, {0x01, "table"}, {0x02, "memory"}, {0x03, "global"}};
 
         PREAMBLE_SIZE = 8 /* BYTES */;
         // wasm_bytes.reserve(al, 1024 * 128);
@@ -196,6 +198,45 @@ class WASMDecoder {
         }
     }
 
+    void decode_memory_section(uint32_t offset) {
+        // read memory section contents
+        uint32_t no_of_memories = read_u32(wasm_bytes, offset);
+        DEBUG("no_of_memories: " + std::to_string(no_of_memories));
+        memories.resize(al, no_of_memories);
+
+        for (uint32_t i = 0; i < no_of_memories; i++) {
+            uint8_t flag = read_b8(wasm_bytes, offset);
+            switch (flag) {
+                case 0x00: {
+                    memories.p[i].first = read_u32(wasm_bytes, offset);
+                    memories.p[i].second = 0;
+                    break;
+                }
+                case 0x01: {
+                    memories.p[i].first = read_u32(wasm_bytes, offset);
+                    memories.p[i].second = read_u32(wasm_bytes, offset);
+                    break;
+                }
+                default: {
+                    throw CodeGenError("Incorrect memory flag received.");
+                }
+            }
+        }
+    }
+
+    void decode_global_section(uint32_t offset) {
+        // read global section contents
+        uint32_t no_of_globals = read_u32(wasm_bytes, offset);
+        DEBUG("no_of_globals: " + std::to_string(no_of_globals));
+        globals.resize(al, no_of_globals);
+
+        for (uint32_t i = 0; i < no_of_globals; i++) {
+            globals.p[i].type = read_b8(wasm_bytes, offset);
+            globals.p[i].mut = read_b8(wasm_bytes, offset);
+            globals.p[i].insts_start_idx = offset;
+        }
+    }
+
     void decode_export_section(uint32_t offset) {
         // read export section contents
         uint32_t no_of_exports = read_u32(wasm_bytes, offset);
@@ -262,8 +303,17 @@ class WASMDecoder {
             }
 
             data_segments.p[i].insts_start_index = offset;
-            while (read_b8(wasm_bytes, offset) != 0x0B)
-                ;
+
+            // read i32.const
+            if (read_b8(wasm_bytes, offset) != 0x41) {
+                throw CodeGenError("DecodeDataSection: Invalid byte for i32.const");
+            }
+            // read the integer (memory location)
+            read_i32(wasm_bytes, offset);
+            // read expr end
+            if (read_b8(wasm_bytes, offset) != 0x0B) {
+                throw CodeGenError("DecodeDataSection: Invalid byte for expr end");
+            }
 
             uint32_t text_size = read_u32(wasm_bytes, offset);
             data_segments.p[i].text.resize(
@@ -300,6 +350,14 @@ class WASMDecoder {
                     break;
                 case 3U:
                     decode_function_section(index);
+                    // exit(0);
+                    break;
+                case 5U:
+                    decode_memory_section(index);
+                    // exit(0);
+                    break;
+                case 6U:
+                    decode_global_section(index);
                     // exit(0);
                     break;
                 case 7U:

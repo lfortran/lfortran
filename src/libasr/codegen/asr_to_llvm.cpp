@@ -1261,7 +1261,7 @@ public:
         }
         prototype_only = false;
 
-        // TODO: handle depencencies across modules and main program
+        // TODO: handle dependencies across modules and main program
 
         // Then do all the modules in the right order
         std::vector<std::string> build_order
@@ -2997,7 +2997,19 @@ public:
                     fill_array_details_(ptr, m_dims, n_dims,
                         is_malloc_array_type,
                         is_array_type, is_list, v->m_type);
-                    if( v->m_symbolic_value != nullptr &&
+                    ASR::expr_t* init_expr = v->m_symbolic_value;
+                    if( !ASR::is_a<ASR::Const_t>(*v->m_type) ) {
+                        for( size_t i = 0; i < v->n_dependencies; i++ ) {
+                            std::string variable_name = v->m_dependencies[i];
+                            ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
+                            if( (dep_sym && ASR::is_a<ASR::Variable_t>(*dep_sym) &&
+                                !ASR::down_cast<ASR::Variable_t>(dep_sym)->m_symbolic_value) )  {
+                                init_expr = nullptr;
+                                break;
+                            }
+                        }
+                    }
+                    if( init_expr != nullptr &&
                         !ASR::is_a<ASR::List_t>(*v->m_type)) {
                         target_var = ptr;
                         tmp = nullptr;
@@ -4800,14 +4812,58 @@ public:
         llvm::Value *left_val = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
-        LCOMPILERS_ASSERT(ASRUtils::is_logical(*x.m_type))
+        llvm::Value *zero, *cond;
+        llvm::AllocaInst *result;
+        if (ASRUtils::is_integer(*x.m_type)) {
+            int a_kind = down_cast<ASR::Integer_t>(x.m_type)->m_kind;
+            int init_value_bits = 8*a_kind;
+            zero = llvm::ConstantInt::get(context,
+                            llvm::APInt(init_value_bits, 0));
+            cond = builder->CreateICmpEQ(left_val, zero);
+            result = builder->CreateAlloca(getIntType(a_kind), nullptr);
+        } else if (ASRUtils::is_real(*x.m_type)) {
+            int a_kind = down_cast<ASR::Real_t>(x.m_type)->m_kind;
+            int init_value_bits = 8*a_kind;
+            if (init_value_bits == 32) {
+                zero = llvm::ConstantFP::get(context,
+                                    llvm::APFloat((float)0));
+            } else {
+                zero = llvm::ConstantFP::get(context,
+                                    llvm::APFloat((double)0));
+            }
+            result = builder->CreateAlloca(getFPType(a_kind), nullptr);
+            cond = builder->CreateFCmpUEQ(left_val, zero);
+        } else if (ASRUtils::is_character(*x.m_type)) {
+            zero = llvm::Constant::getNullValue(character_type);
+            cond = lfortran_str_cmp(left_val, zero, "_lpython_str_compare_eq");
+            result = builder->CreateAlloca(character_type, nullptr);
+        } else if (ASRUtils::is_logical(*x.m_type)) {
+            zero = llvm::ConstantInt::get(context,
+                            llvm::APInt(1, 0));
+            cond = builder->CreateICmpEQ(left_val, zero);
+            result = builder->CreateAlloca(llvm::Type::getInt1Ty(context), nullptr);
+        } else {
+            throw CodeGenError("Only Integer, Real, Strings and Logical types are supported "
+            "in logical binary operation.", x.base.base.loc);
+        }
         switch (x.m_op) {
             case ASR::logicalbinopType::And: {
-                tmp = builder->CreateAnd(left_val, right_val);
+                create_if_else(cond, [&, result, left_val]() {
+                    LLVM::CreateStore(*builder, left_val, result);
+                }, [&, result, right_val]() {
+                    LLVM::CreateStore(*builder, right_val, result);
+                });
+                tmp = LLVM::CreateLoad(*builder, result);
                 break;
             };
             case ASR::logicalbinopType::Or: {
-                tmp = builder->CreateOr(left_val, right_val);
+                create_if_else(cond, [&, result, right_val]() {
+                    LLVM::CreateStore(*builder, right_val, result);
+
+                }, [&, result, left_val]() {
+                    LLVM::CreateStore(*builder, left_val, result);
+                });
+                tmp = LLVM::CreateLoad(*builder, result);
                 break;
             };
             case ASR::logicalbinopType::Xor: {
@@ -5331,8 +5387,16 @@ public:
     }
 
     void visit_Assert(const ASR::Assert_t &x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
         this->visit_expr_wrapper(x.m_test, true);
         create_if_else(tmp, []() {}, [=]() {
+            if (compiler_options.emit_debug_info) {
+                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+                llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
+                    1, compiler_options.use_colors));
+                call_print_stacktrace_addresses(context, *module, *builder,
+                    {fmt_ptr, fmt_ptr1});
+            }
             if (x.m_msg) {
                 char* s = ASR::down_cast<ASR::StringConstant_t>(x.m_msg)->m_s;
                 llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("AssertionError: %s\n");
@@ -6114,6 +6178,14 @@ public:
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
+        if (compiler_options.emit_debug_info) {
+            debug_emit_loc(x);
+            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+            llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
+                1, compiler_options.use_colors));
+            call_print_stacktrace_addresses(context, *module, *builder,
+                {fmt_ptr, fmt_ptr1});
+        }
         llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("STOP\n");
         print_error(context, *module, *builder, {fmt_ptr});
         llvm::Value *exit_code;
@@ -6128,7 +6200,15 @@ public:
         exit(context, *module, *builder, exit_code);
     }
 
-    void visit_ErrorStop(const ASR::ErrorStop_t & /* x */) {
+    void visit_ErrorStop(const ASR::ErrorStop_t &x) {
+        if (compiler_options.emit_debug_info) {
+            debug_emit_loc(x);
+            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(infile);
+            llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
+                1, compiler_options.use_colors));
+            call_print_stacktrace_addresses(context, *module, *builder,
+                {fmt_ptr, fmt_ptr1});
+        }
         llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("ERROR STOP\n");
         print_error(context, *module, *builder, {fmt_ptr});
         int exit_code_int = 1;
@@ -6929,7 +7009,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
 
     // Uncomment for debugging the ASR after the transformation
-    // std::cout << LFortran::pickle(asr, true, true, true) << std::endl;
+    // std::cout << pickle(asr, true, true, true) << std::endl;
 
     v.nested_func_types = pass_find_nested_vars(asr, context,
         v.nested_globals, v.nested_call_out, v.nesting_map);

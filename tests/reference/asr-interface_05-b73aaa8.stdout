@@ -257,6 +257,8 @@
                                     )]
                                     (Var 3 a1)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             a2:
                                 (Function
@@ -333,6 +335,8 @@
                                     )]
                                     (Var 4 a2)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     interface_05_mod

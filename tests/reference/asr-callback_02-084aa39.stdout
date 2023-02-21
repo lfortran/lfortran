@@ -101,6 +101,8 @@
                                                     []
                                                     ()
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -208,6 +210,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             foo:
                                 (Function
@@ -321,6 +325,8 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 ),
                                             foo:
                                                 (Variable
@@ -391,6 +397,8 @@
                                     )]
                                     (Var 5 foo)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     callback_02
