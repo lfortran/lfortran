@@ -36,6 +36,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
         ASRUtils::ExprStmtDuplicator node_duplicator;
         SymbolTable* current_proc_scope;
+        SymbolTable* program_symtab;
+        std::vector<ASR::ExternalSymbol_t*> extsymbols;
         bool is_editing_procedure;
 
     public:
@@ -44,7 +46,32 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
         PassArrayByDataProcedureVisitor(Allocator& al_) : PassVisitor(al_, nullptr),
         node_duplicator(al_), current_proc_scope(nullptr), is_editing_procedure(false)
-        {}
+        {
+            program_symtab = nullptr;
+        }
+
+        ~PassArrayByDataProcedureVisitor() {
+            updateExternalSymbols(program_symtab);
+        }
+
+        void updateExternalSymbols(SymbolTable* symtab) {
+            for (auto extsym:extsymbols) {
+                if( proc2newproc.find(extsym->m_external) == proc2newproc.end() ) {
+                    continue;
+                }
+
+                ASR::symbol_t* new_subrout_sym = proc2newproc[extsym->m_external].first;
+                ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(new_subrout_sym);
+                ASR::ExternalSymbol_t* newextsym = (ASR::ExternalSymbol_t*) ASR::make_ExternalSymbol_t(
+                                al, extsym->base.base.loc, extsym->m_parent_symtab,
+                                new_subrout->m_name, new_subrout_sym, extsym->m_module_name,
+                                extsym->m_scope_names, extsym->n_scope_names, new_subrout->m_name,
+                                extsym->m_access);
+
+                symtab->erase_symbol(extsym->m_name);
+                symtab->add_symbol(newextsym->m_name, (ASR::symbol_t*)newextsym);
+            }
+        }
 
         void visit_Var(const ASR::Var_t& x) {
             if( !is_editing_procedure ) {
@@ -226,6 +253,9 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         void handle_functions_and_ext_symbols(const T& x) {
             T& xx = const_cast<T&>(x);
             for( auto& item: xx.m_symtab->get_scope() ) {
+                if (proc2newproc.find(item.second) != proc2newproc.end()) {
+                    continue;
+                }
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
                     current_scope = xx.m_symtab;
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
@@ -237,15 +267,22 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                             edit_new_procedure(new_subrout, arg_indices);
                         }
                     }
+                } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    ASR::ExternalSymbol_t* extsym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                    extsymbols.push_back(extsym);
                 }
             }
         }
 
         void visit_Program(const ASR::Program_t& x) {
+            program_symtab = x.m_symtab;
             handle_functions_and_ext_symbols(x);
         }
 
         void visit_Module(const ASR::Module_t& x) {
+            if (startswith(x.m_name, "lfortran_intrinsic")) {
+                return;
+            }
             handle_functions_and_ext_symbols(x);
         }
 };
