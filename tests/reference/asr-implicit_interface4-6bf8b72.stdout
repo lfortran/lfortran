@@ -51,6 +51,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             f:
                                 (Function
@@ -128,6 +130,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -212,6 +216,8 @@
                     )]
                     ()
                     Public
+                    .false.
+                    .false.
                 )
         })
     []

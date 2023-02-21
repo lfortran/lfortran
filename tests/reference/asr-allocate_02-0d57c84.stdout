@@ -493,6 +493,8 @@
                                     )]
                                     (Var 3 status)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     allocate_01

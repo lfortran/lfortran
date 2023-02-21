@@ -130,6 +130,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             z:
                                 (Function
@@ -225,6 +227,8 @@
                                     )]
                                     (Var 6 z)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     derived_types_03

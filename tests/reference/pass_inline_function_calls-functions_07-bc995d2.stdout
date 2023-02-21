@@ -312,6 +312,8 @@
                                     )]
                                     (Var 3 v)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     functions_07_a
@@ -453,6 +455,8 @@
                                     )]
                                     (Var 5 y)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     functions_07_b
@@ -653,6 +657,8 @@
                                     )]
                                     (Var 7 z)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     functions_07_c

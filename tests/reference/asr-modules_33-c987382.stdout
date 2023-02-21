@@ -122,6 +122,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             add_project_dependencies:
                                 (Function
@@ -228,6 +230,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             dependency_config_t:
                                 (StructType
@@ -663,6 +667,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     fpm_dependency_modules_33
@@ -1012,6 +1018,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             error_t:
                                 (ExternalSymbol

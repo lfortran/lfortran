@@ -237,6 +237,8 @@
                                     )]
                                     ()
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             get_elem_value_string:
                                 (Function
@@ -362,6 +364,8 @@
                                     )]
                                     ()
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             get_value:
                                 (GenericProcedure

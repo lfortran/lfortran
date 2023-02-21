@@ -152,6 +152,8 @@
                                                     )]
                                                     (Var 4 c)
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -253,6 +255,8 @@
                                     )]
                                     (Var 3 b)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     nested_04_a

@@ -74,6 +74,8 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 )
                                         })
                                     check_commandline
@@ -102,6 +104,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     m_cli2

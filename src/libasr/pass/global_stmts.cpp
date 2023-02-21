@@ -124,14 +124,14 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                 false, false, false, false, false,
                 nullptr, 0,
                 nullptr, 0,
-                false);
+                false, false, false);
             std::string sym_name = fn_name;
             if (unit.m_global_scope->get_symbol(sym_name) != nullptr) {
                 throw LCompilersException("Function already defined");
             }
             unit.m_global_scope->add_symbol(sym_name, down_cast<ASR::symbol_t>(fn));
         } else {
-            // The last item was a statement, create a subroutine (returing
+            // The last item was a statement, create a subroutine (returning
             // nothing)
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc,
@@ -148,7 +148,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                 false, false, false, false, false,
                 nullptr, 0,
                 nullptr, 0,
-                false);
+                false, false, false);
             std::string sym_name = fn_name;
             if (unit.m_global_scope->get_symbol(sym_name) != nullptr) {
                 throw LCompilersException("Function already defined");

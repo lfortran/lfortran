@@ -138,6 +138,8 @@
                                                     )]
                                                     (Var 4 f)
                                                     Public
+                                                    .false.
+                                                    .false.
                                                 ),
                                             g:
                                                 (Variable
@@ -201,6 +203,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     dflt_intent

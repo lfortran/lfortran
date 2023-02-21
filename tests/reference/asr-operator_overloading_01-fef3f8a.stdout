@@ -412,6 +412,8 @@
                                     )]
                                     (Var 4 bin_add)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             logical_and:
                                 (Function
@@ -497,6 +499,8 @@
                                     )]
                                     (Var 3 logical_and)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             ~add:
                                 (CustomOperator

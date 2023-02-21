@@ -136,6 +136,8 @@
                                     )]
                                     (Var 13 dfloat_return_var_name)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -261,6 +263,8 @@
                                     )]
                                     (Var 14 ifloat_return_var_name)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -376,6 +380,8 @@
                                     )]
                                     (Var 12 sfloat_return_var_name)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             sum:
                                 (Variable

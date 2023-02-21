@@ -301,6 +301,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             package_config_t:
                                 (ExternalSymbol
@@ -402,6 +404,8 @@
                                     )]
                                     (Var 12 string)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             char:
                                 (GenericProcedure
@@ -475,6 +479,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             version_t:
                                 (StructType

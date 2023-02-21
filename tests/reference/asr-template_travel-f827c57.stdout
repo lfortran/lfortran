@@ -91,6 +91,8 @@
                                     )]
                                     (Var 3 total)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             slash_real:
                                 (Function
@@ -176,6 +178,8 @@
                                     )]
                                     (Var 4 total)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     math
@@ -460,6 +464,8 @@
                                     )]
                                     (Var 20 avg)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -610,6 +616,8 @@
                                     )]
                                     (Var 19 avg)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             avg_real_s_from_t:
                                 (Function
@@ -748,6 +756,8 @@
                                     )]
                                     (Var 18 avg)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             avg_s_from_s:
                                 (ExternalSymbol
@@ -980,6 +990,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     template_travel_m
@@ -1193,6 +1205,8 @@
                                     )]
                                     (Var 14 avg)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             avg_s_from_t:
                                 (Function
@@ -1382,6 +1396,8 @@
                                     )]
                                     (Var 13 avg)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             d:
                                 (StructType
@@ -1502,6 +1518,8 @@
                                     []
                                     (Var 12 quotient)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             d_divided_by_t:
                                 (Function
@@ -1606,6 +1624,8 @@
                                     []
                                     (Var 11 quotient)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             plus_d:
                                 (Function
@@ -1710,6 +1730,8 @@
                                     []
                                     (Var 9 total)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             plus_t:
                                 (Function
@@ -1814,6 +1836,8 @@
                                     []
                                     (Var 10 total)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             s:
                                 (StructType

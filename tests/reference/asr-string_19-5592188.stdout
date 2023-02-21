@@ -100,6 +100,8 @@
                                     []
                                     (Var 5 character_string)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             len:
                                 (GenericProcedure
@@ -171,6 +173,8 @@
                                     []
                                     (Var 4 length)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             string_type:
                                 (StructType
@@ -317,6 +321,8 @@
                                     []
                                     (Var 7 lps_array)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             compute_lps_use:
                                 (Function
@@ -406,6 +412,8 @@
                                     )]
                                     (Var 36 l)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             compute_lps_use1:
                                 (Function
@@ -510,6 +518,8 @@
                                     )]
                                     (Var 37 l)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             len:
                                 (ExternalSymbol
@@ -682,6 +692,8 @@
                                     )]
                                     (Var 40 res)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             padl_char_pad_with:
                                 (Function
@@ -851,6 +863,8 @@
                                     []
                                     (Var 41 res)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             padl_string_default:
                                 (Function
@@ -1049,6 +1063,8 @@
                                     )]
                                     (Var 38 res)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             padl_string_pad_with:
                                 (Function
@@ -1261,6 +1277,8 @@
                                     )]
                                     (Var 39 res)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             string_type:
                                 (ExternalSymbol

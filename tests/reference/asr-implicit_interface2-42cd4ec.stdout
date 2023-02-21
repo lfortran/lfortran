@@ -64,6 +64,8 @@
                                     []
                                     (Var 3 f_return_var_name)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             g:
                                 (Function
@@ -139,6 +141,8 @@
                                     []
                                     (Var 4 g_return_var_name)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     implicit_interface2
