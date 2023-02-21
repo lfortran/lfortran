@@ -1574,7 +1574,6 @@ int main(int argc, char *argv[])
         bool arg_c = false;
         bool arg_v = false;
         bool arg_E = false;
-        bool arg_g = false;
         std::vector<std::string> arg_l;
         std::vector<std::string> arg_L;
         std::vector<std::string> arg_files;
@@ -1633,7 +1632,7 @@ int main(int argc, char *argv[])
         app.add_option("-L", arg_L, "Library path option");
         app.add_option("-I", compiler_options.include_dirs, "Include path");
         app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
-        app.add_flag("-g", arg_g, "Compile with debugging information");
+        app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");
 
@@ -1778,6 +1777,11 @@ int main(int argc, char *argv[])
             return python_wrapper(arg_pywrap_file, arg_pywrap_array_order,
                 compiler_options);
         }
+
+        if (compiler_options.emit_debug_info) {
+            compiler_options.emit_debug_line_column = true;
+        }
+
 
         if (arg_backend == "llvm") {
             backend = Backend::llvm;
