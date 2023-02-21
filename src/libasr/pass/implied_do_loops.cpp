@@ -301,7 +301,47 @@ public:
                     ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, ref, x.m_value, nullptr));
                     doloop_body.push_back(al, assign);
                 } else {
-                    doloop_body.push_back(al, doloop);
+                doloop_body.push_back(al, doloop);
+                }
+                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc, head, doloop_body.p, doloop_body.size()));
+            }
+            pass_result.push_back(al, doloop);
+        } else if ( !ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) &&
+                   !ASR::is_a<ASR::FunctionCall_t>(*x.m_value) &&
+                   ASR::is_a<ASR::ArraySection_t>(*x.m_target) ) {
+            contains_array = true;
+            visit_expr(*(x.m_value)); // TODO: Add support for updating contains array in all types of expressions
+            if( contains_array ) {
+                return ;
+            }
+            ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            ASR::expr_t* target = target_section->m_v;
+            int n_dims = PassUtils::get_rank(target);
+            Vec<ASR::expr_t*> idx_vars;
+            PassUtils::create_idx_vars(idx_vars, n_dims, x.base.base.loc, al, current_scope);
+            ASR::stmt_t* doloop = nullptr;
+            for( int i = n_dims - 1; i >= 0; i-- ) {
+                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, target->base.loc, 4, nullptr, 0));
+                ASR::do_loop_head_t head;
+                head.m_v = idx_vars[i];
+                ASR::expr_t* start_expr = target_section->m_args[0].m_left;
+                ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
+                head.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, target->base.loc, target, start_expr,
+                                int32_type, bound_type, nullptr));
+                bound_type = ASR::arrayboundType::UBound;
+                ASR::expr_t* end_expr = target_section->m_args[0].m_right;
+                head.m_end = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, target->base.loc, target, end_expr,
+                                int32_type, bound_type, nullptr));
+                head.m_increment = nullptr;
+                head.loc = head.m_v->base.loc;
+                Vec<ASR::stmt_t*> doloop_body;
+                doloop_body.reserve(al, 1);
+                if( doloop == nullptr ) {
+                    ASR::expr_t* ref = PassUtils::create_array_ref(target, idx_vars, al);
+                    ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, ref, x.m_value, nullptr));
+                    doloop_body.push_back(al, assign);
+                } else {
+                doloop_body.push_back(al, doloop);
                 }
                 doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc, head, doloop_body.p, doloop_body.size()));
             }
