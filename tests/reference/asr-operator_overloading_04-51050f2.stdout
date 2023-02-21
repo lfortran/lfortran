@@ -102,6 +102,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             string_type:
                                 (StructType
@@ -232,6 +234,8 @@
                                     )]
                                     (Var 5 trimmed_string)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             ~assign:
                                 (CustomOperator
@@ -355,6 +359,8 @@
                                     []
                                     (Var 7 chomped_string)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             string_type:
                                 (ExternalSymbol

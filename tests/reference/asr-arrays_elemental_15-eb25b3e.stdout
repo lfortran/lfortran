@@ -206,6 +206,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             elemental_sin:
                                 (Function
@@ -535,6 +537,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             elemental_trig_identity:
                                 (Function
@@ -1051,6 +1055,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             verify1d:
                                 (Function
@@ -1280,6 +1286,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             verify2d:
                                 (Function
@@ -1568,6 +1576,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             verifynd:
                                 (Function
@@ -1908,6 +1918,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     arrays_elemental_15

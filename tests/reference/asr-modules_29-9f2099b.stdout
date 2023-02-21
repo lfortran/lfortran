@@ -126,6 +126,8 @@
                                     )]
                                     (Var 17 self)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             git_target_t:
                                 (StructType
@@ -412,6 +414,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             new_dependency:
                                 (Function
@@ -528,6 +532,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             toml_table:
                                 (StructType
@@ -829,6 +835,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             toml_table:
                                 (ExternalSymbol

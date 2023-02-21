@@ -89,6 +89,8 @@
                                     []
                                     (Var 229 alnorm_return_var_name)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -181,6 +183,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             exp:
                                 (ExternalSymbol
@@ -469,6 +473,8 @@
                     (Return)]
                     (Var 2 prho)
                     Public
+                    .false.
+                    .false.
                 )
         })
     []

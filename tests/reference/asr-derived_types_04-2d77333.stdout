@@ -70,6 +70,8 @@
                                     []
                                     (Var 4 all)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             bitset_type:
                                 (StructType

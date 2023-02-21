@@ -591,7 +591,8 @@ public:
             s_access, deftype, bindc_name,
             is_pure, is_module, false, false, false,
             /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
-            /* n_type_parameters */ params.size(), nullptr, 0, is_requirement);
+            /* n_type_parameters */ params.size(), nullptr, 0, is_requirement,
+            false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
@@ -910,7 +911,8 @@ public:
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, false, false, false, false,
             /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
-            /* n_type_parameters */ params.size(), nullptr, 0, is_requirement);
+            /* n_type_parameters */ params.size(), nullptr, 0, is_requirement,
+            false, false);
         if (is_requirement) current_requirement_functions.push_back(tmp);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;

@@ -135,6 +135,8 @@
                                     )]
                                     (Var 3 c)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             func2:
                                 (Function
@@ -334,6 +336,8 @@
                                     )]
                                     (Var 4 c)
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable

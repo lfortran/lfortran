@@ -17,8 +17,9 @@ def run_cmd(cmd, cwd=None):
         print("Command failed.")
         exit(1)
 
-def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool,
-                specific_backends=None, excluded_backends=None) -> None:
+def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: bool,
+                update_reference: bool, no_color: bool, specific_backends=None,
+                excluded_backends=None) -> None:
     def is_included(backend):
         return test.get(backend, False) \
             and (specific_backends is None or backend in specific_backends) \

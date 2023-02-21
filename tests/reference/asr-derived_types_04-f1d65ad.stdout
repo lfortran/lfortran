@@ -145,6 +145,8 @@
                                     )]
                                     ()
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             datetime_to_string:
                                 (Function
@@ -391,6 +393,8 @@
                                     )]
                                     ()
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             new_toml_time:
                                 (Function
@@ -687,6 +691,8 @@
                                     )]
                                     (Var 9 self)
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             time_to_string:
                                 (Function
@@ -981,6 +987,8 @@
                                     )]
                                     ()
                                     Private
+                                    .false.
+                                    .false.
                                 ),
                             toml_date:
                                 (StructType

@@ -66,6 +66,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             assign_logint8_large:
                                 (Function
@@ -128,6 +130,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             error_handler:
                                 (Function
@@ -245,6 +249,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             error_handler~genericprocedure:
                                 (Function
@@ -356,6 +362,8 @@
                                     []
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             ~assign:
                                 (CustomOperator

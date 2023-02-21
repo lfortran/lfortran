@@ -21,24 +21,27 @@ pushed back onto the stack.
 
 One of the reasons to use stack to pass function arguments is that,
 it allows us to define and call functions with any number of parameters.
-As registers are limited in number, if we use them to pass function arugments,
+As registers are limited in number, if we use them to pass function arguments,
 the number of arguments we could pass to a function would get limited by
 the number of registers available with the CPU.
 
 */
+
+enum Block {
+    LOOP = 0,
+    IF = 1
+};
 
 class X86Visitor : public WASMDecoder<X86Visitor>,
                    public WASM_INSTS_VISITOR::BaseWASMVisitor<X86Visitor> {
    public:
     X86Assembler &m_a;
     uint32_t cur_func_idx;
-    std::vector<std::string> if_unique_id;
-    std::vector<std::string> loop_unique_id;
-    uint32_t cur_nesting_length;
-    int32_t last_vis_i32_const, last_last_vis_i32_const;
+    uint32_t block_id;
+    uint32_t NO_OF_IMPORTS;
+    std::vector<std::pair<uint32_t, Block>> blocks;
     std::map<std::string, std::string> label_to_str;
     std::map<std::string, float> float_consts;
-    bool decoding_data_segment;
 
     X86Visitor(X86Assembler &m_a, Allocator &al,
                diag::Diagnostics &diagonostics, Vec<uint8_t> &code)
@@ -46,79 +49,82 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
           BaseWASMVisitor(code, 0U /* temporary offset */),
           m_a(m_a) {
         wasm_bytes.from_pointer_n(code.data(), code.size());
-        cur_nesting_length = 0;
-        decoding_data_segment = false;
+        block_id = 1;
+        NO_OF_IMPORTS = 0;
     }
 
     void visit_Unreachable() {}
 
-    void visit_Return() {}
+    void visit_EmtpyBlockType() {}
+
+    void visit_Drop() { m_a.asm_pop_r32(X86Reg::eax); }
+
+    void visit_Return() {
+        // Restore stack
+        m_a.asm_mov_r32_r32(X86Reg::esp, X86Reg::ebp);
+        m_a.asm_pop_r32(X86Reg::ebp);
+        m_a.asm_ret();
+    }
 
     void call_imported_function(uint32_t func_index) {
         switch (func_index) {
-            case 0: {  // print_i32
-                m_a.asm_call_label("print_i32");
-                m_a.asm_pop_r32(X86Reg::eax);
-                break;
-            }
-            case 1: {  // print_i64
-                std::cerr << "Call to print_i64() is not yet supported";
-                break;
-            }
-            case 2: {  // print_f32
-                std::cerr << "Call to print_f32() is not yet supported";
-                break;
-            }
-            case 3: {  // print_f64
-                m_a.asm_call_label("print_f64");
-                m_a.asm_add_r32_imm32(X86Reg::esp, 4);  // increment stack top and thus pop the value passed as argument
-                break;
-            }
-            case 4: {  // print_str
-                {
-                    // pop the string length and string location
-                    // we do not need them at the moment
-                    m_a.asm_pop_r32(X86Reg::eax);
-                    m_a.asm_pop_r32(X86Reg::eax);
-                }
-                std::string label =
-                    "string" + std::to_string(last_last_vis_i32_const);
-                emit_print(m_a, label,
-                           label_to_str[label].size());
-                break;
-            }
-            case 5: {  // flush_buf
-                std::string label = "string_newline";
-                std::string msg = "\n";
-                emit_print(m_a, label, msg.size());
-                label_to_str["string_newline"] = msg;
-                break;
-            }
-            case 6: {  // set_exit_code
+            case 0: {  // proc_exit
                 m_a.asm_jmp_label("my_exit");
                 break;
             }
+            case 1: {  // fd_write
+            /*
+                TODO: This way increases the number of intructions.
+                There is a possibility that we can wrap these statements
+                with some add label and then just jump/call to that label
+            */
+
+                m_a.asm_pop_r32(X86Reg::eax); // mem_loc to write return value (not usefull for us currently)
+                m_a.asm_pop_r32(X86Reg::eax); // no of iov vectors (always emitted 1 by wasm, not usefull for us currently)
+                m_a.asm_pop_r32(X86Reg::eax); // mem_loc to string iov vector
+                m_a.asm_pop_r32(X86Reg::ebx); // filetypes (1 for stdout)
+
+                m_a.asm_mov_r32_label(X86Reg::esi, "base_memory");
+                m_a.asm_add_r32_r32(X86Reg::esi, X86Reg::eax);
+
+                X86Reg base = X86Reg::esi;
+                m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, 0); // location
+                m_a.asm_mov_r32_m32(X86Reg::edx, &base, nullptr, 1, 4); // length
+
+                {
+                    // ssize_t write(int fd, const void *buf, size_t count);
+                    m_a.asm_mov_r32_imm32(X86Reg::ebx, 1); // fd (stdout)
+                    m_a.asm_mov_r32_label(X86Reg::ecx, "base_memory");
+                    m_a.asm_add_r32_r32(X86Reg::ecx, X86Reg::eax);
+                    m_a.asm_mov_r32_imm32(X86Reg::eax, 4); // sys_write
+                    // ecx stores location, length is already stored in edx
+                    m_a.asm_int_imm8(0x80);
+
+                    m_a.asm_push_r32(X86Reg::eax); // push return value onto stack
+                }
+
+
+                break;
+            }
             default: {
-                std::cerr << "Unsupported func_index";
+                std::cerr << "Unsupported func_index: " << func_index << std::endl;
             }
         }
     }
 
     void visit_Call(uint32_t func_index) {
-        if (func_index <= 6U) {
+        if (func_index < NO_OF_IMPORTS) {
             call_imported_function(func_index);
             return;
         }
 
-        uint32_t imports_adjusted_func_index = func_index - 7U;
-        m_a.asm_call_label(exports[imports_adjusted_func_index].name);
+        func_index -= NO_OF_IMPORTS;
+        m_a.asm_call_label(exports[func_index + 1 /* offset by 1 becaz of mem export */].name);
 
         // Pop the passed function arguments
         wasm::FuncType func_type =
-            func_types[type_indices[imports_adjusted_func_index]];
-        for (uint32_t i = 0; i < func_type.param_types.size(); i++) {
-            m_a.asm_pop_r32(X86Reg::eax);
-        }
+            func_types[type_indices[func_index]];
+        m_a.asm_add_r32_imm32(X86Reg::esp, 4 * func_type.param_types.size()); // pop the passed arguments
 
         // Adjust the return values of the called function
         X86Reg base = X86Reg::esp;
@@ -127,31 +133,35 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
             m_a.asm_mov_r32_m32(
                 X86Reg::eax, &base, nullptr, 1,
                 -(4 * (func_type.param_types.size() + 2 +
-                       codes[imports_adjusted_func_index].locals.size() + 1)));
+                       codes[func_index].locals.size() + 1)));
 
             // push eax value onto stack
             m_a.asm_push_r32(X86Reg::eax);
         }
     }
 
-    void visit_EmtpyBlockType() {}
 
-    void visit_Br(uint32_t label_index) {
+    void visit_Br(uint32_t labelidx) {
         // Branch is used to jump to the `loop.head` or `loop.end`.
-        if (loop_unique_id.size() + if_unique_id.size() - cur_nesting_length
-                == label_index  + 1) {
-            // cycle/continue or loop.end
-            m_a.asm_jmp_label(".loop.head_" + loop_unique_id.back());
-        } else {
-            // exit/break
-            m_a.asm_jmp_label(".loop.end_" + loop_unique_id.back());
+        uint32_t b_id;
+        Block block_type;
+        std::tie(b_id, block_type) = blocks[blocks.size() - 1 - labelidx];
+        std::string label = std::to_string(b_id);
+        switch (block_type) {
+            /*
+            From WebAssembly Docs:
+                The exact effect of branch depends on that control construct.
+                In case of block or if, it is a forward jump, resuming execution after the matching end.
+                In case of loop, it is a backward jump to the beginning of the loop.
+            */
+            case Block::LOOP: m_a.asm_jmp_label(".loop.head_" + label); break;
+            case Block::IF: m_a.asm_jmp_label(".else_" + label); break;
         }
     }
 
     void visit_Loop() {
-        uint32_t prev_nesting_length = cur_nesting_length;
-        cur_nesting_length = loop_unique_id.size() + if_unique_id.size();
-        loop_unique_id.push_back(std::to_string(offset));
+        std::string label = std::to_string(block_id);
+        blocks.push_back({block_id++, Block::LOOP});
         /*
         The loop statement starts with `loop.head`. The `loop.body` and
         `loop.branch` are enclosed within the `if.block`. If the condition
@@ -164,35 +174,34 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
             .endIf
         .end
         */
-        m_a.add_label(".loop.head_" + loop_unique_id.back());
+        m_a.add_label(".loop.head_" + label);
         {
             decode_instructions();
         }
         // end
-        m_a.add_label(".loop.end_" + loop_unique_id.back());
-        loop_unique_id.pop_back();
-        cur_nesting_length = prev_nesting_length;
+        m_a.add_label(".loop.end_" + label);
+        blocks.pop_back();
     }
 
     void visit_If() {
-        if_unique_id.push_back(std::to_string(offset));
-        // `eax` contains the logical value (true = 1, false = 0)
-        // of the if condition
-        m_a.asm_pop_r32(X86Reg::eax);
+        std::string label = std::to_string(block_id);
+        blocks.push_back({block_id++, Block::IF});
+        m_a.asm_pop_r32(X86Reg::eax); // now `eax` contains the logical value (true = 1, false = 0) of the if condition
         m_a.asm_cmp_r32_imm8(X86Reg::eax, 1);
-        m_a.asm_je_label(".then_" + if_unique_id.back());
-        m_a.asm_jmp_label(".else_" + if_unique_id.back());
-        m_a.add_label(".then_" + if_unique_id.back());
+        m_a.asm_je_label(".then_" + label);
+        m_a.asm_jmp_label(".else_" + label);
+        m_a.add_label(".then_" + label);
         {
             decode_instructions();
         }
-        m_a.add_label(".endif_" + if_unique_id.back());
-        if_unique_id.pop_back();
+        m_a.add_label(".endif_" + label);
+        blocks.pop_back();
     }
 
     void visit_Else() {
-        m_a.asm_jmp_label(".endif_" + if_unique_id.back());
-        m_a.add_label(".else_" + if_unique_id.back());
+        std::string label = std::to_string(blocks.back().first);
+        m_a.asm_jmp_label(".endif_" + label);
+        m_a.add_label(".else_" + label);
     }
 
     void visit_LocalGet(uint32_t localidx) {
@@ -202,30 +211,36 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
         if ((int)localidx < no_of_params) {
             std::string var_type = var_type_to_string[cur_func_param_type.param_types[localidx]];
             if (var_type == "i32") {
-                m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, 8 + 4 * localidx);
+                m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, 4 * (2 + no_of_params - (int)localidx - 1));
+                m_a.asm_push_r32(X86Reg::eax);
+            } else if (var_type == "i64") {
+                m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, 4 * (2 + no_of_params - (int)localidx - 1));
                 m_a.asm_push_r32(X86Reg::eax);
             } else if (var_type == "f64") {
-                m_a.asm_push_imm32(0); // decrement stack top and thus create space for value to get
+                m_a.asm_sub_r32_imm32(X86Reg::esp,  4); // create space for value to be fetched
                 X86Reg stack_top = X86Reg::esp;
-                m_a.asm_fld_m32(&base, nullptr, 1, 8 + 4 * localidx);
+                m_a.asm_fld_m32(&base, nullptr, 1, 4 * (2 + no_of_params - (int)localidx - 1));
                 m_a.asm_fstp_m32(&stack_top, nullptr, 1, 0);
             } else {
-                throw CodeGenError("WASM_X86: Var type not supported");
+                throw AssemblerError("WASM_X86: Var type not supported");
             }
 
         } else {
             localidx -= no_of_params;
             std::string var_type = var_type_to_string[codes[cur_func_idx].locals[localidx].type];
             if (var_type == "i32") {
-                m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, -4 - 4 * localidx);
+                m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, -4 * (1 + localidx));
+                m_a.asm_push_r32(X86Reg::eax);
+            } else if (var_type == "i64") {
+                m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, -4 * (1 + localidx));
                 m_a.asm_push_r32(X86Reg::eax);
             } else if (var_type == "f64") {
-                m_a.asm_push_imm32(0); // decrement stack top and thus create space for value to get
+                m_a.asm_sub_r32_imm32(X86Reg::esp,  4); // create space for value to be fetched
                 X86Reg stack_top = X86Reg::esp;
-                m_a.asm_fld_m32(&base, nullptr, 1, -4 - 4 * localidx);
+                m_a.asm_fld_m32(&base, nullptr, 1, -4 * (1 + localidx));
                 m_a.asm_fstp_m32(&stack_top, nullptr, 1, 0);
             } else {
-                throw CodeGenError("WASM_X86: Var type not supported");
+                throw AssemblerError("WASM_X86: Var type not supported");
             }
         }
     }
@@ -237,14 +252,17 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
             std::string var_type = var_type_to_string[cur_func_param_type.param_types[localidx]];
             if (var_type == "i32") {
                 m_a.asm_pop_r32(X86Reg::eax);
-                m_a.asm_mov_m32_r32(&base, nullptr, 1, 8 + 4 * localidx, X86Reg::eax);
+                m_a.asm_mov_m32_r32(&base, nullptr, 1, 4 * (2 + no_of_params - (int)localidx - 1), X86Reg::eax);
+            } else if (var_type == "i64") {
+                m_a.asm_pop_r32(X86Reg::eax);
+                m_a.asm_mov_m32_r32(&base, nullptr, 1, 4 * (2 + no_of_params - (int)localidx - 1), X86Reg::eax);
             } else if (var_type == "f64") {
                 X86Reg stack_top = X86Reg::esp;
                 m_a.asm_fld_m32(&stack_top, nullptr, 1, 0); // load stack top into floating register stack
-                m_a.asm_fstp_m32(&base, nullptr, 1, 8 + 4 * localidx); // store float at variable location
+                m_a.asm_fstp_m32(&base, nullptr, 1, 4 * (2 + no_of_params - (int)localidx - 1)); // store float at variable location
                 m_a.asm_add_r32_imm32(X86Reg::esp, 4); // increment stack top and thus pop the value to be set
             } else {
-                throw CodeGenError("WASM_X86: Var type not supported");
+                throw AssemblerError("WASM_X86: Var type not supported");
             }
 
         } else {
@@ -252,79 +270,68 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
             std::string var_type = var_type_to_string[codes[cur_func_idx].locals[localidx].type];
             if (var_type == "i32") {
                 m_a.asm_pop_r32(X86Reg::eax);
-                m_a.asm_mov_m32_r32(&base, nullptr, 1, -4 - 4 * localidx, X86Reg::eax);
+                m_a.asm_mov_m32_r32(&base, nullptr, 1, -4 * (1 + (int)localidx), X86Reg::eax);
+            } else if (var_type == "i64") {
+                m_a.asm_pop_r32(X86Reg::eax);
+                m_a.asm_mov_m32_r32(&base, nullptr, 1, -4 * (1 + (int)localidx), X86Reg::eax);
             } else if (var_type == "f64") {
                 X86Reg stack_top = X86Reg::esp;
                 m_a.asm_fld_m32(&stack_top, nullptr, 1, 0); // load stack top into floating register stack
-                m_a.asm_fstp_m32(&base, nullptr, 1, -4 - 4 * localidx); // store float at variable location
+                m_a.asm_fstp_m32(&base, nullptr, 1, -4 * (1 + (int)localidx)); // store float at variable location
                 m_a.asm_add_r32_imm32(X86Reg::esp, 4); // increment stack top and thus pop the value to be set
             } else {
-                throw CodeGenError("WASM_X86: Var type not supported");
+                throw AssemblerError("WASM_X86: Var type not supported");
             }
         }
     }
 
     void visit_I32Eqz() {
         m_a.asm_push_imm32(0U);
-        handle_I32Compare("Eq");
+        handle_I32Compare<&X86Assembler::asm_je_label>();
     }
 
     void visit_I32Const(int32_t value) {
-        if (!decoding_data_segment) {
-            m_a.asm_push_imm32(value);
-        }
+        m_a.asm_push_imm32(value);
+    }
 
-        // TODO: Following seems/is hackish. Fix/Improve it.
-        last_last_vis_i32_const = last_vis_i32_const;
-        last_vis_i32_const = value;
+    void visit_I32WrapI64() {
+        // empty, since i32's and i64's are considered similar currently.
+    }
+
+    template<typename F>
+    void handleI32Opt(F && f) {
+        m_a.asm_pop_r32(X86Reg::ebx);
+        m_a.asm_pop_r32(X86Reg::eax);
+        f();
+        m_a.asm_push_r32(X86Reg::eax);
     }
 
     void visit_I32Add() {
-        m_a.asm_pop_r32(X86Reg::ebx);
-        m_a.asm_pop_r32(X86Reg::eax);
-        m_a.asm_add_r32_r32(X86Reg::eax, X86Reg::ebx);
-        m_a.asm_push_r32(X86Reg::eax);
+        handleI32Opt([&](){ m_a.asm_add_r32_r32(X86Reg::eax, X86Reg::ebx);});
     }
     void visit_I32Sub() {
-        m_a.asm_pop_r32(X86Reg::ebx);
-        m_a.asm_pop_r32(X86Reg::eax);
-        m_a.asm_sub_r32_r32(X86Reg::eax, X86Reg::ebx);
-        m_a.asm_push_r32(X86Reg::eax);
+        handleI32Opt([&](){ m_a.asm_sub_r32_r32(X86Reg::eax, X86Reg::ebx);});
     }
     void visit_I32Mul() {
-        m_a.asm_pop_r32(X86Reg::ebx);
-        m_a.asm_pop_r32(X86Reg::eax);
-        m_a.asm_mul_r32(X86Reg::ebx);
-        m_a.asm_push_r32(X86Reg::eax);
+        handleI32Opt([&](){ m_a.asm_mul_r32(X86Reg::ebx);});
     }
     void visit_I32DivS() {
-        m_a.asm_pop_r32(X86Reg::ebx);
-        m_a.asm_pop_r32(X86Reg::eax);
-        m_a.asm_div_r32(X86Reg::ebx);
-        m_a.asm_push_r32(X86Reg::eax);
+        handleI32Opt([&](){
+            m_a.asm_mov_r32_imm32(X86Reg::edx, 0);
+            m_a.asm_div_r32(X86Reg::ebx);
+        });
     }
 
-    void handle_I32Compare(const std::string &compare_op) {
+    using JumpFn = void(X86Assembler::*)(const std::string&);
+    template<JumpFn T>
+    void handle_I32Compare() {
         std::string label = std::to_string(offset);
         m_a.asm_pop_r32(X86Reg::ebx);
         m_a.asm_pop_r32(X86Reg::eax);
         // `eax` and `ebx` contain the left and right operands, respectively
         m_a.asm_cmp_r32_r32(X86Reg::eax, X86Reg::ebx);
-        if (compare_op == "Eq") {
-            m_a.asm_je_label(".compare_1" + label);
-        } else if (compare_op == "Gt") {
-            m_a.asm_jg_label(".compare_1" + label);
-        } else if (compare_op == "GtE") {
-            m_a.asm_jge_label(".compare_1" + label);
-        } else if (compare_op == "Lt") {
-            m_a.asm_jl_label(".compare_1" + label);
-        } else if (compare_op == "LtE") {
-            m_a.asm_jle_label(".compare_1" + label);
-        } else if (compare_op == "NotEq") {
-            m_a.asm_jne_label(".compare_1" + label);
-        } else {
-            throw CodeGenError("Comparison operator not implemented");
-        }
+
+        (m_a.*T)(".compare_1" + label);
         // if the `compare` condition in `true`, jump to compare_1
         // and assign `1` else assign `0`
         m_a.asm_push_imm8(0);
@@ -334,22 +341,105 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
         m_a.add_label(".compare.end_" + label);
     }
 
-    void visit_I32Eq() { handle_I32Compare("Eq"); }
-    void visit_I32GtS() { handle_I32Compare("Gt"); }
-    void visit_I32GeS() { handle_I32Compare("GtE"); }
-    void visit_I32LtS() { handle_I32Compare("Lt"); }
-    void visit_I32LeS() { handle_I32Compare("LtE"); }
-    void visit_I32Ne() { handle_I32Compare("NotEq"); }
+    void visit_I32Eq() { handle_I32Compare<&X86Assembler::asm_je_label>(); }
+    void visit_I32GtS() { handle_I32Compare<&X86Assembler::asm_jg_label>(); }
+    void visit_I32GeS() { handle_I32Compare<&X86Assembler::asm_jge_label>(); }
+    void visit_I32LtS() { handle_I32Compare<&X86Assembler::asm_jl_label>(); }
+    void visit_I32LeS() { handle_I32Compare<&X86Assembler::asm_jle_label>(); }
+    void visit_I32Ne() { handle_I32Compare<&X86Assembler::asm_jne_label>(); }
 
-    void visit_F64Const(double Z) {
-        float z = Z; // down cast 64-bit double to 32-bit float
-        std::string label = "float_" + std::to_string(z);
+    void visit_I64Const(int64_t value) {
+        m_a.asm_push_imm32(value);
+    }
+
+    void visit_I64ExtendI32S() {
+        // empty, since all i32's are already considered as i64's currently.
+    }
+
+    template<typename F>
+    void handleI64Opt(F && f) {
+        m_a.asm_pop_r32(X86Reg::ebx);
+        m_a.asm_pop_r32(X86Reg::eax);
+        f();
+        m_a.asm_push_r32(X86Reg::eax);
+    }
+
+    void visit_I64Add() {
+        handleI64Opt([&](){ m_a.asm_add_r32_r32(X86Reg::eax, X86Reg::ebx);});
+    }
+    void visit_I64Sub() {
+        handleI64Opt([&](){ m_a.asm_sub_r32_r32(X86Reg::eax, X86Reg::ebx);});
+    }
+    void visit_I64Mul() {
+        handleI64Opt([&](){ m_a.asm_mul_r32(X86Reg::ebx);});
+    }
+    void visit_I64DivS() {
+        handleI64Opt([&](){
+            m_a.asm_mov_r32_imm32(X86Reg::edx, 0);
+            m_a.asm_div_r32(X86Reg::ebx);
+        });
+    }
+
+    void visit_I64RemS() {
+        m_a.asm_pop_r32(X86Reg::ebx);
+        m_a.asm_pop_r32(X86Reg::eax);
+        m_a.asm_mov_r32_imm32(X86Reg::edx, 0);
+        m_a.asm_div_r32(X86Reg::ebx);
+        m_a.asm_push_r32(X86Reg::edx);
+    }
+
+    template<JumpFn T>
+    void handle_I64Compare() {
+        std::string label = std::to_string(offset);
+        m_a.asm_pop_r32(X86Reg::ebx);
+        m_a.asm_pop_r32(X86Reg::eax);
+        // `eax` and `ebx` contain the left and right operands, respectively
+        m_a.asm_cmp_r32_r32(X86Reg::eax, X86Reg::ebx);
+
+        (m_a.*T)(".compare_1" + label);
+        // if the `compare` condition in `true`, jump to compare_1
+        // and assign `1` else assign `0`
+        m_a.asm_push_imm8(0);
+        m_a.asm_jmp_label(".compare.end_" + label);
+        m_a.add_label(".compare_1" + label);
+        m_a.asm_push_imm8(1);
+        m_a.add_label(".compare.end_" + label);
+    }
+
+    void visit_I64Eq() { handle_I64Compare<&X86Assembler::asm_je_label>(); }
+    void visit_I64GtS() { handle_I64Compare<&X86Assembler::asm_jg_label>(); }
+    void visit_I64GeS() { handle_I64Compare<&X86Assembler::asm_jge_label>(); }
+    void visit_I64LtS() { handle_I64Compare<&X86Assembler::asm_jl_label>(); }
+    void visit_I64LeS() { handle_I64Compare<&X86Assembler::asm_jle_label>(); }
+    void visit_I64Ne() { handle_I64Compare<&X86Assembler::asm_jne_label>(); }
+
+     void visit_I64Eqz() {
+        m_a.asm_push_imm32(0U);
+        handle_I64Compare<&X86Assembler::asm_je_label>();
+    }
+
+    std::string float_to_str(float z) {
+        std::string float_str = "";
+        for (auto ch:std::to_string(z)) {
+            if (ch == '-') {
+                float_str += "neg_";
+            } else if (ch == '.') {
+                float_str += "_dot_";
+            } else {
+                float_str += ch;
+            }
+        }
+        return float_str;
+    }
+
+    void visit_F64Const(double z) {
+        std::string label = "float_" + float_to_str(z);
         float_consts[label] = z;
         m_a.asm_mov_r32_label(X86Reg::eax, label);
         X86Reg label_reg = X86Reg::eax;
         m_a.asm_fld_m32(&label_reg, nullptr, 1, 0); // loads into floating register stack
+        m_a.asm_sub_r32_imm32(X86Reg::esp,  4); // decrement stack and create space
         X86Reg stack_top = X86Reg::esp;
-        m_a.asm_push_imm32(0); // decrement stack and create space
         m_a.asm_fstp_m32(&stack_top, nullptr, 1, 0); // store float on integer stack top;
     }
 
@@ -357,49 +447,37 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
         emit_elf32_header(m_a);
 
         // Add runtime library functions
-        emit_print_int(m_a, "print_i32");
-        emit_print_float(m_a, "print_f64");
         emit_exit2(m_a, "my_exit");
 
-        decoding_data_segment = true;
         // declare compile-time strings
+         std::string base_memory = "    "; /* in wasm backend, memory starts after 4 bytes*/
         for (uint32_t i = 0; i < data_segments.size(); i++) {
-            offset = data_segments[i].insts_start_index;
-            decode_instructions();
-            std::string label = "string" + std::to_string(last_vis_i32_const);
-            label_to_str[label] = data_segments[i].text;
+            base_memory += data_segments[i].text;
         }
-        decoding_data_segment = false;
+        label_to_str["base_memory"] = base_memory;
 
+        NO_OF_IMPORTS = imports.size();
         for (uint32_t i = 0; i < type_indices.size(); i++) {
-            if (i < type_indices.size() - 1U) {
-                m_a.add_label(exports[i].name);
-            } else {
-                m_a.add_label("_start");
+            std::string func = exports[i + 1 /* offset by 1 becaz of mem export */].name;
+            if (func == "print_f64") {
+                // "print_f64" needs floating-point comparison support, which is
+                // not yet supported in the wasm_x86 backend, hence skipping it.
+                continue;
             }
+            m_a.add_label(func);
 
             {
                 // Initialize the stack
                 m_a.asm_push_r32(X86Reg::ebp);
                 m_a.asm_mov_r32_r32(X86Reg::ebp, X86Reg::esp);
 
-                // Initialze local variables to zero and thus allocate space
-                m_a.asm_mov_r32_imm32(X86Reg::eax, 0U);
-                for (uint32_t j = 0; j < codes.p[i].locals.size(); j++) {
-                    for (uint32_t k = 0; k < codes.p[i].locals.p[j].count;
-                         k++) {
-                        m_a.asm_push_r32(X86Reg::eax);
-                    }
-                }
+                 // Allocate space for local variables
+                // TODO: locals is an array where every element has a count (currently wasm emits count = 1 always)
+                m_a.asm_sub_r32_imm32(X86Reg::esp, 4 * codes[i].locals.size());
 
                 offset = codes.p[i].insts_start_index;
                 cur_func_idx = i;
                 decode_instructions();
-
-                // Restore stack
-                m_a.asm_mov_r32_r32(X86Reg::esp, X86Reg::ebp);
-                m_a.asm_pop_r32(X86Reg::ebp);
-                m_a.asm_ret();
             }
         }
 

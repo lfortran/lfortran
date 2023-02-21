@@ -136,6 +136,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     test_scan_module
@@ -360,6 +362,8 @@
                                     )]
                                     (Var 5 r)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     test_scan_verify

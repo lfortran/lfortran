@@ -91,6 +91,8 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
                                 ),
                             fn:
                                 (Function
@@ -176,6 +178,8 @@
                                     )]
                                     (Var 3 fn)
                                     Public
+                                    .false.
+                                    .false.
                                 )
                         })
                     preprocessor12
