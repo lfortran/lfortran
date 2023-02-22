@@ -1309,6 +1309,18 @@ public:
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
             ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                 curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
+            if (ASRUtils::is_character(*curr_arg_m_a_type)) {
+                int dims = ASR::down_cast<ASR::Character_t>(curr_arg_m_a_type)->n_dims;
+                if (dims == 0) {
+                    // Initialize allocatable strings with empty string.
+                    // TODO: Add ASR reference to capture the length of the string
+                    // during initialization.
+                    std::string _temp(1, ' ');
+                    llvm::Value *init_value = builder->CreateGlobalStringPtr(s2c(al, _temp));
+                    builder->CreateStore(init_value, x_arr);
+                    return;
+                }
+            }
             llvm::Type* llvm_data_type = get_type_from_ttype_t_util(asr_data_type);
             fill_malloc_array_details(x_arr, llvm_data_type, curr_arg.m_dims, curr_arg.n_dims);
         }
@@ -1376,6 +1388,15 @@ public:
             }
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                     symbol_get_past_external(curr_obj));
+
+            if (ASRUtils::is_character(*v->m_type)) {
+                int dims = ASR::down_cast<ASR::Character_t>(v->m_type)->n_dims;
+                if (dims == 0) {
+                    // TODO: Currently strings are just initialized with
+                    // empty chars during visit_Allocate.
+                    continue;
+                }
+            }
             fetch_var(v);
             llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp);
             create_if_else(cond, [=]() {
@@ -4311,7 +4332,7 @@ public:
             }
             if( arr_descr->is_array(ASRUtils::get_contained_type(asr_target_type)) ) {
                 if( asr_target->m_type->type ==
-                    ASR::ttypeType::Character ) {
+                    ASR::ttypeType::Character) {
                     target = CreateLoad(arr_descr->get_pointer_to_data(target));
                 }
             }
