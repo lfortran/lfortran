@@ -1,27 +1,141 @@
 (module
     (type (;0;) (func (param i32) (result)))
     (type (;1;) (func (param i32 i32 i32 i32) (result i32)))
-    (type (;2;) (func (param i64) (result)))
-    (type (;3;) (func (param f64) (result)))
-    (type (;4;) (func (param i32) (result i32)))
-    (type (;5;) (func (param f32 f32) (result f32)))
-    (type (;6;) (func (param f64) (result f64)))
-    (type (;7;) (func (param) (result f32)))
-    (type (;8;) (func (param) (result f32)))
-    (type (;9;) (func (param) (result f64)))
-    (type (;10;) (func (param f64) (result f64)))
-    (type (;11;) (func (param) (result)))
+    (type (;2;) (func (param i32) (result i32)))
+    (type (;3;) (func (param f32 f32) (result f32)))
+    (type (;4;) (func (param f64) (result f64)))
+    (type (;5;) (func (param) (result f32)))
+    (type (;6;) (func (param) (result f32)))
+    (type (;7;) (func (param) (result f64)))
+    (type (;8;) (func (param f64) (result f64)))
+    (type (;9;) (func (param) (result)))
+    (type (;10;) (func (param i64) (result)))
+    (type (;11;) (func (param f64) (result)))
     (import "wasi_snapshot_preview1" "proc_exit" (func (;0;) (type 0)))
     (import "wasi_snapshot_preview1" "fd_write" (func (;1;) (type 1)))
-    (global $0 i32 (i32.const 0))
-    (func $2 (type 2) (param i64) (result)
+    (global $0 (mut i32) (i32.const 0))
+    (global $1 (mut f32) (f32.const 0.000000))
+    (global $2 (mut f64) (f64.const 0.000000))
+    (func $2 (type 2) (param i32) (result i32)
+        (local i32)
+        i32.const 4
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $3 (type 3) (param f32 f32) (result f32)
+        (local f32)
+        local.get 0
+        local.get 1
+        f32.add
+        local.set 2
+        local.get 2
+        return
+    )
+    (func $4 (type 4) (param f64) (result f64)
+        (local f64 f64)
+        call 7
+        local.set 2
+        local.get 2
+        local.get 0
+        call 8
+        f64.mul
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $5 (type 5) (param) (result f32)
+        (local f32)
+        f32.const -2.500000
+        local.set 0
+        local.get 0
+        return
+    )
+    (func $6 (type 6) (param) (result f32)
+        (local f32)
+        f32.const 3.140000
+        local.set 0
+        local.get 0
+        return
+    )
+    (func $7 (type 7) (param) (result f64)
+        (local f64)
+        f64.const 3.140000
+        local.set 0
+        local.get 0
+        return
+    )
+    (func $8 (type 8) (param f64) (result f64)
+        (local f64)
+        local.get 0
+        local.get 0
+        f64.mul
+        local.set 1
+        local.get 1
+        return
+    )
+    (func $9 (type 9) (param) (result)
+        (local i32)
+        i32.const 8
+        local.set 0
+        f32.const -2.300000
+        f32.const 5.600000
+        call 3
+        f64.promote_f32
+        call 11
+        i32.const 1
+        i32.const 16
+        i32.const 1
+        i32.const 0
+        call 1
+        drop
+        call 5
+        f64.promote_f32
+        call 11
+        i32.const 1
+        i32.const 16
+        i32.const 1
+        i32.const 0
+        call 1
+        drop
+        call 6
+        f64.promote_f32
+        call 11
+        i32.const 1
+        i32.const 16
+        i32.const 1
+        i32.const 0
+        call 1
+        drop
+        call 7
+        call 11
+        i32.const 1
+        i32.const 16
+        i32.const 1
+        i32.const 0
+        call 1
+        drop
+        f64.const 5.000000
+        call 4
+        call 11
+        i32.const 1
+        i32.const 16
+        i32.const 1
+        i32.const 0
+        call 1
+        drop
+        i32.const 0
+        call 0
+        return
+    )
+    (func $10 (type 10) (param i64) (result)
         (local i64 i64 i64 i64)
         local.get 0
         i64.const 0
         i64.eq
         if
             i32.const 1
-            i32.const 52
+            i32.const 88
             i32.const 1
             i32.const 0
             call 1
@@ -103,7 +217,7 @@
                 i64.rem_s
                 i64.const 12
                 i64.mul
-                i64.const 52
+                i64.const 88
                 i64.add
                 local.set 0
                 i32.const 1
@@ -119,7 +233,7 @@
         end
         return
     )
-    (func $3 (type 3) (param f64) (result)
+    (func $11 (type 11) (param f64) (result)
         (local i64 i64 i64)
         local.get 0
         f64.const 0.000000
@@ -139,7 +253,7 @@
         end
         local.get 0
         i64.trunc_f64_s
-        call 2
+        call 10
         i32.const 1
         i32.const 40
         i32.const 1
@@ -189,7 +303,7 @@
                 i64.add
                 local.set 1
                 i32.const 1
-                i32.const 52
+                i32.const 88
                 i32.const 1
                 i32.const 0
                 call 1
@@ -199,133 +313,21 @@
             end
         end
         local.get 3
-        call 2
-        return
-    )
-    (func $4 (type 4) (param i32) (result i32)
-        (local i32)
-        i32.const 4
-        local.set 1
-        local.get 1
-        return
-    )
-    (func $5 (type 5) (param f32 f32) (result f32)
-        (local f32)
-        local.get 0
-        local.get 1
-        f32.add
-        local.set 2
-        local.get 2
-        return
-    )
-    (func $6 (type 6) (param f64) (result f64)
-        (local f64 f64)
-        call 9
-        local.set 2
-        local.get 2
-        local.get 0
         call 10
-        f64.mul
-        local.set 1
-        local.get 1
-        return
-    )
-    (func $7 (type 7) (param) (result f32)
-        (local f32)
-        f32.const -2.500000
-        local.set 0
-        local.get 0
-        return
-    )
-    (func $8 (type 8) (param) (result f32)
-        (local f32)
-        f32.const 3.140000
-        local.set 0
-        local.get 0
-        return
-    )
-    (func $9 (type 9) (param) (result f64)
-        (local f64)
-        f64.const 3.140000
-        local.set 0
-        local.get 0
-        return
-    )
-    (func $10 (type 10) (param f64) (result f64)
-        (local f64)
-        local.get 0
-        local.get 0
-        f64.mul
-        local.set 1
-        local.get 1
-        return
-    )
-    (func $11 (type 11) (param) (result)
-        (local i32)
-        i32.const 8
-        local.set 0
-        f32.const -2.300000
-        f32.const 5.600000
-        call 5
-        f64.promote_f32
-        call 3
-        i32.const 1
-        i32.const 16
-        i32.const 1
-        i32.const 0
-        call 1
-        drop
-        call 7
-        f64.promote_f32
-        call 3
-        i32.const 1
-        i32.const 16
-        i32.const 1
-        i32.const 0
-        call 1
-        drop
-        call 8
-        f64.promote_f32
-        call 3
-        i32.const 1
-        i32.const 16
-        i32.const 1
-        i32.const 0
-        call 1
-        drop
-        call 9
-        call 3
-        i32.const 1
-        i32.const 16
-        i32.const 1
-        i32.const 0
-        call 1
-        drop
-        f64.const 5.000000
-        call 6
-        call 3
-        i32.const 1
-        i32.const 16
-        i32.const 1
-        i32.const 0
-        call 1
-        drop
-        i32.const 0
-        call 0
         return
     )
     (memory (;0;) 100 100)
     (export "memory" (memory 0))
-    (export "print_i64" (func 2))
-    (export "print_f64" (func 3))
-    (export "kind" (func 4))
-    (export "add_floats" (func 5))
-    (export "computecirclearea" (func 6))
-    (export "get_neg_f32" (func 7))
-    (export "get_pi" (func 8))
-    (export "get_pi_64" (func 9))
-    (export "sqr" (func 10))
-    (export "_start" (func 11))
+    (export "kind" (func 2))
+    (export "add_floats" (func 3))
+    (export "computecirclearea" (func 4))
+    (export "get_neg_f32" (func 5))
+    (export "get_pi" (func 6))
+    (export "get_pi_64" (func 7))
+    (export "sqr" (func 8))
+    (export "_start" (func 9))
+    (export "print_i64" (func 10))
+    (export "print_f64" (func 11))
     (data (;0;) (i32.const 4) "\0c\00\00\00\01\00\00\00")
     (data (;1;) (i32.const 12) "    ")
     (data (;2;) (i32.const 16) "\18\00\00\00\01\00\00\00")
@@ -335,23 +337,29 @@
     (data (;6;) (i32.const 40) "\30\00\00\00\01\00\00\00")
     (data (;7;) (i32.const 48) ".   ")
     (data (;8;) (i32.const 52) "\3c\00\00\00\01\00\00\00")
-    (data (;9;) (i32.const 60) "0   ")
+    (data (;9;) (i32.const 60) "(   ")
     (data (;10;) (i32.const 64) "\48\00\00\00\01\00\00\00")
-    (data (;11;) (i32.const 72) "1   ")
+    (data (;11;) (i32.const 72) ")   ")
     (data (;12;) (i32.const 76) "\54\00\00\00\01\00\00\00")
-    (data (;13;) (i32.const 84) "2   ")
+    (data (;13;) (i32.const 84) ",   ")
     (data (;14;) (i32.const 88) "\60\00\00\00\01\00\00\00")
-    (data (;15;) (i32.const 96) "3   ")
+    (data (;15;) (i32.const 96) "0   ")
     (data (;16;) (i32.const 100) "\6c\00\00\00\01\00\00\00")
-    (data (;17;) (i32.const 108) "4   ")
+    (data (;17;) (i32.const 108) "1   ")
     (data (;18;) (i32.const 112) "\78\00\00\00\01\00\00\00")
-    (data (;19;) (i32.const 120) "5   ")
+    (data (;19;) (i32.const 120) "2   ")
     (data (;20;) (i32.const 124) "\84\00\00\00\01\00\00\00")
-    (data (;21;) (i32.const 132) "6   ")
+    (data (;21;) (i32.const 132) "3   ")
     (data (;22;) (i32.const 136) "\90\00\00\00\01\00\00\00")
-    (data (;23;) (i32.const 144) "7   ")
+    (data (;23;) (i32.const 144) "4   ")
     (data (;24;) (i32.const 148) "\9c\00\00\00\01\00\00\00")
-    (data (;25;) (i32.const 156) "8   ")
+    (data (;25;) (i32.const 156) "5   ")
     (data (;26;) (i32.const 160) "\a8\00\00\00\01\00\00\00")
-    (data (;27;) (i32.const 168) "9   ")
+    (data (;27;) (i32.const 168) "6   ")
+    (data (;28;) (i32.const 172) "\b4\00\00\00\01\00\00\00")
+    (data (;29;) (i32.const 180) "7   ")
+    (data (;30;) (i32.const 184) "\c0\00\00\00\01\00\00\00")
+    (data (;31;) (i32.const 192) "8   ")
+    (data (;32;) (i32.const 196) "\cc\00\00\00\01\00\00\00")
+    (data (;33;) (i32.const 204) "9   ")
 )
