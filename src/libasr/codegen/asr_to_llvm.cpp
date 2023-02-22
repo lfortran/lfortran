@@ -6702,6 +6702,36 @@ public:
                 if (args.size() > 1)
                     builder->CreateStore(tmp, args[1]);
                 return;
+            } else if (sub_name == "get_environment_variable") {
+                llvm::Function *fn = module->getFunction("_lfortran_get_env_variable");
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        character_type, {
+                            character_type
+                        }, false);
+                    fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, "_lfortran_get_env_variable", *module);
+                }
+                args = convert_call_args(x);
+                LCOMPILERS_ASSERT(args.size() > 0);
+                tmp = builder->CreateCall(fn, {CreateLoad(args[0])});
+                if (args.size() > 1)
+                    builder->CreateStore(tmp, args[1]);
+                return;
+            } else if (sub_name == "execute_command_line") {
+                llvm::Function *fn = module->getFunction("_lfortran_exec_command");
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getInt32Ty(context), {
+                            character_type
+                        }, false);
+                    fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, "_lfortran_exec_command", *module);
+                }
+                args = convert_call_args(x);
+                LCOMPILERS_ASSERT(args.size() > 0);
+                tmp = builder->CreateCall(fn, {CreateLoad(args[0])});
+                return;
             }
             h = get_hash((ASR::asr_t*)s);
         } else {

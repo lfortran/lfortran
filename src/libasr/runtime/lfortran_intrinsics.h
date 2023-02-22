@@ -217,6 +217,8 @@ LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]);
 LFORTRAN_API void _lpython_get_argc(int32_t *res);
 LFORTRAN_API char *_lpython_get_argv(int32_t index);
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors);
+LFORTRAN_API char *_lfortran_get_env_variable(char *name);
+LFORTRAN_API int _lfortran_exec_command(char *cmd);
 
 #ifdef __cplusplus
 }
