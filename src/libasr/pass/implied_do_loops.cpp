@@ -324,6 +324,11 @@ public:
                 ASR::do_loop_head_t head;
                 head.m_v = idx_vars[i];
                 ASR::expr_t* start_expr = target_section->m_args[0].m_left;
+                if (!start_expr) {
+                    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, target->base.loc, 4, nullptr, 0));
+                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+                    start_expr = one;
+                }
                 head.m_start = start_expr;
                 ASR::expr_t* end_expr = target_section->m_args[0].m_right;
                 head.m_end = end_expr;
