@@ -1083,6 +1083,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     bool is_unsupported_function(const ASR::Function_t &x) {
+        if (strcmp(x.m_name, "_start") == 0) return false;
+
         if (!x.n_body) {
             return true;
         }
