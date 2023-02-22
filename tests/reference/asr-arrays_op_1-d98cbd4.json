@@ -2,11 +2,11 @@
     "basename": "asr-arrays_op_1-d98cbd4",
     "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/arrays_op_1.f90",
-    "infile_hash": "be5b09f7d22cbcd7a3e696dd73d60576efa0c24ad30f580af6465613",
+    "infile_hash": "73847666ffcc90fb0f5e5015caa1d737771d889eab9b6afc60a958d9",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-arrays_op_1-d98cbd4.stdout",
-    "stdout_hash": "9fba79e546588aac20160d9c7866800a296b31f69dfe19ba153e5f92",
+    "stdout_hash": "7745b9e9bfee135b29db9eb3d72c59c004151770118e232f753a7c74",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
