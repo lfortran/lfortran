@@ -324,21 +324,17 @@ public:
                 ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, target->base.loc, 4, nullptr, 0));
                 ASR::do_loop_head_t head;
                 head.m_v = idx_vars[i];
-                //ASR::expr_t* start_expr = target_section->m_args[0].m_left;
+                ASR::expr_t* start_expr = target_section->m_args[0].m_left;
                 ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
                 ASR::ttype_t *dim_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
                             target->base.loc, 4, nullptr, 0));
                 ASR::expr_t *dim =
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                                 target->base.loc, i+1, dim_type));
-                head.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(al,
-                            target->base.loc, target, dim, int32_type,
-                            bound_type, nullptr));
+                head.m_start = start_expr;
                 bound_type = ASR::arrayboundType::UBound;
-                //ASR::expr_t* end_expr = target_section->m_args[0].m_right;
-                head.m_end = ASRUtils::EXPR(ASR::make_ArrayBound_t(al,
-                            target->base.loc, target, dim, int32_type,
-                            bound_type, nullptr));
+                ASR::expr_t* end_expr = target_section->m_args[0].m_right;
+                head.m_end = end_expr;
                 head.m_increment = nullptr;
                 head.loc = head.m_v->base.loc;
                 Vec<ASR::stmt_t*> doloop_body;
