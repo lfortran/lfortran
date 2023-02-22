@@ -48,21 +48,6 @@
                                     Required
                                     .false.
                                 ),
-                            i:
-                                (Variable
-                                    2
-                                    i
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
                             len_trim:
                                 (ExternalSymbol
                                     2
@@ -90,7 +75,7 @@
                         2 get_environment_variable
                         ()
                         [((StringConstant
-                            "home"
+                            "HOME"
                             (Character 1 4 () [])
                         ))
                         ((Var 2 homedir))]
