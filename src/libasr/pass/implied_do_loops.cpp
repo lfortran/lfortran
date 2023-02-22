@@ -321,17 +321,12 @@ public:
             PassUtils::create_idx_vars(idx_vars, n_dims, x.base.base.loc, al, current_scope);
             ASR::stmt_t* doloop = nullptr;
             for( int i = n_dims - 1; i >= 0; i-- ) {
-                ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, target->base.loc, 4, nullptr, 0));
                 ASR::do_loop_head_t head;
                 head.m_v = idx_vars[i];
                 ASR::expr_t* start_expr = target_section->m_args[0].m_left;
-                ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
-                head.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, target->base.loc, target, start_expr,
-                                int32_type, bound_type, nullptr));
-                bound_type = ASR::arrayboundType::UBound;
+                head.m_start = start_expr;
                 ASR::expr_t* end_expr = target_section->m_args[0].m_right;
-                head.m_end = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, target->base.loc, target, end_expr,
-                                int32_type, bound_type, nullptr));
+                head.m_end = end_expr;
                 head.m_increment = nullptr;
                 head.loc = head.m_v->base.loc;
                 Vec<ASR::stmt_t*> doloop_body;
