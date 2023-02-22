@@ -818,6 +818,11 @@ asr = true
 llvm = true
 
 [[test]]
+filename = "../integration_tests/arrays_op_10.f90"
+asr = true
+pass = "array_op"
+
+[[test]]
 filename = "../integration_tests/arrays_reshape_14.f90"
 asr = true
 

@@ -58,7 +58,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                            "dead_code_removal"]
 
     if pass_ and (pass_ not in ["do_loops", "global_stmts",
-                                "transform_optional_argument_functions"] and
+                                "transform_optional_argument_functions",
+                                "array_op"] and
                   pass_ not in optimization_passes):
         raise Exception(f"Unknown pass: {pass_}")
     log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
