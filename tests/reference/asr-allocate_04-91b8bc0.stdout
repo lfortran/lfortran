@@ -64,6 +64,30 @@
                         ()
                         ()
                     )
+                    (=
+                        (Var 2 string)
+                        (StringConstant
+                            "lfortran"
+                            (Character 1 8 () [])
+                        )
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 string)
+                            NotEq
+                            (StringConstant
+                                "lfortran"
+                                (Character 1 8 () [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (ImplicitDeallocate
                         [(Var 2 c)
                         (Var 2 string)]
