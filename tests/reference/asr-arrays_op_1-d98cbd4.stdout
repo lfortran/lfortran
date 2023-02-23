@@ -531,6 +531,102 @@
                         ()
                         ()
                     )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                6.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                6.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                14.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                24.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (=
                         (Var 2 d)
                         (RealBinOp
@@ -603,6 +699,109 @@
                         ()
                         ()
                     )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealUnaryMinus
+                                (RealConstant
+                                    3.000000
+                                    (Real 4 [])
+                                )
+                                (Real 4 [])
+                                (RealConstant
+                                    -3.000000
+                                    (Real 4 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                2.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                3.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (=
                         (Var 2 d)
                         (RealBinOp
@@ -668,6 +867,102 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                4.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (=
                         (Var 2 d)
@@ -751,6 +1046,102 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                2.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                5.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                24.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (ArrayItem
+                                (Var 2 d)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Real 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                63.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 )
         })

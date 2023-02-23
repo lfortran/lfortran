@@ -234,6 +234,51 @@ jobs:
             examples/example_primes
             ctest
 
+  fpm:
+    name: Check fpm Compilation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/provision-with-micromamba@v12
+        with:
+          environment-file: ci/environment_linux.yml
+          extra-specs: |
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test fpm
+        shell: bash -x -l {0}
+        run: |
+            git clone https://github.com/certik/fpm.git
+            cd fpm
+            git checkout lfortran_build_1
+            git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
+            export PATH="$(pwd)/../src/bin:$PATH"
+            ./build.sh
+
   test_llvm_10:
     name: Test LLVM 10
     runs-on: ubuntu-latest

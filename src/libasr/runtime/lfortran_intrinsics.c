@@ -919,7 +919,7 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int3
     return dest_char;
 }
 
-LFORTRAN_API int _lfortran_str_len(char** s)
+LFORTRAN_API int32_t _lfortran_str_len(char** s)
 {
     return strlen(*s);
 }
@@ -1257,8 +1257,8 @@ LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]) {
     argc = argc_1;
 }
 
-LFORTRAN_API int32_t _lpython_get_argc() {
-    return argc;
+LFORTRAN_API void _lpython_get_argc(int32_t *res) {
+    *res = argc;
 }
 
 LFORTRAN_API char *_lpython_get_argv(int32_t index) {
@@ -1565,3 +1565,11 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 }
 
 // << Runtime Stacktrace << ----------------------------------------------------
+
+LFORTRAN_API char *_lfortran_get_env_variable(char *name) {
+    return getenv(name);
+}
+
+LFORTRAN_API int _lfortran_exec_command(char *cmd) {
+    return system(cmd);
+}
