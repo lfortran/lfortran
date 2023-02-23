@@ -164,9 +164,9 @@
                                         (=
                                             (Var 4 message)
                                             (StringConcat
-                                                (ArraySection
+                                                (StringSection
                                                     (Var 4 num)
-                                                    [((IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerConstant 1 (Integer 4 []))
                                                     (IntegerBinOp
                                                         (FunctionCall
                                                             4 len_trim
@@ -181,12 +181,12 @@
                                                         (Integer 4 [])
                                                         ()
                                                     )
-                                                    (IntegerConstant 1 (Integer 4 [])))]
-                                                    (Character 1 20 () [])
+                                                    (IntegerConstant 1 (Integer 4 []))
+                                                    (Character 1 -1 () [])
                                                     ()
                                                 )
                                                 (Var 4 message)
-                                                (Character 1 18 () [])
+                                                (Character 1 -3 () [])
                                                 ()
                                             )
                                             ()

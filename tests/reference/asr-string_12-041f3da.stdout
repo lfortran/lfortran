@@ -13,11 +13,11 @@
                                     digits
                                     [hex_digits]
                                     Local
-                                    (ArraySection
+                                    (StringSection
                                         (Var 2 hex_digits)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 10 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 [])))]
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 22 () [])
                                         (StringConstant
                                             "0123456789"
@@ -62,11 +62,11 @@
                                     hex_digits
                                     [fullhex_digits]
                                     Local
-                                    (ArraySection
+                                    (StringSection
                                         (Var 2 fullhex_digits)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 16 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 [])))]
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 22 () [])
                                         (StringConstant
                                             "0123456789ABCDEF"
@@ -111,11 +111,11 @@
                                     lowercase
                                     [letters]
                                     Local
-                                    (ArraySection
+                                    (StringSection
                                         (Var 2 letters)
-                                        [((IntegerConstant 27 (Integer 4 []))
+                                        (IntegerConstant 27 (Integer 4 []))
                                         (IntegerConstant 52 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 [])))]
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 52 () [])
                                         (StringConstant
                                             "abcdefghijklmnopqrstuvwxyz"
@@ -160,11 +160,11 @@
                                     octal_digits
                                     [digits]
                                     Local
-                                    (ArraySection
+                                    (StringSection
                                         (Var 2 digits)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 8 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 [])))]
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 22 () [])
                                         (StringConstant
                                             "01234567"
@@ -188,11 +188,11 @@
                                     uppercase
                                     [letters]
                                     Local
-                                    (ArraySection
+                                    (StringSection
                                         (Var 2 letters)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 26 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 [])))]
+                                        (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 52 () [])
                                         (StringConstant
                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
