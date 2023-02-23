@@ -327,7 +327,9 @@ public:
                 if (!start_expr) {
                     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, target->base.loc, 4, nullptr, 0));
                     ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-                    start_expr = one;
+                    ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
+                    start_expr = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, target->base.loc, target, one,
+                                    int32_type, bound_type, nullptr));
                 }
                 head.m_start = start_expr;
                 ASR::expr_t* end_expr = target_section->m_args[0].m_right;
