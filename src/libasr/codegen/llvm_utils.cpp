@@ -3,33 +3,33 @@
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
 
-namespace LFortran {
+namespace LCompilers {
 
     namespace LLVM {
 
         llvm::Value* CreateLoad(llvm::IRBuilder<> &builder, llvm::Value *x) {
             llvm::Type *t = x->getType();
-            LFORTRAN_ASSERT(t->isPointerTy());
+            LCOMPILERS_ASSERT(t->isPointerTy());
             llvm::Type *t2 = t->getContainedType(0);
             return builder.CreateLoad(t2, x);
         }
 
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
-            LFORTRAN_ASSERT(y->getType()->isPointerTy());
+            LCOMPILERS_ASSERT(y->getType()->isPointerTy());
             return builder.CreateStore(x, y);
         }
 
 
         llvm::Value* CreateGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx) {
             llvm::Type *t = x->getType();
-            LFORTRAN_ASSERT(t->isPointerTy());
+            LCOMPILERS_ASSERT(t->isPointerTy());
             llvm::Type *t2 = t->getContainedType(0);
             return builder.CreateGEP(t2, x, idx);
         }
 
         llvm::Value* CreateInBoundsGEP(llvm::IRBuilder<> &builder, llvm::Value *x, std::vector<llvm::Value *> &idx) {
             llvm::Type *t = x->getType();
-            LFORTRAN_ASSERT(t->isPointerTy());
+            LCOMPILERS_ASSERT(t->isPointerTy());
             llvm::Type *t2 = t->getContainedType(0);
             return builder.CreateInBoundsGEP(t2, x, idx);
         }
@@ -157,7 +157,7 @@ namespace LFortran {
                     type_ptr = llvm::Type::getInt64PtrTy(context);
                     break;
                 default:
-                    LFORTRAN_ASSERT(false);
+                    LCOMPILERS_ASSERT(false);
             }
         } else {
             switch(a_kind)
@@ -175,7 +175,7 @@ namespace LFortran {
                     type_ptr = llvm::Type::getInt64Ty(context);
                     break;
                 default:
-                    LFORTRAN_ASSERT(false);
+                    LCOMPILERS_ASSERT(false);
             }
         }
         return type_ptr;
@@ -236,7 +236,10 @@ namespace LFortran {
         switch( asr_type->type ) {
             case ASR::ttypeType::Integer: {
                 return builder->CreateICmpEQ(left, right);
-            };
+            }
+            case ASR::ttypeType::Logical: {
+                return builder->CreateICmpEQ(left, right);
+            }
             case ASR::ttypeType::Real: {
                 return builder->CreateFCmpOEQ(left, right);
             }
@@ -290,6 +293,11 @@ namespace LFortran {
                 ASR::Tuple_t* tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_type);
                 return tuple_api->check_tuple_equality(left, right, tuple_type, context,
                                                        builder, module);
+            }
+            case ASR::ttypeType::List: {
+                ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(asr_type);
+                return list_api->check_list_equality(left, right, list_type->m_type,
+                                                     context, builder, module);
             }
             default: {
                 throw LCompilersException("LLVMUtils::is_equal_by_value isn't implemented for " +
@@ -649,7 +657,7 @@ namespace LFortran {
     void LLVMList::list_deepcopy(llvm::Value* src, llvm::Value* dest,
                                  ASR::ttype_t* element_type, llvm::Module* module,
                                  std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        LFORTRAN_ASSERT(src->getType() == dest->getType());
+        LCOMPILERS_ASSERT(src->getType() == dest->getType());
         std::string src_type_code = ASRUtils::get_type_code(element_type);
         llvm::Value* src_end_point = LLVM::CreateLoad(*builder, get_pointer_to_current_end_point(src));
         llvm::Value* src_capacity = LLVM::CreateLoad(*builder, get_pointer_to_current_capacity(src));
@@ -725,7 +733,7 @@ namespace LFortran {
     void LLVMDict::dict_deepcopy(llvm::Value* src, llvm::Value* dest,
                                  ASR::Dict_t* dict_type, llvm::Module* module,
                                  std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        LFORTRAN_ASSERT(src->getType() == dest->getType());
+        LCOMPILERS_ASSERT(src->getType() == dest->getType());
         llvm::Value* src_occupancy = LLVM::CreateLoad(*builder, get_pointer_to_occupancy(src));
         llvm::Value* dest_occupancy_ptr = get_pointer_to_occupancy(dest);
         LLVM::CreateStore(*builder, src_occupancy, dest_occupancy_ptr);
@@ -2558,6 +2566,65 @@ namespace LFortran {
         LLVM::lfortran_free(context, module, *builder, data);
     }
 
+    llvm::Value* LLVMList::check_list_equality(llvm::Value* l1, llvm::Value* l2,
+                                                ASR::ttype_t* item_type,
+                                                 llvm::LLVMContext& context,
+                                                 llvm::IRBuilder<>* builder,
+                                                 llvm::Module& module) {
+        llvm::AllocaInst *is_equal = builder->CreateAlloca(llvm::Type::getInt1Ty(context), nullptr);
+        LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 1)), is_equal);
+        llvm::Value *a_len = llvm_utils->list_api->len(l1);
+        llvm::Value *b_len = llvm_utils->list_api->len(l2);
+        llvm::Value *cond = builder->CreateICmpEQ(a_len, b_len);
+        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+        llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+        builder->CreateCondBr(cond, thenBB, elseBB);
+        builder->SetInsertPoint(thenBB);
+        llvm::AllocaInst *idx = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr);
+        LLVM::CreateStore(*builder, llvm::ConstantInt::get(
+                                    context, llvm::APInt(32, 0)), idx);
+        llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+        llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+        llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+
+            // head
+           llvm_utils->start_new_block(loophead);
+            {
+                llvm::Value* i = LLVM::CreateLoad(*builder, idx);
+                llvm::Value* cnd = builder->CreateICmpSLT(i, a_len);
+                builder->CreateCondBr(cnd, loopbody, loopend);
+            }
+
+            // body
+            llvm_utils->start_new_block(loopbody);
+            {
+                llvm::Value* i = LLVM::CreateLoad(*builder, idx);
+                llvm::Value* left_arg = llvm_utils->list_api->read_item(l1, i,
+                        false, module, LLVM::is_llvm_struct(item_type));
+                llvm::Value* right_arg = llvm_utils->list_api->read_item(l2, i,
+                        false, module, LLVM::is_llvm_struct(item_type));
+                llvm::Value* res = llvm_utils->is_equal_by_value(left_arg, right_arg, module,
+                                        item_type);
+                res = builder->CreateAnd(LLVM::CreateLoad(*builder, is_equal), res);
+                LLVM::CreateStore(*builder, res, is_equal);
+                i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                                        llvm::APInt(32, 1)));
+                LLVM::CreateStore(*builder, i, idx);
+            }
+
+            builder->CreateBr(loophead);
+
+            // end
+            llvm_utils->start_new_block(loopend);
+
+        builder->CreateBr(mergeBB);
+        llvm_utils->start_new_block(elseBB);
+        LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 0)), is_equal);
+        llvm_utils->start_new_block(mergeBB);
+        return LLVM::CreateLoad(*builder, is_equal);
+    }
 
     LLVMTuple::LLVMTuple(llvm::LLVMContext& context_,
                          LLVMUtils* llvm_utils_,
@@ -2601,7 +2668,7 @@ namespace LFortran {
     void LLVMTuple::tuple_deepcopy(llvm::Value* src, llvm::Value* dest,
         ASR::Tuple_t* tuple_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        LFORTRAN_ASSERT(src->getType() == dest->getType());
+        LCOMPILERS_ASSERT(src->getType() == dest->getType());
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
             llvm::Value* src_item = read_item(src, i, LLVM::is_llvm_struct(
                                               tuple_type->m_type[i]));
@@ -2619,8 +2686,10 @@ namespace LFortran {
                                                  llvm::Module& module) {
         llvm::Value* is_equal = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
-            llvm::Value* t1i = llvm_utils->tuple_api->read_item(t1, i);
-            llvm::Value* t2i = llvm_utils->tuple_api->read_item(t2, i);
+            llvm::Value* t1i = llvm_utils->tuple_api->read_item(t1, i, LLVM::is_llvm_struct(
+                                              tuple_type->m_type[i]));
+            llvm::Value* t2i = llvm_utils->tuple_api->read_item(t2, i, LLVM::is_llvm_struct(
+                                              tuple_type->m_type[i]));
             llvm::Value* is_t1_eq_t2 = llvm_utils->is_equal_by_value(t1i, t2i, module,
                                         tuple_type->m_type[i]);
             is_equal = builder->CreateAnd(is_equal, is_t1_eq_t2);
@@ -2628,4 +2697,4 @@ namespace LFortran {
         return is_equal;
     }
 
-} // namespace LFortran
+} // namespace LCompilers

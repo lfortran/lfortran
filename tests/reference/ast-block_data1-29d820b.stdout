@@ -1,10 +1,10 @@
-(TranslationUnit 
-    [(BlockData 
-        block_data1 
-        () 
-        [] 
-        [] 
-        [] 
+(TranslationUnit
+    [(BlockData
+        block_data1
+        ()
+        []
+        []
+        []
         []
     )]
 )

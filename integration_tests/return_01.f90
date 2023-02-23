@@ -4,7 +4,8 @@ program main
     print *, "main1 called"
     contains
     integer function main1()
-        integer :: i = 10
+        integer :: i
+        i = 10
         if (i .GT. 5) then
             main1 = i
             print *, "early return"

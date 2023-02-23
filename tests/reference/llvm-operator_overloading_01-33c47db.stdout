@@ -47,38 +47,64 @@ define i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %lo
   %bin_add = alloca i32, align 4
   %0 = load i1, i1* %log1, align 1
   %1 = load i1, i1* %log2, align 1
-  %2 = and i1 %0, %1
+  %2 = icmp eq i1 %0, false
+  %3 = alloca i1, align 1
   br i1 %2, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i32 2, i32* %bin_add, align 4
-  br label %ifcont3
+  store i1 %0, i1* %3, align 1
+  br label %ifcont
 
 else:                                             ; preds = %.entry
-  %3 = load i1, i1* %log1, align 1
-  %4 = xor i1 %3, true
-  %5 = load i1, i1* %log2, align 1
+  store i1 %1, i1* %3, align 1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %4 = load i1, i1* %3, align 1
+  br i1 %4, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store i32 2, i32* %bin_add, align 4
+  br label %ifcont9
+
+else2:                                            ; preds = %ifcont
+  %5 = load i1, i1* %log1, align 1
   %6 = xor i1 %5, true
-  %7 = and i1 %4, %6
-  br i1 %7, label %then1, label %else2
+  %7 = load i1, i1* %log2, align 1
+  %8 = xor i1 %7, true
+  %9 = icmp eq i1 %6, false
+  %10 = alloca i1, align 1
+  br i1 %9, label %then3, label %else4
 
-then1:                                            ; preds = %else
+then3:                                            ; preds = %else2
+  store i1 %6, i1* %10, align 1
+  br label %ifcont5
+
+else4:                                            ; preds = %else2
+  store i1 %8, i1* %10, align 1
+  br label %ifcont5
+
+ifcont5:                                          ; preds = %else4, %then3
+  %11 = load i1, i1* %10, align 1
+  br i1 %11, label %then6, label %else7
+
+then6:                                            ; preds = %ifcont5
   store i32 0, i32* %bin_add, align 4
-  br label %ifcont
+  br label %ifcont8
 
-else2:                                            ; preds = %else
+else7:                                            ; preds = %ifcont5
   store i32 1, i32* %bin_add, align 4
-  br label %ifcont
+  br label %ifcont8
 
-ifcont:                                           ; preds = %else2, %then1
-  br label %ifcont3
+ifcont8:                                          ; preds = %else7, %then6
+  br label %ifcont9
 
-ifcont3:                                          ; preds = %ifcont, %then
+ifcont9:                                          ; preds = %ifcont8, %then1
   br label %return
 
-return:                                           ; preds = %ifcont3
-  %8 = load i32, i32* %bin_add, align 4
-  ret i32 %8
+return:                                           ; preds = %ifcont9
+  %12 = load i32, i32* %bin_add, align 4
+  ret i32 %12
 }
 
 define i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %log1, i1* %log2) {
@@ -86,46 +112,62 @@ define i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* 
   %logical_and = alloca i1, align 1
   %0 = load i1, i1* %log1, align 1
   %1 = load i1, i1* %log2, align 1
-  %2 = and i1 %0, %1
-  store i1 %2, i1* %logical_and, align 1
+  %2 = icmp eq i1 %0, false
+  %3 = alloca i1, align 1
+  br i1 %2, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store i1 %0, i1* %3, align 1
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  store i1 %1, i1* %3, align 1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %4 = load i1, i1* %3, align 1
+  store i1 %4, i1* %logical_and, align 1
   br label %return
 
-return:                                           ; preds = %.entry
-  %3 = load i1, i1* %logical_and, align 1
-  ret i1 %3
+return:                                           ; preds = %ifcont
+  %5 = load i1, i1* %logical_and, align 1
+  ret i1 %5
 }
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %f = alloca i1, align 1
   store i1 false, i1* %f, align 1
   %t = alloca i1, align 1
   store i1 true, i1* %t, align 1
-  %0 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %t, i1* %t)
-  %1 = icmp eq i1 %0, false
-  %2 = select i1 %1, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  %3 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %t, i1* %f)
-  %4 = icmp eq i1 %3, false
-  %5 = select i1 %4, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i8* %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
-  %6 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %f, i1* %t)
-  %7 = icmp eq i1 %6, false
-  %8 = select i1 %7, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i8* %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
-  %9 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %f, i1* %f)
-  %10 = icmp eq i1 %9, false
-  %11 = select i1 %10, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @22, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i8* %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
-  %12 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %t, i1* %t)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @26, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 %12, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @25, i32 0, i32 0))
-  %13 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %t, i1* %f)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))
-  %14 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %f, i1* %t)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @34, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 %14, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @33, i32 0, i32 0))
-  %15 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %f, i1* %f)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @38, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @36, i32 0, i32 0), i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @37, i32 0, i32 0))
+  %2 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %t, i1* %t)
+  %3 = icmp eq i1 %2, false
+  %4 = select i1 %3, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i8* %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %5 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %t, i1* %f)
+  %6 = icmp eq i1 %5, false
+  %7 = select i1 %6, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i8* %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  %8 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %f, i1* %t)
+  %9 = icmp eq i1 %8, false
+  %10 = select i1 %9, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i8* %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
+  %11 = call i1 @__module_operator_overloading_01_overload_asterisk_m_logical_and(i1* %f, i1* %f)
+  %12 = icmp eq i1 %11, false
+  %13 = select i1 %12, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @22, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i8* %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
+  %14 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %t, i1* %t)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @26, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 %14, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @25, i32 0, i32 0))
+  %15 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %t, i1* %f)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))
+  %16 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %f, i1* %t)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @34, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @33, i32 0, i32 0))
+  %17 = call i32 @__module_operator_overloading_01_overload_asterisk_m_bin_add(i1* %f, i1* %f)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @38, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @36, i32 0, i32 0), i32 %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @37, i32 0, i32 0))
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)
 
 declare void @_lfortran_printf(i8*, ...)

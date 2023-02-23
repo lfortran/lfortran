@@ -15,7 +15,7 @@
 #include <libasr/pass/pass_manager.h>
 #include <libasr/utils.h>
 
-namespace LFortran {
+namespace LCompilers {
 
 class LLVMModule;
 class LLVMEvaluator;
@@ -63,9 +63,11 @@ public:
 
     Result<std::string> get_ast(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
-    Result<AST::TranslationUnit_t*> get_ast2(const std::string &code,
-        LocationManager &lm, diag::Diagnostics &diagnostics);
-    Result<ASR::TranslationUnit_t*> get_asr3(AST::TranslationUnit_t &ast,
+    Result<LCompilers::LFortran::AST::TranslationUnit_t*> get_ast2(
+        const std::string &code, LocationManager &lm,
+        diag::Diagnostics &diagnostics);
+    Result<ASR::TranslationUnit_t*> get_asr3(
+        LCompilers::LFortran::AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics);
     Result<std::string> get_asr(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
@@ -112,6 +114,6 @@ private:
     std::string run_fn;
 };
 
-} // namespace LFortran
+} // namespace LCompilers
 
 #endif // LFORTRAN_FORTRAN_EVALUATOR_H

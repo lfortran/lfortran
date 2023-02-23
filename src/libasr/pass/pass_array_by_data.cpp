@@ -10,7 +10,7 @@
 #include <utility>
 
 
-namespace LFortran {
+namespace LCompilers {
 
 /*
 The following visitor converts function/subroutines (a.k.a procedures)
@@ -53,7 +53,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
             ASR::symbol_t* x_sym = xx.m_v;
             std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-            if( current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
+            if( current_proc_scope->get_symbol(x_sym_name) && current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
                 xx.m_v = current_proc_scope->get_symbol(x_sym_name);
             }
         }
@@ -64,10 +64,20 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 return ;
             }
             ASR::alloc_arg_t& xx = const_cast<ASR::alloc_arg_t&>(x);
-            ASR::symbol_t* x_sym = xx.m_a;
+            ASR::symbol_t* x_sym = nullptr;
+            ASR::expr_t* tmp_expr = xx.m_a;
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                x_sym = tmp_var->m_v;
+            } else {
+                throw LCompilersException(
+                    "Cannot deallocate variables in expression " +
+                    std::to_string(tmp_expr->type));
+            }
             std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
             if( current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
-                xx.m_a = current_proc_scope->get_symbol(x_sym_name);
+                ASR::symbol_t* x_sym_new = current_proc_scope->get_symbol(x_sym_name);
+                xx.m_a = ASRUtils::EXPR(ASR::make_Var_t(al,  x_sym_new->base.loc, x_sym_new));
             }
         }
 
@@ -104,7 +114,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(item.second);
                     new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
                                                 arg->base.base.loc, new_symtab, s2c(al, item.first),
-                                                arg->m_intent, arg->m_symbolic_value, arg->m_value,
+                                                nullptr, 0, arg->m_intent, arg->m_symbolic_value, arg->m_value,
                                                 arg->m_storage, arg->m_type, arg->m_abi, arg->m_access,
                                                 arg->m_presence, arg->m_value_attr));
                 } else if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
@@ -144,17 +154,18 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             ASR::symbol_t* new_symbol = nullptr;
             std::string new_name = std::string(x->m_name) + suffix;
             if( ASR::is_a<ASR::Function_t>( *((ASR::symbol_t*) x) ) ) {
+                ASR::FunctionType_t* x_func_type = ASRUtils::get_FunctionType(x);
                 std::string new_bindc_name = "";
-                if( x->m_bindc_name ) {
-                    new_bindc_name = std::string(x->m_bindc_name) + suffix;
+                if( x_func_type->m_bindc_name ) {
+                    new_bindc_name = std::string(x_func_type->m_bindc_name) + suffix;
                 }
-                ASR::asr_t* new_subrout = ASR::make_Function_t(al, x->base.base.loc,
+                ASR::asr_t* new_subrout = ASRUtils::make_Function_t_util(al, x->base.base.loc,
                                             new_symtab, s2c(al, new_name), x->m_dependencies, x->n_dependencies,
                                             new_args.p, new_args.size(),  new_body.p, new_body.size(),
-                                            return_var, x->m_abi, x->m_access, x->m_deftype,
-                                            s2c(al, new_bindc_name), x->m_elemental,
-                                            x->m_pure, x->m_module, x->m_inline,
-                                            x->m_static, nullptr, 0, nullptr, 0, false);
+                                            return_var, x_func_type->m_abi, x->m_access, x_func_type->m_deftype,
+                                            s2c(al, new_bindc_name), x_func_type->m_elemental,
+                                            x_func_type->m_pure, x_func_type->m_module, x_func_type->m_inline,
+                                            x_func_type->m_static, nullptr, 0, nullptr, 0, false, false, false);
                 new_symbol = ASR::down_cast<ASR::symbol_t>(new_subrout);
             }
             current_scope->add_symbol(new_name, new_symbol);
@@ -199,6 +210,11 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
             is_editing_procedure = true;
             current_proc_scope = x->m_symtab;
+            for( auto& itr: x->m_symtab->get_scope() ) {
+                if( ASR::is_a<ASR::Variable_t>(*itr.second) ) {
+                    PassVisitor::visit_ttype(*ASR::down_cast<ASR::Variable_t>(itr.second)->m_type);
+                }
+            }
             for( size_t i = 0; i < x->n_body; i++ ) {
                 visit_stmt(*x->m_body[i]);
             }
@@ -340,6 +356,7 @@ class ReplaceFunctionCalls: public ASR::BaseExprReplacer<ReplaceFunctionCalls> {
             }
         }
 
+        LCOMPILERS_ASSERT(new_args.size() == ASR::down_cast<ASR::Function_t>(new_func_sym)->n_args);
         ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
                                     x->base.base.loc, new_func_sym, new_func_sym,
                                     new_args.p, new_args.size(), x->m_type, nullptr,
@@ -399,7 +416,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
 
             for( auto& item: current_scope->get_scope() ) {
                 if( v.proc2newproc.find(item.second) != v.proc2newproc.end() ) {
-                    LFORTRAN_ASSERT(item.first == ASRUtils::symbol_name(item.second))
+                    LCOMPILERS_ASSERT(item.first == ASRUtils::symbol_name(item.second))
                     to_be_erased.push_back(item.first);
                 }
             }
@@ -425,4 +442,4 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     y.visit_TranslationUnit(unit);
 }
 
-} // namespace LFortran
+} // namespace LCompilers

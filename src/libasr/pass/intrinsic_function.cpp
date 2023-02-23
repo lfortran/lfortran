@@ -10,10 +10,7 @@
 #include <utility>
 
 
-namespace LFortran {
-
-using ASR::down_cast;
-using ASR::is_a;
+namespace LCompilers {
 
 /*
 
@@ -39,7 +36,7 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
     void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
         switch (x->m_intrinsic_id) {
             case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma)) : {
-                LFORTRAN_ASSERT(x->n_args == 1)
+                LCOMPILERS_ASSERT(x->n_args == 1)
                 // Replace any IntrinsicFunctions in the argument first:
                 ASR::expr_t** current_expr_copy_ = current_expr;
                 current_expr = &(x->m_args[0]);
@@ -100,4 +97,4 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers

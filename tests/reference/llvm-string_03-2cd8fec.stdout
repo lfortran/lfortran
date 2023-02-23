@@ -17,8 +17,9 @@ source_filename = "LFortran"
 @13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @14 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %combined = alloca i8*, align 8
   store i8* getelementptr inbounds ([30 x i8], [30 x i8]* @1, i32 0, i32 0), i8** %combined, align 8
   %last_name = alloca i8*, align 8
@@ -33,50 +34,52 @@ define i32 @main() {
   store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @7, i32 0, i32 0), i8** %posit, align 8
   store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8** %title, align 8
   store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8** %last_name, align 8
-  %0 = load i8*, i8** %verb, align 8
-  %1 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @10, i32 0, i32 0), i8** %1, align 8
-  %2 = alloca i8*, align 8
-  store i8* %0, i8** %2, align 8
+  %2 = load i8*, i8** %verb, align 8
   %3 = alloca i8*, align 8
-  call void @_lfortran_strcat(i8** %1, i8** %2, i8** %3)
-  %4 = load i8*, i8** %3, align 8
-  %5 = load i8*, i8** %posit, align 8
-  %6 = alloca i8*, align 8
-  store i8* %4, i8** %6, align 8
-  %7 = alloca i8*, align 8
-  store i8* %5, i8** %7, align 8
+  store i8* getelementptr inbounds ([6 x i8], [6 x i8]* @10, i32 0, i32 0), i8** %3, align 8
+  %4 = alloca i8*, align 8
+  store i8* %2, i8** %4, align 8
+  %5 = alloca i8*, align 8
+  call void @_lfortran_strcat(i8** %3, i8** %4, i8** %5)
+  %6 = load i8*, i8** %5, align 8
+  %7 = load i8*, i8** %posit, align 8
   %8 = alloca i8*, align 8
-  call void @_lfortran_strcat(i8** %6, i8** %7, i8** %8)
-  %9 = load i8*, i8** %8, align 8
-  %10 = load i8*, i8** %title, align 8
-  %11 = alloca i8*, align 8
-  store i8* %9, i8** %11, align 8
-  %12 = alloca i8*, align 8
-  store i8* %10, i8** %12, align 8
+  store i8* %6, i8** %8, align 8
+  %9 = alloca i8*, align 8
+  store i8* %7, i8** %9, align 8
+  %10 = alloca i8*, align 8
+  call void @_lfortran_strcat(i8** %8, i8** %9, i8** %10)
+  %11 = load i8*, i8** %10, align 8
+  %12 = load i8*, i8** %title, align 8
   %13 = alloca i8*, align 8
-  call void @_lfortran_strcat(i8** %11, i8** %12, i8** %13)
-  %14 = load i8*, i8** %13, align 8
-  %15 = load i8*, i8** %last_name, align 8
-  %16 = alloca i8*, align 8
-  store i8* %14, i8** %16, align 8
-  %17 = alloca i8*, align 8
-  store i8* %15, i8** %17, align 8
+  store i8* %11, i8** %13, align 8
+  %14 = alloca i8*, align 8
+  store i8* %12, i8** %14, align 8
+  %15 = alloca i8*, align 8
+  call void @_lfortran_strcat(i8** %13, i8** %14, i8** %15)
+  %16 = load i8*, i8** %15, align 8
+  %17 = load i8*, i8** %last_name, align 8
   %18 = alloca i8*, align 8
-  call void @_lfortran_strcat(i8** %16, i8** %17, i8** %18)
-  %19 = load i8*, i8** %18, align 8
+  store i8* %16, i8** %18, align 8
+  %19 = alloca i8*, align 8
+  store i8* %17, i8** %19, align 8
   %20 = alloca i8*, align 8
-  store i8* %19, i8** %20, align 8
-  %21 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), i8** %21, align 8
+  call void @_lfortran_strcat(i8** %18, i8** %19, i8** %20)
+  %21 = load i8*, i8** %20, align 8
   %22 = alloca i8*, align 8
-  call void @_lfortran_strcat(i8** %20, i8** %21, i8** %22)
-  %23 = load i8*, i8** %22, align 8
-  store i8* %23, i8** %combined, align 8
-  %24 = load i8*, i8** %combined, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i8* %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
+  store i8* %21, i8** %22, align 8
+  %23 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), i8** %23, align 8
+  %24 = alloca i8*, align 8
+  call void @_lfortran_strcat(i8** %22, i8** %23, i8** %24)
+  %25 = load i8*, i8** %24, align 8
+  store i8* %25, i8** %combined, align 8
+  %26 = load i8*, i8** %combined, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i8* %26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)
 
 declare void @_lfortran_strcat(i8**, i8**, i8**)
 

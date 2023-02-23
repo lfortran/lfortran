@@ -1,124 +1,126 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             string_02:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             firstname:
-                                (Variable 
-                                    2 
-                                    firstname 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Character 1 15 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    firstname
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 15 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             greetings:
-                                (Variable 
-                                    2 
-                                    greetings 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Character 1 25 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    greetings
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 25 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             surname:
-                                (Variable 
-                                    2 
-                                    surname 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Character 1 15 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    surname
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 15 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             title:
-                                (Variable 
-                                    2 
-                                    title 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Character 1 6 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    title
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 6 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    string_02 
-                    [] 
-                    [(= 
-                        (Var 2 title) 
-                        (StringConstant 
-                            "Mr. " 
+                        })
+                    string_02
+                    []
+                    [(=
+                        (Var 2 title)
+                        (StringConstant
+                            "Mr. "
                             (Character 1 4 () [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 firstname) 
-                        (StringConstant 
-                            "Rowan " 
+                    (=
+                        (Var 2 firstname)
+                        (StringConstant
+                            "Rowan "
                             (Character 1 6 () [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 surname) 
-                        (StringConstant 
-                            "Atkinson" 
+                    (=
+                        (Var 2 surname)
+                        (StringConstant
+                            "Atkinson"
                             (Character 1 8 () [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 greetings) 
-                        (StringConstant 
-                            "A big hello from Mr. Bean" 
+                    (=
+                        (Var 2 greetings)
+                        (StringConstant
+                            "A big hello from Mr. Bean"
                             (Character 1 25 () [])
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(StringConstant 
-                            "Here is " 
+                    (Print
+                        ()
+                        [(StringConstant
+                            "Here is "
                             (Character 1 8 () [])
                         )
                         (Var 2 title)
                         (Var 2 firstname)
-                        (Var 2 surname)] 
-                        () 
+                        (Var 2 surname)]
+                        ()
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 greetings)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 greetings)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

@@ -1,74 +1,74 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             allocate_04:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             c:
-                                (Variable 
-                                    2 
-                                    c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Allocatable 
-                                    (Integer 4 [(() 
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Integer 4 [(()
                                     ())
-                                    (() 
+                                    (()
                                     ())
-                                    (() 
-                                    ())]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    (()
+                                    ())])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             string:
-                                (Variable 
-                                    2 
-                                    string 
-                                    Local 
-                                    () 
-                                    () 
-                                    Allocatable 
-                                    (Character 1 -2 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    string
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Character 1 -2 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    allocate_04 
-                    [] 
-                    [(Allocate 
-                        [(2 string 
-                        [])] 
-                        () 
-                        () 
+                        })
+                    allocate_04
+                    []
+                    [(Allocate
+                        [((Var 2 string)
+                        [])]
+                        ()
+                        ()
                         ()
                     )
-                    (Allocate 
-                        [(2 c 
-                        [((IntegerConstant 1 (Integer 4 [])) 
+                    (Allocate
+                        [((Var 2 c)
+                        [((IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 3 (Integer 4 [])))
-                        ((IntegerConstant 1 (Integer 4 [])) 
+                        ((IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 3 (Integer 4 [])))
-                        ((IntegerConstant 1 (Integer 4 [])) 
-                        (IntegerConstant 3 (Integer 4 [])))])] 
-                        () 
-                        () 
+                        ((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 [])))])]
+                        ()
+                        ()
                         ()
                     )
-                    (ImplicitDeallocate 
+                    (ImplicitDeallocate
                         [2 c
                         2 string]
                     )]
                 )
-            
-        }) 
+        })
     []
 )

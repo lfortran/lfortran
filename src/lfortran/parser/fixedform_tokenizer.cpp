@@ -1,3 +1,11 @@
+/*
+This is a fixed-form tokenizer. It accepts a prescanned source code that removes
+all whitespace.  It uses a hand written recursive descent parser to figure out
+how to properly tokenize the input. It returns a list of tokens that are then
+fed ioto our Bison parser, that is shared with the free-form parser.
+
+Note: The prescanner removes CR, so we only handle LF here.
+*/
 #include <limits>
 #include <utility>
 
@@ -13,8 +21,7 @@
 int position = 0;
 #define TOK(pos, arg) std::cout << std::string(pos, ' ') << "TOKEN: " << arg << std::endl;
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 std::map<std::string, yytokentype> identifiers_map = {
     {"EOF", END_OF_FILE},
@@ -281,7 +288,7 @@ void FixedFormTokenizer::set_string(const std::string &str)
     // The input string must be NULL terminated, otherwise the tokenizertostr will
     // not detect the end of string. After C++11, the std::string is guaranteed
     // to end with \0, but we check this here just in case.
-    LFORTRAN_ASSERT(str[str.size()] == '\0');
+    LCOMPILERS_ASSERT(str[str.size()] == '\0');
     cur = (unsigned char *)(&str[0]);
     string_start = cur;
     cur_line = cur;
@@ -337,10 +344,9 @@ struct FixedFormRecursiveDescent {
     bool next_is_eol(unsigned char *cur) {
         if (*cur == '\n') {
             return true;
-        } else if (*cur == '\r' && *(cur+1) == '\n') {
-            return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     bool is_integer(const std::string &s) const {
@@ -456,7 +462,7 @@ struct FixedFormRecursiveDescent {
     // Same as push_token_no_advance(), but update `cur` and `t.cur`.
     // token_type is automatically determined
     void push_token_advance(unsigned char *&cur, const std::string &token_str) {
-        LFORTRAN_ASSERT(next_is(cur, token_str))
+        LCOMPILERS_ASSERT(next_is(cur, token_str))
         push_token_no_advance(cur, token_str);
         cur += token_str.size();
         t.cur = cur;
@@ -582,7 +588,7 @@ struct FixedFormRecursiveDescent {
     // Parses ' and " strings
     bool lex_string(unsigned char *&cur) {
         unsigned char *delim = cur;
-        LFORTRAN_ASSERT(*delim == '"' || *delim == '\'')
+        LCOMPILERS_ASSERT(*delim == '"' || *delim == '\'')
         cur++;
         while (true) {
             if (*cur == '\0') {
@@ -690,7 +696,7 @@ struct FixedFormRecursiveDescent {
         t.cur = cur;
         next_line(cur);
         tokenize_until(cur);
-        LFORTRAN_ASSERT(*(t.cur-1) == '\n')
+        LCOMPILERS_ASSERT(*(t.cur-1) == '\n')
     }
 
     /*
@@ -704,7 +710,7 @@ struct FixedFormRecursiveDescent {
      * state is not made inconsistent.
      */
     void tokenize_until(unsigned char *end) {
-        LFORTRAN_ASSERT(t.cur < end)
+        LCOMPILERS_ASSERT(t.cur < end)
         // TODO: Is this needed?
         std::string line{tostr(t.cur, end)};
         lines.push_back(line);
@@ -730,13 +736,13 @@ struct FixedFormRecursiveDescent {
             locations.push_back(loc);
         }
         // Check that the last token ends exactly on `end`:
-        LFORTRAN_ASSERT(t.cur == end)
+        LCOMPILERS_ASSERT(t.cur == end)
     }
 
     // returns TRUE iff multiline-if
     bool lex_if_statement(unsigned char *&cur) {
         push_token_advance(cur, "if");
-        LFORTRAN_ASSERT(*t.cur == '(')
+        LCOMPILERS_ASSERT(*t.cur == '(')
         tokenize_until(t.cur+1);
         unsigned char *end = t.cur;
         bool multiline = false;
@@ -873,7 +879,7 @@ struct FixedFormRecursiveDescent {
                 // If we are at the end of the statement, then this must
                 // be a function call. Otherwise it's something else,
                 // such as assignment (=, or =>).
-                if (*cur == '\n' || *cur == ';') {
+                if (next_is_eol(cur) || *cur == ';') {
                     return true;
                 }
             }
@@ -978,6 +984,13 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "errorstop")) {
+            push_token_advance(cur, "error");
+            push_token_advance(cur, "stop");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "assign")) {
             lex_assign(cur);
             return true;
@@ -1014,7 +1027,7 @@ struct FixedFormRecursiveDescent {
 
     bool all_labels_match(int64_t label) {
         return std::all_of(do_labels.begin(), do_labels.end(), [&label](const auto & x){
-                return x == label; 
+                return x == label;
                 });
     }
 
@@ -1032,7 +1045,7 @@ struct FixedFormRecursiveDescent {
     // It will always consume the label.
     // If true, it will consume the whole line. Otherwise it leaves it.
     bool lex_do_terminal(unsigned char *&cur, int64_t do_label) {
-        LFORTRAN_ASSERT(do_label != -1)
+        LCOMPILERS_ASSERT(do_label != -1)
         if (*cur == '\0') {
             Location loc;
             loc.first = 1;
@@ -1050,7 +1063,7 @@ struct FixedFormRecursiveDescent {
             push_token_no_advance(cur, "end_do");
             push_token_no_advance(cur, "\n");
             next_line(cur);
-            LFORTRAN_ASSERT(label_last(do_label))
+            LCOMPILERS_ASSERT(label_last(do_label))
             do_labels.pop_back();
             return true;
         } else if (all_labels_match(label)) {
@@ -1067,7 +1080,7 @@ struct FixedFormRecursiveDescent {
             for (size_t i=0; i<n_match; i++) {
                 push_token_no_advance(cur, "end_do");
                 push_token_no_advance(cur, "\n");
-                LFORTRAN_ASSERT(label_last(do_label))
+                LCOMPILERS_ASSERT(label_last(do_label))
                 do_labels.pop_back();
             }
             return true;
@@ -1085,12 +1098,12 @@ struct FixedFormRecursiveDescent {
             for (int i=0;i<n_match;++i) {
                 push_token_no_advance(cur, "end_do");
                 push_token_no_advance(cur, "\n");
-                LFORTRAN_ASSERT(label_last(do_label))
+                LCOMPILERS_ASSERT(label_last(do_label))
                 do_labels.pop_back();
             }
             return true;
         } else {
-            // end one nesting of loop 
+            // end one nesting of loop
             if (next_is(cur, "continue")) {
                 push_token_advance(cur, "continue");
                 tokenize_line(cur);
@@ -1100,7 +1113,7 @@ struct FixedFormRecursiveDescent {
             }
             push_token_no_advance(cur, "end_do");
             push_token_no_advance(cur, "\n");
-            LFORTRAN_ASSERT(label_last(do_label))
+            LCOMPILERS_ASSERT(label_last(do_label))
             do_labels.pop_back();
             return true;
         }
@@ -1209,7 +1222,7 @@ struct FixedFormRecursiveDescent {
     }
 
     void lex_do_label(unsigned char *&cur, int64_t do_label) {
-        LFORTRAN_ASSERT(do_label != -1)
+        LCOMPILERS_ASSERT(do_label != -1)
         // For labeled do loops we keep the labels in the do_labels stack
         do_labels.push_back(do_label);
 
@@ -1364,10 +1377,10 @@ struct FixedFormRecursiveDescent {
 
         if (kw_found.size() == 0 && !next_is(cpy, declaration_type))
             return false;
-     
+
         // tokenize all keywords
         for(auto iter = kw_found.begin(); iter != kw_found.end(); ++iter) {
-            if (*iter == "real*8") {
+            if (*iter == "real*8" || *iter == "complex*8" || *iter == "complex*16") {
                 tokenize_until(cur+(*iter).size());
             } else {
                 push_token_advance(cur, *iter);
@@ -1408,7 +1421,7 @@ struct FixedFormRecursiveDescent {
             "elemental"};
         std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental",
-            "real*8", "real", "character", "complex", "integer", "logical",
+            "real*8", "real", "character", "complex*16", "complex*8", "complex", "integer", "logical",
             "doubleprecision", "doublecomplex"};
 
         if (next_is(cur, "include")) {
@@ -1464,8 +1477,8 @@ bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocato
         tokens = std::move(f.tokens);
         stypes = std::move(f.stypes);
         locations = std::move(f.locations);
-        LFORTRAN_ASSERT(tokens.size() == stypes.size())
-        LFORTRAN_ASSERT(tokens.size() == locations.size())
+        LCOMPILERS_ASSERT(tokens.size() == stypes.size())
+        LCOMPILERS_ASSERT(tokens.size() == locations.size())
         tokenized = true;
     } catch (const parser_local::TokenizerError &e) {
         diagnostics.diagnostics.push_back(e.d);
@@ -1489,4 +1502,4 @@ int FixedFormTokenizer::lex(Allocator &/*al*/, YYSTYPE &yylval,
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

@@ -5,7 +5,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/semantic_exception.h>
 
-namespace LFortran {
+namespace LCompilers {
 
 class FunctionInstantiator : public ASR::BaseExprStmtDuplicator<FunctionInstantiator>
 {
@@ -52,9 +52,14 @@ public:
             bool value_attr = param_var->m_value_attr;
 
             // TODO: Copying variable can be abstracted into a function
+            Vec<char*> variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, arg_type);
             ASR::asr_t *v = ASR::make_Variable_t(al, loc, current_scope,
-                s2c(al, var_name), s_intent, init_expr, value, storage_type, arg_type,
+                s2c(al, var_name), variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                s_intent, init_expr, value, storage_type, arg_type,
                 abi_type, s_access, s_presence, value_attr);
+
             current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
 
             ASR::symbol_t *var = current_scope->get_symbol(var_name);
@@ -68,9 +73,16 @@ public:
             std::string return_var_name = return_var->m_name;
             ASR::ttype_t *return_param_type = ASRUtils::expr_type(x->m_return_var);
             ASR::ttype_t *return_type = substitute_type(return_param_type);
+            Vec<char*> variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_type);
             ASR::asr_t *new_return_var = ASR::make_Variable_t(al, return_var->base.base.loc,
-                current_scope, s2c(al, return_var_name), return_var->m_intent, nullptr, nullptr,
-                return_var->m_storage, return_type, return_var->m_abi, return_var->m_access,
+                current_scope, s2c(al, return_var_name),
+                variable_dependencies_vec.p,
+                variable_dependencies_vec.size(),
+                return_var->m_intent, nullptr, nullptr,
+                return_var->m_storage, return_type,
+                return_var->m_abi, return_var->m_access,
                 return_var->m_presence, return_var->m_value_attr);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(new_return_var));
             new_return_var_ref = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
@@ -85,8 +97,12 @@ public:
                     ASR::ttype_t *new_sym_type = substitute_type(ASRUtils::symbol_type(sym));
                     ASR::Variable_t *var_sym = ASR::down_cast<ASR::Variable_t>(sym);
                     std::string var_sym_name = var_sym->m_name;
+                    Vec<char*> variable_dependencies_vec;
+                    variable_dependencies_vec.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_sym_type);
                     ASR::asr_t *new_var = ASR::make_Variable_t(al, var_sym->base.base.loc,
-                        current_scope, s2c(al, var_sym_name), var_sym->m_intent, nullptr, nullptr,
+                        current_scope, s2c(al, var_sym_name), variable_dependencies_vec.p,
+                        variable_dependencies_vec.size(), var_sym->m_intent, nullptr, nullptr,
                         var_sym->m_storage, new_sym_type, var_sym->m_abi, var_sym->m_access,
                         var_sym->m_presence, var_sym->m_value_attr);
                     current_scope->add_symbol(var_sym_name, ASR::down_cast<ASR::symbol_t>(new_var));
@@ -94,8 +110,9 @@ public:
             }
         }
 
-        for (size_t i=0; i<x->n_restrictions; i++) {
-            rts.push_back(ASR::down_cast<ASR::Function_t>(x->m_restrictions[i]));
+        for (size_t i=0; i < ASRUtils::get_FunctionType(x)->n_restrictions; i++) {
+            rts.push_back(ASR::down_cast<ASR::Function_t>(
+                ASRUtils::get_FunctionType(x)->m_restrictions[i]));
         }
 
         Vec<ASR::stmt_t*> body;
@@ -107,14 +124,14 @@ public:
             }
         }
 
-        ASR::abiType func_abi = x->m_abi;
+        ASR::abiType func_abi = ASRUtils::get_FunctionType(x)->m_abi;
         ASR::accessType func_access = x->m_access;
-        ASR::deftypeType func_deftype = x->m_deftype;
-        char *bindc_name = x->m_bindc_name;
+        ASR::deftypeType func_deftype = ASRUtils::get_FunctionType(x)->m_deftype;
+        char *bindc_name = ASRUtils::get_FunctionType(x)->m_bindc_name;
 
-        bool func_elemental = x->m_elemental;
-        bool func_pure = x->m_pure;
-        bool func_module = x->m_module;
+        bool func_elemental =  ASRUtils::get_FunctionType(x)->m_elemental;
+        bool func_pure = ASRUtils::get_FunctionType(x)->m_pure;
+        bool func_module = ASRUtils::get_FunctionType(x)->m_module;
 
         Vec<char*> deps_vec;
         deps_vec.reserve(al, dependencies.size());
@@ -122,7 +139,7 @@ public:
             deps_vec.push_back(al, s2c(al, dep));
         }
 
-        ASR::asr_t *result = ASR::make_Function_t(
+        ASR::asr_t *result = ASRUtils::make_Function_t_util(
             al, x->base.base.loc,
             current_scope, s2c(al, new_func_name),
             deps_vec.p, deps_vec.size(),
@@ -130,8 +147,8 @@ public:
             body.p, body.size(),
             new_return_var_ref,
             func_abi, func_access, func_deftype, bindc_name,
-            func_elemental, func_pure, func_module, x->m_inline,
-            x->m_static, nullptr, 0, nullptr, 0, false);
+            func_elemental, func_pure, func_module, ASRUtils::get_FunctionType(x)->m_inline,
+            ASRUtils::get_FunctionType(x)->m_static, nullptr, 0, nullptr, 0, false, false, false);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_func_name, t);
@@ -188,12 +205,6 @@ public:
         return ASR::make_Assignment_t(al, x->base.base.loc, target, value, overloaded);
     }
 
-    ASR::asr_t* duplicate_TemplateBinOp(ASR::TemplateBinOp_t *x) {
-        ASR::expr_t *left = duplicate_expr(x->m_left);
-        ASR::expr_t *right = duplicate_expr(x->m_right);
-        return make_BinOp_helper(left, right, x->m_op, x->base.base.loc);
-    }
-
     ASR::asr_t* duplicate_DoLoop(ASR::DoLoop_t *x) {
         Vec<ASR::stmt_t*> m_body;
         m_body.reserve(al, x->n_body);
@@ -236,13 +247,14 @@ public:
         if (ASRUtils::is_restriction_function(name)) {
             name = rt_subs[call_name];
         } else if (ASRUtils::is_generic_function(name)) {
-            std::string nested_func_name = "__lfortran_generic_" + sym_name;
+            std::string nested_func_name = "__asr_generic_" + sym_name;
             ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(name2);
             FunctionInstantiator nested_tf(al, subs, rt_subs, func_scope, nested_func_name);
             ASR::asr_t* nested_generic_func = nested_tf.instantiate_Function(func);
             name = ASR::down_cast<ASR::symbol_t>(nested_generic_func);
         }
+        dependencies.insert(std::string(ASRUtils::symbol_name(name)));
         return ASR::make_FunctionCall_t(al, x->base.base.loc, name, x->m_original_name,
             args.p, args.size(), type, value, dt);
     }
@@ -336,7 +348,7 @@ public:
                 switch (op) {
                     case (ASR::binopType::Add): { result = left_value + right_value; break; }
                     case (ASR::binopType::Div): { result = left_value / right_value; break; }
-                    default: { LFORTRAN_ASSERT(false); } // should never happen
+                    default: { LCOMPILERS_ASSERT(false); } // should never happen
                 }
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, result, dest_type));
             }
@@ -351,7 +363,7 @@ public:
                 switch (op) {
                     case (ASR::binopType::Add): { result = left_value + right_value; break; }
                     case (ASR::binopType::Div): { result = left_value / right_value; break; }
-                    default: { LFORTRAN_ASSERT(false); }
+                    default: { LCOMPILERS_ASSERT(false); }
                 }
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, dest_type));
             }
@@ -388,4 +400,4 @@ ASR::symbol_t* pass_instantiate_generic_function(Allocator &al, std::map<std::st
     return ASR::down_cast<ASR::symbol_t>(new_function);
 }
 
-}
+} // namespace LCompilers

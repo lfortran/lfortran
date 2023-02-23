@@ -1,5 +1,6 @@
 function print_int()
-    local a::Int32 = 5
+    local a::Int32 = 0
+    a = 5
     println(a)
 end
 

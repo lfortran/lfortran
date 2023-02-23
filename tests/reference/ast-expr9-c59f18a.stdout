@@ -1,39 +1,39 @@
-(TranslationUnit 
-    [(SubroutineCall 
-        0 
-        trigger 
-        [(ERROR_HANDLER 
-        [])] 
-        [] 
-        [(errors 
-        (DefUnaryOp 
-            "errors" 
+(TranslationUnit
+    [(SubroutineCall
+        0
+        trigger
+        [(ERROR_HANDLER
+        [])]
+        []
+        [(errors
+        (DefUnaryOp
+            "errors"
             rslt
-        ))] 
+        ))]
         ()
     )
-    (DefUnaryOp 
-        "INVERSE" 
+    (DefUnaryOp
+        "INVERSE"
         B
     )
-    (DefUnaryOp 
-        "INVERSE" 
+    (DefUnaryOp
+        "INVERSE"
         (+ A B)
     )
-    (DefUnaryOp 
-        "anotherunary" 
+    (DefUnaryOp
+        "anotherunary"
         1
     )
-    (DefUnaryOp 
-        "anotherunary" 
+    (DefUnaryOp
+        "anotherunary"
         (+ 1 2)
     )
-    (DefUnaryOp 
-        "anotherunary" 
+    (DefUnaryOp
+        "anotherunary"
         C
     )
-    (DefUnaryOp 
-        "anotherunary" 
+    (DefUnaryOp
+        "anotherunary"
         (+ c d)
     )]
 )

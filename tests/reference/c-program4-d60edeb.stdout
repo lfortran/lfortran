@@ -38,7 +38,7 @@ struct dimension_descriptor
 float func1(float a, float b)
 {
     float c;
-    static float saved=  2.00000000000000000e+00;
+    static float saved =   2.00000000000000000e+00;
     saved = saved +   1.00000000000000000e+00;
     c = c + a + b + saved;
     return c;
@@ -48,7 +48,7 @@ float func2(float a, float b)
 {
     float c;
     float d;
-    static float saved1=  2.00000000000000000e+00;
+    static float saved1 =   2.00000000000000000e+00;
     static float saved2;
     saved1 = saved1 +   1.00000000000000000e+00;
     c = d + c + a + b + saved1 + saved2;

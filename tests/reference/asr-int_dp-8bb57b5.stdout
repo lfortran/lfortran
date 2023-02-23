@@ -1,58 +1,58 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             int_dp:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             u:
-                                (Variable 
-                                    2 
-                                    u 
-                                    Local 
-                                    (IntegerConstant 2147483647 (Integer 4 [])) 
-                                    () 
-                                    Save 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    u
+                                    []
+                                    Local
+                                    (IntegerConstant 2147483647 (Integer 4 []))
+                                    ()
+                                    Save
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             v:
-                                (Variable 
-                                    2 
-                                    v 
-                                    Local 
-                                    (Cast 
-                                        (IntegerConstant 2147483647 (Integer 4 [])) 
-                                        IntegerToInteger 
-                                        (Integer 8 []) 
+                                (Variable
+                                    2
+                                    v
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerConstant 2147483647 (Integer 4 []))
+                                        IntegerToInteger
+                                        (Integer 8 [])
                                         (IntegerConstant 2147483647 (Integer 8 []))
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Integer 8 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    ()
+                                    Save
+                                    (Integer 8 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    int_dp 
-                    [] 
-                    [(Print 
-                        () 
+                        })
+                    int_dp
+                    []
+                    [(Print
+                        ()
                         [(Var 2 u)
-                        (Var 2 v)] 
-                        () 
+                        (Var 2 v)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

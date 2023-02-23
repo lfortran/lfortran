@@ -1,51 +1,57 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             f:
-                (Function 
+                (Function
                     (SymbolTable
                         2
                         {
                             
-                        }) 
-                    f 
-                    [] 
-                    [] 
-                    [(= 
-                        (Var 1 x) 
-                        (IntegerConstant 6 (Integer 4 [])) 
+                        })
+                    f
+                    (FunctionType
+                        []
                         ()
-                    )] 
-                    () 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (Var 1 x)
+                        (IntegerConstant 6 (Integer 4 []))
+                        ()
+                    )]
+                    ()
+                    Public
                     .false.
-                ), 
+                    .false.
+                ),
             x:
-                (Variable 
-                    1 
-                    x 
-                    Local 
-                    () 
-                    () 
-                    Default 
-                    (Integer 4 []) 
-                    Source 
-                    Public 
-                    Required 
+                (Variable
+                    1
+                    x
+                    []
+                    Local
+                    ()
+                    ()
+                    Default
+                    (Integer 4 [])
+                    Source
+                    Public
+                    Required
                     .false.
                 )
-            
-        }) 
+        })
     []
 )

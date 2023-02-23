@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import subprocess as sp
 import sys
 from typing import Dict
 
@@ -9,9 +10,16 @@ sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 
 from compiler_tester.tester import color, fg, log, run_test, style, tester_main
 
+def run_cmd(cmd, cwd=None):
+    print(f"+ {cmd}")
+    process = sp.run(cmd, shell=True, cwd=cwd)
+    if process.returncode != 0:
+        print("Command failed.")
+        exit(1)
 
-def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool,
-                specific_backends=None, excluded_backends=None) -> None:
+def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: bool,
+                update_reference: bool, no_color: bool, specific_backends=None,
+                excluded_backends=None) -> None:
     def is_included(backend):
         return test.get(backend, False) \
             and (specific_backends is None or backend in specific_backends) \
@@ -31,6 +39,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
     asr_implicit_typing = is_included("asr_implicit_typing")
     asr_implicit_interface = is_included("asr_implicit_interface")
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
+    asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     mod_to_asr = is_included("mod_to_asr")
@@ -43,11 +52,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
     x86 = is_included("x86")
     bin_ = is_included("bin")
     pass_ = test.get("pass", None)
+    extrafiles = test.get("extrafiles", "").split(",")
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]
 
-    if pass_ and (pass_ not in ["do_loops", "global_stmts"] and
+    if pass_ and (pass_ not in ["do_loops", "global_stmts",
+                                "transform_optional_argument_functions",
+                                "array_op"] and
                   pass_ not in optimization_passes):
         raise Exception(f"Unknown pass: {pass_}")
     log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
@@ -139,22 +151,50 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
                 update_reference,
                 extra_args)
         else:
-            run_test(
-                filename,
-                "asr",
-                "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
-                filename,
-                update_reference,
-                extra_args)
+            skip_test = False
+            for extrafile in extrafiles:
+                extrafile_ = extrafile.rstrip().lstrip()
+
+                if no_llvm and len(extrafile_) > 0:
+                    log.info(f"{filename} * asr   SKIPPED because LLVM is not enabled")
+                    skip_test = True
+                    break
+
+                if len(extrafile_) > 0:
+                    extrafile_ = os.path.join("tests", extrafile_)
+                    modfile = extrafile_[:-4] + ".mod"
+                    if not os.path.exists(modfile):
+                        run_cmd("lfortran -c {}".format(extrafile_))
+
+            if not skip_test:
+                run_test(
+                    filename,
+                    "asr",
+                    "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+                    filename,
+                    update_reference,
+                    extra_args)
 
     if asr_implicit_interface_and_typing:
         run_test(
             filename,
             "asr",
-            "lfortran --indent --show-asr --implicit-typing --allow-implicit-interface --no-color {infile} -o {outfile}",
+            "lfortran --indent --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
+
+    if asr_implicit_interface_and_typing_with_llvm:
+        if no_llvm:
+            log.info(f"{filename} * llvm   SKIPPED as requested")
+        else:
+            run_test(
+                filename,
+                "llvm",
+                "lfortran --show-llvm --implicit-typing --implicit-interface {infile} -o {outfile}",
+                filename,
+                update_reference,
+                extra_args)
 
     if asr_implicit_typing:
         run_test(
@@ -170,7 +210,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             run_test(
                 filename,
                 "asr",
-                "lfortran --indent --fixed-form --allow-implicit-interface --show-asr --no-color {infile} -o {outfile}",
+                "lfortran --indent --fixed-form --implicit-interface --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -178,7 +218,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
             run_test(
                 filename,
                 "asr",
-                "lfortran --indent --show-asr --allow-implicit-interface --no-color {infile} -o {outfile}",
+                "lfortran --indent --show-asr --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)

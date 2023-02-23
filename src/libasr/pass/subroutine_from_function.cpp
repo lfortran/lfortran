@@ -10,7 +10,7 @@
 #include <string>
 
 
-namespace LFortran {
+namespace LCompilers {
 
 using ASR::down_cast;
 using ASR::is_a;
@@ -42,18 +42,18 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
             for( size_t i = 0; i < s->n_args; i++ ) {
                 a_args.push_back(al, s->m_args[i]);
             }
-            LFORTRAN_ASSERT(s->m_return_var)
+            LCOMPILERS_ASSERT(s->m_return_var)
             a_args.push_back(al, s->m_return_var);
-            ASR::asr_t* s_sub_asr = ASR::make_Function_t(al, s->base.base.loc,
-                s->m_symtab,
-                s->m_name, s->m_dependencies, s->n_dependencies,
-                a_args.p, a_args.size(), s->m_body, s->n_body,
-                nullptr,
-                s->m_abi, s->m_access, s->m_deftype, nullptr, false, false,
-                false, s->m_inline, s->m_static,
-                s->m_type_params, s->n_type_params,
-                s->m_restrictions, s->n_restrictions,
-                s->m_is_restriction);
+            ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(s->m_function_signature);
+            ASR::asr_t* s_sub_asr = ASRUtils::make_Function_t_util(al, s->base.base.loc,
+                s->m_symtab, s->m_name, s->m_dependencies, s->n_dependencies,
+                a_args.p, a_args.size(), s->m_body, s->n_body, nullptr,
+                s_func_type->m_abi, s->m_access, s_func_type->m_deftype,
+                nullptr, false, false, false, s_func_type->m_inline,
+                s_func_type->m_static, s_func_type->m_type_params,
+                s_func_type->n_type_params, s_func_type->m_restrictions,
+                s_func_type->n_restrictions, s_func_type->m_is_restriction,
+                s->m_deterministic, s->m_side_effect_free);
             ASR::symbol_t* s_sub = ASR::down_cast<ASR::symbol_t>(s_sub_asr);
             return s_sub;
         }
@@ -187,7 +187,7 @@ class ReplaceFunctionCallWithSubroutineCall: public PassUtils::PassVisitor<Repla
             ASR::symbol_t *sub = current_scope->resolve_symbol(x_name);
             if (sub && ASR::is_a<ASR::Function_t>(*sub)
                 && ASR::down_cast<ASR::Function_t>(sub)->m_return_var == nullptr) {
-                LFORTRAN_ASSERT(result_var != nullptr);
+                LCOMPILERS_ASSERT(result_var != nullptr);
                 Vec<ASR::call_arg_t> s_args;
                 s_args.reserve(al, x.n_args + 1);
                 for( size_t i = 0; i < x.n_args; i++ ) {
@@ -197,7 +197,7 @@ class ReplaceFunctionCallWithSubroutineCall: public PassUtils::PassVisitor<Repla
                 result_arg.loc = result_var->base.loc;
                 result_arg.m_value = result_var;
                 s_args.push_back(al, result_arg);
-                ASR::stmt_t* subrout_call = LFortran::ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc,
+                ASR::stmt_t* subrout_call = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc,
                                                     sub, nullptr,
                                                     s_args.p, s_args.size(), nullptr));
                 pass_result.push_back(al, subrout_call);
@@ -216,4 +216,4 @@ void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t 
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers

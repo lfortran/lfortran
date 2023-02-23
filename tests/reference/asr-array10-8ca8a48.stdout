@@ -1,57 +1,56 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             const_arrays:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    Local 
-                                    (ArrayConstant 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (ArrayConstant
                                         [(IntegerConstant 4 (Integer 4 []))
                                         (IntegerConstant 9 (Integer 4 []))
                                         (IntegerConstant 6 (Integer 4 []))
                                         (IntegerConstant 12 (Integer 4 []))
-                                        (IntegerConstant 13 (Integer 4 []))] 
-                                        (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                        (IntegerConstant 5 (Integer 4 [])))]) 
+                                        (IntegerConstant 13 (Integer 4 []))]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 5 (Integer 4 [])))])
                                         ColMajor
-                                    ) 
-                                    (ArrayConstant 
+                                    )
+                                    (ArrayConstant
                                         [(IntegerConstant 4 (Integer 4 []))
                                         (IntegerConstant 9 (Integer 4 []))
                                         (IntegerConstant 6 (Integer 4 []))
                                         (IntegerConstant 12 (Integer 4 []))
-                                        (IntegerConstant 13 (Integer 4 []))] 
-                                        (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                        (IntegerConstant 5 (Integer 4 [])))]) 
+                                        (IntegerConstant 13 (Integer 4 []))]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 5 (Integer 4 [])))])
                                         ColMajor
-                                    ) 
-                                    Parameter 
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 5 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    Parameter
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    const_arrays 
-                    [] 
-                    [(Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
+                        })
+                    const_arrays
+                    []
+                    [(Print
+                        ()
+                        [(Var 2 x)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

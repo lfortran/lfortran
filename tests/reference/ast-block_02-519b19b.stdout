@@ -1,142 +1,142 @@
-(TranslationUnit 
-    [(Program 
-        Block_02 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Program
+        Block_02
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+        )
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(A 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(A
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            A 
-            10 
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            A
+            10
             ()
         )
-        (Block 
-            1 
-            loop 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
-                    None
-                ) 
-                [] 
-                [(B 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
-                ()
-            )] 
-            [(= 
-                0 
-                A 
-                (+ A 5) 
-                ()
-            )
-            (If 
-                0 
-                () 
-                (== A 15) 
-                [(GoTo 
-                    0 
-                    () 
-                    1 
-                    [] 
+        (Block
+            1
+            loop
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
                     ()
-                )] 
-                [] 
-                () 
-                () 
+                    None
+                )
+                []
+                [(B
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            [(=
+                0
+                A
+                (+ A 5)
                 ()
             )
-            (= 
-                0 
-                B 
-                (/ A 2) 
+            (If
+                0
+                ()
+                (== A 15)
+                [(GoTo
+                    0
+                    ()
+                    1
+                    []
+                    ()
+                )]
+                []
+                ()
+                ()
                 ()
             )
-            (SubroutineCall 
-                0 
-                Square 
-                [] 
-                [(() 
-                B 
-                ())] 
-                [] 
+            (=
+                0
+                B
+                (/ A 2)
                 ()
-            )] 
-            () 
+            )
+            (SubroutineCall
+                0
+                Square
+                []
+                [(()
+                B
+                ())]
+                []
+                ()
+            )]
             ()
-        )] 
+            ()
+        )]
         []
     )
-    (Subroutine 
-        Square 
-        [(B)] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+    (Subroutine
+        Square
+        [(B)]
+        []
+        ()
+        ()
+        []
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(B 
-            [] 
-            [] 
-            () 
-            None 
-            ())
-            (Result 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(B
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            Result 
-            (* B B) 
+            None
+            ())
+            (Result
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(=
+            0
+            Result
+            (* B B)
             ()
         )
-        (Print 
-            0 
-            () 
-            [Result] 
+        (Print
+            0
             ()
-        )] 
+            [Result]
+            ()
+        )]
         []
     )]
 )

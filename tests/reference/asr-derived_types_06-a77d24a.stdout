@@ -1,89 +1,96 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             abstract_type:
-                (Module 
+                (Module
                     (SymbolTable
                         2
                         {
                             subrout:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             a:
-                                                (Variable 
-                                                    3 
-                                                    a 
-                                                    Out 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Class 
-                                                        3 ~abstract_type 
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        3 ~abstract_type
                                                         []
-                                                    ) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             ~abstract_type:
-                                                (StructType 
+                                                (StructType
                                                     (SymbolTable
                                                         4
                                                         {
                                                             
-                                                        }) 
-                                                    ~abstract_type 
-                                                    [] 
-                                                    [] 
-                                                    Source 
-                                                    Public 
-                                                    .false. 
-                                                    () 
+                                                        })
+                                                    ~abstract_type
+                                                    []
+                                                    []
+                                                    Source
+                                                    Public
+                                                    .false.
+                                                    ()
                                                     ()
                                                 )
-                                            
-                                        }) 
-                                    subrout 
-                                    [] 
-                                    [(Var 3 a)] 
-                                    [] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        })
+                                    subrout
+                                    (FunctionType
+                                        [(Class
+                                            3 ~abstract_type
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 a)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
                                     .false.
                                 )
-                            
-                        }) 
-                    abstract_type 
-                    [] 
-                    .false. 
+                        })
+                    abstract_type
+                    []
                     .false.
-                ), 
+                    .false.
+                ),
             derived_types_01:
-                (Program 
+                (Program
                     (SymbolTable
                         5
                         {
                             
-                        }) 
-                    derived_types_01 
-                    [] 
+                        })
+                    derived_types_01
+                    []
                     []
                 )
-            
-        }) 
+        })
     []
 )

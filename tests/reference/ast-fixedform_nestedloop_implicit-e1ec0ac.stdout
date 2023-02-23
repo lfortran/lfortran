@@ -1,61 +1,61 @@
-(TranslationUnit 
-    [(Program 
-        implicit_program_lfortran 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Print 
-            20 
-            () 
-            [1] 
+(TranslationUnit
+    [(Program
+        implicit_program_lfortran
+        ()
+        []
+        []
+        []
+        [(Print
+            20
+            ()
+            [1]
             ()
         )
-        (DoLoop 
-            0 
-            () 
-            0 
-            k 
-            1 
-            10 
-            () 
-            [(DoLoop 
-                0 
-                () 
-                0 
-                l 
-                1 
-                10 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [k
-                    l] 
+        (DoLoop
+            0
+            ()
+            0
+            k
+            1
+            10
+            ()
+            [(DoLoop
+                0
+                ()
+                0
+                l
+                1
+                10
+                ()
+                [(Print
+                    0
                     ()
-                )] 
-                () 
+                    [k
+                    l]
+                    ()
+                )]
                 ()
-            )] 
-            () 
+                ()
+            )]
+            ()
             ()
         )
-        (If 
-            0 
-            () 
-            (> 0 1) 
-            [(GoTo 
-                0 
-                () 
-                20 
-                [] 
-                ()
-            )] 
-            [] 
-            () 
-            () 
+        (If
+            0
             ()
-        )] 
+            (> 0 1)
+            [(GoTo
+                0
+                ()
+                20
+                []
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )]
         []
     )]
 )

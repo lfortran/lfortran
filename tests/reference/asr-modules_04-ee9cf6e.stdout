@@ -1,98 +1,104 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             access_vars:
-                (Module 
+                (Module
                     (SymbolTable
                         2
                         {
                             print_vars:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             
-                                        }) 
-                                    print_vars 
-                                    [] 
-                                    [] 
-                                    [(Print 
-                                        () 
-                                        [(StringConstant 
-                                            "priv = " 
+                                        })
+                                    print_vars
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "priv = "
                                             (Character 1 7 () [])
                                         )
-                                        (Var 2 priv)] 
-                                        () 
+                                        (Var 2 priv)]
+                                        ()
                                         ()
                                     )
-                                    (Print 
-                                        () 
-                                        [(StringConstant 
-                                            "publ = " 
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "publ = "
                                             (Character 1 7 () [])
                                         )
-                                        (Var 2 publ)] 
-                                        () 
+                                        (Var 2 publ)]
                                         ()
-                                    )] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        ()
+                                    )]
+                                    ()
+                                    Public
                                     .false.
-                                ), 
+                                    .false.
+                                ),
                             priv:
-                                (Variable 
-                                    2 
-                                    priv 
-                                    Local 
-                                    (RealConstant 
-                                        1.500000 
+                                (Variable
+                                    2
+                                    priv
+                                    []
+                                    Local
+                                    (RealConstant
+                                        1.500000
                                         (Real 4 [])
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Real 4 []) 
-                                    Source 
-                                    Private 
-                                    Required 
+                                    )
+                                    ()
+                                    Save
+                                    (Real 4 [])
+                                    Source
+                                    Private
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             publ:
-                                (Variable 
-                                    2 
-                                    publ 
-                                    Local 
-                                    (RealConstant 
-                                        2.500000 
+                                (Variable
+                                    2
+                                    publ
+                                    []
+                                    Local
+                                    (RealConstant
+                                        2.500000
                                         (Real 4 [])
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    ()
+                                    Save
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    access_vars 
-                    [] 
-                    .false. 
+                        })
+                    access_vars
+                    []
+                    .false.
                     .false.
                 )
-            
-        }) 
+        })
     []
 )

@@ -13,8 +13,7 @@
 
 #include <lfortran/pickle.h>
 
-namespace LFortran
-{
+namespace LCompilers::LFortran {
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const bool &fixed_form)
@@ -78,7 +77,7 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         FixedFormTokenizer t;
         t.set_string(input);
         if (t.tokenize_input(diagnostics, al)) {
-            LFORTRAN_ASSERT(t.tokens.size() == t.stypes.size())
+            LCOMPILERS_ASSERT(t.tokens.size() == t.stypes.size())
             if (stypes) {
                 for(const auto & el : t.stypes) {
                     stypes->push_back(el);
@@ -174,7 +173,7 @@ LineType determine_line_type(const unsigned char *pos)
             pos++;
             col+=1;
         }
-        if (*pos == '\n' || *pos == '\0') return LineType::Comment;
+        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')) return LineType::Comment;
         if (*pos == '!' && col != 6) return LineType::Comment;
         if (col == 6) {
             if (*pos == ' ' || *pos == '0') {
@@ -206,7 +205,7 @@ void parse_string(std::string &out, const std::string &s, size_t &pos,
     bool fixed_form)
 {
     char quote = s[pos];
-    LFORTRAN_ASSERT(quote == '"' || quote == '\'');
+    LCOMPILERS_ASSERT(quote == '"' || quote == '\'');
     out += s[pos];
     pos++;
     while (pos < s.size() && ! (s[pos] == quote && s[pos+1] != quote)) {
@@ -254,6 +253,11 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             return;
         } else if (s[pos] == ' ') {
             // Skip white space in a fixed-form parser
+            pos++;
+            lm.files.back().out_start.push_back(out.size());
+            lm.files.back().in_start.push_back(pos);
+        } else if (s[pos] == '\r') {
+            // Skip CR in a fixed-form parser
             pos++;
             lm.files.back().out_start.push_back(out.size());
             lm.files.back().in_start.push_back(pos);
@@ -344,9 +348,10 @@ std::string prescan(const std::string &s, LocationManager &lm,
          *
          *   * Removes all whitespace
          *   * Joins continuation lines
-         *   * Removes comments
+         *   * Removes comments and empty lines
          *   * Handles the first 6 columns
          *   * Converts to lowercase
+         *   * Removes all CR characters
          *
          * features which are currently not yet implemented:
          *
@@ -414,7 +419,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 }
                 case LineType::Include: {
                     while (pos < s.size() && s[pos] == ' ') pos++;
-                    LFORTRAN_ASSERT(s.substr(pos, 7) == "include");
+                    LCOMPILERS_ASSERT(s.substr(pos, 7) == "include");
                     pos += 7;
                     while (pos < s.size() && s[pos] == ' ') pos++;
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
@@ -443,10 +448,10 @@ std::string prescan(const std::string &s, LocationManager &lm,
         while (pos < s.size()) {
             if (newline && is_include(s, pos)) {
                 while (pos < s.size() && s[pos] == ' ') pos++;
-                LFORTRAN_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
+                LCOMPILERS_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
-                LFORTRAN_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
+                LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
                 process_include(out, s, lm, pos, fixed_form, root_dir);
             }
             newline = false;
@@ -484,7 +489,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
         // set the size of the last interval
     //    lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
 
-        LFORTRAN_ASSERT(check_newlines(s, lm.files.back().in_newlines))
+        LCOMPILERS_ASSERT(check_newlines(s, lm.files.back().in_newlines))
 
         // Add the position of EOF as the last \n, whether or not the original
         // file has it
@@ -776,8 +781,8 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
                 throw parser_local::ParserError(message, loc);
             }
             invalid_token--;
-            LFORTRAN_ASSERT(invalid_token < f_tokenizer.tokens.size())
-            LFORTRAN_ASSERT(invalid_token < f_tokenizer.locations.size())
+            LCOMPILERS_ASSERT(invalid_token < f_tokenizer.tokens.size())
+            LCOMPILERS_ASSERT(invalid_token < f_tokenizer.locations.size())
             token = f_tokenizer.tokens[invalid_token];
             Location loc = f_tokenizer.locations[invalid_token];
             token_str = f_tokenizer.token_at_loc(loc);
@@ -807,4 +812,4 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     throw parser_local::ParserError(message, loc);
 }
 
-}
+} // namespace LCompilers::LFortran

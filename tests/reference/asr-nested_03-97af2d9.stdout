@@ -1,143 +1,157 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             nested_03:
-                (Program 
+                (Program
                     (SymbolTable
                         5
                         {
                             b:
-                                (ExternalSymbol 
-                                    5 
-                                    b 
-                                    2 b 
-                                    nested_03_a 
-                                    [] 
-                                    b 
+                                (ExternalSymbol
+                                    5
+                                    b
+                                    2 b
+                                    nested_03_a
+                                    []
+                                    b
                                     Public
                                 )
-                            
-                        }) 
-                    nested_03 
-                    [nested_03_a] 
-                    [(SubroutineCall 
-                        5 b 
-                        () 
-                        [] 
+                        })
+                    nested_03
+                    [nested_03_a]
+                    [(SubroutineCall
+                        5 b
+                        ()
+                        []
                         ()
                     )]
-                ), 
+                ),
             nested_03_a:
-                (Module 
+                (Module
                     (SymbolTable
                         2
                         {
                             b:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         3
                                         {
                                             c:
-                                                (Function 
+                                                (Function
                                                     (SymbolTable
                                                         4
                                                         {
                                                             
-                                                        }) 
-                                                    c 
-                                                    [] 
-                                                    [] 
-                                                    [(Print 
-                                                        () 
-                                                        [(IntegerConstant 5 (Integer 4 []))] 
-                                                        () 
+                                                        })
+                                                    c
+                                                    (FunctionType
+                                                        []
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    []
+                                                    [(Print
+                                                        ()
+                                                        [(IntegerConstant 5 (Integer 4 []))]
+                                                        ()
                                                         ()
                                                     )
-                                                    (Print 
-                                                        () 
-                                                        [(Var 3 x)] 
-                                                        () 
+                                                    (Print
                                                         ()
-                                                    )] 
-                                                    () 
-                                                    Source 
-                                                    Public 
-                                                    Implementation 
-                                                    () 
-                                                    .false. 
-                                                    .false. 
-                                                    .false. 
-                                                    .false. 
-                                                    .false. 
-                                                    [] 
-                                                    [] 
+                                                        [(Var 3 x)]
+                                                        ()
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
                                                     .false.
-                                                ), 
+                                                    .false.
+                                                ),
                                             x:
-                                                (Variable 
-                                                    3 
-                                                    x 
-                                                    Local 
-                                                    (Cast 
-                                                        (IntegerConstant 6 (Integer 4 [])) 
-                                                        IntegerToReal 
-                                                        (Real 4 []) 
-                                                        (RealConstant 
-                                                            6.000000 
-                                                            (Real 4 [])
-                                                        )
-                                                    ) 
-                                                    () 
-                                                    Save 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Public 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    b 
-                                    [c] 
-                                    [] 
-                                    [(Print 
-                                        () 
-                                        [(StringConstant 
-                                            "b()" 
-                                            (Character 1 3 () [])
-                                        )] 
-                                        () 
+                                        })
+                                    b
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [c]
+                                    []
+                                    [(=
+                                        (Var 3 x)
+                                        (Cast
+                                            (IntegerConstant 6 (Integer 4 []))
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                6.000000
+                                                (Real 4 [])
+                                            )
+                                        )
                                         ()
                                     )
-                                    (SubroutineCall 
-                                        3 c 
-                                        () 
-                                        [] 
+                                    (Print
                                         ()
-                                    )] 
-                                    () 
-                                    Source 
-                                    Public 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        [(StringConstant
+                                            "b()"
+                                            (Character 1 3 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        3 c
+                                        ()
+                                        []
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
                                     .false.
                                 )
-                            
-                        }) 
-                    nested_03_a 
-                    [] 
-                    .false. 
+                        })
+                    nested_03_a
+                    []
+                    .false.
                     .false.
                 )
-            
-        }) 
+        })
     []
 )

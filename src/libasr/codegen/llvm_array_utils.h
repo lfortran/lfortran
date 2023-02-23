@@ -15,7 +15,7 @@
 #include <libasr/asr.h>
 #include <libasr/codegen/llvm_utils.h>
 
-namespace LFortran {
+namespace LCompilers {
 
     namespace LLVMArrUtils {
 
@@ -244,7 +244,8 @@ namespace LFortran {
                 virtual
                 llvm::Value* get_single_element(llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
-                    bool data_only=false, llvm::Value** llvm_diminfo=nullptr) = 0;
+                    bool data_only=false, bool is_fixed_size=false,
+                    llvm::Value** llvm_diminfo=nullptr) = 0;
 
                 virtual
                 llvm::Value* get_is_allocated_flag(llvm::Value* array) = 0;
@@ -261,6 +262,11 @@ namespace LFortran {
                 void copy_array(llvm::Value* src, llvm::Value* dest,
                                 llvm::Module* module, ASR::ttype_t* asr_data_type,
                                 bool create_dim_des_array, bool reserve_memory) = 0;
+
+                virtual
+                void copy_array_data_only(llvm::Value* src, llvm::Value* dest,
+                                          llvm::Module* module, ASR::ttype_t* asr_data_type,
+                                          llvm::Value* num_elements) = 0;
 
                 virtual
                 llvm::Value* get_array_size(llvm::Value* array, llvm::Value* dim,
@@ -378,7 +384,8 @@ namespace LFortran {
                 virtual
                 llvm::Value* get_single_element(llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
-                    bool data_only=false, llvm::Value** llvm_diminfo=nullptr);
+                    bool data_only=false, bool is_fixed_size=false,
+                    llvm::Value** llvm_diminfo=nullptr);
 
                 virtual
                 llvm::Value* get_is_allocated_flag(llvm::Value* array);
@@ -397,6 +404,11 @@ namespace LFortran {
                                 bool create_dim_des_array, bool reserve_memory);
 
                 virtual
+                void copy_array_data_only(llvm::Value* src, llvm::Value* dest,
+                                          llvm::Module* module, ASR::ttype_t* asr_data_type,
+                                          llvm::Value* num_elements);
+
+                virtual
                 llvm::Value* get_array_size(llvm::Value* array, llvm::Value* dim,
                                             int output_kind, int dim_kind=4);
 
@@ -404,6 +416,6 @@ namespace LFortran {
 
     } // LLVMArrUtils
 
-} // LFortran
+} // namespace LCompilers
 
 #endif // LFORTRAN_LLVM_ARR_UTILS_H

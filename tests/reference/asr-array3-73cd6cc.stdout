@@ -1,84 +1,84 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             array3:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             a:
-                                (Variable 
-                                    2 
-                                    a 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 3 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             b:
-                                (Variable 
-                                    2 
-                                    b 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 3 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    array3 
-                    [] 
-                    [(= 
-                        (Var 2 a) 
-                        (Cast 
-                            (ArrayConstant 
+                        })
+                    array3
+                    []
+                    [(=
+                        (Var 2 a)
+                        (Cast
+                            (ArrayConstant
                                 [(IntegerConstant 1 (Integer 4 []))
                                 (IntegerConstant 2 (Integer 4 []))
-                                (IntegerConstant 3 (Integer 4 []))] 
-                                (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                (IntegerConstant 3 (Integer 4 [])))]) 
+                                (IntegerConstant 3 (Integer 4 []))]
+                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4 [])))])
                                 ColMajor
-                            ) 
-                            IntegerToReal 
-                            (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                            (IntegerConstant 3 (Integer 4 [])))]) 
+                            )
+                            IntegerToReal
+                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4 [])))])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 b) 
-                        (Cast 
-                            (ArrayConstant 
+                    (=
+                        (Var 2 b)
+                        (Cast
+                            (ArrayConstant
                                 [(IntegerConstant 1 (Integer 4 []))
                                 (IntegerConstant 2 (Integer 4 []))
-                                (IntegerConstant 3 (Integer 4 []))] 
-                                (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                (IntegerConstant 3 (Integer 4 [])))]) 
+                                (IntegerConstant 3 (Integer 4 []))]
+                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4 [])))])
                                 ColMajor
-                            ) 
-                            IntegerToReal 
-                            (Real 4 [((IntegerConstant 1 (Integer 4 [])) 
-                            (IntegerConstant 3 (Integer 4 [])))]) 
+                            )
+                            IntegerToReal
+                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4 [])))])
                             ()
-                        ) 
+                        )
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

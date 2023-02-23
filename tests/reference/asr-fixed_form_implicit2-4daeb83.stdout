@@ -1,19 +1,18 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             main:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             
-                        }) 
-                    main 
-                    [] 
+                        })
+                    main
+                    []
                     []
                 )
-            
-        }) 
+        })
     []
 )

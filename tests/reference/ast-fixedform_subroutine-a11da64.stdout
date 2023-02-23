@@ -1,117 +1,117 @@
-(TranslationUnit 
-    [(Subroutine 
-        f 
+(TranslationUnit
+    [(Subroutine
+        f
         [(a)
         (b)
-        (c)] 
-        [] 
-        () 
-        () 
-        [] 
-        [] 
-        [] 
-        [] 
-        [(Print 
-            0 
-            () 
-            [4] 
+        (c)]
+        []
+        ()
+        ()
+        []
+        []
+        []
+        []
+        [(Print
+            0
             ()
-        )] 
+            [4]
+            ()
+        )]
         []
     )
-    (Program 
-        implicit_program_lfortran 
-        () 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+    (Program
+        implicit_program_lfortran
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(k 
-            [] 
-            [] 
-            () 
-            None 
+            )
+            []
+            [(k
+            []
+            []
+            ()
+            None
             ())
-            (l 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            (l
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            k 
-            100 
+            None
+            ())]
             ()
-        )
-        (DoLoop 
-            0 
-            () 
-            80 
-            k 
-            1 
-            10 
-            () 
-            [(Print 
-                0 
-                () 
-                [k] 
-                ()
-            )
-            (Continue 
-                80 
-                ()
-            )] 
-            () 
+        )]
+        [(=
+            0
+            k
+            100
             ()
         )
-        (If 
-            0 
-            () 
-            (<= k 10000) 
-            [(Print 
-                0 
-                () 
-                [k] 
+        (DoLoop
+            0
+            ()
+            80
+            k
+            1
+            10
+            ()
+            [(Print
+                0
                 ()
-            )] 
-            [(Print 
-                0 
-                () 
-                [(+ k 1)] 
+                [k]
                 ()
             )
-            (DoLoop 
-                0 
-                () 
-                0 
-                l 
-                1 
-                10 
-                () 
-                [(Print 
-                    0 
-                    () 
-                    [(String 
-                        "do"
-                    )] 
+            (Continue
+                80
+                ()
+            )]
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (<= k 10000)
+            [(Print
+                0
+                ()
+                [k]
+                ()
+            )]
+            [(Print
+                0
+                ()
+                [(+ k 1)]
+                ()
+            )
+            (DoLoop
+                0
+                ()
+                0
+                l
+                1
+                10
+                ()
+                [(Print
+                    0
                     ()
-                )] 
-                () 
+                    [(String
+                        "do"
+                    )]
+                    ()
+                )]
                 ()
-            )] 
-            () 
-            () 
+                ()
+            )]
             ()
-        )] 
+            ()
+            ()
+        )]
         []
     )]
 )

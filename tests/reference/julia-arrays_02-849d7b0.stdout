@@ -20,9 +20,20 @@ function bit_size(x::Int32)::Int32
     return bit_size
 end
 
-function iachar(c::String, kind::Int32)::Int32
-    local iachar::Int32 = 0
-    return iachar
+function command_argument_count()::Int32
+    local r::Int32 = 0
+    return r
+end
+
+function execute_command_line(command::String, wait::Bool, exitstat::Int32, cmdstat::Int32, cmdmsg::String) end
+
+function get_command_argument(number::Int32, value::Base.RefValue{String}, length::Base.RefValue{Int32}, status::Base.RefValue{Int32}) end
+
+function get_environment_variable(name::String, value::String, length::Int32, status::Int32, trim_name::Bool) end
+
+function is_iostat_end(i::Int32)::Bool
+    local r::Bool = false
+    return r
 end
 
 function is_iostat_eor(i::Int32)::Bool
@@ -431,12 +442,7 @@ end
 
 function dsqrt(x::Float64)::Float64
     local r::Float64 = 0.0
-    if x ≥ Float64(0)
-        r = x ^ (  1.00000000000000000e+00 / Float64(2))
-    else
-        println(Base.stderr, "ERROR STOP")
-        exit(1)
-    end
+    r = sqrt(x)
     return r
 end
 
@@ -720,12 +726,7 @@ end
 
 function ssqrt(x::Float32)::Float32
     local r::Float32 = 0.0
-    if x ≥ Float32(0)
-        r = x ^ (  1.00000000000000000e+00 / Float32(2))
-    else
-        println(Base.stderr, "ERROR STOP")
-        exit(1)
-    end
+    r = sqrt(x)
     return r
 end
 

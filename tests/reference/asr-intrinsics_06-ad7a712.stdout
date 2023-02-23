@@ -1,382 +1,382 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             intrinsics_06:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             acos:
-                                (ExternalSymbol 
-                                    2 
-                                    acos 
-                                    13 acos 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    acos 
+                                (ExternalSymbol
+                                    2
+                                    acos
+                                    13 acos
+                                    lfortran_intrinsic_math
+                                    []
+                                    acos
                                     Private
-                                ), 
+                                ),
                             acos@sacos:
-                                (ExternalSymbol 
-                                    2 
-                                    acos@sacos 
-                                    13 sacos 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    sacos 
+                                (ExternalSymbol
+                                    2
+                                    acos@sacos
+                                    13 sacos
+                                    lfortran_intrinsic_math
+                                    []
+                                    sacos
                                     Private
-                                ), 
+                                ),
                             acosh:
-                                (ExternalSymbol 
-                                    2 
-                                    acosh 
-                                    13 acosh 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    acosh 
+                                (ExternalSymbol
+                                    2
+                                    acosh
+                                    13 acosh
+                                    lfortran_intrinsic_math
+                                    []
+                                    acosh
                                     Private
-                                ), 
+                                ),
                             acosh@sacosh:
-                                (ExternalSymbol 
-                                    2 
-                                    acosh@sacosh 
-                                    13 sacosh 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    sacosh 
+                                (ExternalSymbol
+                                    2
+                                    acosh@sacosh
+                                    13 sacosh
+                                    lfortran_intrinsic_math
+                                    []
+                                    sacosh
                                     Private
-                                ), 
+                                ),
                             asin:
-                                (ExternalSymbol 
-                                    2 
-                                    asin 
-                                    13 asin 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    asin 
+                                (ExternalSymbol
+                                    2
+                                    asin
+                                    13 asin
+                                    lfortran_intrinsic_math
+                                    []
+                                    asin
                                     Private
-                                ), 
+                                ),
                             asin@sasin:
-                                (ExternalSymbol 
-                                    2 
-                                    asin@sasin 
-                                    13 sasin 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    sasin 
+                                (ExternalSymbol
+                                    2
+                                    asin@sasin
+                                    13 sasin
+                                    lfortran_intrinsic_math
+                                    []
+                                    sasin
                                     Private
-                                ), 
+                                ),
                             asinh:
-                                (ExternalSymbol 
-                                    2 
-                                    asinh 
-                                    13 asinh 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    asinh 
+                                (ExternalSymbol
+                                    2
+                                    asinh
+                                    13 asinh
+                                    lfortran_intrinsic_math
+                                    []
+                                    asinh
                                     Private
-                                ), 
+                                ),
                             asinh@sasinh:
-                                (ExternalSymbol 
-                                    2 
-                                    asinh@sasinh 
-                                    13 sasinh 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    sasinh 
+                                (ExternalSymbol
+                                    2
+                                    asinh@sasinh
+                                    13 sasinh
+                                    lfortran_intrinsic_math
+                                    []
+                                    sasinh
                                     Private
-                                ), 
+                                ),
                             atan:
-                                (ExternalSymbol 
-                                    2 
-                                    atan 
-                                    13 atan 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    atan 
+                                (ExternalSymbol
+                                    2
+                                    atan
+                                    13 atan
+                                    lfortran_intrinsic_math
+                                    []
+                                    atan
                                     Private
-                                ), 
+                                ),
                             atan@satan:
-                                (ExternalSymbol 
-                                    2 
-                                    atan@satan 
-                                    13 satan 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    satan 
+                                (ExternalSymbol
+                                    2
+                                    atan@satan
+                                    13 satan
+                                    lfortran_intrinsic_math
+                                    []
+                                    satan
                                     Private
-                                ), 
+                                ),
                             atanh:
-                                (ExternalSymbol 
-                                    2 
-                                    atanh 
-                                    13 atanh 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    atanh 
+                                (ExternalSymbol
+                                    2
+                                    atanh
+                                    13 atanh
+                                    lfortran_intrinsic_math
+                                    []
+                                    atanh
                                     Private
-                                ), 
+                                ),
                             atanh@satanh:
-                                (ExternalSymbol 
-                                    2 
-                                    atanh@satanh 
-                                    13 satanh 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    satanh 
+                                (ExternalSymbol
+                                    2
+                                    atanh@satanh
+                                    13 satanh
+                                    lfortran_intrinsic_math
+                                    []
+                                    satanh
                                     Private
-                                ), 
+                                ),
                             datan:
-                                (ExternalSymbol 
-                                    2 
-                                    datan 
-                                    13 datan 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    datan 
+                                (ExternalSymbol
+                                    2
+                                    datan
+                                    13 datan
+                                    lfortran_intrinsic_math
+                                    []
+                                    datan
                                     Private
-                                ), 
+                                ),
                             dp:
-                                (Variable 
-                                    2 
-                                    dp 
-                                    Local 
-                                    (FunctionCall 
-                                        2 kind 
-                                        () 
-                                        [((RealConstant 
-                                            0.000000 
-                                            (Real 8 [])
-                                        ))] 
-                                        (Integer 4 []) 
-                                        (IntegerConstant 8 (Integer 4 [])) 
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 kind
                                         ()
-                                    ) 
-                                    (IntegerConstant 8 (Integer 4 [])) 
-                                    Parameter 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        [((RealConstant
+                                            0.000000
+                                            (Real 8 [])
+                                        ))]
+                                        (Integer 4 [])
+                                        (IntegerConstant 8 (Integer 4 []))
+                                        ()
+                                    )
+                                    (IntegerConstant 8 (Integer 4 []))
+                                    Parameter
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             kind:
-                                (ExternalSymbol 
-                                    2 
-                                    kind 
-                                    4 kind 
-                                    lfortran_intrinsic_kind 
-                                    [] 
-                                    kind 
+                                (ExternalSymbol
+                                    2
+                                    kind
+                                    4 kind
+                                    lfortran_intrinsic_kind
+                                    []
+                                    kind
                                     Private
-                                ), 
+                                ),
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    intrinsics_06 
-                    [lfortran_intrinsic_kind] 
-                    [(= 
-                        (Var 2 x) 
-                        (FunctionCall 
-                            2 asin@sasin 
-                            2 asin 
-                            [((RealConstant 
-                                0.841471 
+                        })
+                    intrinsics_06
+                    [lfortran_intrinsic_kind]
+                    [(=
+                        (Var 2 x)
+                        (FunctionCall
+                            2 asin@sasin
+                            2 asin
+                            [((RealConstant
+                                0.841471
                                 (Real 4 [])
-                            ))] 
-                            (Real 4 []) 
-                            (RealConstant 
-                                1.000000 
-                                (Real 4 [])
-                            ) 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
-                        ()
-                    )
-                    (= 
-                        (Var 2 x) 
-                        (FunctionCall 
-                            2 acos@sacos 
-                            2 acos 
-                            [((RealConstant 
-                                0.540302 
-                                (Real 4 [])
-                            ))] 
-                            (Real 4 []) 
-                            (RealConstant 
-                                1.000000 
-                                (Real 4 [])
-                            ) 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
-                        ()
-                    )
-                    (= 
-                        (Var 2 x) 
-                        (FunctionCall 
-                            2 atan@satan 
-                            2 atan 
-                            [((RealConstant 
-                                1.557408 
-                                (Real 4 [])
-                            ))] 
-                            (Real 4 []) 
-                            (RealConstant 
-                                1.000000 
-                                (Real 4 [])
-                            ) 
-                            ()
-                        ) 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
-                        ()
-                    )
-                    (= 
-                        (Var 2 x) 
-                        (Cast 
-                            (FunctionCall 
-                                2 datan 
-                                () 
-                                [((RealConstant 
-                                    1.557408 
-                                    (Real 8 [])
-                                ))] 
-                                (Real 8 []) 
-                                (RealConstant 
-                                    1.000000 
-                                    (Real 8 [])
-                                ) 
-                                ()
-                            ) 
-                            RealToReal 
-                            (Real 4 []) 
-                            (RealConstant 
-                                1.000000 
+                            ))]
+                            (Real 4 [])
+                            (RealConstant
+                                1.000000
                                 (Real 4 [])
                             )
-                        ) 
-                        ()
-                    )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
-                        ()
-                    )
-                    (= 
-                        (Var 2 x) 
-                        (FunctionCall 
-                            2 asinh@sasinh 
-                            2 asinh 
-                            [((RealConstant 
-                                1.175201 
-                                (Real 4 [])
-                            ))] 
-                            (Real 4 []) 
-                            (RealConstant 
-                                1.000000 
-                                (Real 4 [])
-                            ) 
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (FunctionCall 
-                            2 acosh@sacosh 
-                            2 acosh 
-                            [((RealConstant 
-                                1.543081 
+                    (=
+                        (Var 2 x)
+                        (FunctionCall
+                            2 acos@sacos
+                            2 acos
+                            [((RealConstant
+                                0.540302
                                 (Real 4 [])
-                            ))] 
-                            (Real 4 []) 
-                            (RealConstant 
-                                1.000000 
+                            ))]
+                            (Real 4 [])
+                            (RealConstant
+                                1.000000
                                 (Real 4 [])
-                            ) 
+                            )
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (FunctionCall 
-                            2 atanh@satanh 
-                            2 atanh 
-                            [((RealConstant 
-                                0.761594 
+                    (=
+                        (Var 2 x)
+                        (FunctionCall
+                            2 atan@satan
+                            2 atan
+                            [((RealConstant
+                                1.557408
                                 (Real 4 [])
-                            ))] 
-                            (Real 4 []) 
-                            (RealConstant 
-                                1.000000 
+                            ))]
+                            (Real 4 [])
+                            (RealConstant
+                                1.000000
                                 (Real 4 [])
-                            ) 
+                            )
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (Cast
+                            (FunctionCall
+                                2 datan
+                                ()
+                                [((RealConstant
+                                    1.557408
+                                    (Real 8 [])
+                                ))]
+                                (Real 8 [])
+                                (RealConstant
+                                    1.000000
+                                    (Real 8 [])
+                                )
+                                ()
+                            )
+                            RealToReal
+                            (Real 4 [])
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (FunctionCall
+                            2 asinh@sasinh
+                            2 asinh
+                            [((RealConstant
+                                1.175201
+                                (Real 4 [])
+                            ))]
+                            (Real 4 [])
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (FunctionCall
+                            2 acosh@sacosh
+                            2 acosh
+                            [((RealConstant
+                                1.543081
+                                (Real 4 [])
+                            ))]
+                            (Real 4 [])
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (FunctionCall
+                            2 atanh@satanh
+                            2 atanh
+                            [((RealConstant
+                                0.761594
+                                (Real 4 [])
+                            ))]
+                            (Real 4 [])
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
                         ()
                     )]
-                ), 
+                ),
             iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin), 
+                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind), 
+                (IntrinsicModule lfortran_intrinsic_kind),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math)
-            
-        }) 
+        })
     []
 )

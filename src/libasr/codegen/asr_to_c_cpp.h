@@ -28,7 +28,7 @@
 #include <tuple>
 
 
-namespace LFortran {
+namespace LCompilers {
 
 
 // Platform dependent fast unique hash:
@@ -43,6 +43,38 @@ struct SymbolInfo
     bool intrinsic_function = false;
 };
 
+struct DeclarationOptions {
+};
+
+struct CDeclarationOptions: public DeclarationOptions {
+    bool pre_initialise_derived_type;
+    bool use_ptr_for_derived_type;
+    bool use_static;
+    bool force_declare;
+    std::string force_declare_name;
+    bool declare_as_constant;
+    std::string const_name;
+
+    CDeclarationOptions() :
+    pre_initialise_derived_type{true},
+    use_ptr_for_derived_type{true},
+    use_static{true},
+    force_declare{false},
+    force_declare_name{""},
+    declare_as_constant{false},
+    const_name{""} {
+    }
+};
+
+struct CPPDeclarationOptions: public DeclarationOptions {
+    bool use_static;
+    bool use_templates_for_arrays;
+
+    CPPDeclarationOptions() :
+    use_static{true},
+    use_templates_for_arrays{false} {
+    }
+};
 
 template <class Struct>
 class BaseCCPPVisitor : public ASR::BaseVisitor<Struct>
@@ -62,6 +94,7 @@ public:
     bool intrinsic_module = false;
     const ASR::Function_t *current_function = nullptr;
     std::map<uint64_t, SymbolInfo> sym_info;
+    std::map<uint64_t, std::string> const_var_names;
 
     // Output configuration:
     // Use std::string or char*
@@ -70,6 +103,7 @@ public:
     bool gen_stdcomplex;
     bool is_c;
     std::set<std::string> headers;
+    std::vector<std::string> tmp_src;
 
     SymbolTable* global_scope;
     int64_t lower_bound;
@@ -80,7 +114,8 @@ public:
 
     std::unique_ptr<CCPPDSUtils> c_ds_api;
     std::string const_name;
-    size_t const_list_count;
+    size_t const_vars_count;
+    size_t loop_end_count;
 
     SymbolTable* current_scope;
     bool is_string_concat_present;
@@ -91,16 +126,17 @@ public:
             platform{platform},
         gen_stdstring{gen_stdstring}, gen_stdcomplex{gen_stdcomplex},
         is_c{is_c}, global_scope{nullptr}, lower_bound{default_lower_bound},
-        template_number{0}, c_ds_api{std::make_unique<CCPPDSUtils>(is_c)},
+        template_number{0}, c_ds_api{std::make_unique<CCPPDSUtils>(is_c, platform)},
         const_name{"constname"},
-        const_list_count{0}, is_string_concat_present{false} {
+        const_vars_count{0}, loop_end_count{0},
+        is_string_concat_present{false} {
         }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         global_scope = x.m_global_scope;
         // All loose statements must be converted to a function, so the items
         // must be empty:
-        LFORTRAN_ASSERT(x.n_items == 0);
+        LCOMPILERS_ASSERT(x.n_items == 0);
         std::string unit_src = "";
         indentation_level = 0;
         indentation_spaces = 4;
@@ -118,9 +154,9 @@ R"(#include <stdio.h>
         {
             // Process intrinsic modules in the right order
             std::vector<std::string> build_order
-                = LFortran::ASRUtils::determine_module_dependencies(x);
+                = ASRUtils::determine_module_dependencies(x);
             for (auto &item : build_order) {
-                LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item)
+                LCOMPILERS_ASSERT(x.m_global_scope->get_scope().find(item)
                     != x.m_global_scope->get_scope().end());
                 if (startswith(item, "lfortran_intrinsic")) {
                     ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
@@ -140,9 +176,9 @@ R"(#include <stdio.h>
 
         // Then do all the modules in the right order
         std::vector<std::string> build_order
-            = LFortran::ASRUtils::determine_module_dependencies(x);
+            = ASRUtils::determine_module_dependencies(x);
         for (auto &item : build_order) {
-            LFORTRAN_ASSERT(x.m_global_scope->get_scope().find(item)
+            LCOMPILERS_ASSERT(x.m_global_scope->get_scope().find(item)
                 != x.m_global_scope->get_scope().end());
             if (!startswith(item, "lfortran_intrinsic")) {
                 ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
@@ -172,11 +208,18 @@ R"(#include <stdio.h>
         std::string contains;
 
         // Declare the global variables that are imported from the module
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                        item.second);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
                 std::string decl = self().convert_variable_decl(*v);
+                bool used_define_for_const = (ASR::is_a<ASR::Const_t>(*v->m_type) &&
+                        v->m_intent == ASRUtils::intent_local);
+                if (used_define_for_const) {
+                    contains += decl + "\n";
+                    continue;
+                }
                 if (v->m_value) {
                     self().visit_expr(*v->m_value);
                     decl += " = " + src;
@@ -224,9 +267,11 @@ R"(#include <stdio.h>
         indentation_level += 1;
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string decl;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
                 decl += self().convert_variable_decl(*v);
                 if( !ASR::is_a<ASR::Const_t>(*v->m_type) ||
                     v->m_intent == ASRUtils::intent_return_var ) {
@@ -250,7 +295,7 @@ R"(#include <stdio.h>
     }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
-        LFORTRAN_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
         std::string decl, body;
         std::string indent(indentation_level*indentation_spaces, ' ');
@@ -258,9 +303,11 @@ R"(#include <stdio.h>
         std::string close_paranthesis = indent + "}\n";
         indent += std::string(indentation_spaces, ' ');
         indentation_level += 1;
-        for (auto &item : block->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(block->m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = block->m_symtab->get_symbol(item);
+            if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
                 decl += indent + self().convert_variable_decl(*v);
                 if( !ASR::is_a<ASR::Const_t>(*v->m_type) ||
                     v->m_intent == ASRUtils::intent_return_var ) {
@@ -281,14 +328,14 @@ R"(#include <stdio.h>
         template_for_Kokkos.clear();
         template_number = 0;
         std::string sub, inl, static_attr;
-        if (x.m_inline) {
+        if (ASRUtils::get_FunctionType(x)->m_inline) {
             inl = "inline __attribute__((always_inline)) ";
         }
-        if( x.m_static ) {
+        if( ASRUtils::get_FunctionType(x)->m_static ) {
             static_attr = "static ";
         }
         if (x.m_return_var) {
-            ASR::Variable_t *return_var = LFortran::ASRUtils::EXPR2VAR(x.m_return_var);
+            ASR::Variable_t *return_var = ASRUtils::EXPR2VAR(x.m_return_var);
             if (ASRUtils::is_integer(*return_var->m_type)) {
                 int kind = ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind;
                 switch (kind) {
@@ -360,12 +407,17 @@ R"(#include <stdio.h>
         }
         std::string func = static_attr + inl + sub + sym_name + "(";
         for (size_t i=0; i<x.n_args; i++) {
-            ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i]);
-            LFORTRAN_ASSERT(LFortran::ASRUtils::is_arg_dummy(arg->m_intent));
+            ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+            LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
             if( is_c ) {
-                func += self().convert_variable_decl(*arg, false);
+                CDeclarationOptions c_decl_options;
+                c_decl_options.pre_initialise_derived_type = false;
+                func += self().convert_variable_decl(*arg, &c_decl_options);
             } else {
-                func += self().convert_variable_decl(*arg, false, true);
+                CPPDeclarationOptions cpp_decl_options;
+                cpp_decl_options.use_static = false;
+                cpp_decl_options.use_templates_for_arrays = true;
+                func += self().convert_variable_decl(*arg, &cpp_decl_options);
             }
             if (i < x.n_args-1) func += ", ";
         }
@@ -420,8 +472,8 @@ R"(#include <stdio.h>
             sym_info[get_hash((ASR::asr_t*)&x)] = s;
         }
         std::string sub = get_function_declaration(x);
-        if (x.m_abi == ASR::abiType::BindC
-                && x.m_deftype == ASR::deftypeType::Interface) {
+        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
+            && ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
             sub += ";\n";
         } else {
             sub += "\n";
@@ -429,17 +481,30 @@ R"(#include <stdio.h>
             indentation_level += 1;
             std::string indent(indentation_level*indentation_spaces, ' ');
             std::string decl;
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                    if (v->m_intent == LFortran::ASRUtils::intent_local || v->m_intent == LFortran::ASRUtils::intent_return_var) {
+            std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+            bool has_typevar = false;
+            for (auto &item : var_order) {
+                ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+                if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
+                    if (v->m_intent == ASRUtils::intent_local ||
+                        v->m_intent == ASRUtils::intent_return_var) {
                         decl += indent + self().convert_variable_decl(*v);
                         if( !ASR::is_a<ASR::Const_t>(*v->m_type) ||
                             v->m_intent == ASRUtils::intent_return_var ) {
                             decl += ";\n";
                         }
                     }
+                    if (ASR::is_a<ASR::TypeParameter_t>(*v->m_type)) {
+                        has_typevar = true;
+                        break;
+                    }
                 }
+            }
+            if (has_typevar) {
+                indentation_level -= 1;
+                src = "";
+                return;
             }
 
             current_function = &x;
@@ -457,7 +522,7 @@ R"(#include <stdio.h>
 
             if (!visited_return && x.m_return_var) {
                 current_body += indent + "return "
-                    + LFortran::ASRUtils::EXPR2VAR(x.m_return_var)->m_name
+                    + ASRUtils::EXPR2VAR(x.m_return_var)->m_name
                     + ";\n";
             }
 
@@ -476,11 +541,11 @@ R"(#include <stdio.h>
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-            LFortran::ASRUtils::symbol_get_past_external(x.m_name));
+            ASRUtils::symbol_get_past_external(x.m_name));
         std::string fn_name = fn->m_name;
         if (sym_info[get_hash((ASR::asr_t*)fn)].intrinsic_function) {
             if (fn_name == "size") {
-                LFORTRAN_ASSERT(x.n_args > 0);
+                LCOMPILERS_ASSERT(x.n_args > 0);
                 self().visit_expr(*x.m_args[0].m_value);
                 std::string var_name = src;
                 std::string args;
@@ -495,11 +560,11 @@ R"(#include <stdio.h>
                 }
                 src = var_name + ".extent(" + args + ")";
             } else if (fn_name == "int") {
-                LFORTRAN_ASSERT(x.n_args > 0);
+                LCOMPILERS_ASSERT(x.n_args > 0);
                 self().visit_expr(*x.m_args[0].m_value);
                 src = "(int)" + src;
             } else if (fn_name == "not") {
-                LFORTRAN_ASSERT(x.n_args > 0);
+                LCOMPILERS_ASSERT(x.n_args > 0);
                 self().visit_expr(*x.m_args[0].m_value);
                 src = "!(" + src + ")";
             } else {
@@ -518,8 +583,8 @@ R"(#include <stdio.h>
         last_expr_precedence = 2;
         if( ASR::is_a<ASR::List_t>(*x.m_type) ) {
             ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(x.m_type);
-            const_name += std::to_string(const_list_count);
-            const_list_count += 1;
+            const_name += std::to_string(const_vars_count);
+            const_vars_count += 1;
             const_name = current_scope->get_unique_name(const_name);
             std::string indent(indentation_level*indentation_spaces, ' ');
             current_body += indent + c_ds_api->get_list_type(list_type) + " " +
@@ -600,7 +665,8 @@ R"(#include <stdio.h>
         bool alloc_return_var = false;
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-            visit_Var(*ASR::down_cast<ASR::Var_t>(x.m_target));
+            ASR::Var_t* x_m_target = ASR::down_cast<ASR::Var_t>(x.m_target);
+            visit_Var(*x_m_target);
             target = src;
             if (!is_c && ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
                 target += "->data";
@@ -615,8 +681,8 @@ R"(#include <stdio.h>
         } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
             visit_StructInstanceMember(*ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target));
             target = src;
-        } else if (ASR::is_a<ASR::UnionRef_t>(*x.m_target)) {
-            visit_UnionRef(*ASR::down_cast<ASR::UnionRef_t>(x.m_target));
+        } else if (ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_target)) {
+            visit_UnionInstanceMember(*ASR::down_cast<ASR::UnionInstanceMember_t>(x.m_target));
             target = src;
         } else if (ASR::is_a<ASR::ListItem_t>(*x.m_target)) {
             self().visit_ListItem(*ASR::down_cast<ASR::ListItem_t>(x.m_target));
@@ -628,15 +694,16 @@ R"(#include <stdio.h>
             ASR::TupleConstant_t *tup_c = ASR::down_cast<ASR::TupleConstant_t>(x.m_target);
             std::string src_tmp = "", val_name = "";
             if (ASR::is_a<ASR::TupleConstant_t>(*x.m_value)) {
-                self().visit_TupleConstant(*ASR::down_cast<ASR::TupleConstant_t>(x.m_value));
+                ASR::TupleConstant_t *tup_const = ASR::down_cast<ASR::TupleConstant_t>(x.m_value);
+                self().visit_TupleConstant(*tup_const);
+                val_name = const_var_names[get_hash((ASR::asr_t*)tup_const)];
                 src_tmp += src;
-                val_name = const_name;
             } else if (ASR::is_a<ASR::FunctionCall_t>(*x.m_value)) {
                 self().visit_FunctionCall(*ASR::down_cast<ASR::FunctionCall_t>(x.m_value));
                 ASR::Tuple_t* t = ASR::down_cast<ASR::Tuple_t>(tup_c->m_type);
                 std::string tuple_type_c = c_ds_api->get_tuple_type(t);
-                const_name += std::to_string(const_list_count);
-                const_list_count += 1;
+                const_name += std::to_string(const_vars_count);
+                const_vars_count += 1;
                 const_name = current_scope->get_unique_name(const_name);
                 src_tmp += indent + tuple_type_c + " " + const_name + " = " + src + ";\n";
                 val_name = const_name;
@@ -645,13 +712,15 @@ R"(#include <stdio.h>
                 val_name = src;
             }
             for (size_t i=0; i<tup_c->n_elements; i++) {
-                visit_Var(*ASR::down_cast<ASR::Var_t>(tup_c->m_elements[i]));
-                src_tmp += indent + src + " = " + val_name + ".element_" + std::to_string(i) + ";\n";
+                self().visit_expr(*tup_c->m_elements[i]);
+                ASR::ttype_t *t = ASRUtils::expr_type(tup_c->m_elements[i]);
+                src_tmp += indent + c_ds_api->get_deepcopy(t,
+                        val_name + ".element_" + std::to_string(i), src) + "\n";
             }
             src = src_tmp;
             return;
         } else {
-            LFORTRAN_ASSERT(false)
+            LCOMPILERS_ASSERT(false)
         }
         from_std_vector_helper.clear();
         if( ASR::is_a<ASR::UnionTypeConstructor_t>(*x.m_value) ) {
@@ -664,14 +733,14 @@ R"(#include <stdio.h>
         if( ASR::is_a<ASR::Struct_t>(*value_type) ) {
              if (ASR::is_a<ASR::ArrayItem_t>(*x.m_value) ||
                  ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) ||
-                 ASR::is_a<ASR::UnionRef_t>(*x.m_value)) {
+                 ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_value)) {
                  value = "&" + value;
              }
         }
         if( ASR::is_a<ASR::Struct_t>(*m_target_type) ) {
              if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ||
                  ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) ||
-                 ASR::is_a<ASR::UnionRef_t>(*x.m_target)) {
+                 ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_target)) {
                  target = "&" + target;
              }
         }
@@ -685,9 +754,16 @@ R"(#include <stdio.h>
             std::string list_dc_func = c_ds_api->get_list_deepcopy_func(list_target);
             if( ASR::is_a<ASR::ListConstant_t>(*x.m_value) ) {
                 src += value;
-                src += indent + list_dc_func + "(&" + const_name + ", &" + target + ");\n\n";
+                ASR::ListConstant_t *l_const = ASR::down_cast<ASR::ListConstant_t>(x.m_value);
+                std::string var_name = const_var_names[get_hash((ASR::asr_t*)l_const)];
+                src += indent + list_dc_func + "(&" + var_name + ", &" + target + ");\n\n";
             } else if (ASR::is_a<ASR::ListConcat_t>(*x.m_value)) {
                 src += indent + list_dc_func + "(" + value + ", &" + target + ");\n\n";
+            } else if (ASR::is_a<ASR::ListSection_t>(*x.m_value)) {
+                src += value;
+                ASR::ListSection_t *l_sec = ASR::down_cast<ASR::ListSection_t>(x.m_value);
+                std::string var_name = const_var_names[get_hash((ASR::asr_t*)l_sec)];
+                src += indent + list_dc_func + "(" + var_name + ", &" + target + ");\n\n";
             } else {
                 src += indent + list_dc_func + "(&" + value + ", &" + target + ");\n\n";
             }
@@ -705,10 +781,46 @@ R"(#include <stdio.h>
                 std::string alloc = "";
                 if (alloc_return_var) {
                     // char * return variable;
-                     alloc = indent + target + " = " + "(char *) malloc((strlen(" +
-                                    value + ") + 1 ) * sizeof(char));\n";
+                     alloc = indent + target + " = NULL;\n";
                 }
-                src += alloc + indent + c_ds_api->get_deepcopy(m_target_type, value, target) + "\n";
+                if( ASRUtils::is_array(m_target_type) && ASRUtils::is_array(m_value_type) ) {
+                    ASR::dimension_t* m_target_dims = nullptr;
+                    size_t n_target_dims = ASRUtils::extract_dimensions_from_ttype(m_target_type, m_target_dims);
+                    ASR::dimension_t* m_value_dims = nullptr;
+                    size_t n_value_dims = ASRUtils::extract_dimensions_from_ttype(m_value_type, m_value_dims);
+                    bool is_target_data_only_array = ASRUtils::is_fixed_size_array(m_target_dims, n_target_dims) &&
+                                                     ASR::is_a<ASR::StructType_t>(*ASRUtils::get_asr_owner(x.m_target));
+                    bool is_value_data_only_array = ASRUtils::is_fixed_size_array(m_value_dims, n_value_dims) &&
+                                                    ASR::is_a<ASR::StructType_t>(*ASRUtils::get_asr_owner(x.m_value));
+                    if( is_target_data_only_array || is_value_data_only_array ) {
+                        int64_t target_size = -1, value_size = -1;
+                        if( !is_target_data_only_array ) {
+                            target = target + "->data";
+                        } else {
+                            target_size = ASRUtils::get_fixed_size_of_array(m_target_dims, n_target_dims);
+                        }
+                        if( !is_value_data_only_array ) {
+                            value = value + "->data";
+                        } else {
+                            value_size = ASRUtils::get_fixed_size_of_array(m_value_dims, n_value_dims);
+                        }
+                        if( target_size != -1 && value_size != -1 ) {
+                            LCOMPILERS_ASSERT(target_size == value_size);
+                        }
+                        int64_t array_size = -1;
+                        if( target_size != -1 ) {
+                            array_size = target_size;
+                        } else {
+                            array_size = value_size;
+                        }
+                        src += indent + "memcpy(" + target + ", " + value + ", " + std::to_string(array_size) + "*sizeof(" +
+                                    CUtils::get_c_type_from_ttype_t(m_target_type) + "));\n";
+                    } else {
+                        src += alloc + indent + c_ds_api->get_deepcopy(m_target_type, value, target) + "\n";
+                    }
+                } else {
+                    src += alloc + indent + c_ds_api->get_deepcopy(m_target_type, value, target) + "\n";
+                }
             } else {
                 src += indent + c_ds_api->get_deepcopy(m_target_type, value, target) + "\n";
             }
@@ -735,9 +847,9 @@ R"(#include <stdio.h>
             if (s[idx] == '\n') {
                 src += "\\n";
             } else if (s[idx] == '\\') {
-                src += "\\\\";
+                src += "\\";
             } else if (s[idx] == '\"') {
-                src += "\\\"";
+                src += "\"";
             } else {
                 src += s[idx];
             }
@@ -766,48 +878,71 @@ R"(#include <stdio.h>
     void visit_ListConstant(const ASR::ListConstant_t& x) {
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
-        const_name += std::to_string(const_list_count);
-        const_list_count += 1;
+        const_name += std::to_string(const_vars_count);
+        const_vars_count += 1;
         const_name = current_scope->get_unique_name(const_name);
+        std::string var_name = const_name;
+        const_var_names[get_hash((ASR::asr_t*)&x)] = var_name;
         ASR::List_t* t = ASR::down_cast<ASR::List_t>(x.m_type);
         std::string list_type_c = c_ds_api->get_list_type(t);
         std::string src_tmp = "";
-        src_tmp += indent + list_type_c + " " + const_name + ";\n";
+        src_tmp += indent + list_type_c + " " + var_name + ";\n";
         std::string list_init_func = c_ds_api->get_list_init_func(t);
-        src_tmp += indent + list_init_func + "(&" + const_name + ", " +
+        src_tmp += indent + list_init_func + "(&" + var_name + ", " +
                std::to_string(x.n_args) + ");\n";
         for( size_t i = 0; i < x.n_args; i++ ) {
             self().visit_expr(*x.m_args[i]);
             if( ASR::is_a<ASR::Character_t>(*t->m_type) ) {
-                src_tmp += const_name + ".data[" + std::to_string(i) +"] = (char*) malloc(40 * sizeof(char));\n";
+                src_tmp += indent + var_name + ".data[" + std::to_string(i) +"] = NULL;\n";
+            }
+            if (ASR::is_a<ASR::ListConstant_t>(*x.m_args[i]) ||
+                    ASR::is_a<ASR::TupleConstant_t>(*x.m_args[i])) {
+                src_tmp += src;
+                src = const_var_names[get_hash((ASR::asr_t*)x.m_args[i])];
             }
             src_tmp += indent + c_ds_api->get_deepcopy(t->m_type, src,
-                        const_name + ".data[" + std::to_string(i) +"]") + "\n";
+                        var_name + ".data[" + std::to_string(i) +"]") + "\n";
         }
-        src_tmp += indent + const_name + ".current_end_point = " + std::to_string(x.n_args) + ";\n";
+        src_tmp += indent + var_name + ".current_end_point = " + std::to_string(x.n_args) + ";\n";
         src = src_tmp;
     }
 
     void visit_TupleConstant(const ASR::TupleConstant_t& x) {
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
-        const_name += std::to_string(const_list_count);
-        const_list_count += 1;
+        const_name += std::to_string(const_vars_count);
+        const_vars_count += 1;
         const_name = current_scope->get_unique_name(const_name);
+        std::string var_name = const_name;
+        const_var_names[get_hash((ASR::asr_t*)&x)] = var_name;
         ASR::Tuple_t* t = ASR::down_cast<ASR::Tuple_t>(x.m_type);
         std::string tuple_type_c = c_ds_api->get_tuple_type(t);
         std::string src_tmp = "";
-        src_tmp += indent + tuple_type_c + " " + const_name + ";\n";
+        src_tmp += indent + tuple_type_c + " " + var_name + ";\n";
         for (size_t i = 0; i < x.n_elements; i++) {
             self().visit_expr(*x.m_elements[i]);
             std::string ele = ".element_" + std::to_string(i);
             if (ASR::is_a<ASR::Character_t>(*t->m_type[i])) {
-                src_tmp += indent + const_name + ele + " = (char*) malloc(40 * sizeof(char));\n";
+                src_tmp += indent + var_name + ele + " = NULL;\n";
             }
-            src_tmp += indent + c_ds_api->get_deepcopy(t->m_type[i], src, const_name + ele) + "\n";
+            src_tmp += indent + c_ds_api->get_deepcopy(t->m_type[i], src, var_name + ele) + "\n";
         }
-        src_tmp += indent + const_name + ".length" + " = " + std::to_string(x.n_elements) + ";\n";
+        src_tmp += indent + var_name + ".length" + " = " + std::to_string(x.n_elements) + ";\n";
         src = src_tmp;
+    }
+
+    void visit_TupleCompare(const ASR::TupleCompare_t& x) {
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_left);
+        std::string tup_cmp_func = c_ds_api->get_compare_func(type);
+        self().visit_expr(*x.m_left);
+        std::string left = std::move(src);
+        self().visit_expr(*x.m_right);
+        std::string right = std::move(src);
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        src = tup_cmp_func + "(" + left + ", " + right + ")";
+        if (x.m_op == ASR::cmpopType::NotEq) {
+            src = "!" + src;
+        }
     }
 
     void visit_ListAppend(const ASR::ListAppend_t& x) {
@@ -839,6 +974,49 @@ R"(#include <stdio.h>
         src = list_concat_func + "(" + left + ", " + rig + ")";
     }
 
+    void visit_ListSection(const ASR::ListSection_t& x) {
+        std::string left, right, step, l_present, r_present;
+        if (x.m_section.m_left) {
+            self().visit_expr(*x.m_section.m_left);
+            left = src;
+            l_present = "true";
+        } else {
+            left = "0";
+            l_present = "false";
+        }
+        if (x.m_section.m_right) {
+            self().visit_expr(*x.m_section.m_right);
+            right = src;
+            r_present = "true";
+        } else {
+            right = "0";
+            r_present = "false";
+        }
+        if (x.m_section.m_step) {
+            self().visit_expr(*x.m_section.m_step);
+            step = src;
+        } else {
+            step = "1";
+        }
+        self().visit_expr(*x.m_a);
+
+        ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_a);
+        ASR::List_t* t = ASR::down_cast<ASR::List_t>(t_ttype);
+        std::string list_var = std::move(src);
+        std::string list_type_c = c_ds_api->get_list_type(t);
+        std::string list_section_func = c_ds_api->get_list_section_func(t);
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        const_name += std::to_string(const_vars_count);
+        const_vars_count += 1;
+        const_name = current_scope->get_unique_name(const_name);
+        std::string var_name = const_name, tmp_src_gen = "";
+        tmp_src_gen = indent + list_type_c + "* " + var_name + " = ";
+        tmp_src_gen += list_section_func + "(&" + list_var + ", " + left + ", " +
+            right + ", " + step + ", " + l_present + ", " + r_present + ");\n";
+        const_var_names[get_hash((ASR::asr_t*)&x)] = var_name;
+        src = tmp_src_gen;
+    }
+
     void visit_ListClear(const ASR::ListClear_t& x) {
         ASR::ttype_t* t_ttype = ASRUtils::expr_type(x.m_a);
         ASR::List_t* t = ASR::down_cast<ASR::List_t>(t_ttype);
@@ -847,6 +1025,43 @@ R"(#include <stdio.h>
         std::string list_var = std::move(src);
         std::string indent(indentation_level * indentation_spaces, ' ');
         src = indent + list_clear_func + "(&" + list_var + ");\n";
+    }
+
+    void visit_ListCompare(const ASR::ListCompare_t& x) {
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_left);
+        std::string list_cmp_func = c_ds_api->get_compare_func(type);
+        self().visit_expr(*x.m_left);
+        std::string left = std::move(src);
+        self().visit_expr(*x.m_right);
+        std::string right = std::move(src), tmp_gen="";
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        if (ASR::is_a<ASR::ListConstant_t>(*x.m_left) ) {
+            tmp_gen += left;
+            ASR::ListConstant_t *l_const = ASR::down_cast<ASR::ListConstant_t>(x.m_left);
+            left = const_var_names[get_hash((ASR::asr_t*)l_const)];
+        } else if (ASR::is_a<ASR::ListSection_t>(*x.m_left)) {
+            tmp_gen += left;
+            ASR::ListSection_t *l_sec = ASR::down_cast<ASR::ListSection_t>(x.m_left);
+            left = "*" + const_var_names[get_hash((ASR::asr_t*)l_sec)];
+        }
+
+        if (ASR::is_a<ASR::ListConstant_t>(*x.m_right) ) {
+            tmp_gen += right;
+            ASR::ListConstant_t *l_const = ASR::down_cast<ASR::ListConstant_t>(x.m_right);
+            right = const_var_names[get_hash((ASR::asr_t*)l_const)];
+        } else if (ASR::is_a<ASR::ListSection_t>(*x.m_right)) {
+            tmp_gen += right;
+            ASR::ListSection_t *l_sec = ASR::down_cast<ASR::ListSection_t>(x.m_right);
+            right = "*" + const_var_names[get_hash((ASR::asr_t*)l_sec)];
+        }
+        std::string val = list_cmp_func + "(" + left + ", " + right + ")";
+        if (x.m_op == ASR::cmpopType::NotEq) {
+            val = "!" + val;
+        }
+        src = val;
+        if (tmp_gen.size() > 0) {
+            tmp_src.push_back(tmp_gen);
+        }
     }
 
     void visit_ListInsert(const ASR::ListInsert_t& x) {
@@ -950,9 +1165,9 @@ R"(#include <stdio.h>
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
         der_expr = std::move(src);
-        member = ASRUtils::symbol_name(x.m_m);
+        member = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
         if( ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ||
-            ASR::is_a<ASR::UnionRef_t>(*x.m_v) ||
+            ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
             src = der_expr + "." + member;
         } else {
@@ -960,7 +1175,7 @@ R"(#include <stdio.h>
         }
     }
 
-    void visit_UnionRef(const ASR::UnionRef_t& x) {
+    void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
         der_expr = std::move(src);
@@ -978,11 +1193,13 @@ R"(#include <stdio.h>
                     case 8: src = "(double)(" + src + ")"; break;
                     default: throw CodeGenError("Cast IntegerToReal: Unsupported Kind " + std::to_string(dest_kind));
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToInteger) : {
                 int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 src = "(int" + std::to_string(dest_kind * 8) + "_t)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToReal) : {
@@ -1005,6 +1222,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::complex<double>(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::ComplexToReal) : {
@@ -1014,6 +1232,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::real(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToComplex) : {
@@ -1023,18 +1242,22 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::complex<double>(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::LogicalToInteger) : {
                 src = "(int)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::LogicalToCharacter) : {
-                src = src + " ? \"True\" : \"False\"";
+                src = "(" + src + " ? \"True\" : \"False\")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::IntegerToLogical) : {
                 src = "(bool)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::LogicalToReal) : {
@@ -1044,18 +1267,22 @@ R"(#include <stdio.h>
                     case 8: src = "(double)(" + src + ")"; break;
                     default: throw CodeGenError("Cast LogicalToReal: Unsupported Kind " + std::to_string(dest_kind));
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToLogical) : {
                 src = "(bool)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::CharacterToLogical) : {
                 src = "(bool)(strlen(" + src + ") > 0)";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::ComplexToLogical) : {
                 src = "(bool)(" + src + ")";
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::IntegerToCharacter) : {
@@ -1074,6 +1301,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::to_string(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::CharacterToInteger) : {
@@ -1082,6 +1310,7 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::stoi(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             case (ASR::cast_kindType::RealToCharacter) : {
@@ -1097,12 +1326,12 @@ R"(#include <stdio.h>
                 } else {
                     src = "std::to_string(" + src + ")";
                 }
+                last_expr_precedence = 2;
                 break;
             }
             default : throw CodeGenError("Cast kind " + std::to_string(x.m_kind) + " not implemented",
                 x.base.base.loc);
         }
-        last_expr_precedence = 2;
     }
 
     void visit_IntegerBitLen(const ASR::IntegerBitLen_t& x) {
@@ -1153,7 +1382,7 @@ R"(#include <stdio.h>
             case (ASR::cmpopType::Lt) : { last_expr_precedence = 9;  break; }
             case (ASR::cmpopType::LtE) : { last_expr_precedence = 9; break; }
             case (ASR::cmpopType::NotEq): { last_expr_precedence = 10; break; }
-            default : LFORTRAN_ASSERT(false); // should never happen
+            default : LCOMPILERS_ASSERT(false); // should never happen
         }
         if (left_precedence <= last_expr_precedence) {
             src += left;
@@ -1258,19 +1487,6 @@ R"(#include <stdio.h>
         }
         std::string type_src = CUtils::get_c_type_from_ttype_t(x.m_type);
         src = "(" + type_src + ") " + arg_src;
-    }
-
-    void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
-        self().visit_expr(*x.m_cptr);
-        std::string source_src = std::move(src);
-        self().visit_expr(*x.m_ptr);
-        std::string dest_src = std::move(src);
-        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_ptr)) ) {
-            dest_src += "->data";
-        }
-        std::string type_src = CUtils::get_c_type_from_ttype_t(ASRUtils::expr_type(x.m_ptr));
-        std::string indent(indentation_level*indentation_spaces, ' ');
-        src = indent + dest_src + " = (" + type_src + ") " + source_src + ";\n";
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
@@ -1386,10 +1602,19 @@ R"(#include <stdio.h>
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: allocate(";
         for (size_t i=0; i<x.n_args; i++) {
-            ASR::symbol_t* a = x.m_args[i].m_a;
+            ASR::symbol_t* tmp_sym = nullptr;
+            ASR::expr_t* tmp_expr = x.m_args[i].m_a;
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                tmp_sym = tmp_var->m_v;
+            } else {
+                throw CodeGenError("Cannot deallocate variables in expression " +
+                                    std::to_string(tmp_expr->type),
+                                    tmp_expr->base.loc);
+            }
             //ASR::dimension_t* dims = x.m_args[i].m_dims;
             //size_t n_dims = x.m_args[i].n_dims;
-            out += std::string(ASRUtils::symbol_name(a)) + ", ";
+            out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
         }
         out += ");\n";
         src = out;
@@ -1416,7 +1641,17 @@ R"(#include <stdio.h>
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "// FIXME: deallocate(";
         for (size_t i=0; i<x.n_vars; i++) {
-            out += std::string(ASRUtils::symbol_name(x.m_vars[i])) + ", ";
+            ASR::symbol_t* tmp_sym = nullptr;
+            ASR::expr_t* tmp_expr = x.m_vars[i];
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                tmp_sym = tmp_var->m_v;
+            } else {
+                throw CodeGenError("Cannot deallocate variables in expression " +
+                                    std::to_string(tmp_expr->type),
+                                    tmp_expr->base.loc);
+            }
+            out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
         }
         out += ");\n";
         src = out;
@@ -1432,9 +1667,77 @@ R"(#include <stdio.h>
         src = out;
     }
 
-    void visit_Select(const ASR::Select_t &/*x*/) {
-        std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string out = indent + "// FIXME: select case()\n";
+    void visit_Select(const ASR::Select_t& x)
+    {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        this->visit_expr(*x.m_test);
+        std::string var = std::move(src);
+        std::string out = indent + "if (";
+
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (i > 0)
+                out += indent + "else if (";
+            ASR::case_stmt_t* stmt = x.m_body[i];
+            if (stmt->type == ASR::case_stmtType::CaseStmt) {
+                ASR::CaseStmt_t* case_stmt = ASR::down_cast<ASR::CaseStmt_t>(stmt);
+                for (size_t j = 0; j < case_stmt->n_test; j++) {
+                    if (j > 0)
+                        out += " || ";
+                    this->visit_expr(*case_stmt->m_test[j]);
+                    out += var + " == " + src;
+                }
+                out += ") {\n";
+                indentation_level += 1;
+                for (size_t j = 0; j < case_stmt->n_body; j++) {
+                    this->visit_stmt(*case_stmt->m_body[j]);
+                    out += src;
+                }
+                out += indent + "}\n";
+                indentation_level -= 1;
+            } else {
+                ASR::CaseStmt_Range_t* case_stmt_range
+                    = ASR::down_cast<ASR::CaseStmt_Range_t>(stmt);
+                std::string left, right;
+                if (case_stmt_range->m_start) {
+                    this->visit_expr(*case_stmt_range->m_start);
+                    left = std::move(src);
+                }
+                if (case_stmt_range->m_end) {
+                    this->visit_expr(*case_stmt_range->m_end);
+                    right = std::move(src);
+                }
+                if (left.empty() && right.empty()) {
+                    diag.codegen_error_label(
+                        "Empty range in select statement", { x.base.base.loc }, "");
+                    throw Abort();
+                }
+                if (left.empty()) {
+                    out += var + " <= " + right;
+                } else if (right.empty()) {
+                    out += var + " >= " + left;
+                } else {
+                    out += left + " <= " + var + " <= " + right;
+                }
+                out += ") {\n";
+                indentation_level += 1;
+                for (size_t j = 0; j < case_stmt_range->n_body; j++) {
+                    this->visit_stmt(*case_stmt_range->m_body[j]);
+                    out += src;
+                }
+                out += indent + "}\n";
+                indentation_level -= 1;
+            }
+        }
+        if (x.n_default) {
+            out += indent + "else {\n";
+            indentation_level += 1;
+            for (size_t i = 0; i < x.n_default; i++) {
+                this->visit_stmt(*x.m_default[i]);
+                out += src;
+            }
+            out += indent + "}\n";
+            indentation_level -= 1;
+        }
         src = out;
     }
 
@@ -1467,7 +1770,7 @@ R"(#include <stdio.h>
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (current_function && current_function->m_return_var) {
             src = indent + "return "
-                + LFortran::ASRUtils::EXPR2VAR(current_function->m_return_var)->m_name
+                + ASRUtils::EXPR2VAR(current_function->m_return_var)->m_name
                 + ";\n";
         } else {
             src = indent + "return;\n";
@@ -1509,47 +1812,66 @@ R"(#include <stdio.h>
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         std::string current_body_copy = current_body;
         current_body = "";
+        std::string loop_end_decl = "";
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "for (";
-        ASR::Variable_t *loop_var = LFortran::ASRUtils::EXPR2VAR(x.m_head.m_v);
+        ASR::Variable_t *loop_var = ASRUtils::EXPR2VAR(x.m_head.m_v);
         std::string lvname=loop_var->m_name;
         ASR::expr_t *a=x.m_head.m_start;
         ASR::expr_t *b=x.m_head.m_end;
         ASR::expr_t *c=x.m_head.m_increment;
-        LFORTRAN_ASSERT(a);
-        LFORTRAN_ASSERT(b);
+        LCOMPILERS_ASSERT(a);
+        LCOMPILERS_ASSERT(b);
         int increment;
+        bool is_c_constant = false;
         if (!c) {
             increment = 1;
+            is_c_constant = true;
         } else {
-            if (c->type == ASR::exprType::IntegerConstant) {
-                increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
-            } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
-                ASR::IntegerUnaryMinus_t *ium = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
-                increment = - ASR::down_cast<ASR::IntegerConstant_t>(ium->m_arg)->m_n;
-            } else {
-                throw CodeGenError("Do loop increment type not supported");
-            }
-        }
-        std::string cmp_op;
-        if (increment > 0) {
-            cmp_op = "<=";
-        } else {
-            cmp_op = ">=";
+            ASR::expr_t* c_value = ASRUtils::expr_value(c);
+            is_c_constant = ASRUtils::extract_value(c_value, increment);
         }
 
-        out += lvname + "=";
-        self().visit_expr(*a);
-        out += src + "; " + lvname + cmp_op;
-        self().visit_expr(*b);
-        out += src + "; " + lvname;
-        if (increment == 1) {
-            out += "++";
-        } else if (increment == -1) {
-            out += "--";
+        if( is_c_constant ) {
+            std::string cmp_op;
+            if (increment > 0) {
+                cmp_op = "<=";
+            } else {
+                cmp_op = ">=";
+            }
+
+            out += lvname + "=";
+            self().visit_expr(*a);
+            out += src + "; " + lvname + cmp_op;
+            self().visit_expr(*b);
+            out += src + "; " + lvname;
+            if (increment == 1) {
+                out += "++";
+            } else if (increment == -1) {
+                out += "--";
+            } else {
+                out += "+=" + std::to_string(increment);
+            }
         } else {
-            out += "+=" + std::to_string(increment);
+            this->visit_expr(*c);
+            std::string increment_ = std::move(src);
+            self().visit_expr(*b);
+            std::string do_loop_end = std::move(src);
+            std::string do_loop_end_name = current_scope->get_unique_name(
+                "loop_end___" + std::to_string(loop_end_count));
+            loop_end_count += 1;
+            loop_end_decl = indent + CUtils::get_c_type_from_ttype_t(ASRUtils::expr_type(b), is_c) +
+                            " " + do_loop_end_name + " = " + do_loop_end + ";\n";
+            out += lvname + " = ";
+            self().visit_expr(*a);
+            out += src + "; ";
+            out += "((" + increment_ + " >= 0) && (" +
+                    lvname + " <= " + do_loop_end_name + ")) || (("
+                    + increment_ + " < 0) && (" + lvname + " >= "
+                    + do_loop_end_name + ")); " + lvname;
+            out += " += " + increment_;
         }
+
         out += ") {\n";
         indentation_level += 1;
         for (size_t i=0; i<x.n_body; i++) {
@@ -1559,7 +1881,7 @@ R"(#include <stdio.h>
         out += current_body;
         out += indent + "}\n";
         indentation_level -= 1;
-        src = out;
+        src = loop_end_decl + out;
         current_body = current_body_copy;
     }
 
@@ -1611,7 +1933,7 @@ R"(#include <stdio.h>
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
-            LFortran::ASRUtils::symbol_get_past_external(x.m_name));
+            ASRUtils::symbol_get_past_external(x.m_name));
         // TODO: use a mapping with a hash(s) instead:
         std::string sym_name = s->m_name;
         if (sym_name == "exit") {
@@ -1623,7 +1945,7 @@ R"(#include <stdio.h>
         std::string out = indent + sym_name + "(";
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
-                ASR::Variable_t *arg = LFortran::ASRUtils::EXPR2VAR(x.m_args[i].m_value);
+                ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i].m_value);
                 std::string arg_name = arg->m_name;
                 if( ASRUtils::is_array(arg->m_type) &&
                     ASRUtils::is_pointer(arg->m_type) ) {
@@ -1648,6 +1970,6 @@ R"(#include <stdio.h>
 
 };
 
-} // namespace LFortran
+} // namespace LCompilers
 
 #endif // LFORTRAN_ASR_TO_C_CPP_H

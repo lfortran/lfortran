@@ -1,0 +1,116 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string),
+            test_exec:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            execute_command_line:
+                                (ExternalSymbol
+                                    2
+                                    execute_command_line
+                                    4 execute_command_line
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    execute_command_line
+                                    Private
+                                ),
+                            get_environment_variable:
+                                (ExternalSymbol
+                                    2
+                                    get_environment_variable
+                                    4 get_environment_variable
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    get_environment_variable
+                                    Private
+                                ),
+                            homedir:
+                                (Variable
+                                    2
+                                    homedir
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 255 () [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            len_trim:
+                                (ExternalSymbol
+                                    2
+                                    len_trim
+                                    32 len_trim
+                                    lfortran_intrinsic_string
+                                    []
+                                    len_trim
+                                    Private
+                                ),
+                            trim:
+                                (ExternalSymbol
+                                    2
+                                    trim
+                                    32 trim
+                                    lfortran_intrinsic_string
+                                    []
+                                    trim
+                                    Private
+                                )
+                        })
+                    test_exec
+                    []
+                    [(SubroutineCall
+                        2 get_environment_variable
+                        ()
+                        [((StringConstant
+                            "HOME"
+                            (Character 1 4 () [])
+                        ))
+                        ((Var 2 homedir))]
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            2 trim
+                            ()
+                            [((Var 2 homedir))]
+                            (Character 1 -3 (FunctionCall
+                                2 len_trim
+                                ()
+                                [((Var 2 homedir))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            ) [])
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (SubroutineCall
+                        2 execute_command_line
+                        ()
+                        [((StringConstant
+                            "printenv"
+                            (Character 1 8 () [])
+                        ))]
+                        ()
+                    )]
+                )
+        })
+    []
+)

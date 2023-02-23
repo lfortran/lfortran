@@ -1,18 +1,18 @@
-(TranslationUnit 
-    [(Program 
-        TESTFortran 
-        () 
-        [] 
-        [] 
-        [] 
-        [(Print 
-            0 
-            () 
-            [(String 
-                "Hello"
-            )] 
+(TranslationUnit
+    [(Program
+        TESTFortran
+        ()
+        []
+        []
+        []
+        [(Print
+            0
             ()
-        )] 
+            [(String
+                "Hello"
+            )]
+            ()
+        )]
         []
     )]
 )

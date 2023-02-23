@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_interface3-babeac4",
+    "cmd": "lfortran --indent --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/implicit_interface3.f90",
+    "infile_hash": "6914373182ded05c9b4169762408bc670588735da361b66e2e7cfc2c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-implicit_interface3-babeac4.stdout",
+    "stdout_hash": "17a43e9ac386cc074a1293ad9ba017e4c5d33baa9c035a9848f5e0c3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-arrays_op_10-0301bd6",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/arrays_op_10.f90",
+    "infile_hash": "b9f29a5f12342cf162fe90d308dfb51ffdf3b181b06f27fe34d52d26",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-arrays_op_10-0301bd6.stdout",
+    "stdout_hash": "cea19e6c4c709986addbf7a73cedac1eb4b730ede598510985448f9d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

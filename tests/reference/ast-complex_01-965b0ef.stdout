@@ -1,143 +1,143 @@
-(TranslationUnit 
-    [(Program 
-        complex_01 
-        () 
-        [] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+(TranslationUnit
+    [(Program
+        complex_01
+        ()
+        []
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Declaration 
-            (AttrType 
-                TypeComplex 
-                [] 
-                () 
+        )]
+        [(Declaration
+            (AttrType
+                TypeComplex
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(x 
-            [] 
-            [] 
-            (Complex (Real "1.0") (u- (Real "3.0"))) 
-            Equal 
-            ())] 
+            )
+            []
+            [(x
+            []
+            []
+            (Complex (Real "1.0") (u- (Real "3.0")))
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeReal 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrParameter
-            )] 
-            [(a 
-            [] 
-            [] 
-            (Real "3.0") 
-            Equal 
+            )]
+            [(a
+            []
+            []
+            (Real "3.0")
+            Equal
             ())
-            (b 
-            [] 
-            [] 
-            (Real "4.0") 
-            Equal 
-            ())] 
+            (b
+            []
+            []
+            (Real "4.0")
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeComplex 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeComplex
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(y 
-            [] 
-            [] 
-            (Complex a b) 
-            Equal 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(y
+            []
+            []
+            (Complex a b)
+            Equal
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Declaration 
-            (AttrType 
-                TypeComplex 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeComplex
+                []
+                ()
                 None
-            ) 
-            [(SimpleAttribute 
+            )
+            [(SimpleAttribute
                 AttrParameter
-            )] 
-            [(i_ 
-            [] 
-            [] 
-            (Complex 0 1) 
-            Equal 
-            ())] 
+            )]
+            [(i_
+            []
+            []
+            (Complex 0 1)
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeComplex 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeComplex
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(z 
-            [] 
-            [] 
-            (+ a (* i_ b)) 
-            Equal 
-            ())] 
+            )
+            []
+            [(z
+            []
+            []
+            (+ a (* i_ b))
+            Equal
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeComplex 
-                [] 
-                () 
+        (Declaration
+            (AttrType
+                TypeComplex
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(w 
-            [] 
-            [] 
-            (+ (+ a b) (* i_ (- a b))) 
-            Equal 
-            ())] 
-            (TriviaNode 
-                [] 
+            )
+            []
+            [(w
+            []
+            []
+            (+ (+ a b) (* i_ (- a b)))
+            Equal
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [(Print 
-            0 
-            () 
+        )]
+        [(Print
+            0
+            ()
             [x
             y
             z
-            w] 
-            (TriviaNode 
-                [] 
+            w]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

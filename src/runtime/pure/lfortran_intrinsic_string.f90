@@ -122,7 +122,8 @@ end function
 function adjustl(x) result(r)
     character(len=*),intent(in) :: x
     character(len=len(x)) :: r
-    integer :: i, j = 1, initial_spaces_cnt
+    integer :: i, j, initial_spaces_cnt
+    j = 1
     initial_spaces_cnt = cnt_initial_spaces(x)
 
     do i = initial_spaces_cnt + 1, len(x)
@@ -169,5 +170,33 @@ subroutine date_and_time(date, time, zone, values)
     character(len=*), intent(out), optional :: date, time, zone
     integer, intent(out), optional :: values(8)
 end subroutine
+
+function scan_kind4(string, set, back) result(r)
+    character(len=*) :: string
+    character(len=*) :: set
+    logical, optional :: back
+    integer :: r
+end function
+
+function scan_kind8(string, set, back) result(r)
+    character(len=*) :: string
+    character(len=*) :: set
+    logical, optional :: back
+    integer(8) :: r
+end function
+
+function verify_kind4(string, set, back) result(r)
+    character(len=*) :: string
+    character(len=*) :: set
+    logical, optional :: back
+    integer :: r
+end function
+
+function verify_kind8(string, set, back) result(r)
+    character(len=*) :: string
+    character(len=*) :: set
+    logical, optional :: back
+    integer(8) :: r
+end function
 
 end module

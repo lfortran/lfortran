@@ -1,52 +1,52 @@
-(TranslationUnit 
-    [(Program 
-        main 
-        () 
-        [] 
-        [(Implicit 
-            (AttrType 
-                TypeComplex 
-                [] 
-                () 
+(TranslationUnit
+    [(Program
+        main
+        ()
+        []
+        [(Implicit
+            (AttrType
+                TypeComplex
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(LetterSpec 
-                () 
+            )
+            []
+            [(LetterSpec
+                ()
                 a
             )
-            (LetterSpec 
-                () 
+            (LetterSpec
+                ()
                 b
             )
-            (LetterSpec 
-                () 
+            (LetterSpec
+                ()
                 c
-            )] 
+            )]
             ()
         )
-        (Implicit 
-            (AttrType 
-                TypeCharacter 
-                [(() 
-                4 
-                Value)] 
-                () 
+        (Implicit
+            (AttrType
+                TypeCharacter
+                [(()
+                4
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(LetterSpec 
-                () 
+            )
+            []
+            [(LetterSpec
+                ()
                 k
             )
-            (LetterSpec 
-                () 
+            (LetterSpec
+                ()
                 l
-            )] 
+            )]
             ()
-        )] 
-        [] 
-        [] 
+        )]
+        []
+        []
         []
     )]
 )

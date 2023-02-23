@@ -1,114 +1,115 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             implied_do_loop2:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             array:
-                                (Variable 
-                                    2 
-                                    array 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
+                                (Variable
+                                    2
+                                    array
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
                                     (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 5 (Integer 4 [])))]) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    ((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             i:
-                                (Variable 
-                                    2 
-                                    i 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             j:
-                                (Variable 
-                                    2 
-                                    j 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    implied_do_loop2 
-                    [] 
-                    [(= 
-                        (Var 2 array) 
-                        (ArrayReshape 
-                            (ArrayConstant 
-                                [(ImpliedDoLoop 
+                        })
+                    implied_do_loop2
+                    []
+                    [(=
+                        (Var 2 array)
+                        (ArrayReshape
+                            (ArrayConstant
+                                [(ImpliedDoLoop
                                     [(Var 2 i)
-                                    (ImpliedDoLoop 
-                                        [(IntegerBinOp 
-                                            (Var 2 i) 
-                                            Add 
-                                            (Var 2 j) 
-                                            (Integer 4 []) 
+                                    (ImpliedDoLoop
+                                        [(IntegerBinOp
+                                            (Var 2 i)
+                                            Add
+                                            (Var 2 j)
+                                            (Integer 4 [])
                                             ()
-                                        )] 
-                                        (Var 2 j) 
-                                        (IntegerConstant 1 (Integer 4 [])) 
-                                        (IntegerConstant 4 (Integer 4 [])) 
-                                        () 
-                                        (Integer 4 []) 
+                                        )]
+                                        (Var 2 j)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4 []))
                                         ()
-                                    )] 
-                                    (Var 2 i) 
-                                    (IntegerConstant 1 (Integer 4 [])) 
-                                    (IntegerConstant 3 (Integer 4 [])) 
-                                    () 
-                                    (Integer 4 []) 
+                                        (Integer 4 [])
+                                        ()
+                                    )]
+                                    (Var 2 i)
+                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4 []))
                                     ()
-                                )] 
-                                (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                (IntegerConstant 1 (Integer 4 [])))]) 
+                                    (Integer 4 [])
+                                    ()
+                                )]
+                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4 [])))])
                                 ColMajor
-                            ) 
-                            (ArrayConstant 
+                            )
+                            (ArrayConstant
                                 [(IntegerConstant 3 (Integer 4 []))
-                                (IntegerConstant 5 (Integer 4 []))] 
-                                (Integer 4 [((IntegerConstant 1 (Integer 4 [])) 
-                                (IntegerConstant 2 (Integer 4 [])))]) 
+                                (IntegerConstant 5 (Integer 4 []))]
+                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4 [])))])
                                 ColMajor
-                            ) 
-                            (Integer 4 [(() 
-                            ())]) 
+                            )
+                            (Integer 4 [(()
+                            ())])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 array)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 array)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

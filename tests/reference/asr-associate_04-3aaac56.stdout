@@ -1,356 +1,360 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             associate_04:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             a:
-                                (Variable 
-                                    2 
-                                    a 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             associate_block:
-                                (AssociateBlock 
+                                (AssociateBlock
                                     (SymbolTable
                                         3
                                         {
                                             v:
-                                                (Variable 
-                                                    3 
-                                                    v 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Pointer 
+                                                (Variable
+                                                    3
+                                                    v
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
                                                         (Real 4 [])
-                                                    ) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                    )
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             z:
-                                                (Variable 
-                                                    3 
-                                                    z 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    z
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    associate_block 
-                                    [(= 
-                                        (Var 3 z) 
-                                        (RealBinOp 
-                                            (RealUnaryMinus 
-                                                (RealBinOp 
-                                                    (RealBinOp 
-                                                        (Var 2 x) 
-                                                        Mul 
-                                                        (Cast 
-                                                            (IntegerConstant 2 (Integer 4 [])) 
-                                                            IntegerToReal 
-                                                            (Real 4 []) 
-                                                            (RealConstant 
-                                                                2.000000 
+                                        })
+                                    associate_block
+                                    [(=
+                                        (Var 3 z)
+                                        (RealBinOp
+                                            (RealUnaryMinus
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (Var 2 x)
+                                                        Mul
+                                                        (Cast
+                                                            (IntegerConstant 2 (Integer 4 []))
+                                                            IntegerToReal
+                                                            (Real 4 [])
+                                                            (RealConstant
+                                                                2.000000
                                                                 (Real 4 [])
                                                             )
-                                                        ) 
-                                                        (Real 4 []) 
+                                                        )
+                                                        (Real 4 [])
                                                         ()
-                                                    ) 
-                                                    Add 
-                                                    (RealBinOp 
-                                                        (Var 2 y) 
-                                                        Mul 
-                                                        (Cast 
-                                                            (IntegerConstant 2 (Integer 4 [])) 
-                                                            IntegerToReal 
-                                                            (Real 4 []) 
-                                                            (RealConstant 
-                                                                2.000000 
+                                                    )
+                                                    Add
+                                                    (RealBinOp
+                                                        (Var 2 y)
+                                                        Mul
+                                                        (Cast
+                                                            (IntegerConstant 2 (Integer 4 []))
+                                                            IntegerToReal
+                                                            (Real 4 [])
+                                                            (RealConstant
+                                                                2.000000
                                                                 (Real 4 [])
                                                             )
-                                                        ) 
-                                                        (Real 4 []) 
+                                                        )
+                                                        (Real 4 [])
                                                         ()
-                                                    ) 
-                                                    (Real 4 []) 
+                                                    )
+                                                    (Real 4 [])
                                                     ()
-                                                ) 
-                                                (Real 4 []) 
+                                                )
+                                                (Real 4 [])
                                                 ()
-                                            ) 
-                                            Mul 
-                                            (FunctionCall 
-                                                2 cos@scos 
-                                                2 cos 
-                                                [((Var 2 theta))] 
-                                                (Real 4 []) 
-                                                () 
+                                            )
+                                            Mul
+                                            (FunctionCall
+                                                2 cos@scos
+                                                2 cos
+                                                [((Var 2 theta))]
+                                                (Real 4 [])
                                                 ()
-                                            ) 
-                                            (Real 4 []) 
+                                                ()
+                                            )
+                                            (Real 4 [])
                                             ()
-                                        ) 
+                                        )
                                         ()
                                     )
-                                    (=> 
-                                        (Var 3 v) 
+                                    (=>
+                                        (Var 3 v)
                                         (Var 2 myreal)
                                     )
-                                    (Print 
-                                        () 
-                                        [(RealBinOp 
-                                            (Var 2 a) 
-                                            Add 
-                                            (Var 3 z) 
-                                            (Real 4 []) 
+                                    (Print
+                                        ()
+                                        [(RealBinOp
+                                            (Var 2 a)
+                                            Add
+                                            (Var 3 z)
+                                            (Real 4 [])
                                             ()
                                         )
-                                        (RealBinOp 
-                                            (Var 2 a) 
-                                            Sub 
-                                            (Var 3 z) 
-                                            (Real 4 []) 
+                                        (RealBinOp
+                                            (Var 2 a)
+                                            Sub
+                                            (Var 3 z)
+                                            (Real 4 [])
                                             ()
                                         )
-                                        (Var 3 v)] 
-                                        () 
+                                        (Var 3 v)]
+                                        ()
                                         ()
                                     )
-                                    (= 
-                                        (Var 3 v) 
-                                        (RealBinOp 
-                                            (Var 3 v) 
-                                            Mul 
-                                            (RealConstant 
-                                                4.600000 
+                                    (=
+                                        (Var 3 v)
+                                        (RealBinOp
+                                            (Var 3 v)
+                                            Mul
+                                            (RealConstant
+                                                4.600000
                                                 (Real 4 [])
-                                            ) 
-                                            (Pointer 
+                                            )
+                                            (Pointer
                                                 (Real 4 [])
-                                            ) 
+                                            )
                                             ()
-                                        ) 
+                                        )
                                         ()
                                     )]
-                                ), 
+                                ),
                             cos:
-                                (ExternalSymbol 
-                                    2 
-                                    cos 
-                                    5 cos 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    cos 
+                                (ExternalSymbol
+                                    2
+                                    cos
+                                    5 cos
+                                    lfortran_intrinsic_math
+                                    []
+                                    cos
                                     Private
-                                ), 
+                                ),
                             cos@scos:
-                                (ExternalSymbol 
-                                    2 
-                                    cos@scos 
-                                    5 scos 
-                                    lfortran_intrinsic_math 
-                                    [] 
-                                    scos 
+                                (ExternalSymbol
+                                    2
+                                    cos@scos
+                                    5 scos
+                                    lfortran_intrinsic_math
+                                    []
+                                    scos
                                     Private
-                                ), 
+                                ),
                             myreal:
-                                (Variable 
-                                    2 
-                                    myreal 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    myreal
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             theta:
-                                (Variable 
-                                    2 
-                                    theta 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    theta
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             y:
-                                (Variable 
-                                    2 
-                                    y 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    associate_04 
-                    [] 
-                    [(= 
-                        (Var 2 x) 
-                        (RealConstant 
-                            0.420000 
+                        })
+                    associate_04
+                    []
+                    [(=
+                        (Var 2 x)
+                        (RealConstant
+                            0.420000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 y) 
-                        (RealConstant 
-                            0.350000 
+                    (=
+                        (Var 2 y)
+                        (RealConstant
+                            0.350000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 myreal) 
-                        (RealConstant 
-                            9.100000 
+                    (=
+                        (Var 2 myreal)
+                        (RealConstant
+                            9.100000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 theta) 
-                        (RealConstant 
-                            1.500000 
+                    (=
+                        (Var 2 theta)
+                        (RealConstant
+                            1.500000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 a) 
-                        (RealConstant 
-                            0.400000 
+                    (=
+                        (Var 2 a)
+                        (RealConstant
+                            0.400000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
                     )
-                    (AssociateBlockCall 
+                    (AssociateBlockCall
                         2 associate_block
                     )
-                    (Print 
-                        () 
-                        [(Var 2 myreal)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 myreal)]
+                        ()
                         ()
                     )
-                    (If 
-                        (LogicalBinOp 
-                            (RealCompare 
-                                (RealBinOp 
-                                    (Var 2 myreal) 
-                                    Sub 
-                                    (RealConstant 
-                                        41.860000 
-                                        (Real 4 [])
-                                    ) 
-                                    (Real 4 []) 
-                                    ()
-                                ) 
-                                Gt 
-                                (RealConstant 
-                                    0.000010 
-                                    (Real 4 [])
-                                ) 
-                                (Logical 4 []) 
-                                ()
-                            ) 
-                            Or 
-                            (RealCompare 
-                                (RealBinOp 
-                                    (Var 2 myreal) 
-                                    Sub 
-                                    (RealConstant 
-                                        41.860000 
-                                        (Real 4 [])
-                                    ) 
-                                    (Real 4 []) 
-                                    ()
-                                ) 
-                                Lt 
-                                (RealUnaryMinus 
-                                    (RealConstant 
-                                        0.000010 
-                                        (Real 4 [])
-                                    ) 
-                                    (Real 4 []) 
-                                    (RealConstant 
-                                        -0.000010 
+                    (If
+                        (LogicalBinOp
+                            (RealCompare
+                                (RealBinOp
+                                    (Var 2 myreal)
+                                    Sub
+                                    (RealConstant
+                                        41.860000
                                         (Real 4 [])
                                     )
-                                ) 
-                                (Logical 4 []) 
+                                    (Real 4 [])
+                                    ()
+                                )
+                                Gt
+                                (RealConstant
+                                    0.000010
+                                    (Real 4 [])
+                                )
+                                (Logical 4 [])
                                 ()
-                            ) 
-                            (Logical 4 []) 
+                            )
+                            Or
+                            (RealCompare
+                                (RealBinOp
+                                    (Var 2 myreal)
+                                    Sub
+                                    (RealConstant
+                                        41.860000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )
+                                Lt
+                                (RealUnaryMinus
+                                    (RealConstant
+                                        0.000010
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    (RealConstant
+                                        -0.000010
+                                        (Real 4 [])
+                                    )
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
                             ()
-                        ) 
-                        [(ErrorStop 
+                        )
+                        [(ErrorStop
                             ()
-                        )] 
+                        )]
                         []
                     )]
-                ), 
+                ),
             iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding), 
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env), 
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin), 
+                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math)
-            
-        }) 
+        })
     []
 )

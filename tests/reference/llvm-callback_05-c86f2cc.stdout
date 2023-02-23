@@ -44,12 +44,17 @@ return:                                           ; preds = %.entry
   ret void
 }
 
+declare void @f.1(i32*)
+
 declare void @_lfortran_printf(i8*, ...)
 
-define i32 @main() {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
   %x = alloca i32, align 4
   store i32 5, i32* %x, align 4
   call void @__module_callback_05_px_call1(i32* %x)
   ret i32 0
 }
+
+declare void @_lpython_set_argv(i32, i8**)

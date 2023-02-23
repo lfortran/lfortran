@@ -1,124 +1,123 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             case_05:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             grade:
-                                (Variable 
-                                    2 
-                                    grade 
-                                    Local 
-                                    (StringConstant 
-                                        "B" 
+                                (Variable
+                                    2
+                                    grade
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "B"
                                         (Character 1 1 () [])
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Character 1 1 () []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                    )
+                                    ()
+                                    Save
+                                    (Character 1 1 () [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    case_05 
-                    [] 
-                    [(Select 
-                        (Var 2 grade) 
-                        [(CaseStmt 
-                            [(StringConstant 
-                                "A" 
+                        })
+                    case_05
+                    []
+                    [(Select
+                        (Var 2 grade)
+                        [(CaseStmt
+                            [(StringConstant
+                                "A"
                                 (Character 1 1 () [])
-                            )] 
-                            [(Print 
-                                () 
-                                [(StringConstant 
-                                    "Excellent!" 
+                            )]
+                            [(Print
+                                ()
+                                [(StringConstant
+                                    "Excellent!"
                                     (Character 1 10 () [])
-                                )] 
-                                () 
+                                )]
+                                ()
                                 ()
                             )]
                         )
-                        (CaseStmt 
-                            [(StringConstant 
-                                "B" 
+                        (CaseStmt
+                            [(StringConstant
+                                "B"
                                 (Character 1 1 () [])
-                            )] 
+                            )]
                             []
                         )
-                        (CaseStmt 
-                            [(StringConstant 
-                                "C" 
+                        (CaseStmt
+                            [(StringConstant
+                                "C"
                                 (Character 1 1 () [])
-                            )] 
-                            [(Print 
-                                () 
-                                [(StringConstant 
-                                    "Well done" 
+                            )]
+                            [(Print
+                                ()
+                                [(StringConstant
+                                    "Well done"
                                     (Character 1 9 () [])
-                                )] 
-                                () 
+                                )]
+                                ()
                                 ()
                             )]
                         )
-                        (CaseStmt 
-                            [(StringConstant 
-                                "D" 
+                        (CaseStmt
+                            [(StringConstant
+                                "D"
                                 (Character 1 1 () [])
-                            )] 
-                            [(Print 
-                                () 
-                                [(StringConstant 
-                                    "You passed" 
+                            )]
+                            [(Print
+                                ()
+                                [(StringConstant
+                                    "You passed"
                                     (Character 1 10 () [])
-                                )] 
-                                () 
+                                )]
+                                ()
                                 ()
                             )]
                         )
-                        (CaseStmt 
-                            [(StringConstant 
-                                "F" 
+                        (CaseStmt
+                            [(StringConstant
+                                "F"
                                 (Character 1 1 () [])
-                            )] 
-                            [(Print 
-                                () 
-                                [(StringConstant 
-                                    "Better try again" 
+                            )]
+                            [(Print
+                                ()
+                                [(StringConstant
+                                    "Better try again"
                                     (Character 1 16 () [])
-                                )] 
-                                () 
+                                )]
+                                ()
                                 ()
                             )]
-                        )] 
-                        [(Print 
-                            () 
-                            [(StringConstant 
-                                "Invalid grade" 
+                        )]
+                        [(Print
+                            ()
+                            [(StringConstant
+                                "Invalid grade"
                                 (Character 1 13 () [])
-                            )] 
-                            () 
+                            )]
+                            ()
                             ()
                         )]
                     )
-                    (Print 
-                        () 
-                        [(StringConstant 
-                            "Your grade is " 
+                    (Print
+                        ()
+                        [(StringConstant
+                            "Your grade is "
                             (Character 1 14 () [])
                         )
-                        (Var 2 grade)] 
-                        () 
+                        (Var 2 grade)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

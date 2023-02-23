@@ -1,102 +1,102 @@
-(TranslationUnit 
-    [(Program 
-        fixed_form2 
-        () 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeInteger 
-                [] 
-                () 
+(TranslationUnit
+    [(Program
+        fixed_form2
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
                 None
-            ) 
-            [] 
-            [(a 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(a
+            []
+            []
             ()
-        )] 
-        [(Print 
-            0 
-            () 
-            [(String 
+            None
+            ())]
+            ()
+        )]
+        [(Print
+            0
+            ()
+            [(String
                 "OK1"
             )
-            (String 
+            (String
                 "OK2"
-            )] 
+            )]
             ()
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "OK1"
             )
-            (String 
+            (String
                 "OK2"
             )
-            (String 
+            (String
                 "OK3"
             )
-            (String 
+            (String
                 "OK4"
-            )] 
+            )]
             ()
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "1"
-            )] 
+            )]
             ()
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "2"
-            )] 
+            )]
             ()
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "1"
             )
-            (String 
+            (String
                 "1   ! not comment  finish string"
-            )] 
+            )]
             ()
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "1"
             )
-            (String 
+            (String
                 "1 "" ' 2 """" 3 ! also not comment finish string"
-            )] 
+            )]
             ()
         )
-        (Print 
-            0 
-            () 
-            [(String 
+        (Print
+            0
+            ()
+            [(String
                 "1"
             )
-            (String 
+            (String
                 "1 '' " 2 '''' 3 ! also not comment finish string"
-            )] 
+            )]
             ()
-        )] 
+        )]
         []
     )]
 )

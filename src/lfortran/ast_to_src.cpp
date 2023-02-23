@@ -3,16 +3,16 @@
 #include <libasr/string_utils.h>
 #include <libasr/bigint.h>
 
-using LFortran::AST::expr_t;
-using LFortran::AST::Name_t;
-using LFortran::AST::Num_t;
-using LFortran::AST::BinOp_t;
-using LFortran::AST::operatorType;
-using LFortran::AST::BaseVisitor;
-using LFortran::AST::StrOp_t;
+using LCompilers::LFortran::AST::expr_t;
+using LCompilers::LFortran::AST::Name_t;
+using LCompilers::LFortran::AST::Num_t;
+using LCompilers::LFortran::AST::BinOp_t;
+using LCompilers::LFortran::AST::operatorType;
+using LCompilers::LFortran::AST::BaseVisitor;
+using LCompilers::LFortran::AST::StrOp_t;
 
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 namespace {
 
@@ -1534,7 +1534,7 @@ public:
             // Determine proper canonical printing of kinds
             // TODO: Move this part into a separate AST pass
             kind_item_t k[2];
-            LFORTRAN_ASSERT(x.n_kind <= 2);
+            LCOMPILERS_ASSERT(x.n_kind <= 2);
             for (size_t i=0; i<x.n_kind; i++) {
                 k[i] = x.m_kind[i];
             }
@@ -3584,9 +3584,9 @@ public:
                         expr_t *end = x.m_member[i].m_args[j].m_end;
                         expr_t *step = x.m_member[i].m_args[j].m_step;
                         // TODO: Also show start, and step correctly
-                        LFORTRAN_ASSERT(start == nullptr);
-                        LFORTRAN_ASSERT(end != nullptr);
-                        LFORTRAN_ASSERT(step == nullptr);
+                        LCOMPILERS_ASSERT(start == nullptr);
+                        LCOMPILERS_ASSERT(end != nullptr);
+                        LCOMPILERS_ASSERT(step == nullptr);
                         if (end) {
                             this->visit_expr(*end);
                             r.append(s);
@@ -3868,7 +3868,7 @@ public:
     {
         switch (type) {
             case (AST::kind_item_typeType::Value) :
-                LFORTRAN_ASSERT(value != nullptr);
+                LCOMPILERS_ASSERT(value != nullptr);
                 this->visit_expr(*value);
                 return s;
             case (AST::kind_item_typeType::Colon) :
@@ -3909,7 +3909,7 @@ public:
                 s = "*";
             }
         } else {
-            LFORTRAN_ASSERT(x.m_end_star == dimension_typeType::AssumedRank);
+            LCOMPILERS_ASSERT(x.m_end_star == dimension_typeType::AssumedRank);
             s = "..";
         }
     }
@@ -3936,7 +3936,7 @@ public:
                 s = left + ":" + right;
             }
         } else {
-            LFORTRAN_ASSERT(x.m_end_star == codimension_typeType::CodimensionStar);
+            LCOMPILERS_ASSERT(x.m_end_star == codimension_typeType::CodimensionStar);
             if (x.m_start) {
                 this->visit_expr(*x.m_start);
                 s += ":*";
@@ -3981,8 +3981,8 @@ public:
             }
         } else {
             // Array element
-            LFORTRAN_ASSERT(x.m_end);
-            LFORTRAN_ASSERT(!x.m_start);
+            LCOMPILERS_ASSERT(x.m_end);
+            LCOMPILERS_ASSERT(!x.m_start);
             this->visit_expr(*x.m_end);
             r = s;
         }
@@ -4015,8 +4015,8 @@ public:
             }
         } else {
             // Array element
-            LFORTRAN_ASSERT(x.m_end);
-            LFORTRAN_ASSERT(!x.m_start);
+            LCOMPILERS_ASSERT(x.m_end);
+            LCOMPILERS_ASSERT(!x.m_start);
             this->visit_expr(*x.m_end);
             r = s;
         }
@@ -4446,4 +4446,4 @@ std::string ast_to_src(AST::TranslationUnit_t &ast, bool color, int indent,
     return v.s;
 }
 
-}
+} // namespace LCompilers::LFortran

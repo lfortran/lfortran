@@ -1,106 +1,107 @@
-(TranslationUnit 
-    [(Program 
-        open1 
-        (TriviaNode 
+(TranslationUnit
+    [(Program
+        open1
+        (TriviaNode
             [(EndOfLine)
-            (Comment 
+            (Comment
                 "! Tests for syntax (AST) only:"
-            )] 
+            )]
             []
-        ) 
-        [] 
-        [] 
-        [] 
-        [(Open 
-            0 
-            [] 
-            [(file 
-            (String 
+        )
+        []
+        []
+        []
+        [(Open
+            0
+            []
+            [(file
+            (String
                 "p_cc"
             ))
-            (newunit 
-            u)] 
+            (newunit
+            u)]
             ()
         )
-        (Open 
-            0 
-            [task_lun] 
-            [(file 
-            taskfile)] 
+        (Open
+            0
+            [task_lun]
+            [(file
+            taskfile)]
             ()
         )
-        (Open 
-            0 
-            [] 
-            [(unit 
+        (Open
+            0
+            []
+            [(unit
             gmv_lun)
-            (FILE 
+            (FILE
             fname)
-            (IOSTAT 
+            (IOSTAT
             ier)
-            (POSITION 
-            (String 
+            (POSITION
+            (String
                 "rewind"
-            ))] 
+            ))]
             ()
         )
-        (Open 
-            0 
-            [] 
-            [(newunit 
-            lun)
-            (file 
+        (Open
+            0
+            []
+            [(newunit
+            lun [(this
+            [])])
+            (file
             outfile)
-            (status 
-            (String 
+            (status
+            (String
                 "replace"
             ))
-            (iostat 
-            ios)] 
+            (iostat
+            ios)]
             ()
         )
-        (Open 
-            0 
-            [] 
-            [(unit 
+        (Open
+            0
+            []
+            [(unit
             10)
-            (file 
-            (String 
+            (file
+            (String
                 "test1.inp"
             ))
-            (position 
-            (String 
+            (position
+            (String
                 "rewind"
             ))
-            (action 
-            (String 
+            (action
+            (String
                 "read"
             ))
-            (status 
-            (String 
+            (status
+            (String
                 "old"
-            ))] 
+            ))]
             ()
         )
-        (Open 
-            0 
-            [] 
-            [(UNIT 
+        (Open
+            0
+            []
+            [(UNIT
             funit)
-            (FILE 
+            (FILE
             tname)
-            (STATUS 
+            (STATUS
             fstat)
-            (ACCESS 
-            (String 
+            (ACCESS
+            (String
                 "SEQUENTIAL"
             ))
-            (ACTION 
+            (ACTION
             faction)
-            (IOSTAT 
-            ierr)] 
+            (IOSTAT
+            ierr)]
             ()
-        )] 
+        )]
         []
     )]
 )

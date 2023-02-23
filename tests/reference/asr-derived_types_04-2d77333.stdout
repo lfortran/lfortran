@@ -1,125 +1,134 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             bitset:
-                (Module 
+                (Module
                     (SymbolTable
                         2
                         {
                             all_abstract:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         4
                                         {
                                             all:
-                                                (Variable 
-                                                    4 
-                                                    all 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Logical 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                (Variable
+                                                    4
+                                                    all
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             self:
-                                                (Variable 
-                                                    4 
-                                                    self 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Class 
-                                                        2 bitset_type 
+                                                (Variable
+                                                    4
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 bitset_type
                                                         []
-                                                    ) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                    )
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    all_abstract 
-                                    [] 
-                                    [(Var 4 self)] 
-                                    [] 
-                                    (Var 4 all) 
-                                    Source 
-                                    Private 
-                                    Interface 
-                                    () 
-                                    .true. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        })
+                                    all_abstract
+                                    (FunctionType
+                                        [(Class
+                                            2 bitset_type
+                                            []
+                                        )]
+                                        (Logical 4 [])
+                                        Source
+                                        Interface
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 self)]
+                                    []
+                                    (Var 4 all)
+                                    Private
                                     .false.
-                                ), 
+                                    .false.
+                                ),
                             bitset_type:
-                                (StructType 
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
                                             all:
-                                                (ClassProcedure 
-                                                    3 
-                                                    all 
-                                                    all_abstract 
-                                                    2 all_abstract 
+                                                (ClassProcedure
+                                                    3
+                                                    all
+                                                    self
+                                                    all_abstract
+                                                    2 all_abstract
                                                     Source
-                                                ), 
+                                                ),
                                             num_bits:
-                                                (Variable 
-                                                    3 
-                                                    num_bits 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Integer 8 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    num_bits
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8 [])
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    bitset_type 
-                                    [] 
-                                    [num_bits] 
-                                    Source 
-                                    Private 
-                                    .false. 
-                                    () 
+                                        })
+                                    bitset_type
+                                    []
+                                    [num_bits]
+                                    Source
+                                    Private
+                                    .false.
+                                    ()
                                     ()
                                 )
-                            
-                        }) 
-                    bitset 
-                    [] 
-                    .false. 
+                        })
+                    bitset
+                    []
                     .false.
-                ), 
+                    .false.
+                ),
             debug:
-                (Program 
+                (Program
                     (SymbolTable
                         5
                         {
                             
-                        }) 
-                    debug 
-                    [] 
+                        })
+                    debug
+                    []
                     []
                 )
-            
-        }) 
+        })
     []
 )

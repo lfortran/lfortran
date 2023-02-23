@@ -2,7 +2,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/asr_utils.h>
 
-namespace LFortran {
+namespace LCompilers {
 
     namespace LLVMArrUtils {
 
@@ -33,10 +33,7 @@ namespace LFortran {
                     is_ok = false;
                     break;
                 }
-                if( (m_dims[r].m_length != nullptr &&
-                    m_dims[r].m_length->type != ASR::exprType::IntegerConstant) ||
-                    (m_dims[r].m_start != nullptr &&
-                    m_dims[r].m_start->type != ASR::exprType::IntegerConstant) ) {
+                if( m_dims[r].m_length == nullptr ) {
                     is_ok = false;
                     break;
                 }
@@ -439,16 +436,20 @@ namespace LFortran {
 
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Value* array,
             std::vector<llvm::Value*>& m_args, int n_args, bool data_only,
-            llvm::Value** llvm_diminfo) {
+            bool is_fixed_size, llvm::Value** llvm_diminfo) {
             llvm::Value* tmp = nullptr;
             // TODO: Uncomment later
             // bool check_for_bounds = is_explicit_shape(v);
             bool check_for_bounds = false;
             llvm::Value* idx = nullptr;
             if( data_only ) {
-                LFORTRAN_ASSERT(llvm_diminfo);
+                LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds);
-                tmp = llvm_utils->create_ptr_gep(array, idx);
+                if( is_fixed_size ) {
+                    tmp = llvm_utils->create_gep(array, idx);
+                } else {
+                    tmp = llvm_utils->create_ptr_gep(array, idx);
+                }
             } else {
                 idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);
                 llvm::Value* full_array = get_pointer_to_data(array);
@@ -648,6 +649,16 @@ namespace LFortran {
             builder->CreateStore(n_dims, this->get_rank(dest, true));
         }
 
+        void SimpleCMODescriptor::copy_array_data_only(llvm::Value* src, llvm::Value* dest,
+            llvm::Module* module, ASR::ttype_t* asr_data_type, llvm::Value* num_elements) {
+            llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(asr_data_type, false, false)].second;
+            llvm::DataLayout data_layout(module);
+            uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+            llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+            num_elements = builder->CreateMul(num_elements, llvm_size);
+            builder->CreateMemCpy(src, llvm::MaybeAlign(), dest, llvm::MaybeAlign(), num_elements);
+        }
+
     } // LLVMArrUtils
 
-} // LFortran
+} // namespace LCompilers

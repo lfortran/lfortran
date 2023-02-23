@@ -1,129 +1,129 @@
-(TranslationUnit 
-    [(Program 
-        complex3 
-        () 
-        [] 
-        [] 
-        [(Declaration 
-            (AttrType 
-                TypeComplex 
-                [(() 
-                8 
-                Value)] 
-                () 
+(TranslationUnit
+    [(Program
+        complex3
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeComplex
+                [(()
+                8
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(x 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(x
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeComplex 
-                [(() 
-                8 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeComplex
+                [(()
+                8
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(y 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(y
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeComplex 
-                [(() 
-                4 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeComplex
+                [(()
+                4
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(z 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(z
+            []
+            []
+            ()
+            None
+            ())]
             ()
         )
-        (Declaration 
-            (AttrType 
-                TypeComplex 
-                [(() 
-                4 
-                Value)] 
-                () 
+        (Declaration
+            (AttrType
+                TypeComplex
+                [(()
+                4
+                Value)]
+                ()
                 None
-            ) 
-            [] 
-            [(w 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
+            )
+            []
+            [(w
+            []
+            []
             ()
-        )] 
-        [(= 
-            0 
-            x 
-            (Complex (Real "3.0_8") (Real "4.0_8")) 
+            None
+            ())]
             ()
-        )
-        (Print 
-            0 
-            () 
-            [x] 
+        )]
+        [(=
+            0
+            x
+            (Complex (Real "3.0_8") (Real "4.0_8"))
             ()
         )
-        (= 
-            0 
-            y 
-            (Complex (Real "3.0_8") (Real "4.0_8")) 
+        (Print
+            0
+            ()
+            [x]
             ()
         )
-        (Print 
-            0 
-            () 
-            [y] 
+        (=
+            0
+            y
+            (Complex (Real "3.0_8") (Real "4.0_8"))
             ()
         )
-        (= 
-            0 
-            z 
-            (Complex (Real "3.0_4") (Real "4.0_4")) 
+        (Print
+            0
+            ()
+            [y]
             ()
         )
-        (Print 
-            0 
-            () 
-            [z] 
+        (=
+            0
+            z
+            (Complex (Real "3.0_4") (Real "4.0_4"))
             ()
         )
-        (= 
-            0 
-            w 
-            (Complex (Real "3.0_4") (Real "4.0_4")) 
+        (Print
+            0
+            ()
+            [z]
             ()
         )
-        (Print 
-            0 
-            () 
-            [w] 
+        (=
+            0
+            w
+            (Complex (Real "3.0_4") (Real "4.0_4"))
             ()
-        )] 
+        )
+        (Print
+            0
+            ()
+            [w]
+            ()
+        )]
         []
     )]
 )

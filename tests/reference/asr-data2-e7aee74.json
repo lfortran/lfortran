@@ -1,0 +1,13 @@
+{
+    "basename": "asr-data2-e7aee74",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/data2.f90",
+    "infile_hash": "89ccb50e394ce2bf22af43e22184c4a457c3afee616586f6bbe24100",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-data2-e7aee74.stdout",
+    "stdout_hash": "0a4f02eaeac76d34e128d1f8dfcfc1bec4e1dfff0c11dfcdc17c94e9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

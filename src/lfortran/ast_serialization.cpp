@@ -9,10 +9,10 @@
 #include <libasr/bwriter.h>
 #include <libasr/string_utils.h>
 
-using LFortran::ASRUtils::symbol_parent_symtab;
-using LFortran::ASRUtils::symbol_name;
+using LCompilers::ASRUtils::symbol_parent_symtab;
+using LCompilers::ASRUtils::symbol_name;
 
-namespace LFortran {
+namespace LCompilers::LFortran {
 
 class ASTSerializationVisitor :
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
@@ -67,7 +67,7 @@ public:
 
     char* read_cstring() {
         std::string s = read_string();
-        LFortran::Str cs;
+        LCompilers::Str cs;
         cs.from_str_view(s);
         char* p = cs.c_str(al);
         return p;
@@ -80,4 +80,4 @@ AST::ast_t* deserialize_ast(Allocator &al, const std::string &s) {
 }
 
 
-} // namespace LFortran
+} // namespace LCompilers::LFortran

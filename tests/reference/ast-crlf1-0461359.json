@@ -1,0 +1,13 @@
+{
+    "basename": "ast-crlf1-0461359",
+    "cmd": "lfortran --indent --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form/crlf1.f",
+    "infile_hash": "137ef00eb5d20b96070b7a3753e6f4e2967db640fd0fad4f8f1aeeae",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-crlf1-0461359.stdout",
+    "stdout_hash": "3a60c9dd71688dcba2e3415e5505feb9648222568bd06f5bd3d7cdc8",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

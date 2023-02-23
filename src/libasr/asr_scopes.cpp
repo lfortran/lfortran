@@ -4,7 +4,7 @@
 #include <libasr/asr_scopes.h>
 #include <libasr/asr_utils.h>
 
-namespace LFortran  {
+namespace LCompilers  {
 
 // This function is taken from:
 // https://github.com/aappleby/smhasher/blob/61a0530f28277f2e850bfc39600ce61d02b518de/src/MurmurHash2.cpp#L37
@@ -85,7 +85,8 @@ void SymbolTable::mark_all_variables_external(Allocator &/*al*/) {
             }
             case (ASR::symbolType::Function) : {
                 ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(a.second);
-                v->m_abi = ASR::abiType::Interactive;
+                ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
+                v_func_type->m_abi = ASR::abiType::Interactive;
                 v->m_body = nullptr;
                 v->n_body = 0;
                 break;
@@ -116,7 +117,7 @@ ASR::symbol_t *SymbolTable::find_scoped_symbol(const std::string &name,
     }
     if (s->scope.find(name) != scope.end()) {
         ASR::symbol_t *sym = s->scope.at(name);
-        LFORTRAN_ASSERT(sym)
+        LCOMPILERS_ASSERT(sym)
         return sym;
     } else {
         // The `name` not found in the appropriate symbol table
@@ -134,4 +135,4 @@ std::string SymbolTable::get_unique_name(const std::string &name) {
     return unique_name;
 }
 
-} // namespace LFortran
+} // namespace LCompilers

@@ -4,11 +4,11 @@
 #include <libasr/asr.h>
 #include <libasr/utils.h>
 
-namespace LFortran {
+namespace LCompilers {
 
     void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const LCompilers::PassOptions& pass_options);
+                                const PassOptions& pass_options);
 
-} // namespace LFortran
+} // namespace LCompilers
 
 #endif // LIBASR_PASS_INTRINSIC_FUNCTION_H

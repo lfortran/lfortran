@@ -1,158 +1,157 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             complex2:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Complex 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    complex2 
-                    [] 
-                    [(= 
-                        (Var 2 x) 
-                        (ComplexConstructor 
-                            (RealConstant 
-                                3.000000 
+                        })
+                    complex2
+                    []
+                    [(=
+                        (Var 2 x)
+                        (ComplexConstructor
+                            (RealConstant
+                                3.000000
                                 (Real 4 [])
-                            ) 
-                            (RealConstant 
-                                4.000000 
+                            )
+                            (RealConstant
+                                4.000000
                                 (Real 4 [])
-                            ) 
-                            (Complex 4 []) 
-                            (ComplexConstant 
-                                3.000000 
-                                4.000000 
+                            )
+                            (Complex 4 [])
+                            (ComplexConstant
+                                3.000000
+                                4.000000
                                 (Complex 4 [])
                             )
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (ComplexBinOp 
-                            (Var 2 x) 
-                            Sub 
-                            (Cast 
-                                (RealConstant 
-                                    4.000000 
+                    (=
+                        (Var 2 x)
+                        (ComplexBinOp
+                            (Var 2 x)
+                            Sub
+                            (Cast
+                                (RealConstant
+                                    4.000000
                                     (Real 4 [])
-                                ) 
-                                RealToComplex 
-                                (Complex 4 []) 
-                                (ComplexConstant 
-                                    4.000000 
-                                    0.000000 
+                                )
+                                RealToComplex
+                                (Complex 4 [])
+                                (ComplexConstant
+                                    4.000000
+                                    0.000000
                                     (Complex 4 [])
                                 )
-                            ) 
-                            (Complex 4 []) 
+                            )
+                            (Complex 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (ComplexBinOp 
-                            (Cast 
-                                (RealConstant 
-                                    4.000000 
+                    (=
+                        (Var 2 x)
+                        (ComplexBinOp
+                            (Cast
+                                (RealConstant
+                                    4.000000
                                     (Real 4 [])
-                                ) 
-                                RealToComplex 
-                                (Complex 4 []) 
-                                (ComplexConstant 
-                                    4.000000 
-                                    0.000000 
+                                )
+                                RealToComplex
+                                (Complex 4 [])
+                                (ComplexConstant
+                                    4.000000
+                                    0.000000
                                     (Complex 4 [])
                                 )
-                            ) 
-                            Sub 
-                            (Var 2 x) 
-                            (Complex 4 []) 
+                            )
+                            Sub
+                            (Var 2 x)
+                            (Complex 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (ComplexBinOp 
-                            (Cast 
-                                (IntegerConstant 2 (Integer 4 [])) 
-                                IntegerToComplex 
-                                (Complex 4 []) 
+                    (=
+                        (Var 2 x)
+                        (ComplexBinOp
+                            (Cast
+                                (IntegerConstant 2 (Integer 4 []))
+                                IntegerToComplex
+                                (Complex 4 [])
                                 ()
-                            ) 
-                            Sub 
-                            (Var 2 x) 
-                            (Complex 4 []) 
+                            )
+                            Sub
+                            (Var 2 x)
+                            (Complex 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
                         ()
                     )
-                    (= 
-                        (Var 2 x) 
-                        (ComplexBinOp 
-                            (Var 2 x) 
-                            Sub 
-                            (ComplexConstructor 
-                                (RealConstant 
-                                    0.000000 
+                    (=
+                        (Var 2 x)
+                        (ComplexBinOp
+                            (Var 2 x)
+                            Sub
+                            (ComplexConstructor
+                                (RealConstant
+                                    0.000000
                                     (Real 4 [])
-                                ) 
-                                (RealConstant 
-                                    3.000000 
+                                )
+                                (RealConstant
+                                    3.000000
                                     (Real 4 [])
-                                ) 
-                                (Complex 4 []) 
-                                (ComplexConstant 
-                                    0.000000 
-                                    3.000000 
+                                )
+                                (Complex 4 [])
+                                (ComplexConstant
+                                    0.000000
+                                    3.000000
                                     (Complex 4 [])
                                 )
-                            ) 
-                            (Complex 4 []) 
+                            )
+                            (Complex 4 [])
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

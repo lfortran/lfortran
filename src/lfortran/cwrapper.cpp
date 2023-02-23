@@ -15,7 +15,7 @@ extern "C" {
 #define CWRAPPER_END                                                           \
     return LFORTRAN_NO_EXCEPTION;                                              \
     }                                                                          \
-    catch (LFortran::LCompilersException & e)                                    \
+    catch (LCompilers::LCompilersException & e)                                    \
     {                                                                          \
         return e.error_code();                                                 \
     }                                                                          \
@@ -32,7 +32,7 @@ struct LFortranCParser {
     LFortranCParser() : al{1024*1024} {}
 };
 struct lfortran_ast_t {
-    LFortran::AST::ast_t m;
+    LCompilers::LFortran::AST::ast_t m;
 };
 
 
@@ -51,10 +51,10 @@ lfortran_exceptions_t lfortran_parser_parse(LFortranCParser *self,
 {
     CWRAPPER_BEGIN
 
-    LFortran::AST::ast_t* result;
-    LFortran::diag::Diagnostics diagnostics;
-    LFortran::Result<LFortran::AST::TranslationUnit_t*> res
-        = LFortran::parse(self->al, input, diagnostics);
+    LCompilers::LFortran::AST::ast_t* result;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*> res
+        = LCompilers::LFortran::parse(self->al, input, diagnostics);
     if (res.ok) {
         result = res.result->m_items[0];
     } else {
@@ -71,7 +71,7 @@ lfortran_exceptions_t lfortran_parser_pickle(lfortran_ast_t* ast,
 {
     CWRAPPER_BEGIN
 
-    std::string p = LFortran::pickle(ast->m);
+    std::string p = LCompilers::LFortran::pickle(ast->m);
     *str = new char[p.length()+1];
     std::strcpy(*str, p.c_str());
 

@@ -1,53 +1,52 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             expr_07:
-                (Program 
+                (Program
                     (SymbolTable
                         2
                         {
                             x:
-                                (Variable 
-                                    2 
-                                    x 
-                                    Local 
-                                    (RealBinOp 
-                                        (RealConstant 
-                                            3.300000 
-                                            (Real 4 [])
-                                        ) 
-                                        Add 
-                                        (RealConstant 
-                                            6.000000 
-                                            (Real 4 [])
-                                        ) 
-                                        (Real 4 []) 
-                                        (RealConstant 
-                                            9.300000 
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (RealBinOp
+                                        (RealConstant
+                                            3.300000
                                             (Real 4 [])
                                         )
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Real 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                        Add
+                                        (RealConstant
+                                            6.000000
+                                            (Real 4 [])
+                                        )
+                                        (Real 4 [])
+                                        (RealConstant
+                                            9.300000
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    ()
+                                    Save
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    expr_07 
-                    [] 
-                    [(Print 
-                        () 
-                        [(Var 2 x)] 
-                        () 
+                        })
+                    expr_07
+                    []
+                    [(Print
+                        ()
+                        [(Var 2 x)]
+                        ()
                         ()
                     )]
                 )
-            
-        }) 
+        })
     []
 )

@@ -9,7 +9,7 @@
 #include <libasr/modfile.h>
 #include <libasr/pass/pass_utils.h>
 
-namespace LFortran {
+namespace LCompilers {
 
     namespace ASRUtils  {
 
@@ -68,18 +68,47 @@ std::vector<std::string> determine_module_dependencies(
 std::vector<std::string> determine_function_definition_order(
         SymbolTable* symtab) {
     std::map<std::string, std::vector<std::string>> func_dep_graph;
+    ASR::symbol_t *sym;
     for( auto itr: symtab->get_scope() ) {
         if( ASR::is_a<ASR::Function_t>(*itr.second) ) {
             std::vector<std::string> deps;
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(itr.second);
             for( size_t i = 0; i < func->n_dependencies; i++ ) {
                 std::string dep = func->m_dependencies[i];
-                deps.push_back(dep);
+                // Check if the dependent variable is present in the symtab.
+                // This will help us to include only local dependencies, and we
+                // assume that dependencies in the parent symtab are already declared
+                // earlier.
+                sym = symtab->get_symbol(dep);
+                if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym))
+                    deps.push_back(dep);
             }
             func_dep_graph[itr.first] = deps;
         }
     }
     return ASRUtils::order_deps(func_dep_graph);
+}
+
+std::vector<std::string> determine_variable_declaration_order(
+         SymbolTable* symtab) {
+    std::map<std::string, std::vector<std::string>> var_dep_graph;
+    for( auto itr: symtab->get_scope() ) {
+        if( ASR::is_a<ASR::Variable_t>(*itr.second) ) {
+            std::vector<std::string> deps;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(itr.second);
+            for( size_t i = 0; i < var->n_dependencies; i++ ) {
+                std::string dep = var->m_dependencies[i];
+                // Check if the dependent variable is present in the symtab.
+                // This will help us to include only local dependencies, and we
+                // assume that dependencies in the parent symtab are already declared
+                // earlier.
+                if (symtab->get_symbol(dep) != nullptr)
+                    deps.push_back(dep);
+            }
+            var_dep_graph[itr.first] = deps;
+        }
+    }
+    return ASRUtils::order_deps(var_dep_graph);
 }
 
 void extract_module_python(const ASR::TranslationUnit_t &m,
@@ -104,9 +133,9 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
 }
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
-    LFORTRAN_ASSERT(m.m_global_scope->get_scope().size()== 1);
+    LCOMPILERS_ASSERT(m.m_global_scope->get_scope().size()== 1);
     for (auto &a : m.m_global_scope->get_scope()) {
-        LFORTRAN_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(*a.second));
         return ASR::down_cast<ASR::Module_t>(a.second);
     }
     throw LCompilersException("ICE: Module not found");
@@ -118,7 +147,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::PassOptions& pass_options,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err) {
-    LFORTRAN_ASSERT(symtab);
+    LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
         if (ASR::is_a<ASR::Module_t>(*m)) {
@@ -127,7 +156,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
             err("The symbol '" + module_name + "' is not a module", loc);
         }
     }
-    LFORTRAN_ASSERT(symtab->parent == nullptr);
+    LCOMPILERS_ASSERT(symtab->parent == nullptr);
     ASR::TranslationUnit_t *mod1 = find_and_load_module(al, module_name,
             *symtab, intrinsic, pass_options);
     if (mod1 == nullptr && !intrinsic) {
@@ -147,7 +176,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
     mod2->m_loaded_from_mod = true;
-    LFORTRAN_ASSERT(symtab->resolve_symbol(module_name));
+    LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
 
     // Create a temporary TranslationUnit just for fixing the symbols
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
@@ -234,7 +263,8 @@ void set_intrinsic(ASR::symbol_t* sym) {
         }
         case ASR::symbolType::Function: {
             ASR::Function_t* function_sym = ASR::down_cast<ASR::Function_t>(sym);
-            function_sym->m_abi = ASR::abiType::Intrinsic;
+            ASR::FunctionType_t* func_sym_type = ASR::down_cast<ASR::FunctionType_t>(function_sym->m_function_signature);
+            func_sym_type->m_abi = ASR::abiType::Intrinsic;
             break;
         }
         case ASR::symbolType::StructType: {
@@ -287,75 +317,124 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
 }
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
-                            ASR::asr_t* v_var, ASR::symbol_t* member,
-                            SymbolTable* current_scope) {
-    ASR::Variable_t* member_variable = ((ASR::Variable_t*)(&(member->base)));
-    ASR::ttype_t* member_type = member_variable->m_type;
-    switch( member_type->type ) {
-        case ASR::ttypeType::Struct: {
-            ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(member_type);
-            std::string der_type_name = ASRUtils::symbol_name(der->m_derived_type);
-            ASR::symbol_t* der_type_sym = current_scope->resolve_symbol(der_type_name);
-            if( der_type_sym == nullptr ) {
-                ASR::symbol_t* der_ext;
-                char* module_name = (char*)"~nullptr";
-                ASR::symbol_t* m_external = der->m_derived_type;
-                if( m_external->type == ASR::symbolType::ExternalSymbol ) {
-                    ASR::ExternalSymbol_t* m_ext = (ASR::ExternalSymbol_t*)(&(m_external->base));
-                    m_external = m_ext->m_external;
-                    module_name = m_ext->m_module_name;
-                }
-                Str mangled_name;
-                mangled_name.from_str(al, "1_" +
-                                            std::string(module_name) + "_" +
-                                            std::string(der_type_name));
-                char* mangled_name_char = mangled_name.c_str(al);
-                if( current_scope->get_symbol(mangled_name.str()) == nullptr ) {
-                    bool make_new_ext_sym = true;
-                    ASR::symbol_t* der_tmp = nullptr;
-                    if( current_scope->get_symbol(std::string(der_type_name)) != nullptr ) {
-                        der_tmp = current_scope->get_symbol(std::string(der_type_name));
-                        if( der_tmp->type == ASR::symbolType::ExternalSymbol ) {
-                            ASR::ExternalSymbol_t* der_ext_tmp = (ASR::ExternalSymbol_t*)(&(der_tmp->base));
-                            if( der_ext_tmp->m_external == m_external ) {
-                                make_new_ext_sym = false;
-                            }
-                        } else {
-                            make_new_ext_sym = false;
+                            ASR::asr_t* v_var, ASR::symbol_t *v,
+                            ASR::symbol_t* member, SymbolTable* current_scope) {
+    member = ASRUtils::symbol_get_past_external(member);
+    if (ASR::is_a<ASR::StructType_t>(*member)) {
+        ASR::StructType_t* member_variable = ASR::down_cast<ASR::StructType_t>(member);
+        ASR::symbol_t *mem_es = nullptr;
+        std::string mem_name = "1_" + std::string(ASRUtils::symbol_name(member));
+        if (current_scope->resolve_symbol(mem_name)) {
+            mem_es = current_scope->resolve_symbol(mem_name);
+        } else {
+            mem_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                member->base.loc, current_scope, s2c(al, mem_name), member,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(member)),
+                nullptr, 0, member_variable->m_name, ASR::accessType::Public));
+            current_scope->add_symbol(mem_name, mem_es);
+        }
+        ASR::ttype_t* member_type = ASRUtils::TYPE(ASR::make_Struct_t(al,
+            member_variable->base.base.loc, mem_es, nullptr, 0));
+        return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
+                mem_es, member_type, nullptr);
+    } else {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
+        ASR::Variable_t* member_variable = ASR::down_cast<ASR::Variable_t>(member);
+        ASR::ttype_t* member_type = member_variable->m_type;
+        bool is_pointer = false;
+        if (ASRUtils::is_pointer(member_type)) {
+            is_pointer = true;
+            member_type = ASR::down_cast<ASR::Pointer_t>(member_type)->m_type;
+        }
+        switch( member_type->type ) {
+            case ASR::ttypeType::Struct: {
+                ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(member_type);
+                std::string der_type_name = ASRUtils::symbol_name(der->m_derived_type);
+                ASR::symbol_t* der_type_sym = current_scope->resolve_symbol(der_type_name);
+                if( der_type_sym == nullptr ) {
+                    ASR::symbol_t* der_ext;
+                    char* module_name = (char*)"~nullptr";
+                    ASR::symbol_t* m_external = der->m_derived_type;
+                    if( ASR::is_a<ASR::ExternalSymbol_t>(*m_external) ) {
+                        ASR::ExternalSymbol_t* m_ext = ASR::down_cast<ASR::ExternalSymbol_t>(m_external);
+                        m_external = m_ext->m_external;
+                        module_name = m_ext->m_module_name;
+                    } else if( ASR::is_a<ASR::StructType_t>(*m_external) ) {
+                        ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(m_external);
+                        if( ASR::is_a<ASR::StructType_t>(*asr_owner) ||
+                            ASR::is_a<ASR::Module_t>(*asr_owner) ) {
+                            module_name = ASRUtils::symbol_name(asr_owner);
                         }
                     }
-                    if( make_new_ext_sym ) {
-                        der_ext = (ASR::symbol_t*)ASR::make_ExternalSymbol_t(al, loc, current_scope, mangled_name_char, m_external,
-                                                                            module_name, nullptr, 0, s2c(al, der_type_name), ASR::accessType::Public);
-                        current_scope->add_symbol(mangled_name.str(), der_ext);
+                    std::string mangled_name = current_scope->get_unique_name(
+                                                std::string(module_name) + "_" +
+                                                std::string(der_type_name));
+                    char* mangled_name_char = s2c(al, mangled_name);
+                    if( current_scope->get_symbol(mangled_name) == nullptr ) {
+                        bool make_new_ext_sym = true;
+                        ASR::symbol_t* der_tmp = nullptr;
+                        if( current_scope->get_symbol(std::string(der_type_name)) != nullptr ) {
+                            der_tmp = current_scope->get_symbol(std::string(der_type_name));
+                            if( ASR::is_a<ASR::ExternalSymbol_t>(*der_tmp) ) {
+                                ASR::ExternalSymbol_t* der_ext_tmp = ASR::down_cast<ASR::ExternalSymbol_t>(der_tmp);
+                                if( der_ext_tmp->m_external == m_external ) {
+                                    make_new_ext_sym = false;
+                                }
+                            } else {
+                                make_new_ext_sym = false;
+                            }
+                        }
+                        if( make_new_ext_sym ) {
+                            der_ext = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                            al, loc, current_scope, mangled_name_char, m_external,
+                                            module_name, nullptr, 0, s2c(al, der_type_name),
+                                            ASR::accessType::Public));
+                            current_scope->add_symbol(mangled_name, der_ext);
+                        } else {
+                            LCOMPILERS_ASSERT(der_tmp != nullptr);
+                            der_ext = der_tmp;
+                        }
                     } else {
-                        LFORTRAN_ASSERT(der_tmp != nullptr);
-                        der_ext = der_tmp;
+                        der_ext = current_scope->get_symbol(mangled_name);
                     }
-                } else {
-                    der_ext = current_scope->get_symbol(mangled_name.str());
+                    ASR::asr_t* der_new = ASR::make_Struct_t(al, loc, der_ext, der->m_dims, der->n_dims);
+                    member_type = ASRUtils::TYPE(der_new);
+                } else if(ASR::is_a<ASR::ExternalSymbol_t>(*der_type_sym)) {
+                    member_type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, der_type_sym,
+                                    der->m_dims, der->n_dims));
                 }
-                ASR::asr_t* der_new = ASR::make_Struct_t(al, loc, der_ext, der->m_dims, der->n_dims);
-                member_type = ASRUtils::TYPE(der_new);
-            } else if(ASR::is_a<ASR::ExternalSymbol_t>(*der_type_sym)) {
-                member_type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, der_type_sym,
-                                der->m_dims, der->n_dims));
+                break;
             }
-            break;
+            default :
+                break;
         }
-        default :
-            break;
+        if (is_pointer) {
+            member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, member_type));
+        }
+        ASR::ttype_t* member_type_ = nullptr;
+        ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type_);
+        ASR::expr_t* value = nullptr;
+        v = ASRUtils::symbol_get_past_external(v);
+        if (v != nullptr && ASR::down_cast<ASR::Variable_t>(v)->m_storage
+                == ASR::storage_typeType::Parameter) {
+            if (member_variable->m_symbolic_value != nullptr) {
+                value = expr_value(member_variable->m_symbolic_value);
+            }
+        }
+        return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
+            member_ext, member_type, value);
     }
-    return ASR::make_StructInstanceMember_t(al, loc, LFortran::ASRUtils::EXPR(v_var), member, member_type, nullptr);
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::binopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
                     Allocator &al, const Location& loc,
+                    std::set<std::string>& current_function_dependencies,
+                    Vec<char*>& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
-    ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
@@ -392,11 +471,15 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
                             }
                             ASR::ttype_t *return_type = nullptr;
-                            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                                func->n_args == 1 &&
+                                ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
                                 return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
                             } else {
                                 return_type = ASRUtils::expr_type(func->m_return_var);
                             }
+                            current_function_dependencies.insert(matched_func_name);
+                            ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
@@ -459,47 +542,112 @@ bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
     return result;
 }
 
+void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* target, ASR::expr_t* value,
+    ASR::ttype_t* target_type, ASR::ttype_t* value_type, bool& found, Allocator& al, const Location& target_loc,
+    const Location& value_loc, SymbolTable* curr_scope, std::set<std::string>& current_function_dependencies,
+    Vec<char*>& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
+    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr) {
+    ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
+    std::string matched_subrout_name = "";
+    if( subrout->n_args == 2 ) {
+        ASR::ttype_t* target_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
+        ASR::ttype_t* value_arg_type = ASRUtils::expr_type(subrout->m_args[1]);
+        if( ASRUtils::types_equal(target_arg_type, target_type) &&
+            ASRUtils::types_equal(value_arg_type, value_type) ) {
+            std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
+            std::string arg1_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[1])->m_v);
+            if( pass_arg != nullptr ) {
+                std::string pass_arg_str = std::string(pass_arg);
+                if( arg0_name != pass_arg_str && arg1_name != pass_arg_str ) {
+                    err(pass_arg_str + " argument is not present in " + std::string(subrout->m_name),
+                        proc->base.loc);
+                }
+                if( (arg0_name == pass_arg_str && target != expr_dt) ) {
+                    err(std::string(subrout->m_name) + " is not a procedure of " +
+                        ASRUtils::type_to_str(target_type),
+                        loc);
+                }
+                if( (arg1_name == pass_arg_str && value != expr_dt) ) {
+                    err(std::string(subrout->m_name) + " is not a procedure of " +
+                        ASRUtils::type_to_str(value_type),
+                        loc);
+                }
+            }
+            found = true;
+            Vec<ASR::call_arg_t> a_args;
+            a_args.reserve(al, 2);
+            ASR::call_arg_t target_arg, value_arg;
+            target_arg.loc = target_loc, target_arg.m_value = target;
+            a_args.push_back(al, target_arg);
+            value_arg.loc = value_loc, value_arg.m_value = value;
+            a_args.push_back(al, value_arg);
+            std::string subrout_name = to_lower(subrout->m_name);
+            if( curr_scope->resolve_symbol(subrout_name) ) {
+                matched_subrout_name = subrout_name;
+            } else {
+                std::string mangled_name = subrout_name + "@~assign";
+                matched_subrout_name = mangled_name;
+            }
+            ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
+            if( a_name == nullptr ) {
+                err("Unable to resolve matched subroutine for assignment overloading, " + matched_subrout_name, loc);
+            }
+            current_function_dependencies.insert(matched_subrout_name);
+            ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+            asr = ASR::make_SubroutineCall_t(al, loc, a_name, sym,
+                                            a_args.p, 2, nullptr);
+        }
+    }
+}
+
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
+                               std::set<std::string>& current_function_dependencies,
+                               Vec<char*>& current_module_dependencies,
                                const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *target_type = LFortran::ASRUtils::expr_type(target);
-    ASR::ttype_t *value_type = LFortran::ASRUtils::expr_type(value);
+    ASR::ttype_t *target_type = ASRUtils::expr_type(target);
+    ASR::ttype_t *value_type = ASRUtils::expr_type(value);
     bool found = false;
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
+    ASR::expr_t* expr_dt = nullptr;
+    if( !sym ) {
+        if( ASR::is_a<ASR::Struct_t>(*target_type) ) {
+            ASR::StructType_t* target_struct = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(target_type)->m_derived_type));
+            sym = target_struct->m_symtab->resolve_symbol("~assign");
+            expr_dt = target;
+        } else if( ASR::is_a<ASR::Struct_t>(*value_type) ) {
+            ASR::StructType_t* value_struct = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(value_type)->m_derived_type));
+            sym = value_struct->m_symtab->resolve_symbol("~assign");
+            expr_dt = value;
+        }
+    }
     if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
             ASR::symbol_t* proc = gen_proc->m_procs[i];
-            ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
-            std::string matched_subrout_name = "";
-            if( subrout->n_args == 2 ) {
-                ASR::ttype_t* target_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
-                ASR::ttype_t* value_arg_type = ASRUtils::expr_type(subrout->m_args[1]);
-                if( target_arg_type->type == target_type->type &&
-                    value_arg_type->type == value_type->type ) {
-                    found = true;
-                    Vec<ASR::call_arg_t> a_args;
-                    a_args.reserve(al, 2);
-                    ASR::call_arg_t target_arg, value_arg;
-                    target_arg.loc = target->base.loc, target_arg.m_value = target;
-                    a_args.push_back(al, target_arg);
-                    value_arg.loc = value->base.loc, value_arg.m_value = value;
-                    a_args.push_back(al, value_arg);
-                    std::string subrout_name = to_lower(subrout->m_name);
-                    if( curr_scope->resolve_symbol(subrout_name) ) {
-                        matched_subrout_name = subrout_name;
-                    } else {
-                        std::string mangled_name = subrout_name + "@~assign";
-                        matched_subrout_name = mangled_name;
-                    }
-                    ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
-                    if( a_name == nullptr ) {
-                        err("Unable to resolve matched subroutine for assignment overloading, " + matched_subrout_name, loc);
-                    }
-                    asr = ASR::make_SubroutineCall_t(al, loc, a_name, sym,
-                                                     a_args.p, 2, nullptr);
+            switch( proc->type ) {
+                case ASR::symbolType::Function: {
+                    process_overloaded_assignment_function(proc, target, value, target_type,
+                        value_type, found, al, target->base.loc, value->base.loc, curr_scope,
+                        current_function_dependencies, current_module_dependencies, asr, sym,
+                        loc, expr_dt, err);
+                    break;
+                }
+                case ASR::symbolType::ClassProcedure: {
+                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(proc);
+                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::ClassProcedure_t>(proc)->m_proc;
+                    process_overloaded_assignment_function(proc_func, target, value, target_type,
+                        value_type, found, al, target->base.loc, value->base.loc, curr_scope,
+                        current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
+                        expr_dt, err, class_proc->m_self_argument);
+                    break;
+                }
+                default: {
+                    err("Only functions and class procedures can be used for generic assignment statement", loc);
                 }
             }
         }
@@ -511,16 +659,38 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::cmpopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
                     Allocator &al, const Location& loc,
+                    std::set<std::string>& current_function_dependencies,
+                    Vec<char*>& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *left_type = LFortran::ASRUtils::expr_type(left);
-    ASR::ttype_t *right_type = LFortran::ASRUtils::expr_type(right);
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
+    ASR::StructType_t *left_struct = nullptr;
+    if ( ASR::is_a<ASR::Struct_t>(*left_type) ) {
+        left_struct = ASR::down_cast<ASR::StructType_t>(
+            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(
+            left_type)->m_derived_type));
+    } else if ( ASR::is_a<ASR::Class_t>(*left_type) ) {
+        left_struct = ASR::down_cast<ASR::StructType_t>(
+            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Class_t>(
+            left_type)->m_class_type));
+    }
     bool found = false;
-    if( is_op_overloaded(op, intrinsic_op_name, curr_scope) ) {
+    if( is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct) ) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+        if ( left_struct != nullptr && orig_sym == nullptr ) {
+            orig_sym = left_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+        }
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = gen_proc->m_procs[i];
+            ASR::symbol_t* proc;
+            if ( ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i]) ) {
+                proc =  ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::ClassProcedure_t>(
+                    gen_proc->m_procs[i])->m_proc);
+            } else {
+                proc = gen_proc->m_procs[i];
+            }
             switch(proc->type) {
                 case ASR::symbolType::Function: {
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
@@ -528,8 +698,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        if( left_arg_type->type == left_type->type &&
-                            right_arg_type->type == right_type->type ) {
+                        if( (left_arg_type->type == left_type->type &&
+                            right_arg_type->type == right_type->type)
+                        || (ASR::is_a<ASR::Class_t>(*left_arg_type) &&
+                            ASR::is_a<ASR::Struct_t>(*left_type))
+                        || (ASR::is_a<ASR::Class_t>(*right_arg_type) &&
+                            ASR::is_a<ASR::Struct_t>(*right_type))) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
@@ -550,11 +724,15 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
                             }
                             ASR::ttype_t *return_type = nullptr;
-                            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                                func->n_args == 1 &&
+                                ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
                                 return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(a_args[0].m_value));
                             } else {
                                 return_type = ASRUtils::expr_type(func->m_return_var);
                             }
+                            current_function_dependencies.insert(matched_func_name);
+                            ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
@@ -574,7 +752,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
 }
 
 bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
-                      SymbolTable* curr_scope) {
+                      SymbolTable* curr_scope, ASR::StructType_t *left_struct) {
     bool result = true;
     switch(op) {
         case ASR::cmpopType::Eq: {
@@ -615,160 +793,15 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
         }
     }
     if( result && curr_scope->resolve_symbol(intrinsic_op_name) == nullptr ) {
-        result = false;
+        if ( left_struct != nullptr && left_struct->m_symtab->resolve_symbol(
+                intrinsic_op_name) != nullptr) {
+            result = true;
+        } else {
+            result = false;
+        }
     }
+
     return result;
-}
-
-bool is_parent(ASR::StructType_t* a, ASR::StructType_t* b) {
-    ASR::symbol_t* current_parent = b->m_parent;
-    while( current_parent ) {
-        if( current_parent == (ASR::symbol_t*) a ) {
-            return true;
-        }
-        LFORTRAN_ASSERT(ASR::is_a<ASR::StructType_t>(*current_parent));
-        current_parent = ASR::down_cast<ASR::StructType_t>(current_parent)->m_parent;
-    }
-    return false;
-}
-
-bool is_derived_type_similar(ASR::StructType_t* a, ASR::StructType_t* b) {
-    return a == b || is_parent(a, b) || is_parent(b, a);
-}
-
-bool types_equal(const ASR::ttype_t &a, const ASR::ttype_t &b) {
-    // TODO: If anyone of the input or argument is derived type then
-    // add support for checking member wise types and do not compare
-    // directly. From stdlib_string len(pattern) error.
-    if (a.type == b.type) {
-        // TODO: check dims
-        // TODO: check all types
-        switch (a.type) {
-            case (ASR::ttypeType::Integer) : {
-                ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(&a);
-                ASR::Integer_t *b2 = ASR::down_cast<ASR::Integer_t>(&b);
-                if (a2->m_kind == b2->m_kind) {
-                    return true;
-                } else {
-                    return false;
-                }
-                break;
-            }
-            case (ASR::ttypeType::Real) : {
-                ASR::Real_t *a2 = ASR::down_cast<ASR::Real_t>(&a);
-                ASR::Real_t *b2 = ASR::down_cast<ASR::Real_t>(&b);
-                if (a2->m_kind == b2->m_kind) {
-                    return true;
-                } else {
-                    return false;
-                }
-                break;
-            }
-            case (ASR::ttypeType::Complex) : {
-                ASR::Complex_t *a2 = ASR::down_cast<ASR::Complex_t>(&a);
-                ASR::Complex_t *b2 = ASR::down_cast<ASR::Complex_t>(&b);
-                if (a2->m_kind == b2->m_kind) {
-                    return true;
-                } else {
-                    return false;
-                }
-                break;
-            }
-            case (ASR::ttypeType::Logical) : {
-                ASR::Logical_t *a2 = ASR::down_cast<ASR::Logical_t>(&a);
-                ASR::Logical_t *b2 = ASR::down_cast<ASR::Logical_t>(&b);
-                if (a2->m_kind == b2->m_kind) {
-                    return true;
-                } else {
-                    return false;
-                }
-                break;
-            }
-            case (ASR::ttypeType::Character) : {
-                ASR::Character_t *a2 = ASR::down_cast<ASR::Character_t>(&a);
-                ASR::Character_t *b2 = ASR::down_cast<ASR::Character_t>(&b);
-                if (a2->m_kind == b2->m_kind) {
-                    return true;
-                } else {
-                    return false;
-                }
-                break;
-            }
-            case (ASR::ttypeType::List) : {
-                ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(&a);
-                ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(&b);
-                return types_equal(*a2->m_type, *b2->m_type);
-            }
-            case (ASR::ttypeType::Struct) : {
-                ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(&a);
-                ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(&b);
-                ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    a2->m_derived_type));
-                ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    b2->m_derived_type));
-                return a2_type == b2_type;
-            }
-            case (ASR::ttypeType::Class) : {
-                ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(&a);
-                ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(&b);
-                ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
-                ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_class_type);
-                if( a2_typesym->type != b2_typesym->type ) {
-                    return false;
-                }
-                if( a2_typesym->type == ASR::symbolType::ClassType ) {
-                    ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
-                    ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
-                    return a2_type == b2_type;
-                } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-                    ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-                    ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
-                    return is_derived_type_similar(a2_type, b2_type);
-                }
-                return false;
-            }
-            default : return false;
-        }
-    } else if( a.type == ASR::ttypeType::Struct &&
-               b.type == ASR::ttypeType::Class ) {
-        ASR::Struct_t *a2 = ASR::down_cast<ASR::Struct_t>(&a);
-        ASR::Class_t *b2 = ASR::down_cast<ASR::Class_t>(&b);
-        ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_derived_type);
-        ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_class_type);
-        if( a2_typesym->type != b2_typesym->type ) {
-            return false;
-        }
-        if( a2_typesym->type == ASR::symbolType::ClassType ) {
-            ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
-            ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
-            return a2_type == b2_type;
-        } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-            ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-            ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
-            return is_derived_type_similar(a2_type, b2_type);
-        }
-    } else if( a.type == ASR::ttypeType::Class &&
-               b.type == ASR::ttypeType::Struct ) {
-        ASR::Class_t *a2 = ASR::down_cast<ASR::Class_t>(&a);
-        ASR::Struct_t *b2 = ASR::down_cast<ASR::Struct_t>(&b);
-        ASR::symbol_t* a2_typesym = ASRUtils::symbol_get_past_external(a2->m_class_type);
-        ASR::symbol_t* b2_typesym = ASRUtils::symbol_get_past_external(b2->m_derived_type);
-        if( a2_typesym->type != b2_typesym->type ) {
-            return false;
-        }
-        if( a2_typesym->type == ASR::symbolType::ClassType ) {
-            ASR::ClassType_t *a2_type = ASR::down_cast<ASR::ClassType_t>(a2_typesym);
-            ASR::ClassType_t *b2_type = ASR::down_cast<ASR::ClassType_t>(b2_typesym);
-            return a2_type == b2_type;
-        } else if( a2_typesym->type == ASR::symbolType::StructType ) {
-            ASR::StructType_t *a2_type = ASR::down_cast<ASR::StructType_t>(a2_typesym);
-            ASR::StructType_t *b2_type = ASR::down_cast<ASR::StructType_t>(b2_typesym);
-            return is_derived_type_similar(a2_type, b2_type);
-        }
-    }
-    return false;
 }
 
 template <typename T>
@@ -777,15 +810,22 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
     if (args.size() <= sub.n_args) {
         size_t i;
         for (i = 0; i < args.size(); i++) {
-            ASR::Variable_t *v = LFortran::ASRUtils::EXPR2VAR(sub.m_args[i]);
-            ASR::ttype_t *arg1 = LFortran::ASRUtils::expr_type(args[i].m_value);
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
+            if (args[i].m_value == nullptr &&
+                v->m_presence == ASR::presenceType::Optional) {
+                // If it's optional and argument is empty
+                // continue to next argument.
+                continue;
+            }
+            // Otherwise this should not be nullptr
+            ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
             ASR::ttype_t *arg2 = v->m_type;
-            if (!types_equal(*arg1, *arg2)) {
+            if (!types_equal(arg1, arg2)) {
                 return false;
             }
         }
         for( ; i < sub.n_args; i++ ) {
-            ASR::Variable_t *v = LFortran::ASRUtils::EXPR2VAR(sub.m_args[i]);
+            ASR::Variable_t *v = ASRUtils::EXPR2VAR(sub.m_args[i]);
             if( v->m_presence != ASR::presenceType::Optional ) {
                 return false;
             }
@@ -799,6 +839,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
                          Location& loc, const std::function<void (const std::string &, const Location &)> err) {
     bool result = false;
+    proc = ASRUtils::symbol_get_past_external(proc);
     if (ASR::is_a<ASR::Function_t>(*proc)) {
         ASR::Function_t *fn
             = ASR::down_cast<ASR::Function_t>(proc);
@@ -846,16 +887,18 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     int idx = select_generic_procedure(args, *g, loc, err);
     ASR::symbol_t *final_sym;
     final_sym = g->m_procs[idx];
-    LFORTRAN_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym));
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym));
     bool is_subroutine = ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var == nullptr;
     ASR::ttype_t *return_type = nullptr;
     if( ASR::is_a<ASR::Function_t>(*final_sym) ) {
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
         if (func->m_return_var) {
-            if( func->m_elemental && func->n_args == 1 && ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
+            if( ASRUtils::get_FunctionType(func)->m_elemental &&
+                func->n_args == 1 &&
+                ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
                 return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
             } else {
-                return_type = LFortran::ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             }
         }
     }
@@ -864,7 +907,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     //   generic_procedure_local_name @
     //     specific_procedure_remote_name
     std::string local_sym = std::string(p->m_name) + "@"
-        + LFortran::ASRUtils::symbol_name(final_sym);
+        + ASRUtils::symbol_name(final_sym);
     if (current_scope->get_symbol(local_sym)
         == nullptr) {
         Str name;
@@ -875,7 +918,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             /* a_symtab */ current_scope,
             /* a_name */ cname,
             final_sym,
-            p->m_module_name, nullptr, 0, LFortran::ASRUtils::symbol_name(final_sym),
+            p->m_module_name, nullptr, 0, ASRUtils::symbol_name(final_sym),
             ASR::accessType::Private
             );
         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
@@ -883,6 +926,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     } else {
         final_sym = current_scope->get_symbol(local_sym);
     }
+    // ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
     if( is_subroutine ) {
         return ASR::make_SubroutineCall_t(al, loc, final_sym,
                                         v, args.p, args.size(),
@@ -951,10 +995,52 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
     return ASR::make_Cast_t(al, a_loc, a_arg, a_kind, a_type, value);
 }
 
+ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
+        ASR::symbol_t* original_sym, SymbolTable *current_scope) {
+    if( original_sym && ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ) {
+        std::string class_proc_name = ASRUtils::symbol_name(original_sym);
+        if( original_sym != current_scope->resolve_symbol(class_proc_name) ) {
+            std::string imported_proc_name = "1_" + class_proc_name;
+            if( current_scope->resolve_symbol(imported_proc_name) == nullptr ) {
+                ASR::symbol_t* module_sym = ASRUtils::get_asr_owner(original_sym);
+                std::string module_name = ASRUtils::symbol_name(module_sym);
+                if( current_scope->resolve_symbol(module_name) == nullptr ) {
+                    std::string imported_module_name = "1_" + module_name;
+                    if( current_scope->resolve_symbol(imported_module_name) == nullptr ) {
+                        LCOMPILERS_ASSERT(ASR::is_a<ASR::Module_t>(
+                            *ASRUtils::get_asr_owner(module_sym)));
+                        ASR::symbol_t* imported_module = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(
+                                al, loc, current_scope, s2c(al, imported_module_name),
+                                module_sym, ASRUtils::symbol_name(ASRUtils::get_asr_owner(module_sym)),
+                                nullptr, 0, s2c(al, module_name), ASR::accessType::Public
+                            )
+                        );
+                        current_scope->add_symbol(imported_module_name, imported_module);
+                    }
+                    module_name = imported_module_name;
+                }
+                ASR::symbol_t* imported_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(
+                        al, loc, current_scope, s2c(al, imported_proc_name),
+                        original_sym, s2c(al, module_name), nullptr, 0,
+                        ASRUtils::symbol_name(original_sym), ASR::accessType::Public
+                    )
+                );
+                current_scope->add_symbol(imported_proc_name, imported_sym);
+                original_sym = imported_sym;
+            } else {
+                original_sym = current_scope->resolve_symbol(imported_proc_name);
+            }
+        }
+    }
+    return original_sym;
+}
+
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 
 } // namespace ASRUtils
 
 
-} // namespace LFortran
+} // namespace LCompilers

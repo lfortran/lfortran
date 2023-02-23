@@ -6,7 +6,8 @@ contains
 integer function b(x)
 integer, intent(in) :: x
 integer y
-real :: yy = 6.6
+real :: yy
+yy = 6.6
 y = x
 print *, "b()"
 b = c(6)

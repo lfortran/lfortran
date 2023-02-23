@@ -1,341 +1,422 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
+            1_circle:
+                (ExternalSymbol
+                    1
+                    1_circle
+                    2 circle
+                    class_circle1
+                    []
+                    circle
+                    Public
+                ),
             circle_test:
-                (Program 
+                (Program
                     (SymbolTable
                         6
                         {
+                            1_circle_radius:
+                                (ExternalSymbol
+                                    6
+                                    1_circle_radius
+                                    3 radius
+                                    1_circle
+                                    []
+                                    radius
+                                    Public
+                                ),
+                            1_print:
+                                (ExternalSymbol
+                                    6
+                                    1_print
+                                    3 print
+                                    circle
+                                    []
+                                    print
+                                    Public
+                                ),
                             c:
-                                (Variable 
-                                    6 
-                                    c 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Struct 
-                                        6 circle 
+                                (Variable
+                                    6
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        6 circle
                                         []
-                                    ) 
-                                    Source 
-                                    Private 
-                                    Required 
+                                    )
+                                    Source
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             circle:
-                                (ExternalSymbol 
-                                    6 
-                                    circle 
-                                    2 circle 
-                                    class_circle1 
-                                    [] 
-                                    circle 
-                                    Private
+                                (ExternalSymbol
+                                    6
+                                    circle
+                                    2 circle
+                                    class_circle1
+                                    []
+                                    circle
+                                    Public
                                 )
-                            
-                        }) 
-                    circle_test 
-                    [class_circle1] 
-                    [(= 
-                        (Var 6 c) 
-                        (StructTypeConstructor 
-                            6 circle 
-                            [(RealConstant 
-                                1.500000 
+                        })
+                    circle_test
+                    [class_circle1]
+                    [(=
+                        (Var 6 c)
+                        (StructTypeConstructor
+                            6 circle
+                            [(RealConstant
+                                1.500000
                                 (Real 4 [])
-                            )] 
-                            (Struct 
-                                6 circle 
+                            )]
+                            (Struct
+                                6 circle
                                 []
-                            ) 
+                            )
                             ()
-                        ) 
+                        )
                         ()
                     )
-                    (SubroutineCall 
-                        3 print 
-                        () 
-                        [] 
+                    (SubroutineCall
+                        6 1_print
+                        ()
+                        []
                         (Var 6 c)
                     )
-                    (= 
-                        (StructInstanceMember 
-                            (Var 6 c) 
-                            3 radius 
-                            (Real 4 []) 
-                            ()
-                        ) 
-                        (RealConstant 
-                            2.000000 
+                    (=
+                        (StructInstanceMember
+                            (Var 6 c)
+                            6 1_circle_radius
                             (Real 4 [])
-                        ) 
+                            ()
+                        )
+                        (RealConstant
+                            2.000000
+                            (Real 4 [])
+                        )
                         ()
                     )
-                    (SubroutineCall 
-                        3 print 
-                        () 
-                        [] 
+                    (SubroutineCall
+                        6 1_print
+                        ()
+                        []
                         (Var 6 c)
                     )]
-                ), 
+                ),
             class_circle1:
-                (Module 
+                (Module
                     (SymbolTable
                         2
                         {
                             circle:
-                                (StructType 
+                                (StructType
                                     (SymbolTable
                                         3
                                         {
                                             area:
-                                                (ClassProcedure 
-                                                    3 
-                                                    area 
-                                                    circle_area 
-                                                    2 circle_area 
+                                                (ClassProcedure
+                                                    3
+                                                    area
+                                                    ()
+                                                    circle_area
+                                                    2 circle_area
                                                     Source
-                                                ), 
+                                                ),
                                             print:
-                                                (ClassProcedure 
-                                                    3 
-                                                    print 
-                                                    circle_print 
-                                                    2 circle_print 
+                                                (ClassProcedure
+                                                    3
+                                                    print
+                                                    ()
+                                                    circle_print
+                                                    2 circle_print
                                                     Source
-                                                ), 
+                                                ),
                                             radius:
-                                                (Variable 
-                                                    3 
-                                                    radius 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                (Variable
+                                                    3
+                                                    radius
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    circle 
-                                    [] 
-                                    [radius] 
-                                    Source 
-                                    Private 
-                                    .false. 
-                                    () 
+                                        })
+                                    circle
+                                    []
+                                    [radius]
+                                    Source
+                                    Private
+                                    .false.
                                     ()
-                                ), 
+                                    ()
+                                ),
                             circle_area:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         4
                                         {
+                                            1_circle_radius:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_circle_radius
+                                                    3 radius
+                                                    circle
+                                                    []
+                                                    radius
+                                                    Public
+                                                ),
                                             area:
-                                                (Variable 
-                                                    4 
-                                                    area 
-                                                    ReturnVar 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                (Variable
+                                                    4
+                                                    area
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             this:
-                                                (Variable 
-                                                    4 
-                                                    this 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Class 
-                                                        2 circle 
+                                                (Variable
+                                                    4
+                                                    this
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 circle
                                                         []
-                                                    ) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                    )
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    circle_area 
-                                    [] 
-                                    [(Var 4 this)] 
-                                    [(= 
-                                        (Var 4 area) 
-                                        (RealBinOp 
-                                            (Var 2 pi) 
-                                            Mul 
-                                            (RealBinOp 
-                                                (StructInstanceMember 
-                                                    (Var 4 this) 
-                                                    3 radius 
-                                                    (Real 4 []) 
+                                        })
+                                    circle_area
+                                    (FunctionType
+                                        [(Class
+                                            2 circle
+                                            []
+                                        )]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 this)]
+                                    [(=
+                                        (Var 4 area)
+                                        (RealBinOp
+                                            (Var 2 pi)
+                                            Mul
+                                            (RealBinOp
+                                                (StructInstanceMember
+                                                    (Var 4 this)
+                                                    4 1_circle_radius
+                                                    (Real 4 [])
                                                     ()
-                                                ) 
-                                                Pow 
-                                                (Cast 
-                                                    (IntegerConstant 2 (Integer 4 [])) 
-                                                    IntegerToReal 
-                                                    (Real 4 []) 
-                                                    (RealConstant 
-                                                        2.000000 
+                                                )
+                                                Pow
+                                                (Cast
+                                                    (IntegerConstant 2 (Integer 4 []))
+                                                    IntegerToReal
+                                                    (Real 4 [])
+                                                    (RealConstant
+                                                        2.000000
                                                         (Real 4 [])
                                                     )
-                                                ) 
-                                                (Real 4 []) 
+                                                )
+                                                (Real 4 [])
                                                 ()
-                                            ) 
-                                            (Real 4 []) 
+                                            )
+                                            (Real 4 [])
                                             ()
-                                        ) 
+                                        )
                                         ()
-                                    )] 
-                                    (Var 4 area) 
-                                    Source 
-                                    Private 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                    )]
+                                    (Var 4 area)
+                                    Private
                                     .false.
-                                ), 
+                                    .false.
+                                ),
                             circle_print:
-                                (Function 
+                                (Function
                                     (SymbolTable
                                         5
                                         {
+                                            1_area:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_area
+                                                    3 area
+                                                    circle
+                                                    []
+                                                    area
+                                                    Public
+                                                ),
+                                            1_circle_radius:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_circle_radius
+                                                    3 radius
+                                                    circle
+                                                    []
+                                                    radius
+                                                    Public
+                                                ),
                                             area:
-                                                (Variable 
-                                                    5 
-                                                    area 
-                                                    Local 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Real 4 []) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                (Variable
+                                                    5
+                                                    area
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
-                                                ), 
+                                                ),
                                             this:
-                                                (Variable 
-                                                    5 
-                                                    this 
-                                                    In 
-                                                    () 
-                                                    () 
-                                                    Default 
-                                                    (Class 
-                                                        2 circle 
+                                                (Variable
+                                                    5
+                                                    this
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 circle
                                                         []
-                                                    ) 
-                                                    Source 
-                                                    Private 
-                                                    Required 
+                                                    )
+                                                    Source
+                                                    Private
+                                                    Required
                                                     .false.
                                                 )
-                                            
-                                        }) 
-                                    circle_print 
-                                    [area] 
-                                    [(Var 5 this)] 
-                                    [(= 
-                                        (Var 5 area) 
-                                        (FunctionCall 
-                                            3 area 
-                                            () 
-                                            [] 
-                                            (Real 4 []) 
-                                            () 
+                                        })
+                                    circle_print
+                                    (FunctionType
+                                        [(Class
+                                            2 circle
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [1_area]
+                                    [(Var 5 this)]
+                                    [(=
+                                        (Var 5 area)
+                                        (FunctionCall
+                                            5 1_area
+                                            ()
+                                            []
+                                            (Real 4 [])
+                                            ()
                                             (Var 5 this)
-                                        ) 
+                                        )
                                         ()
                                     )
-                                    (Print 
-                                        () 
-                                        [(StringConstant 
-                                            "Circle: r = " 
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "Circle: r = "
                                             (Character 1 12 () [])
                                         )
-                                        (StructInstanceMember 
-                                            (Var 5 this) 
-                                            3 radius 
-                                            (Real 4 []) 
+                                        (StructInstanceMember
+                                            (Var 5 this)
+                                            5 1_circle_radius
+                                            (Real 4 [])
                                             ()
                                         )
-                                        (StringConstant 
-                                            " area = " 
+                                        (StringConstant
+                                            " area = "
                                             (Character 1 8 () [])
                                         )
-                                        (Var 5 area)] 
-                                        () 
+                                        (Var 5 area)]
                                         ()
-                                    )] 
-                                    () 
-                                    Source 
-                                    Private 
-                                    Implementation 
-                                    () 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    .false. 
-                                    [] 
-                                    [] 
+                                        ()
+                                    )]
+                                    ()
+                                    Private
                                     .false.
-                                ), 
+                                    .false.
+                                ),
                             pi:
-                                (Variable 
-                                    2 
-                                    pi 
-                                    Local 
-                                    (Cast 
-                                        (RealConstant 
-                                            3.141593 
+                                (Variable
+                                    2
+                                    pi
+                                    []
+                                    Local
+                                    (Cast
+                                        (RealConstant
+                                            3.141593
                                             (Real 8 [])
-                                        ) 
-                                        RealToReal 
-                                        (Real 4 []) 
-                                        (RealConstant 
-                                            3.141593 
+                                        )
+                                        RealToReal
+                                        (Real 4 [])
+                                        (RealConstant
+                                            3.141593
                                             (Real 4 [])
                                         )
-                                    ) 
-                                    () 
-                                    Save 
-                                    (Real 4 []) 
-                                    Source 
-                                    Private 
-                                    Required 
+                                    )
+                                    ()
+                                    Save
+                                    (Real 4 [])
+                                    Source
+                                    Private
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    class_circle1 
-                    [] 
-                    .false. 
+                        })
+                    class_circle1
+                    [class_circle1]
+                    .false.
                     .false.
                 )
-            
-        }) 
+        })
     []
 )

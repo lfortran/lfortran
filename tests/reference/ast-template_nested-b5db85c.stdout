@@ -1,496 +1,496 @@
-(TranslationUnit 
-    [(Module 
-        template_nested_m 
-        (TriviaNode 
-            [] 
+(TranslationUnit
+    [(Module
+        template_nested_m
+        (TriviaNode
+            []
             [(EndOfLine)
             (EndOfLine)]
-        ) 
-        [] 
-        [(ImplicitNone 
-            [] 
+        )
+        []
+        [(ImplicitNone
+            []
             ()
-        )] 
-        [(Declaration 
-            () 
-            [(SimpleAttribute 
+        )]
+        [(Declaration
+            ()
+            [(SimpleAttribute
                 AttrPrivate
-            )] 
-            [] 
+            )]
+            []
             ()
         )
-        (Declaration 
-            () 
-            [(SimpleAttribute 
+        (Declaration
+            ()
+            [(SimpleAttribute
                 AttrPublic
-            )] 
-            [(add_t 
-            [] 
-            [] 
-            () 
-            None 
-            ())] 
-            (TriviaNode 
-                [] 
+            )]
+            [(add_t
+            []
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
         )
-        (Requirement 
-            R 
+        (Requirement
+            R
             [T
-            F] 
-            [(DerivedType 
-                T 
-                [] 
-                (TriviaNode 
-                    [(Semicolon)] 
-                    []
-                ) 
-                [] 
-                [] 
+            F]
+            [(DerivedType
+                T
                 []
-            )] 
-            [(Function 
-                F 
+                (TriviaNode
+                    [(Semicolon)]
+                    []
+                )
+                []
+                []
+                []
+            )]
+            [(Function
+                F
                 [(x)
-                (y)] 
-                [] 
-                z 
-                () 
-                () 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
+                (y)]
+                []
+                z
+                ()
+                ()
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(x 
-                    [] 
-                    [] 
-                    () 
-                    None 
+                    )]
+                    [(x
+                    []
+                    []
+                    ()
+                    None
                     ())
-                    (y 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    (y
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
                         None
-                    ) 
-                    [] 
-                    [(z 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    )
+                    []
+                    [(z
+                    []
+                    []
                     ()
-                )] 
-                [] 
+                    None
+                    ())]
+                    ()
+                )]
+                []
                 []
             )]
         )
-        (Template 
-            add_t 
+        (Template
+            add_t
             [T
-            F] 
-            [(Requires 
-                R 
+            F]
+            [(Requires
+                R
                 [T
                 F]
             )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
+            (Declaration
+                ()
+                [(SimpleAttribute
                     AttrPrivate
-                )] 
-                [] 
+                )]
+                []
                 ()
             )
-            (Declaration 
-                () 
-                [(SimpleAttribute 
-                    AttrPublic
-                )] 
-                [(add_generic 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+            (Declaration
                 ()
-            )] 
-            [(Function 
-                add_generic 
+                [(SimpleAttribute
+                    AttrPublic
+                )]
+                [(add_generic
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            [(Function
+                add_generic
                 [(x)
-                (y)] 
-                [] 
-                z 
-                () 
-                () 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
+                (y)]
+                []
+                z
+                ()
+                ()
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(x 
-                    [] 
-                    [] 
-                    () 
-                    None 
+                    )]
+                    [(x
+                    []
+                    []
+                    ()
+                    None
                     ())
-                    (y 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    (y
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
-                        None
-                    ) 
-                    [] 
-                    [(z 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
-                    ()
-                )] 
-                [(= 
-                    0 
-                    z 
-                    (FuncCallOrArray 
-                        F 
-                        [] 
-                        [(() 
-                        x 
-                        ())
-                        (() 
-                        y 
-                        ())] 
-                        [] 
+                (Declaration
+                    (AttrType
+                        TypeType
                         []
-                    ) 
+                        T
+                        None
+                    )
+                    []
+                    [(z
+                    []
+                    []
                     ()
-                )] 
+                    None
+                    ())]
+                    ()
+                )]
+                [(=
+                    0
+                    z
+                    (FuncCallOrArray
+                        F
+                        []
+                        [(()
+                        x
+                        ())
+                        (()
+                        y
+                        ())]
+                        []
+                        []
+                    )
+                    ()
+                )]
                 []
             )
-            (Function 
-                call_add_generic 
+            (Function
+                call_add_generic
                 [(x)
-                (y)] 
-                [] 
-                z 
-                () 
-                () 
-                [] 
-                [] 
-                [] 
-                [(Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
+                (y)]
+                []
+                z
+                ()
+                ()
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        T
                         None
-                    ) 
-                    [(AttrIntent 
+                    )
+                    [(AttrIntent
                         In
-                    )] 
-                    [(x 
-                    [] 
-                    [] 
-                    () 
-                    None 
+                    )]
+                    [(x
+                    []
+                    []
+                    ()
+                    None
                     ())
-                    (y 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
+                    (y
+                    []
+                    []
+                    ()
+                    None
+                    ())]
                     ()
                 )
-                (Declaration 
-                    (AttrType 
-                        TypeType 
-                        [] 
-                        T 
-                        None
-                    ) 
-                    [] 
-                    [(z 
-                    [] 
-                    [] 
-                    () 
-                    None 
-                    ())] 
-                    ()
-                )] 
-                [(= 
-                    0 
-                    z 
-                    (FuncCallOrArray 
-                        add_generic 
-                        [] 
-                        [(() 
-                        x 
-                        ())
-                        (() 
-                        y 
-                        ())] 
-                        [] 
+                (Declaration
+                    (AttrType
+                        TypeType
                         []
-                    ) 
+                        T
+                        None
+                    )
+                    []
+                    [(z
+                    []
+                    []
                     ()
-                )] 
+                    None
+                    ())]
+                    ()
+                )]
+                [(=
+                    0
+                    z
+                    (FuncCallOrArray
+                        add_generic
+                        []
+                        [(()
+                        x
+                        ())
+                        (()
+                        y
+                        ())]
+                        []
+                        []
+                    )
+                    ()
+                )]
                 []
             )]
-        )] 
-        [(Function 
-            func_arg_real 
+        )]
+        [(Function
+            func_arg_real
             [(x)
-            (y)] 
-            [(AttrType 
-                TypeReal 
-                [] 
-                () 
+            (y)]
+            [(AttrType
+                TypeReal
+                []
+                ()
                 None
-            )] 
-            z 
-            () 
-            (TriviaNode 
-                [] 
+            )]
+            z
+            ()
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
-            ) 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            )
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [(AttrIntent 
+                )
+                [(AttrIntent
                     In
-                )] 
-                [(x 
-                [] 
-                [] 
-                () 
-                None 
+                )]
+                [(x
+                []
+                []
+                ()
+                None
                 ())
-                (y 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                (y
+                []
+                []
                 ()
-            )] 
-            [(= 
-                0 
-                z 
-                (+ x y) 
+                None
+                ())]
                 ()
-            )] 
+            )]
+            [(=
+                0
+                z
+                (+ x y)
+                ()
+            )]
             []
         )
-        (Subroutine 
-            test_template 
-            [] 
-            [] 
-            () 
-            () 
-            [] 
-            [] 
-            [] 
-            [(Instantiate 
-                add_t 
+        (Subroutine
+            test_template
+            []
+            []
+            ()
+            ()
+            []
+            []
+            []
+            [(Instantiate
+                add_t
                 [real
-                func_arg_real] 
-                [(UseSymbol 
-                    call_add_generic 
+                func_arg_real]
+                [(UseSymbol
+                    call_add_generic
                     add_real
                 )]
             )
-            (Declaration 
-                (AttrType 
-                    TypeReal 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeReal
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(x 
-                [] 
-                [] 
-                () 
-                None 
+                )
+                []
+                [(x
+                []
+                []
+                ()
+                None
                 ())
-                (y 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                (y
+                []
+                []
+                ()
+                None
+                ())]
                 ()
             )
-            (Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+            (Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(a 
-                [] 
-                [] 
-                () 
-                None 
+                )
+                []
+                [(a
+                []
+                []
+                ()
+                None
                 ())
-                (b 
-                [] 
-                [] 
-                () 
-                None 
-                ())] 
+                (b
+                []
+                []
                 ()
-            )] 
-            [(= 
-                0 
-                x 
-                (Real "5.1") 
+                None
+                ())]
                 ()
-            )
-            (= 
-                0 
-                y 
-                (Real "7.2") 
+            )]
+            [(=
+                0
+                x
+                (Real "5.1")
                 ()
             )
-            (Print 
-                0 
-                () 
-                [(String 
+            (=
+                0
+                y
+                (Real "7.2")
+                ()
+            )
+            (Print
+                0
+                ()
+                [(String
                     "The result is "
                 )
-                (FuncCallOrArray 
-                    add_real 
-                    [] 
-                    [(() 
-                    x 
-                    ())
-                    (() 
-                    y 
-                    ())] 
-                    [] 
+                (FuncCallOrArray
+                    add_real
                     []
-                )] 
+                    [(()
+                    x
+                    ())
+                    (()
+                    y
+                    ())]
+                    []
+                    []
+                )]
                 ()
             )
-            (If 
-                0 
-                () 
-                (> (FuncCallOrArray 
-                    abs 
-                    [] 
-                    [(() 
-                    (- (FuncCallOrArray 
-                        add_real 
-                        [] 
-                        [(() 
-                        x 
-                        ())
-                        (() 
-                        y 
-                        ())] 
-                        [] 
-                        []
-                    ) (Real "12.3")) 
-                    ())] 
-                    [] 
-                    []
-                ) (Real "1e-5")) 
-                [(ErrorStop 
-                    0 
-                    () 
-                    () 
-                    ()
-                )] 
-                [] 
-                () 
-                () 
+            (If
+                0
                 ()
-            )] 
+                (> (FuncCallOrArray
+                    abs
+                    []
+                    [(()
+                    (- (FuncCallOrArray
+                        add_real
+                        []
+                        [(()
+                        x
+                        ())
+                        (()
+                        y
+                        ())]
+                        []
+                        []
+                    ) (Real "12.3"))
+                    ())]
+                    []
+                    []
+                ) (Real "1e-5"))
+                [(ErrorStop
+                    0
+                    ()
+                    ()
+                    ()
+                )]
+                []
+                ()
+                ()
+                ()
+            )]
             []
         )]
     )
-    (Program 
-        template_nested 
-        () 
-        [(Use 
-            [] 
-            template_nested_m 
-            [] 
-            .false. 
+    (Program
+        template_nested
+        ()
+        [(Use
+            []
+            template_nested_m
+            []
+            .false.
             ()
-        )] 
-        [(ImplicitNone 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        [(ImplicitNone
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
-        [] 
-        [(SubroutineCall 
-            0 
-            test_template 
-            [] 
-            [] 
-            [] 
-            (TriviaNode 
-                [] 
+        )]
+        []
+        [(SubroutineCall
+            0
+            test_template
+            []
+            []
+            []
+            (TriviaNode
+                []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )] 
+        )]
         []
     )]
 )

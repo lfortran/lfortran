@@ -1,79 +1,85 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             f:
-                (Function 
+                (Function
                     (SymbolTable
                         2
                         {
                             f1:
-                                (Variable 
-                                    2 
-                                    f1 
-                                    Local 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    BindC 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    f1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    BindC
+                                    Public
+                                    Required
                                     .false.
-                                ), 
+                                ),
                             f2:
-                                (Variable 
-                                    2 
-                                    f2 
-                                    ReturnVar 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Real 4 []) 
-                                    BindC 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    f2
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    BindC
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    f 
-                    [] 
-                    [] 
-                    [(= 
-                        (Var 2 f1) 
-                        (IntegerBinOp 
-                            (IntegerConstant 5 (Integer 4 [])) 
-                            Add 
-                            (IntegerConstant 3 (Integer 4 [])) 
-                            (Integer 4 []) 
+                        })
+                    f
+                    (FunctionType
+                        []
+                        (Real 4 [])
+                        BindC
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (Var 2 f1)
+                        (IntegerBinOp
+                            (IntegerConstant 5 (Integer 4 []))
+                            Add
+                            (IntegerConstant 3 (Integer 4 []))
+                            (Integer 4 [])
                             (IntegerConstant 8 (Integer 4 []))
-                        ) 
+                        )
                         ()
                     )
-                    (= 
-                        (Var 2 f2) 
-                        (RealConstant 
-                            5.300000 
+                    (=
+                        (Var 2 f2)
+                        (RealConstant
+                            5.300000
                             (Real 4 [])
-                        ) 
+                        )
                         ()
-                    )] 
-                    (Var 2 f2) 
-                    BindC 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                    )]
+                    (Var 2 f2)
+                    Public
+                    .false.
                     .false.
                 )
-            
-        }) 
+        })
     []
 )

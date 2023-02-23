@@ -9,6 +9,13 @@ contains
     subroutine f(s, s2)
     character(kind=c_char, len=:), allocatable, intent(in) :: s
     character(len=:), allocatable, intent(in) :: s2
+    character(kind=1, len=*), parameter :: lowercase = &
+      & 'abcdefghijklmnopqrstuvwxyz'
     end subroutine
+
+    subroutine s()
+        use,intrinsic :: iso_fortran_env, only : int32
+        integer(int32) :: x = 1
+    end subroutine s
 
 end program

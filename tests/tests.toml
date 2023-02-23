@@ -28,6 +28,26 @@ ast = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_triple.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_array_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_array_02.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_array_03.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/test_backspace_01.f90"
+asr = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 julia = true
@@ -229,6 +249,10 @@ asr_preprocess = true
 [[test]]
 filename = "errors/cpp7.f90"
 asr_preprocess = true
+
+[[test]]
+filename = "errors/template_error.f90"
+asr = true
 
 [[test]]
 filename = "warnings/dim_assgn_test.f90"
@@ -553,6 +577,10 @@ filename = "../integration_tests/subroutines_07.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/subroutines_09.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/data_01.f90"
 ast = true
 
@@ -681,6 +709,14 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "array11.f90"
+asr = true
+
+[[test]]
+filename = "array12.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
@@ -782,6 +818,11 @@ asr = true
 llvm = true
 
 [[test]]
+filename = "../integration_tests/arrays_op_10.f90"
+asr = true
+pass = "array_op"
+
+[[test]]
 filename = "../integration_tests/arrays_reshape_14.f90"
 asr = true
 
@@ -833,6 +874,14 @@ asr = true
 [[test]]
 filename = "../integration_tests/arrays_13.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/arrays_20.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/arrays_21.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/types_01.f90"
@@ -909,6 +958,10 @@ filename = "boz1.f90"
 tokens = true
 
 [[test]]
+filename = "derived_type1.f90"
+asr = true
+
+[[test]]
 filename = "derived_types_02.f90"
 ast = true
 ast_f90 = true
@@ -955,6 +1008,65 @@ asr = true
 filename = "../integration_tests/derived_types_08.f90"
 asr = true
 
+[[test]]
+filename = "../integration_tests/derived_types_11.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_15.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_17.f90"
+asr = true
+
+[[test]]
+filename = "derived_types_04.f90"
+asr = true
+
+[[test]]
+filename = "derived_types_06.f90"
+asr = true
+extrafiles = "derived_types_04.f90, derived_types_05.f90"
+
+[[test]]
+filename = "../integration_tests/derived_types_14.f90"
+asr = true
+extrafiles = "../integration_tests/derived_types_14_module.f90"
+
+[[test]]
+filename = "../integration_tests/derived_types_19.f90"
+asr = true
+extrafiles = "../integration_tests/derived_types_19_module.f90"
+
+[[test]]
+filename = "derived_types_07.f90"
+asr = true
+
+[[test]]
+filename = "modules1.f90"
+asr = true
+extrafiles = "modules1_module1.f90, modules1_module2.f90"
+
+[[test]]
+filename = "modules2.f90"
+asr = true
+extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90"
+
+[[test]]
+filename = "modules3.f90"
+asr = true
+extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90, modules2.f90"
+
+[[test]]
+filename = "modules4.f90"
+asr = true
+extrafiles = "modules2_module_a.f90, modules2_module_b_base.f90, modules2_module_b.f90, modules2.f90, modules3.f90, modules4_module.f90"
+
+[[test]]
+filename = "../integration_tests/select_type_04.f90"
+asr = true
+extrafiles = "../integration_tests/select_type_03_module.f90, ../integration_tests/select_type_03.f90"
 
 [[test]]
 filename = "fn2.f90"
@@ -969,6 +1081,14 @@ ast = true
 filename = "fn4.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "fn5.f90"
+asr = true
+
+[[test]]
+filename = "fn6.f90"
+asr = true
 
 [[test]]
 filename = "forall1.f90"
@@ -1110,6 +1230,10 @@ filename = "../integration_tests/associate_05.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/associate_07.f90"
+asr = true
+
+[[test]]
 filename = "write1.f90"
 ast = true
 ast_f90 = true
@@ -1231,6 +1355,10 @@ c = true
 cpp = true
 
 [[test]]
+filename = "../integration_tests/case_07.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/include_01.f90"
 ast = true
 
@@ -1307,13 +1435,26 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "select_type2.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/select_type_03.f90"
+asr = true
+extrafiles = "../integration_tests/select_type_03_module.f90"
+
+[[test]]
 filename = "selectrank1.f90"
 ast = true
 ast_f90 = true
 
 [[test]]
 filename = "../integration_tests/select_type_01.f90"
-ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/select_type_02.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/format_01.f90"
@@ -1631,6 +1772,11 @@ asr = true
 filename = "../integration_tests/intrinsics_46.f90"
 asr = true
 
+# all
+[[test]]
+filename = "../integration_tests/intrinsics_47.f90"
+asr = true
+
 # floor (body)
 [[test]]
 filename = "../integration_tests/floor_01.f90"
@@ -1684,8 +1830,74 @@ filename = "modules_07.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/modules_27.f90"
+asr = true
+extrafiles = "../integration_tests/modules_27_module1.f90, ../integration_tests/modules_27_module2.f90"
+
+[[test]]
+filename = "../integration_tests/modules_25.f90"
+asr = true
+extrafiles = "../integration_tests/modules_25_module.f90, ../integration_tests/modules_25_module1.f90"
+
+[[test]]
+filename = "../integration_tests/modules_28.f90"
+asr = true
+extrafiles = "../integration_tests/modules_28_module1.f90, ../integration_tests/modules_28_module2.f90"
+
+[[test]]
+filename = "../integration_tests/modules_29.f90"
+asr = true
+extrafiles = "../integration_tests/modules_29_module1.f90, ../integration_tests/modules_29_module2.f90, ../integration_tests/modules_29_module3.f90"
+
+[[test]]
+filename = "../integration_tests/modules_30.f90"
+asr = true
+extrafiles = "../integration_tests/modules_30_module1.f90, ../integration_tests/modules_30_module2.f90, ../integration_tests/modules_30_module3.f90, ../integration_tests/modules_30_module4.f90"
+
+[[test]]
+filename = "../integration_tests/modules_31.f90"
+asr = true
+extrafiles = "../integration_tests/modules_31_module1.f90, ../integration_tests/modules_31_module2.f90"
+
+[[test]]
+filename = "../integration_tests/modules_32.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/modules_33.f90"
+asr = true
+extrafiles = "../integration_tests/modules_33_module1.f90, ../integration_tests/modules_33_module2.f90, ../integration_tests/modules_33_module3.f90"
+
+[[test]]
+filename = "../integration_tests/modules_34.f90"
+asr = true
+extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
+
+[[test]]
+filename = "dependency_test_01.f90"
+asr = true
+
+[[test]]
+filename = "dependency_test_02.f90"
+asr = true
+
+[[test]]
+filename = "dependency_test_03.f90"
+asr = true
+extrafiles = "dependency_test_03_module.f90"
+
+[[test]]
 filename = "string.f90"
 ast_f90 = true
+
+[[test]]
+filename = "string1.f90"
+asr = true
+
+[[test]]
+filename = "string2.f90"
+asr = true
+extrafiles = "string1.f90"
 
 [[test]]
 filename = "../integration_tests/string_01.f90"
@@ -1796,6 +2008,11 @@ wat = true
 julia = true
 
 [[test]]
+filename = "../integration_tests/expr_11.f90"
+c = true
+julia = true
+
+[[test]]
 filename = "../integration_tests/modules_11.f90"
 ast = true
 asr = true
@@ -1806,6 +2023,10 @@ julia = true
 filename = "../integration_tests/modules_12.f90"
 asr = true
 julia = true
+
+[[test]]
+filename = "../integration_tests/modules_24.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/modules_15b.f90"
@@ -2273,6 +2494,27 @@ filename = "../integration_tests/functions_10.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/functions_12.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/functions_13.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/functions_14.f90"
+llvm = true
+
+[[test]]
+filename = "../integration_tests/functions_15.f90"
+asr = true
+pass = "transform_optional_argument_functions"
+
+[[test]]
+filename = "../integration_tests/functions_16.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/arrays_elemental_15.f90"
 asr = true
 
@@ -2295,6 +2537,14 @@ filename = "../integration_tests/bindc4.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/cmd_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/cmd_02.f90"
+asr = true
+
+[[test]]
 filename = "errors/c_f_pointer_01.f90"
 asr = true
 
@@ -2304,6 +2554,18 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_16_module.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_15.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/derived_types_18.f90"
 asr = true
 
 [[test]]
@@ -2323,6 +2585,10 @@ filename = "implicit_interface2.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "implicit_interface5.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "implicit_interface3.f90"
 asr_implicit_interface_and_typing = true
 
@@ -2333,6 +2599,10 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "allow_implicit_interface2.f90"
 asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "../integration_tests/implicit_interface_04.f90"
+asr_implicit_interface_and_typing_with_llvm = true
 
 [[test]]
 filename = "dimension_attr2.f90"
@@ -2451,6 +2721,18 @@ ast = true
 
 [[test]]
 filename = "fixed_form/else1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/error_stop1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/error_stop2.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/crlf1.f"
 ast = true
 
 [[test]]
@@ -2608,4 +2890,56 @@ asr = true
 
 [[test]]
 filename = "array10.f90"
+asr = true
+
+[[test]]
+filename = "statement1.f90"
+asr = true
+
+[[test]]
+filename = "data2.f90"
+asr = true
+
+[[test]]
+filename = "redeclaration1.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "character1.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "write3.f90"
+llvm = true
+
+[[test]]
+filename = "../integration_tests/interface_12.f90"
+llvm = true
+
+[[test]]
+filename = "save1.f90"
+asr = true
+
+[[test]]
+filename = "allow_implicit_interface3.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "fixed_form5.f"
+ast = true
+
+[[test]]
+filename = "errors/private1.f90"
+asr = true
+
+[[test]]
+filename = "errors/private2.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/private1.f90"
+asr = true
+
+[[test]]
+filename = "block2.f90"
 asr = true

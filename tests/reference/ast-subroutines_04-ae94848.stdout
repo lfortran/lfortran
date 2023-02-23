@@ -1,49 +1,55 @@
-(TranslationUnit 
-    [(Program 
-        print_it 
-        () 
-        [] 
-        [] 
-        [] 
-        [(SubroutineCall 
-            0 
-            print_int 
-            [] 
-            [] 
-            [] 
+(TranslationUnit
+    [(Program
+        print_it
+        ()
+        []
+        []
+        []
+        [(SubroutineCall
+            0
+            print_int
+            []
+            []
+            []
             ()
-        )] 
-        [(Subroutine 
-            print_int 
-            [] 
-            [] 
-            () 
-            () 
-            [] 
-            [] 
-            [] 
-            [(Declaration 
-                (AttrType 
-                    TypeInteger 
-                    [] 
-                    () 
+        )]
+        [(Subroutine
+            print_int
+            []
+            []
+            ()
+            ()
+            []
+            []
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
                     None
-                ) 
-                [] 
-                [(a 
-                [] 
-                [] 
-                5 
-                Equal 
-                ())] 
+                )
+                []
+                [(a
+                []
+                []
                 ()
-            )] 
-            [(Print 
-                0 
-                () 
-                [a] 
+                None
+                ())]
                 ()
-            )] 
+            )]
+            [(=
+                0
+                a
+                5
+                ()
+            )
+            (Print
+                0
+                ()
+                [a]
+                ()
+            )]
             []
         )]
     )]

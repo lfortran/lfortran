@@ -1,137 +1,154 @@
-(TranslationUnit 
+(TranslationUnit
     (SymbolTable
         1
         {
             f:
-                (Function 
+                (Function
                     (SymbolTable
                         2
                         {
                             f:
-                                (Variable 
-                                    2 
-                                    f 
-                                    ReturnVar 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    2
+                                    f
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    f 
-                    [] 
-                    [] 
-                    [(= 
-                        (Var 2 f) 
-                        (IntegerConstant 42 (Integer 4 [])) 
+                        })
+                    f
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
                         ()
-                    )] 
-                    (Var 2 f) 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (Var 2 f)
+                        (IntegerConstant 42 (Integer 4 []))
+                        ()
+                    )]
+                    (Var 2 f)
+                    Public
                     .false.
-                ), 
+                    .false.
+                ),
             g:
-                (Function 
+                (Function
                     (SymbolTable
                         3
                         {
                             g:
-                                (Variable 
-                                    3 
-                                    g 
-                                    ReturnVar 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    3
+                                    g
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    g 
-                    [] 
-                    [] 
-                    [(= 
-                        (Var 3 g) 
-                        (IntegerConstant 42 (Integer 4 [])) 
+                        })
+                    g
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
                         ()
-                    )] 
-                    (Var 3 g) 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (Var 3 g)
+                        (IntegerConstant 42 (Integer 4 []))
+                        ()
+                    )]
+                    (Var 3 g)
+                    Public
                     .false.
-                ), 
+                    .false.
+                ),
             h:
-                (Function 
+                (Function
                     (SymbolTable
                         4
                         {
                             h:
-                                (Variable 
-                                    4 
-                                    h 
-                                    ReturnVar 
-                                    () 
-                                    () 
-                                    Default 
-                                    (Integer 4 []) 
-                                    Source 
-                                    Public 
-                                    Required 
+                                (Variable
+                                    4
+                                    h
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
                                     .false.
                                 )
-                            
-                        }) 
-                    h 
-                    [] 
-                    [] 
-                    [(= 
-                        (Var 4 h) 
-                        (IntegerConstant 42 (Integer 4 [])) 
+                        })
+                    h
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        Source
+                        Implementation
                         ()
-                    )] 
-                    (Var 4 h) 
-                    Source 
-                    Public 
-                    Implementation 
-                    () 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    .false. 
-                    [] 
-                    [] 
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (Var 4 h)
+                        (IntegerConstant 42 (Integer 4 []))
+                        ()
+                    )]
+                    (Var 4 h)
+                    Public
+                    .false.
                     .false.
                 )
-            
-        }) 
+        })
     []
 )

@@ -7,13 +7,19 @@
 #include <libasr/alloc.h>
 #include <libasr/containers.h>
 
-namespace LFortran {
+namespace LCompilers {
 
 namespace wasm {
 
 struct FuncType {
     Vec<uint8_t> param_types;
     Vec<uint8_t> result_types;
+};
+
+struct Global {
+    uint8_t type;
+    uint8_t mut;
+    uint32_t insts_start_idx;
 };
 
 struct Export {
@@ -68,6 +74,6 @@ void hexdump(void *ptr, int buflen);
 
 }  // namespace wasm
 
-}  // namespace LFortran
+}  // namespace LCompilers
 
 #endif  // LFORTRAN_WASM_UTILS_H

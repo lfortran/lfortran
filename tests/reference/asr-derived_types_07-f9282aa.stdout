@@ -1,0 +1,989 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math2:
+                (IntrinsicModule lfortran_intrinsic_math2),
+            lfortran_intrinsic_math3:
+                (IntrinsicModule lfortran_intrinsic_math3),
+            tomlf_structure_vector:
+                (Module
+                    (SymbolTable
+                        9
+                        {
+                            find:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            1_match_key:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_match_key
+                                                    3 match_key
+                                                    toml_value
+                                                    []
+                                                    match_key
+                                                    Public
+                                                ),
+                                            1_toml_node_val:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_node_val
+                                                    10 val
+                                                    toml_node
+                                                    []
+                                                    val
+                                                    Public
+                                                ),
+                                            1_toml_vector_lst:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_vector_lst
+                                                    11 lst
+                                                    toml_vector
+                                                    []
+                                                    lst
+                                                    Public
+                                                ),
+                                            1_toml_vector_n:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_toml_vector_n
+                                                    11 n
+                                                    toml_vector
+                                                    []
+                                                    n
+                                                    Public
+                                                ),
+                                            allocated:
+                                                (ExternalSymbol
+                                                    13
+                                                    allocated
+                                                    15 allocated
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    allocated
+                                                    Private
+                                                ),
+                                            i:
+                                                (Variable
+                                                    13
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            key:
+                                                (Variable
+                                                    13
+                                                    key
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ptr:
+                                                (Variable
+                                                    13
+                                                    ptr
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Class
+                                                            9 toml_value
+                                                            []
+                                                        )
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    13
+                                                    self
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        9 toml_vector
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    find
+                                    (FunctionType
+                                        [(Class
+                                            9 toml_vector
+                                            []
+                                        )
+                                        (Character 1 -1 () [])
+                                        (Pointer
+                                            (Class
+                                                9 toml_value
+                                                []
+                                            )
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [1_match_key
+                                    allocated]
+                                    [(Var 13 self)
+                                    (Var 13 key)
+                                    (Var 13 ptr)]
+                                    [(Nullify
+                                        [13 ptr]
+                                    )
+                                    (DoLoop
+                                        ((Var 13 i)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (StructInstanceMember
+                                            (Var 13 self)
+                                            13 1_toml_vector_n
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ())
+                                        [(If
+                                            (FunctionCall
+                                                13 allocated
+                                                ()
+                                                [((StructInstanceMember
+                                                    (StructInstanceMember
+                                                        (Var 13 self)
+                                                        13 1_toml_vector_lst
+                                                        (Struct
+                                                            9 toml_node
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                        ()
+                                                    )
+                                                    13 1_toml_node_val
+                                                    (Class
+                                                        9 toml_value
+                                                        []
+                                                    )
+                                                    ()
+                                                ))]
+                                                (Logical 4 [])
+                                                ()
+                                                ()
+                                            )
+                                            [(If
+                                                (FunctionCall
+                                                    13 1_match_key
+                                                    ()
+                                                    [((Var 13 key))]
+                                                    (Logical 4 [])
+                                                    ()
+                                                    (StructInstanceMember
+                                                        (StructInstanceMember
+                                                            (Var 13 self)
+                                                            13 1_toml_vector_lst
+                                                            (Struct
+                                                                9 toml_node
+                                                                [(()
+                                                                ())]
+                                                            )
+                                                            ()
+                                                        )
+                                                        13 1_toml_node_val
+                                                        (Class
+                                                            9 toml_value
+                                                            []
+                                                        )
+                                                        ()
+                                                    )
+                                                )
+                                                [(=>
+                                                    (Var 13 ptr)
+                                                    (StructInstanceMember
+                                                        (StructInstanceMember
+                                                            (Var 13 self)
+                                                            13 1_toml_vector_lst
+                                                            (Struct
+                                                                9 toml_node
+                                                                [(()
+                                                                ())]
+                                                            )
+                                                            ()
+                                                        )
+                                                        13 1_toml_node_val
+                                                        (Class
+                                                            9 toml_value
+                                                            []
+                                                        )
+                                                        ()
+                                                    )
+                                                )
+                                                (Exit)]
+                                                []
+                                            )]
+                                            []
+                                        )]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            new_vector:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            1_toml_vector_lst:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_vector_lst
+                                                    11 lst
+                                                    toml_vector
+                                                    []
+                                                    lst
+                                                    Public
+                                                ),
+                                            1_toml_vector_n:
+                                                (ExternalSymbol
+                                                    12
+                                                    1_toml_vector_n
+                                                    11 n
+                                                    toml_vector
+                                                    []
+                                                    n
+                                                    Public
+                                                ),
+                                            min:
+                                                (ExternalSymbol
+                                                    12
+                                                    min
+                                                    43 min
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    min
+                                                    Private
+                                                ),
+                                            min@imin:
+                                                (ExternalSymbol
+                                                    12
+                                                    min@imin
+                                                    43 imin
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    imin
+                                                    Private
+                                                ),
+                                            n:
+                                                (Variable
+                                                    12
+                                                    n
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            present:
+                                                (ExternalSymbol
+                                                    12
+                                                    present
+                                                    15 present
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    present
+                                                    Private
+                                                ),
+                                            self:
+                                                (Variable
+                                                    12
+                                                    self
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        9 toml_vector
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    new_vector
+                                    (FunctionType
+                                        [(Struct
+                                            9 toml_vector
+                                            []
+                                        )
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [min@imin
+                                    present]
+                                    [(Var 12 self)
+                                    (Var 12 n)]
+                                    [(=
+                                        (StructInstanceMember
+                                            (Var 12 self)
+                                            12 1_toml_vector_n
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        ()
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            12 present
+                                            ()
+                                            [((Var 12 n))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(Allocate
+                                            [((StructInstanceMember
+                                                (Var 12 self)
+                                                12 1_toml_vector_lst
+                                                (Struct
+                                                    9 toml_node
+                                                    [(()
+                                                    ())]
+                                                )
+                                                ()
+                                            )
+                                            [((IntegerConstant 1 (Integer 4 []))
+                                            (FunctionCall
+                                                12 min@imin
+                                                12 min
+                                                [((IntegerConstant 1 (Integer 4 [])))
+                                                ((Var 12 n))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ))])]
+                                            ()
+                                            ()
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            toml_node:
+                                (StructType
+                                    (SymbolTable
+                                        10
+                                        {
+                                            val:
+                                                (Variable
+                                                    10
+                                                    val
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Class
+                                                        9 toml_value
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    toml_node
+                                    [toml_value]
+                                    [val]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            toml_value:
+                                (ExternalSymbol
+                                    9
+                                    toml_value
+                                    2 toml_value
+                                    tomlf_type_value
+                                    []
+                                    toml_value
+                                    Public
+                                ),
+                            toml_vector:
+                                (StructType
+                                    (SymbolTable
+                                        11
+                                        {
+                                            lst:
+                                                (Variable
+                                                    11
+                                                    lst
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Struct
+                                                        9 toml_node
+                                                        [(()
+                                                        ())]
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    11
+                                                    n
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    toml_vector
+                                    [toml_node]
+                                    [n
+                                    lst]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    tomlf_structure_vector
+                    [tomlf_type_value
+                    lfortran_intrinsic_builtin
+                    lfortran_intrinsic_math2]
+                    .false.
+                    .false.
+                ),
+            tomlf_type_keyval:
+                (Module
+                    (SymbolTable
+                        6
+                        {
+                            1_toml_value:
+                                (ExternalSymbol
+                                    6
+                                    1_toml_value
+                                    2 toml_value
+                                    tomlf_type_value
+                                    []
+                                    toml_value
+                                    Public
+                                ),
+                            destroy:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            1_toml_keyval_raw:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_toml_keyval_raw
+                                                    7 raw
+                                                    toml_keyval
+                                                    []
+                                                    raw
+                                                    Public
+                                                ),
+                                            1_toml_value_key:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_toml_value_key
+                                                    3 key
+                                                    1_toml_value
+                                                    []
+                                                    key
+                                                    Public
+                                                ),
+                                            allocated:
+                                                (ExternalSymbol
+                                                    8
+                                                    allocated
+                                                    15 allocated
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    allocated
+                                                    Private
+                                                ),
+                                            self:
+                                                (Variable
+                                                    8
+                                                    self
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        6 toml_keyval
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    destroy
+                                    (FunctionType
+                                        [(Class
+                                            6 toml_keyval
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [allocated
+                                    allocated]
+                                    [(Var 8 self)]
+                                    [(If
+                                        (FunctionCall
+                                            8 allocated
+                                            ()
+                                            [((StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_value_key
+                                                (Character 1 -2 () [])
+                                                ()
+                                            ))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(ExplicitDeallocate
+                                            [(StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_value_key
+                                                (Character 1 -2 () [])
+                                                ()
+                                            )]
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            8 allocated
+                                            ()
+                                            [((StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_keyval_raw
+                                                (Character 1 -2 () [])
+                                                ()
+                                            ))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(ExplicitDeallocate
+                                            [(StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_keyval_raw
+                                                (Character 1 -2 () [])
+                                                ()
+                                            )]
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            toml_keyval:
+                                (StructType
+                                    (SymbolTable
+                                        7
+                                        {
+                                            destroy:
+                                                (ClassProcedure
+                                                    7
+                                                    destroy
+                                                    ()
+                                                    destroy
+                                                    6 destroy
+                                                    Source
+                                                ),
+                                            raw:
+                                                (Variable
+                                                    7
+                                                    raw
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    toml_keyval
+                                    []
+                                    [raw]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    6 toml_value
+                                ),
+                            toml_value:
+                                (ExternalSymbol
+                                    6
+                                    toml_value
+                                    2 toml_value
+                                    tomlf_type_value
+                                    []
+                                    toml_value
+                                    Public
+                                )
+                        })
+                    tomlf_type_keyval
+                    [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_builtin
+                    tomlf_type_value]
+                    .false.
+                    .false.
+                ),
+            tomlf_type_value:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            destroy:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            self:
+                                                (Variable
+                                                    4
+                                                    self
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 toml_value
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    destroy
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_value
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 self)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            match_key:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_toml_value_key:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_toml_value_key
+                                                    3 key
+                                                    toml_value
+                                                    []
+                                                    key
+                                                    Public
+                                                ),
+                                            allocated:
+                                                (ExternalSymbol
+                                                    5
+                                                    allocated
+                                                    15 allocated
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    allocated
+                                                    Private
+                                                ),
+                                            key:
+                                                (Variable
+                                                    5
+                                                    key
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            match:
+                                                (Variable
+                                                    5
+                                                    match
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    5
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 toml_value
+                                                        []
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    match_key
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_value
+                                            []
+                                        )
+                                        (Character 1 -1 () [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [allocated]
+                                    [(Var 5 self)
+                                    (Var 5 key)]
+                                    [(If
+                                        (FunctionCall
+                                            5 allocated
+                                            ()
+                                            [((StructInstanceMember
+                                                (Var 5 self)
+                                                5 1_toml_value_key
+                                                (Character 1 -2 () [])
+                                                ()
+                                            ))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 5 match)
+                                            (StringCompare
+                                                (Var 5 key)
+                                                Eq
+                                                (StructInstanceMember
+                                                    (Var 5 self)
+                                                    5 1_toml_value_key
+                                                    (Character 1 -2 () [])
+                                                    ()
+                                                )
+                                                (Logical 4 [])
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                        [(=
+                                            (Var 5 match)
+                                            (LogicalConstant
+                                                .false.
+                                                (Logical 4 [])
+                                            )
+                                            ()
+                                        )]
+                                    )]
+                                    (Var 5 match)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            toml_value:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            destroy:
+                                                (ClassProcedure
+                                                    3
+                                                    destroy
+                                                    ()
+                                                    destroy
+                                                    2 destroy
+                                                    Source
+                                                ),
+                                            key:
+                                                (Variable
+                                                    3
+                                                    key
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            match_key:
+                                                (ClassProcedure
+                                                    3
+                                                    match_key
+                                                    ()
+                                                    match_key
+                                                    2 match_key
+                                                    Source
+                                                )
+                                        })
+                                    toml_value
+                                    []
+                                    [key]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    tomlf_type_value
+                    [lfortran_intrinsic_builtin]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
