@@ -3095,7 +3095,7 @@ public:
         int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sin);
         int64_t overload_id = 0;
         return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
-            args.p, args.n, intrinsic_id, overload_id, type, nullptr);
+            intrinsic_id, args.p, args.n, overload_id, type, nullptr);
     }
 
     ASR::asr_t* create_cos(const AST::FuncCallOrArray_t& x) {
@@ -3105,7 +3105,7 @@ public:
         int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos);
         int64_t overload_id = 0;
         return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
-            args.p, args.n, intrinsic_id, overload_id, type, nullptr);
+            intrinsic_id, args.p, args.n, overload_id, type, nullptr);
     }
 
     ASR::asr_t* create_LogGamma(const AST::FuncCallOrArray_t& x) {
@@ -3115,7 +3115,7 @@ public:
         int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma);
         int64_t overload_id = 0;
         return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
-            args.p, args.n, intrinsic_id, overload_id, type, nullptr);
+            intrinsic_id, args.p, args.n, overload_id, type, nullptr);
     }
 
 
