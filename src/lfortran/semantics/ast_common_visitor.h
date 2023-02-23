@@ -1946,6 +1946,23 @@ public:
             return ASR::make_ArrayItem_t(al, loc,
                 v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
         } else {
+            ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
+            if (ASR::is_a<ASR::Character_t>(*v_type)) {
+                int dims = ASR::down_cast<ASR::Character_t>(v_type)->n_dims;
+                if (dims == 0) {
+                    // this is the case of String Section (or slicing)
+                    LCOMPILERS_ASSERT(n_args == 1);
+                    ASR::ttype_t *char_type = nullptr;
+                    if (arr_ref_val) {
+                        char_type = ASRUtils::expr_type(arr_ref_val);
+                    } else {
+                        char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
+                                        1, -1, nullptr, nullptr, 0));
+                    }
+                    return ASR::make_StringSection_t(al, loc, v_Var, args[0].m_left,
+                            args[0].m_right, args[0].m_step, char_type, arr_ref_val);
+                }
+            }
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
         }
