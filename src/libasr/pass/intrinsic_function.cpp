@@ -22,6 +22,20 @@ in the backend.
 
 */
 
+ASR::symbol_t* instantiate_LogGamma(SymbolTable *global_scope, const std::string &new_name, ASR::ttype_t *arg_type) {
+    ASR::asr_t* new_subrout = nullptr; /*ASRUtils::make_Function_t_util(al, x->base.base.loc,
+                            new_symtab, s2c(al, new_name), x->m_dependencies, x->n_dependencies,
+                            new_args.p, new_args.size(),  new_body.p, new_body.size(),
+                            return_var, x_func_type->m_abi, x->m_access, x_func_type->m_deftype,
+                            s2c(al, new_bindc_name), x_func_type->m_elemental,
+                            x_func_type->m_pure, x_func_type->m_module, x_func_type->m_inline,
+                            x_func_type->m_static, nullptr, 0, nullptr, 0, false, false, false); */
+    ASR::symbol_t *new_symbol = ASR::down_cast<ASR::symbol_t>(new_subrout);
+    global_scope->add_symbol(new_name, new_symbol);
+    return new_symbol;
+};
+
+
 class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFunction> {
 
     private:
@@ -32,19 +46,6 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
 
     ReplaceIntrinsicFunction(Allocator& al_) : al(al_)
     {}
-
-    ASR::symbol_t* instantiate_LogGamma(ASR::ttype_t *arg_type) {
-        ASR::asr_t* new_subrout = nullptr; /*ASRUtils::make_Function_t_util(al, x->base.base.loc,
-                                new_symtab, s2c(al, new_name), x->m_dependencies, x->n_dependencies,
-                                new_args.p, new_args.size(),  new_body.p, new_body.size(),
-                                return_var, x_func_type->m_abi, x->m_access, x_func_type->m_deftype,
-                                s2c(al, new_bindc_name), x_func_type->m_elemental,
-                                x_func_type->m_pure, x_func_type->m_module, x_func_type->m_inline,
-                                x_func_type->m_static, nullptr, 0, nullptr, 0, false, false, false); */
-        ASR::symbol_t *new_symbol = ASR::down_cast<ASR::symbol_t>(new_subrout);
-        //current_scope->add_symbol(new_name, new_symbol);
-        return new_symbol;
-    };
 
 
     void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
