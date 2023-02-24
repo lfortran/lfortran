@@ -216,7 +216,25 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
             }
             for( size_t i = 0; i < x->n_body; i++ ) {
-                visit_stmt(*x->m_body[i]);
+                ASR::stmt_t* stmt = x->m_body[i];
+                if (stmt->type == ASR::stmtType::ImplicitDeallocate) {
+                    ASR::ImplicitDeallocate_t* imp_dealloc = ASR::down_cast<ASR::ImplicitDeallocate_t>(stmt);
+                    for( size_t j = 0; j < imp_dealloc->n_vars; j++ ) {
+                        ASR::symbol_t* sym = imp_dealloc->m_vars[j];
+                        if( ASR::is_a<ASR::Variable_t>(*sym) ) {
+                            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                            ASR::symbol_t* new_sym = current_proc_scope->get_symbol(var->m_name);
+                            if( new_sym ) {
+                                imp_dealloc->m_vars[j] = new_sym;
+                                ASR::stmt_t* new_stmt = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, imp_dealloc->base.base.loc,
+                                                        imp_dealloc->m_vars, imp_dealloc->n_vars));
+                                x->m_body[i] = new_stmt;
+                            }
+                        }
+                    }
+                } else {
+                    visit_stmt(*x->m_body[i]);
+                }
             }
             is_editing_procedure = false;
             current_proc_scope = nullptr;
