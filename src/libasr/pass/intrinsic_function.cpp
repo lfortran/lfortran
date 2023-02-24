@@ -22,18 +22,42 @@ in the backend.
 
 */
 
-ASR::symbol_t* instantiate_LogGamma(SymbolTable *global_scope, const std::string &new_name, ASR::ttype_t *arg_type) {
-    ASR::asr_t* new_subrout = nullptr; /*ASRUtils::make_Function_t_util(al, x->base.base.loc,
-                            new_symtab, s2c(al, new_name), x->m_dependencies, x->n_dependencies,
-                            new_args.p, new_args.size(),  new_body.p, new_body.size(),
-                            return_var, x_func_type->m_abi, x->m_access, x_func_type->m_deftype,
-                            s2c(al, new_bindc_name), x_func_type->m_elemental,
-                            x_func_type->m_pure, x_func_type->m_module, x_func_type->m_inline,
-                            x_func_type->m_static, nullptr, 0, nullptr, 0, false, false, false); */
+ASR::symbol_t* instantiate_LogGamma(Allocator &al, SymbolTable *global_scope,
+        const std::string &new_name, ASR::ttype_t *arg_type) {
+    SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+    Location loc; loc.first = 1; loc.last = 1;
+
+    Vec<ASR::expr_t*> args;
+    args.reserve(al, 1);
+    ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        al, loc, fn_symtab, s2c(al, "x"), nullptr, 0, ASR::intentType::In,
+        nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+        ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false));
+    fn_symtab->add_symbol(s2c(al, "x"), arg);
+    args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
+
+    ASR::symbol_t *return_var = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        al, loc, fn_symtab, s2c(al, new_name), nullptr, 0, ASRUtils::intent_return_var,
+        nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+        ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false));
+    fn_symtab->add_symbol(s2c(al, new_name), return_var);
+
+    Vec<ASR::stmt_t*> body;
+    body.reserve(al, 1);
+    body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)), nullptr)));
+
+    ASR::asr_t* new_subrout = ASRUtils::make_Function_t_util(al, loc,
+        fn_symtab, s2c(al, new_name), nullptr, 0, args.p, args.n, body.p, body.n,
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
+        ASR::abiType::Source, ASR::accessType::Public,
+        ASR::deftypeType::Implementation, nullptr, false, false, false,
+        false, false, nullptr, 0, nullptr, 0, false, false, false);
     ASR::symbol_t *new_symbol = ASR::down_cast<ASR::symbol_t>(new_subrout);
     global_scope->add_symbol(new_name, new_symbol);
     return new_symbol;
-};
+}
 
 
 class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFunction> {
@@ -41,11 +65,12 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
     private:
 
     Allocator& al;
+    SymbolTable* global_scope;
 
     public:
 
-    ReplaceIntrinsicFunction(Allocator& al_) : al(al_)
-    {}
+    ReplaceIntrinsicFunction(Allocator& al_, SymbolTable* global_scope_) :
+        al(al_), global_scope(global_scope_) {}
 
 
     void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
@@ -58,17 +83,18 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                 replace_expr(x->m_args[0]);
                 ASR::expr_t *arg = *current_expr; // Use the converted arg
                 current_expr = current_expr_copy_;
-                ASR::symbol_t* new_func_sym = instantiate_LogGamma(ASRUtils::expr_type(x->m_args[0]));
-
+                std::string new_name = "logGamma";
+                ASR::symbol_t* new_func_sym = instantiate_LogGamma(al, global_scope,
+                    new_name, ASRUtils::expr_type(x->m_args[0]));
                 Vec<ASR::call_arg_t> new_args;
                 new_args.reserve(al, x->n_args);
                 ASR::call_arg_t arg0;
                 arg0.m_value = arg;
                 new_args.push_back(al, arg0);
                 ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
-                                            x->base.base.loc, new_func_sym, new_func_sym,
-                                            new_args.p, new_args.size(), ASRUtils::symbol_type(new_func_sym), nullptr,
-                                            nullptr));
+                    x->base.base.loc, new_func_sym, new_func_sym,
+                    new_args.p, new_args.size(), ASRUtils::expr_type(x->m_args[0]),
+                    nullptr, nullptr));
 
                 *current_expr = new_call;
                 break;
@@ -94,7 +120,8 @@ class ReplaceIntrinsicFunctionVisitor : public ASR::CallReplacerOnExpressionsVis
 
     public:
 
-        ReplaceIntrinsicFunctionVisitor(Allocator& al_) : replacer(al_) {}
+        ReplaceIntrinsicFunctionVisitor(Allocator& al_, SymbolTable* global_scope_) :
+            replacer(al_, global_scope_) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -105,7 +132,7 @@ class ReplaceIntrinsicFunctionVisitor : public ASR::CallReplacerOnExpressionsVis
 
 void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit,
                              const LCompilers::PassOptions& /*pass_options*/) {
-    ReplaceIntrinsicFunctionVisitor v(al);
+    ReplaceIntrinsicFunctionVisitor v(al, unit.m_global_scope);
     v.visit_TranslationUnit(unit);
 }
 
