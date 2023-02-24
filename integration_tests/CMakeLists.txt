@@ -696,3 +696,5 @@ RUN(NAME block_05 LABELS gfortran llvm)
 RUN(NAME array_section_01 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm)
+
+RUN(NAME pass_array_by_data_02 LABELS gfortran llvm)
