@@ -108,21 +108,27 @@
                                                 )
                                         })
                                     call_fortran_f32
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 71 i)]
                                     []
                                     (Var 71 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             call_fortran_f32_value:
@@ -162,21 +168,27 @@
                                                 )
                                         })
                                     call_fortran_f32_value
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 72 i)]
                                     []
                                     (Var 72 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             call_fortran_f64:
@@ -216,21 +228,27 @@
                                                 )
                                         })
                                     call_fortran_f64
+                                    (FunctionType
+                                        [(Real 8 [])]
+                                        (Real 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 73 i)]
                                     []
                                     (Var 73 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             call_fortran_f64_value:
@@ -270,21 +288,27 @@
                                                 )
                                         })
                                     call_fortran_f64_value
+                                    (FunctionType
+                                        [(Real 8 [])]
+                                        (Real 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 74 i)]
                                     []
                                     (Var 74 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             call_fortran_i32:
@@ -324,21 +348,27 @@
                                                 )
                                         })
                                     call_fortran_i32
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 67 i)]
                                     []
                                     (Var 67 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             call_fortran_i32_value:
@@ -378,21 +408,27 @@
                                                 )
                                         })
                                     call_fortran_i32_value
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 68 i)]
                                     []
                                     (Var 68 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             call_fortran_i64:
@@ -432,21 +468,27 @@
                                                 )
                                         })
                                     call_fortran_i64
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Integer 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 69 i)]
                                     []
                                     (Var 69 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             call_fortran_i64_value:
@@ -486,21 +528,27 @@
                                                 )
                                         })
                                     call_fortran_i64_value
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Integer 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 70 i)]
                                     []
                                     (Var 70 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_double_complex_value_return:
@@ -540,21 +588,27 @@
                                                 )
                                         })
                                     f_double_complex_value_return
+                                    (FunctionType
+                                        [(Complex 8 [])]
+                                        (Complex 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 44 b)]
                                     []
                                     (Var 44 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_float_complex_value_return:
@@ -594,21 +648,27 @@
                                                 )
                                         })
                                     f_float_complex_value_return
+                                    (FunctionType
+                                        [(Complex 4 [])]
+                                        (Complex 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 43 b)]
                                     []
                                     (Var 43 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_double:
@@ -663,22 +723,29 @@
                                                 )
                                         })
                                     f_int_double
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 38 a)
                                     (Var 38 b)]
                                     []
                                     (Var 38 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_double_complex:
@@ -733,22 +800,29 @@
                                                 )
                                         })
                                     f_int_double_complex
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 8 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 40 a)
                                     (Var 40 b)]
                                     []
                                     (Var 40 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_double_complex_value:
@@ -803,22 +877,29 @@
                                                 )
                                         })
                                     f_int_double_complex_value
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 8 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 42 a)
                                     (Var 42 b)]
                                     []
                                     (Var 42 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_double_value:
@@ -873,22 +954,29 @@
                                                 )
                                         })
                                     f_int_double_value
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 46 a)
                                     (Var 46 b)]
                                     []
                                     (Var 46 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_double_value_name:
@@ -943,22 +1031,29 @@
                                                 )
                                         })
                                     f_int_double_value_name
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        "f_int_double_value"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 53 a)
                                     (Var 53 b)]
                                     []
                                     (Var 53 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    "f_int_double_value"
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_doublearray:
@@ -1014,22 +1109,30 @@
                                                 )
                                         })
                                     f_int_doublearray
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                        (Var 49 n))])]
+                                        (Real 8 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 49 n)
                                     (Var 49 b)]
                                     []
                                     (Var 49 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_doublearray_star:
@@ -1085,22 +1188,30 @@
                                                 )
                                         })
                                     f_int_doublearray_star
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [(()
+                                        ())])]
+                                        (Real 8 [])
+                                        BindC
+                                        Interface
+                                        "f_int_doublearray"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 52 n)
                                     (Var 52 b)]
                                     []
                                     (Var 52 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    "f_int_doublearray"
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_float:
@@ -1155,22 +1266,29 @@
                                                 )
                                         })
                                     f_int_float
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 37 a)
                                     (Var 37 b)]
                                     []
                                     (Var 37 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_float_complex:
@@ -1225,22 +1343,29 @@
                                                 )
                                         })
                                     f_int_float_complex
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 39 a)
                                     (Var 39 b)]
                                     []
                                     (Var 39 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_float_complex_value:
@@ -1295,22 +1420,29 @@
                                                 )
                                         })
                                     f_int_float_complex_value
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 41 a)
                                     (Var 41 b)]
                                     []
                                     (Var 41 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_float_value:
@@ -1365,22 +1497,29 @@
                                                 )
                                         })
                                     f_int_float_value
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 45 a)
                                     (Var 45 b)]
                                     []
                                     (Var 45 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_floatarray:
@@ -1436,22 +1575,30 @@
                                                 )
                                         })
                                     f_int_floatarray
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (Var 48 n))])]
+                                        (Real 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 48 n)
                                     (Var 48 b)]
                                     []
                                     (Var 48 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_floatarray_star:
@@ -1507,22 +1654,30 @@
                                                 )
                                         })
                                     f_int_floatarray_star
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [(()
+                                        ())])]
+                                        (Real 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 51 n)
                                     (Var 51 b)]
                                     []
                                     (Var 51 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_intarray:
@@ -1578,22 +1733,30 @@
                                                 )
                                         })
                                     f_int_intarray
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (Var 47 n))])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 47 n)
                                     (Var 47 b)]
                                     []
                                     (Var 47 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_int_intarray_star:
@@ -1649,22 +1812,30 @@
                                                 )
                                         })
                                     f_int_intarray_star
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [(()
+                                        ())])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        "f_int_intarray"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 50 n)
                                     (Var 50 b)]
                                     []
                                     (Var 50 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    "f_int_intarray"
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_string:
@@ -1704,6 +1875,21 @@
                                                 )
                                         })
                                     f_string
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f_string0]
                                     [(Var 75 s)]
                                     [(=
@@ -1724,17 +1910,8 @@
                                         ()
                                     )]
                                     (Var 75 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             f_string0:
@@ -1775,21 +1952,28 @@
                                                 )
                                         })
                                     f_string0
+                                    (FunctionType
+                                        [(Character 1 1 () [(()
+                                        ())])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        "f_string"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 66 s)]
                                     []
                                     (Var 66 r)
-                                    BindC
                                     Public
-                                    Interface
-                                    "f_string"
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             fortran_f32:
@@ -1829,6 +2013,21 @@
                                                 )
                                         })
                                     fortran_f32
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 80 i)]
                                     [(=
@@ -1846,17 +2045,8 @@
                                         ()
                                     )]
                                     (Var 80 r)
-                                    BindC
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             fortran_f32_value:
@@ -1896,6 +2086,21 @@
                                                 )
                                         })
                                     fortran_f32_value
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 81 i)]
                                     [(=
@@ -1913,17 +2118,8 @@
                                         ()
                                     )]
                                     (Var 81 r)
-                                    BindC
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             fortran_f64:
@@ -1963,6 +2159,21 @@
                                                 )
                                         })
                                     fortran_f64
+                                    (FunctionType
+                                        [(Real 8 [])]
+                                        (Real 8 [])
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 82 i)]
                                     [(=
@@ -1980,17 +2191,8 @@
                                         ()
                                     )]
                                     (Var 82 r)
-                                    BindC
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             fortran_f64_value:
@@ -2030,6 +2232,21 @@
                                                 )
                                         })
                                     fortran_f64_value
+                                    (FunctionType
+                                        [(Real 8 [])]
+                                        (Real 8 [])
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 83 i)]
                                     [(=
@@ -2047,17 +2264,8 @@
                                         ()
                                     )]
                                     (Var 83 r)
-                                    BindC
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             fortran_i32:
@@ -2097,6 +2305,21 @@
                                                 )
                                         })
                                     fortran_i32
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 76 i)]
                                     [(=
@@ -2111,17 +2334,8 @@
                                         ()
                                     )]
                                     (Var 76 r)
-                                    BindC
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             fortran_i32_value:
@@ -2161,6 +2375,21 @@
                                                 )
                                         })
                                     fortran_i32_value
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 77 i)]
                                     [(=
@@ -2175,17 +2404,8 @@
                                         ()
                                     )]
                                     (Var 77 r)
-                                    BindC
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             fortran_i64:
@@ -2225,6 +2445,21 @@
                                                 )
                                         })
                                     fortran_i64
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Integer 8 [])
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 78 i)]
                                     [(=
@@ -2244,17 +2479,8 @@
                                         ()
                                     )]
                                     (Var 78 r)
-                                    BindC
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             fortran_i64_value:
@@ -2294,6 +2520,21 @@
                                                 )
                                         })
                                     fortran_i64_value
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Integer 8 [])
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 79 i)]
                                     [(=
@@ -2313,17 +2554,8 @@
                                         ()
                                     )]
                                     (Var 79 r)
-                                    BindC
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_double:
@@ -2378,23 +2610,31 @@
                                                 )
                                         })
                                     sub_int_double
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 55 a)
                                     (Var 55 b)
                                     (Var 55 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_double_complex:
@@ -2449,23 +2689,31 @@
                                                 )
                                         })
                                     sub_int_double_complex
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 8 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 57 a)
                                     (Var 57 b)
                                     (Var 57 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_double_complex_value:
@@ -2520,23 +2768,31 @@
                                                 )
                                         })
                                     sub_int_double_complex_value
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 8 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 61 a)
                                     (Var 61 b)
                                     (Var 61 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_double_value:
@@ -2591,23 +2847,31 @@
                                                 )
                                         })
                                     sub_int_double_value
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 59 a)
                                     (Var 59 b)
                                     (Var 59 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_double_value_name:
@@ -2662,23 +2926,31 @@
                                                 )
                                         })
                                     sub_int_double_value_name
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        "sub_int_double_value"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 65 a)
                                     (Var 65 b)
                                     (Var 65 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    "sub_int_double_value"
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_doublearray:
@@ -2734,23 +3006,32 @@
                                                 )
                                         })
                                     sub_int_doublearray
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                        (Var 64 n))])
+                                        (Real 8 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 64 n)
                                     (Var 64 b)
                                     (Var 64 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_float:
@@ -2805,23 +3086,31 @@
                                                 )
                                         })
                                     sub_int_float
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 54 a)
                                     (Var 54 b)
                                     (Var 54 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_float_complex:
@@ -2876,23 +3165,31 @@
                                                 )
                                         })
                                     sub_int_float_complex
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 56 a)
                                     (Var 56 b)
                                     (Var 56 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_float_complex_value:
@@ -2947,23 +3244,31 @@
                                                 )
                                         })
                                     sub_int_float_complex_value
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 60 a)
                                     (Var 60 b)
                                     (Var 60 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_float_value:
@@ -3018,23 +3323,31 @@
                                                 )
                                         })
                                     sub_int_float_value
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 58 a)
                                     (Var 58 b)
                                     (Var 58 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_floatarray:
@@ -3090,23 +3403,32 @@
                                                 )
                                         })
                                     sub_int_floatarray
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (Var 63 n))])
+                                        (Real 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 63 n)
                                     (Var 63 b)
                                     (Var 63 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub_int_intarray:
@@ -3162,23 +3484,32 @@
                                                 )
                                         })
                                     sub_int_intarray
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (Var 62 n))])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 62 n)
                                     (Var 62 b)
                                     (Var 62 r)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

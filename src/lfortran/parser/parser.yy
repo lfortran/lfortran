@@ -495,6 +495,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> decl_statements
 %type <vec_ast> contains_block_opt
 %type <vec_ast> sub_or_func_plus
+%type <vec_ast> sub_or_func_star
 %type <ast> result_opt
 %type <ast> result
 %type <string> inout
@@ -715,7 +716,7 @@ template_decl
 
 requirement_decl
     : KW_REQUIREMENT id "(" id_list ")" sep decl_star
-        sub_or_func_plus KW_END KW_REQUIREMENT sep {
+        sub_or_func_star KW_END KW_REQUIREMENT sep {
             $$ = REQUIREMENT($2, $4, $7, $8, @$); }
     ;
 
@@ -1003,6 +1004,10 @@ contains_block_opt
     | KW_CONTAINS sep { LIST_NEW($$); }
     | %empty { LIST_NEW($$); }
     ;
+
+sub_or_func_star
+    : sub_or_func_plus
+    | %empty { LIST_NEW($$); }
 
 sub_or_func_plus
     : sub_or_func_plus sub_or_func { LIST_ADD($$, $2); }

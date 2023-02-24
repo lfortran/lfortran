@@ -14,6 +14,7 @@ module tomlf_structure_base
    abstract interface
 
       subroutine destroy(self)
+         use tomlf_type_value, only: toml_value
          import :: toml_structure
          class(toml_structure), intent(inout), target :: self
       end subroutine destroy

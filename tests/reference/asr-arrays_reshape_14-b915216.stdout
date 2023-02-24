@@ -211,6 +211,22 @@
                                                 )
                                         })
                                     test_1d_to_nd
+                                    (FunctionType
+                                        [(Real 8 [(()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [abs@dabs]
                                     [(Var 4 d)]
                                     [(=
@@ -615,17 +631,8 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             test_nd_to_1d:
@@ -832,6 +839,24 @@
                                                 )
                                         })
                                     test_nd_to_1d
+                                    (FunctionType
+                                        [(Real 8 [(()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [abs@dabs]
                                     [(Var 3 a)]
                                     [(=
@@ -1263,17 +1288,8 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             test_reshape_with_argument:
@@ -1377,6 +1393,21 @@
                                                 )
                                         })
                                     test_reshape_with_argument
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [test_1d_to_nd
                                     test_nd_to_1d]
                                     []
@@ -1589,17 +1620,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

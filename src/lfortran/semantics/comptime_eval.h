@@ -27,7 +27,7 @@ struct IntrinsicProceduresAsASRNodes {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "matmul", "pack", "transfer", "cmplx",
                 "dcmplx", "reshape", "ichar", "iachar", "maxloc",
-                "null", "associated", "_lfortran_sqrt"};
+                "null", "associated", "_lfortran_sqrt", "all"};
 
             kind_based_intrinsics = {"scan", "verify"};
         }
@@ -222,6 +222,7 @@ struct IntrinsicProcedures {
 
             // Transformational function
             {"c_associated", {m_iso_c_binding, &not_implemented, false}},
+            {"all",          {m_builtin, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},

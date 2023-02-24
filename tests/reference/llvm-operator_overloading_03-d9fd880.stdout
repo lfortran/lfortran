@@ -55,27 +55,43 @@ define i1 @__module_operator_overloading_01_overload_comp_m_greater_than_inverse
   %greater_than_inverse = alloca i1, align 1
   %0 = load i1, i1* %log1, align 1
   %1 = load i1, i1* %log2, align 1
-  %2 = and i1 true, %1
-  %3 = xor i1 %0, %2
-  %4 = xor i1 %3, true
-  %5 = xor i1 %4, false
-  %6 = xor i1 %5, true
-  br i1 %6, label %then, label %else
+  %2 = alloca i1, align 1
+  br i1 false, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i1 true, i1* %greater_than_inverse, align 1
+  store i1 true, i1* %2, align 1
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  store i1 false, i1* %greater_than_inverse, align 1
+  store i1 %1, i1* %2, align 1
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  %3 = load i1, i1* %2, align 1
+  %4 = icmp eq i1 %0, false
+  %5 = alloca i1, align 1
+  %6 = xor i1 %0, %3
+  %7 = xor i1 %6, true
+  %8 = icmp eq i1 %7, false
+  %9 = alloca i1, align 1
+  %10 = xor i1 %7, false
+  %11 = xor i1 %10, true
+  br i1 %11, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store i1 true, i1* %greater_than_inverse, align 1
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  store i1 false, i1* %greater_than_inverse, align 1
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
   br label %return
 
-return:                                           ; preds = %ifcont
-  %7 = load i1, i1* %greater_than_inverse, align 1
-  ret i1 %7
+return:                                           ; preds = %ifcont3
+  %12 = load i1, i1* %greater_than_inverse, align 1
+  ret i1 %12
 }
 
 define i1 @__module_operator_overloading_01_overload_comp_m_less_than_inverse(i1* %log1, i1* %log2) {
@@ -83,27 +99,43 @@ define i1 @__module_operator_overloading_01_overload_comp_m_less_than_inverse(i1
   %less_than_inverse = alloca i1, align 1
   %0 = load i1, i1* %log1, align 1
   %1 = load i1, i1* %log2, align 1
-  %2 = and i1 false, %1
-  %3 = xor i1 %0, %2
-  %4 = xor i1 %3, true
-  %5 = xor i1 %4, true
-  %6 = xor i1 %5, true
-  br i1 %6, label %then, label %else
+  %2 = alloca i1, align 1
+  br i1 true, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i1 true, i1* %less_than_inverse, align 1
+  store i1 false, i1* %2, align 1
   br label %ifcont
 
 else:                                             ; preds = %.entry
-  store i1 false, i1* %less_than_inverse, align 1
+  store i1 %1, i1* %2, align 1
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  %3 = load i1, i1* %2, align 1
+  %4 = icmp eq i1 %0, false
+  %5 = alloca i1, align 1
+  %6 = xor i1 %0, %3
+  %7 = xor i1 %6, true
+  %8 = icmp eq i1 %7, false
+  %9 = alloca i1, align 1
+  %10 = xor i1 %7, true
+  %11 = xor i1 %10, true
+  br i1 %11, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store i1 true, i1* %less_than_inverse, align 1
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  store i1 false, i1* %less_than_inverse, align 1
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
   br label %return
 
-return:                                           ; preds = %ifcont
-  %7 = load i1, i1* %less_than_inverse, align 1
-  ret i1 %7
+return:                                           ; preds = %ifcont3
+  %12 = load i1, i1* %less_than_inverse, align 1
+  ret i1 %12
 }
 
 define i32 @main(i32 %0, i8** %1) {

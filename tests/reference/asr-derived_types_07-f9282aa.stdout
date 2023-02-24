@@ -140,6 +140,31 @@
                                                 )
                                         })
                                     find
+                                    (FunctionType
+                                        [(Class
+                                            9 toml_vector
+                                            []
+                                        )
+                                        (Character 1 -1 () [])
+                                        (Pointer
+                                            (Class
+                                                9 toml_value
+                                                []
+                                            )
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [1_match_key
                                     allocated]
                                     [(Var 13 self)
@@ -238,17 +263,8 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             new_vector:
@@ -341,6 +357,25 @@
                                                 )
                                         })
                                     new_vector
+                                    (FunctionType
+                                        [(Struct
+                                            9 toml_vector
+                                            []
+                                        )
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [min@imin
                                     present]
                                     [(Var 12 self)
@@ -392,17 +427,8 @@
                                         []
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             toml_node:
@@ -511,6 +537,16 @@
                     (SymbolTable
                         6
                         {
+                            1_toml_value:
+                                (ExternalSymbol
+                                    6
+                                    1_toml_value
+                                    2 toml_value
+                                    tomlf_type_value
+                                    []
+                                    toml_value
+                                    Public
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
@@ -531,7 +567,7 @@
                                                     8
                                                     1_toml_value_key
                                                     3 key
-                                                    toml_value
+                                                    1_toml_value
                                                     []
                                                     key
                                                     Public
@@ -566,6 +602,24 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            6 toml_keyval
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [allocated
                                     allocated]
                                     [(Var 8 self)]
@@ -618,17 +672,8 @@
                                         []
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             toml_keyval:
@@ -718,21 +763,30 @@
                                                 )
                                         })
                                     destroy
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_value
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 self)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             match_key:
@@ -810,6 +864,25 @@
                                                 )
                                         })
                                     match_key
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_value
+                                            []
+                                        )
+                                        (Character 1 -1 () [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [allocated]
                                     [(Var 5 self)
                                     (Var 5 key)]
@@ -853,17 +926,8 @@
                                         )]
                                     )]
                                     (Var 5 match)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             toml_value:

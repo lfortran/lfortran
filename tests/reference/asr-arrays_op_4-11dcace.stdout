@@ -194,6 +194,21 @@
                                                 )
                                         })
                                     modulo2
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)]
                                     [(=
@@ -226,17 +241,8 @@
                                         ()
                                     )]
                                     (Var 3 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             verify:
@@ -356,6 +362,27 @@
                                                 )
                                         })
                                     verify
+                                    (FunctionType
+                                        [(Logical 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [modulo2]
                                     [(Var 4 c)
                                     (Var 4 op_code)]
@@ -628,17 +655,8 @@
                                         )]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

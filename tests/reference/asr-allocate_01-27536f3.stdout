@@ -238,6 +238,26 @@
                                                 )
                                         })
                                     reduce_sum
+                                    (FunctionType
+                                        [(Complex 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        (Complex 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 c)]
                                     [(=
@@ -330,17 +350,8 @@
                                         )]
                                     )]
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sum:
@@ -469,6 +480,32 @@
                                                 )
                                         })
                                     sum
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Real 4 [(()
+                                        ())
+                                        (()
+                                        ())])
+                                        (Complex 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)
@@ -846,17 +883,8 @@
                                         [3 c_copy]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

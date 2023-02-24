@@ -1,0 +1,13 @@
+{
+    "basename": "asr-dependency_test_01-80e1f61",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/dependency_test_01.f90",
+    "infile_hash": "cfea9e80612bf56dfd74d8207d5291bad0aea56ade74a8da6d0be11d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-dependency_test_01-80e1f61.stdout",
+    "stdout_hash": "a68cadf9be83326e16304745a2f0c9a160c5fd9c66c8854fca3ac516",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -2,7 +2,17 @@
     (SymbolTable
         1
         {
-            derived_types_10:
+            1_y:
+                (ExternalSymbol
+                    1
+                    1_y
+                    2 y
+                    derived_types_11
+                    []
+                    y
+                    Public
+                ),
+            derived_types_11:
                 (Module
                     (SymbolTable
                         2
@@ -43,7 +53,7 @@
                                     Local
                                     (StringConcat
                                         (StringConstant
-                                            "  "
+                                            "lf"
                                             (Character 1 2 () [])
                                         )
                                         (StructInstanceMember
@@ -57,7 +67,7 @@
                                         )
                                         (Character 1 3 () [])
                                         (StringConstant
-                                            "  \"
+                                            "lf\"
                                             (Character 1 3 () [])
                                         )
                                     )
@@ -103,10 +113,112 @@
                                     ()
                                 )
                         })
-                    derived_types_10
+                    derived_types_11
                     []
                     .false.
                     .false.
+                ),
+            main:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            1_y_backslash:
+                                (ExternalSymbol
+                                    4
+                                    1_y_backslash
+                                    3 backslash
+                                    1_y
+                                    []
+                                    backslash
+                                    Public
+                                ),
+                            backslash:
+                                (ExternalSymbol
+                                    4
+                                    backslash
+                                    3 backslash
+                                    y
+                                    []
+                                    backslash
+                                    Public
+                                ),
+                            type_y:
+                                (ExternalSymbol
+                                    4
+                                    type_y
+                                    2 type_y
+                                    derived_types_11
+                                    []
+                                    type_y
+                                    Public
+                                ),
+                            x:
+                                (ExternalSymbol
+                                    4
+                                    x
+                                    2 x
+                                    derived_types_11
+                                    []
+                                    x
+                                    Public
+                                ),
+                            y:
+                                (ExternalSymbol
+                                    4
+                                    y
+                                    2 y
+                                    derived_types_11
+                                    []
+                                    y
+                                    Public
+                                )
+                        })
+                    main
+                    [derived_types_11]
+                    [(If
+                        (StringCompare
+                            (StructInstanceMember
+                                (Var 4 type_y)
+                                4 1_y_backslash
+                                (Character 1 1 () [])
+                                (StringConstant
+                                    "\"
+                                    (Character 1 1 () [])
+                                )
+                            )
+                            NotEq
+                            (StringConstant
+                                "\"
+                                (Character 1 1 () [])
+                            )
+                            (Logical 4 [])
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (StringCompare
+                            (Var 4 x)
+                            NotEq
+                            (StringConstant
+                                "lf\"
+                                (Character 1 3 () [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
                 )
         })
     []

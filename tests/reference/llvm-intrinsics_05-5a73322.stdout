@@ -19,15 +19,15 @@ source_filename = "LFortran"
 
 declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
 
-declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i32*, i32*, i8**)
+declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i1*, i32*, i1*, i32*, i1*, i8**, i1*)
 
-declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i32*, i32*)
+declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i1*, i32*, i1*, i32*, i1*)
 
-declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i32*, i32*, i1*)
+declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i1*, i32*, i1*, i32*, i1*, i1*, i1*)
 
 declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
 
-declare void @__module_lfortran_intrinsic_iso_c_binding_c_f_pointer(%c_ptr*, i32**, %array*)
+declare void @__module_lfortran_intrinsic_iso_c_binding_c_f_pointer(%c_ptr*, i32**, %array*, i1*)
 
 define void @__module_lfortran_intrinsic_math_cpu_time(double* %t) {
 .entry:

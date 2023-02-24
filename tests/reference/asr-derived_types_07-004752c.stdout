@@ -88,21 +88,30 @@
                                                 )
                                         })
                                     final_logger
+                                    (FunctionType
+                                        [(Struct
+                                            2 logger_type
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 self)]
                                     []
                                     ()
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             logger_type:

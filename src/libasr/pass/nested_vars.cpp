@@ -144,7 +144,7 @@ public:
             std::vector<llvm::Type*> proc_types_i;
             nested_func_types.insert({cur_func_hash, proc_types_i});
             current_scope = x.m_symtab;
-            if (calls_out && x.m_deftype == ASR::Implementation){
+            if (calls_out && ASRUtils::get_FunctionType(x)->m_deftype == ASR::Implementation){
                 if (std::find(calls_to.begin(), calls_to.end(), cur_func_hash)
                     == calls_to.end() && calls_to.size() >= 1){
                     /* Parent function does not call the nested function - if
@@ -218,13 +218,17 @@ public:
 
 
     void visit_Program(const ASR::Program_t &x) {
+        uint64_t cur_func_hash_copy = cur_func_hash;
         cur_func_hash = get_hash((ASR::asr_t*)&x);
         visit_procedure(x);
+        cur_func_hash = cur_func_hash_copy;
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        uint64_t cur_func_hash_copy = cur_func_hash;
         cur_func_hash = get_hash((ASR::asr_t*)&x);
         visit_procedure(x);
+        cur_func_hash = cur_func_hash_copy;
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
@@ -239,7 +243,7 @@ public:
                 calls_to.push_back(call_hash);
             }
             for (size_t i=0; i<x.n_args; i++) {
-                if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                if (x.m_args[i].m_value && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                     visit_Var(*ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value));
                 }
             }
@@ -257,7 +261,7 @@ public:
                 calls_to.push_back(call_hash);
             }
             for (size_t i=0; i<x.n_args; i++) {
-                if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                if ( x.m_args[i].m_value && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
                     visit_Var(*ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value));
                 }
             }

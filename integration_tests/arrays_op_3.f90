@@ -14,19 +14,19 @@ do i = 1, 2
     end do
 end do
 
-c = a .eq. b
+c = a == b
 call check(c, a, b, 0)
 
-c = a .ne. b
+c = a /= b
 call check(c, a, b, 1)
 
-c = a .lt. b
+c = a < b
 call check(c, a, b, 2)
 
 c = b <= a
 call check(c, a, b, 3)
 
-c = b .gt. a
+c = b > a
 call check(c, a, b, 4)
 
 c = b >= a
@@ -48,15 +48,15 @@ contains
             do k = lbound(a, 3), ubound(a, 3)
                 select case(op_code)
                 case (0)
-                    if(c(i, j, k) .neqv. (a(i, j, k) .eq. b(i, j, k))) error stop
+                    if(c(i, j, k) .neqv. (a(i, j, k) == b(i, j, k))) error stop
                 case (1)
-                    if(c(i, j, k) .neqv. (a(i, j, k) .ne. b(i, j, k))) error stop
+                    if(c(i, j, k) .neqv. (a(i, j, k) /= b(i, j, k))) error stop
                 case (2)
-                    if(c(i, j, k) .neqv. (a(i, j, k) .lt. b(i, j, k))) error stop
+                    if(c(i, j, k) .neqv. (a(i, j, k) < b(i, j, k))) error stop
                 case (3)
                     if(c(i, j, k) .neqv. (b(i, j, k) <= a(i, j, k))) error stop
                 case (4)
-                    if(c(i, j, k) .neqv. (b(i, j, k) .gt. a(i, j, k))) error stop
+                    if(c(i, j, k) .neqv. (b(i, j, k) > a(i, j, k))) error stop
                 case (5)
                     if(c(i, j, k) .neqv. (b(i, j, k) >= a(i, j, k))) error stop
                 end select

@@ -1,0 +1,258 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            1_t_1:
+                (ExternalSymbol
+                    1
+                    1_t_1
+                    2 t_1
+                    module_1
+                    []
+                    t_1
+                    Public
+                ),
+            1_t_2:
+                (ExternalSymbol
+                    1
+                    1_t_2
+                    2 t_2
+                    module_1
+                    []
+                    t_2
+                    Public
+                ),
+            derived_types_10:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            1_t_1_i:
+                                (ExternalSymbol
+                                    5
+                                    1_t_1_i
+                                    3 i
+                                    1_t_1
+                                    []
+                                    i
+                                    Public
+                                ),
+                            1_t_2_r:
+                                (ExternalSymbol
+                                    5
+                                    1_t_2_r
+                                    4 r
+                                    1_t_2
+                                    []
+                                    r
+                                    Public
+                                ),
+                            t_1:
+                                (ExternalSymbol
+                                    5
+                                    t_1
+                                    2 t_1
+                                    module_1
+                                    []
+                                    t_1
+                                    Public
+                                ),
+                            t_2:
+                                (ExternalSymbol
+                                    5
+                                    t_2
+                                    2 t_2
+                                    module_1
+                                    []
+                                    t_2
+                                    Public
+                                ),
+                            type_1:
+                                (Variable
+                                    5
+                                    type_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        5 t_1
+                                        []
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            type_2:
+                                (Variable
+                                    5
+                                    type_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        5 t_2
+                                        []
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    derived_types_10
+                    [module_1]
+                    [(=
+                        (StructInstanceMember
+                            (Var 5 type_1)
+                            5 1_t_1_i
+                            (Integer 4 [])
+                            ()
+                        )
+                        (IntegerConstant 123 (Integer 4 []))
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 5 type_2)
+                            1 1_t_1
+                            (Struct
+                                1 1_t_1
+                                []
+                            )
+                            ()
+                        )
+                        (Var 5 type_1)
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 5 type_2)
+                            5 1_t_2_r
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            10.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 5 type_2)
+                                5 1_t_1_i
+                                (Integer 4 [])
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 123 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (StructInstanceMember
+                                (Var 5 type_2)
+                                5 1_t_2_r
+                                (Real 4 [])
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                10.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                ),
+            module_1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            t_1:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    t_1
+                                    []
+                                    [i]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            t_2:
+                                (StructType
+                                    (SymbolTable
+                                        4
+                                        {
+                                            r:
+                                                (Variable
+                                                    4
+                                                    r
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    t_2
+                                    []
+                                    [r]
+                                    Source
+                                    Public
+                                    .false.
+                                    ()
+                                    2 t_1
+                                )
+                        })
+                    module_1
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

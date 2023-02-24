@@ -94,6 +94,21 @@
                                                                 )
                                                         })
                                                     f
+                                                    (FunctionType
+                                                        [(Real 4 [])]
+                                                        (Real 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     [(Var 4 x)]
                                                     [(=
@@ -122,17 +137,8 @@
                                                         ()
                                                     )]
                                                     (Var 4 f)
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
                                                     .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
                                                     .false.
                                                 ),
                                             g:
@@ -152,6 +158,22 @@
                                                 )
                                         })
                                     foo
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f]
                                     [(Var 3 c)
                                     (Var 3 d)]
@@ -180,17 +202,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

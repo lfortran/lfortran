@@ -1,13 +1,11 @@
 program test_get_command_argument
 implicit none
-    integer :: i, count
+    integer :: i = 0, count
     character(len=32) :: arg
 
     count = command_argument_count()
-
-    do i = 0, count
-        call get_command_argument(i, arg)
-        print *, trim(arg)
-    end do
+    print *, "count: ", count
+    call get_command_argument(i, arg)
+    print *, trim(arg)
 
 end program

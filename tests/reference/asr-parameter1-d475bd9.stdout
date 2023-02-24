@@ -124,6 +124,21 @@
                                 )
                         })
                     dcstep
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [abs@dabs
                     max@dmax_3args]
                     []
@@ -163,17 +178,8 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
                     .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
                     .false.
                 ),
             iso_c_binding:

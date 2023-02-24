@@ -17,8 +17,9 @@ def run_cmd(cmd, cwd=None):
         print("Command failed.")
         exit(1)
 
-def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool,
-                specific_backends=None, excluded_backends=None) -> None:
+def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: bool,
+                update_reference: bool, no_color: bool, specific_backends=None,
+                excluded_backends=None) -> None:
     def is_included(backend):
         return test.get(backend, False) \
             and (specific_backends is None or backend in specific_backends) \
@@ -56,7 +57,9 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, update_reference: bool
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]
 
-    if pass_ and (pass_ not in ["do_loops", "global_stmts"] and
+    if pass_ and (pass_ not in ["do_loops", "global_stmts",
+                                "transform_optional_argument_functions",
+                                "array_op"] and
                   pass_ not in optimization_passes):
         raise Exception(f"Unknown pass: {pass_}")
     log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")

@@ -44,22 +44,29 @@
                                                 )
                                         })
                                     fcn
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 fcn_arg_0)
                                     (Var 3 fcn_arg_1)]
                                     []
                                     ()
-                                    BindC
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             n:
@@ -109,6 +116,24 @@
                                 )
                         })
                     fdjac1
+                    (FunctionType
+                        [(Real 4 [])
+                        (Integer 4 [])
+                        (Integer 4 [])
+                        (Integer 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     [fcn]
                     [(Var 2 fcn)
                     (Var 2 n)
@@ -122,17 +147,8 @@
                         ()
                     )]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
                     .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
                     .false.
                 )
         })

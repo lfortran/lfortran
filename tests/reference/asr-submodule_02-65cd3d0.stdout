@@ -119,22 +119,35 @@
                                                 )
                                         })
                                     point_dist_func
+                                    (FunctionType
+                                        [(Struct
+                                            5 point
+                                            []
+                                        )
+                                        (Struct
+                                            5 point
+                                            []
+                                        )]
+                                        (Real 4 [])
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 7 a)
                                     (Var 7 b)]
                                     []
                                     (Var 7 distance)
-                                    Source
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             point_dist_subrout:
@@ -195,29 +208,43 @@
                                                 )
                                         })
                                     point_dist_subrout
+                                    (FunctionType
+                                        [(Struct
+                                            5 point
+                                            []
+                                        )
+                                        (Struct
+                                            5 point
+                                            []
+                                        )
+                                        (Real 4 [])]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 8 a)
                                     (Var 8 b)
                                     (Var 8 distance)]
                                     []
                                     ()
-                                    Source
                                     Public
-                                    Interface
-                                    ()
                                     .false.
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             rkind:
                                 (ExternalSymbol
                                     5
-                                    rkind1
+                                    rkind
                                     4 real32
                                     lfortran_intrinsic_iso_fortran_env
                                     []
@@ -235,6 +262,16 @@
                     (SymbolTable
                         9
                         {
+                            1_point:
+                                (ExternalSymbol
+                                    9
+                                    1_point
+                                    5 point
+                                    points
+                                    []
+                                    point
+                                    Public
+                                ),
                             point:
                                 (ExternalSymbol
                                     9
@@ -255,7 +292,7 @@
                                                     10
                                                     1_point_x
                                                     6 x
-                                                    point
+                                                    1_point
                                                     []
                                                     x
                                                     Public
@@ -265,7 +302,7 @@
                                                     10
                                                     1_point_y
                                                     6 y
-                                                    point
+                                                    1_point
                                                     []
                                                     y
                                                     Public
@@ -343,6 +380,28 @@
                                                 )
                                         })
                                     point_dist_func
+                                    (FunctionType
+                                        [(Struct
+                                            9 point
+                                            []
+                                        )
+                                        (Struct
+                                            9 point
+                                            []
+                                        )]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [sqrt@ssqrt]
                                     [(Var 10 a)
                                     (Var 10 b)]
@@ -425,17 +484,8 @@
                                         ()
                                     )]
                                     (Var 10 distance)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             point_dist_subrout:
@@ -448,7 +498,7 @@
                                                     11
                                                     1_point_x
                                                     6 x
-                                                    point
+                                                    1_point
                                                     []
                                                     x
                                                     Public
@@ -458,7 +508,7 @@
                                                     11
                                                     1_point_y
                                                     6 y
-                                                    point
+                                                    1_point
                                                     []
                                                     y
                                                     Public
@@ -536,6 +586,29 @@
                                                 )
                                         })
                                     point_dist_subrout
+                                    (FunctionType
+                                        [(Struct
+                                            9 point
+                                            []
+                                        )
+                                        (Struct
+                                            9 point
+                                            []
+                                        )
+                                        (Real 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [sqrt@ssqrt]
                                     [(Var 11 a)
                                     (Var 11 b)
@@ -619,17 +692,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .true.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             rkind:
