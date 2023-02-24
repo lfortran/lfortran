@@ -890,7 +890,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                                                 if ( sym->type == ASR::symbolType::Function ) {
                                                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
                                                     ASR::symbol_t* s_func = create_subroutine_from_function(ASR::down_cast<ASR::Function_t>(sym));
-                                                    subrout_func->m_symtab->add_symbol(func->m_name, s_func);
+                                                    subrout_func->m_symtab->overwrite_symbol(func->m_name, s_func);
                                                     subrout_func->m_args[arg_index] = ASR::down_cast<ASR::expr_t>(ASR::make_Var_t(al, var->base.base.loc, s_func));
                                                 }
                                             }
@@ -908,7 +908,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             // of the function (which returned array) now points
             // to the newly created subroutine.
             for( auto& item: replace_vec ) {
-                current_scope->add_symbol(item.first, item.second);
+                current_scope->overwrite_symbol(item.first, item.second);
             }
 
             for (auto &item : x.m_symtab->get_scope()) {
