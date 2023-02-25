@@ -83,7 +83,7 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                 replace_expr(x->m_args[0]);
                 ASR::expr_t *arg = *current_expr; // Use the converted arg
                 current_expr = current_expr_copy_;
-                std::string new_name = "logGamma";
+                std::string new_name = global_scope->get_unique_name("_lcompilers_LogGamma");
                 ASR::symbol_t* new_func_sym = instantiate_LogGamma(al, global_scope,
                     new_name, ASRUtils::expr_type(x->m_args[0]));
                 Vec<ASR::call_arg_t> new_args;
