@@ -1454,7 +1454,7 @@ public:
                     es0->m_original_name,
                     dflt_access
                     );
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
+                current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
             } else if( ASR::is_a<ASR::StructType_t>(*item.second) ) {
                 ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct
@@ -1710,7 +1710,7 @@ public:
                 m->m_name, nullptr, 0, mfn->m_name,
                 dflt_access
                 );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
+            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
         } else if (ASR::is_a<ASR::Variable_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
                 throw SemanticError("Variable already defined", loc);
