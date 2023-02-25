@@ -1615,14 +1615,13 @@ public:
         if (target->type == ASR::exprType::Var) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
             ASR::symbol_t *sym = var->m_v;
-            std::string var_name;
             if (sym->type == ASR::symbolType::Variable) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                var_name = std::string(v->m_name);
-            }
-            // check if it present in do_loop_variables
-            if (do_loop_variables.size() > 0 && std::find(do_loop_variables.begin(), do_loop_variables.end(), sym) != do_loop_variables.end()) {
-                throw SemanticError("Assignment to loop variable `" + std::string(to_lower(var_name)) +"` is not allowed", target->base.loc);
+                std::string var_name = std::string(v->m_name);
+                // check if it present in do_loop_variables
+                if (do_loop_variables.size() > 0 && std::find(do_loop_variables.begin(), do_loop_variables.end(), sym) != do_loop_variables.end()) {
+                    throw SemanticError("Assignment to loop variable `" + std::string(to_lower(var_name)) +"` is not allowed", target->base.loc);
+                }
             }
         }
         if( ASRUtils::use_overloaded_assignment(target, value,
@@ -2122,7 +2121,7 @@ public:
             increment = nullptr;
         }
 
-        if (var && var->type == ASR::exprType::Var) {
+        if (var) {
             ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(var);
             ASR::symbol_t* loop_var_sym = loop_var->m_v;
             do_loop_variables.push_back(loop_var_sym);
