@@ -83,6 +83,11 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                 replace_expr(x->m_args[0]);
                 ASR::expr_t *arg = *current_expr; // Use the converted arg
                 current_expr = current_expr_copy_;
+                // TODO: currently we always instantiate a new function.
+                // Rather we should reuse the old instantiation if it has
+                // exactly the same arguments. For that we could use the
+                // overload_id, and uniquely encode the argument types.
+                // We could maintain a mapping of type -> id and look it up.
                 std::string new_name = global_scope->get_unique_name("_lcompilers_LogGamma");
                 ASR::symbol_t* new_func_sym = instantiate_LogGamma(al, global_scope,
                     new_name, ASRUtils::expr_type(x->m_args[0]));
