@@ -32,10 +32,10 @@ ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc, ASR::expr_t* arg
     return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t));
 }
 
-ASR::symbol_t* instantiate_LogGamma(Allocator &al, SymbolTable *global_scope,
-        const std::string &new_name, ASR::ttype_t *arg_type) {
+ASR::symbol_t* instantiate_LogGamma(Allocator &al, Location &loc,
+        SymbolTable *global_scope, const std::string &new_name,
+        ASR::ttype_t *arg_type) {
     SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-    Location loc; loc.first = 1; loc.last = 1;
 
     Vec<ASR::expr_t*> args;
     args.reserve(al, 1);
@@ -101,8 +101,8 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                 // overload_id, and uniquely encode the argument types.
                 // We could maintain a mapping of type -> id and look it up.
                 std::string new_name = global_scope->get_unique_name("_lcompilers_LogGamma");
-                ASR::symbol_t* new_func_sym = instantiate_LogGamma(al, global_scope,
-                    new_name, ASRUtils::expr_type(x->m_args[0]));
+                ASR::symbol_t* new_func_sym = instantiate_LogGamma(al, x->base.base.loc,
+                    global_scope, new_name, ASRUtils::expr_type(x->m_args[0]));
                 Vec<ASR::call_arg_t> new_args;
                 new_args.reserve(al, x->n_args);
                 ASR::call_arg_t arg0;
