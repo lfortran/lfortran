@@ -15,7 +15,8 @@ namespace LCompilers {
 /*
 
 This ASR pass replaces the IntrinsicFunction node with a call to an
-implementation in the surface language (ASR).
+implementation in ASR that we construct (and cache) on the fly for the actual
+arguments.
 
 Call this pass if you do not want to implement intrinsic functions directly
 in the backend.
@@ -44,6 +45,8 @@ ASR::symbol_t* instantiate_LogGamma(Allocator &al, SymbolTable *global_scope,
 
     Vec<ASR::stmt_t*> body;
     body.reserve(al, 1);
+
+    // TODO: Call the C implementation of LogGamma using BindC
     body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
         ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
         ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)), nullptr)));
