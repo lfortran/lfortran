@@ -2943,3 +2943,7 @@ asr = true
 [[test]]
 filename = "block2.f90"
 asr = true
+
+[[test]]
+filename = "errors/do_loop_01.f90"
+asr = true
