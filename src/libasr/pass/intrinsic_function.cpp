@@ -25,6 +25,13 @@ in the backend.
 
 */
 
+static ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc, ASR::expr_t* arg) {
+    double rv = ASR::down_cast<ASR::RealConstant_t>(arg)->m_r;
+    double val = lgamma(rv);
+    ASR::ttype_t *t = ASRUtils::expr_type(arg);
+    return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t));
+}
+
 ASR::symbol_t* instantiate_LogGamma(Allocator &al, SymbolTable *global_scope,
         const std::string &new_name, ASR::ttype_t *arg_type) {
     SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
@@ -104,10 +111,7 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                 ASR::expr_t *value = nullptr;
                 ASR::expr_t *arg_value = ASRUtils::expr_value(arg);
                 if (arg_value) {
-                    double rv = ASR::down_cast<ASR::RealConstant_t>(arg_value)->m_r;
-                    double val = lgamma(rv);
-                    ASR::ttype_t *t = ASRUtils::expr_type(arg_value);
-                    value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, x->base.base.loc, val, t));
+                    value = eval_log_gamma(al, x->base.base.loc, arg_value);
                 }
 
                 ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
