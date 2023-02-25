@@ -25,7 +25,7 @@ in the backend.
 
 */
 
-static ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc, ASR::expr_t* arg) {
+ASR::expr_t *eval_log_gamma(Allocator &al, const Location &loc, ASR::expr_t* arg) {
     double rv = ASR::down_cast<ASR::RealConstant_t>(arg)->m_r;
     double val = lgamma(rv);
     ASR::ttype_t *t = ASRUtils::expr_type(arg);
