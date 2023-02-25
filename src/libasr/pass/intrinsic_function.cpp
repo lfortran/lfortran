@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
@@ -99,10 +101,19 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                 ASR::call_arg_t arg0;
                 arg0.m_value = arg;
                 new_args.push_back(al, arg0);
+                ASR::expr_t *value = nullptr;
+                ASR::expr_t *arg_value = ASRUtils::expr_value(arg);
+                if (arg_value) {
+                    double rv = ASR::down_cast<ASR::RealConstant_t>(arg_value)->m_r;
+                    double val = lgamma(rv);
+                    ASR::ttype_t *t = ASRUtils::expr_type(arg_value);
+                    value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, x->base.base.loc, val, t));
+                }
+
                 ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
                     x->base.base.loc, new_func_sym, new_func_sym,
                     new_args.p, new_args.size(), ASRUtils::expr_type(x->m_args[0]),
-                    nullptr, nullptr));
+                    value, nullptr));
 
                 *current_expr = new_call;
                 break;
