@@ -3813,7 +3813,7 @@ public:
             );
         std::string sym = fn_name;
 
-        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
+        current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(fn);
         if (current_module) {
             // We are in body visitor

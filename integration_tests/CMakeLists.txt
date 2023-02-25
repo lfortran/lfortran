@@ -550,6 +550,8 @@ RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
 RUN(NAME block_04 LABELS gfortran llvm)
+RUN(NAME block_05 LABELS gfortran llvm)
+RUN(NAME block_06 LABELS gfortran llvm wasm)
 RUN(NAME associate_01 LABELS gfortran)
 RUN(NAME associate_02 LABELS gfortran llvm)
 RUN(NAME associate_03 LABELS gfortran llvm)
@@ -691,7 +693,6 @@ RUN(NAME modules_26 LABELS gfortran llvm)
 RUN(NAME enum_01 LABELS gfortran llvm)
 RUN(NAME enum_02 LABELS gfortran llvm EXTRAFILES
          enum_02_module.f90)
-RUN(NAME block_05 LABELS gfortran llvm)
 
 RUN(NAME array_section_01 LABELS gfortran llvm)
 

@@ -1596,7 +1596,7 @@ public:
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
             nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
             /* n_type_parameters */ 0, nullptr, 0, false, false, false);
-        parent_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        parent_scope->overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
 
@@ -1847,7 +1847,7 @@ public:
                 original_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
                     p->base.base.loc, current_scope, s2c(al, s_name), original_sym,
                     s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
-                current_scope->add_symbol(s_name, original_sym);
+                current_scope->add_or_overwrite_symbol(s_name, original_sym);
                 int idx;
                 if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
