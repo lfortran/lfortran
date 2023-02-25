@@ -1290,7 +1290,7 @@ public:
             ASR::asr_t *v = ASR::make_GenericProcedure_t(al, loc,
                 current_scope, generic_name,
                 symbols.p, symbols.size(), ASR::Public);
-            current_scope->add_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
+            current_scope->add_or_overwrite_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
         }
     }
 
@@ -1454,7 +1454,7 @@ public:
                     es0->m_original_name,
                     dflt_access
                     );
-                current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
+                current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(es));
             } else if( ASR::is_a<ASR::StructType_t>(*item.second) ) {
                 ASR::StructType_t *mv = ASR::down_cast<ASR::StructType_t>(item.second);
                 // `mv` is the Variable in a module. Now we construct
@@ -1561,7 +1561,7 @@ public:
                     ASR::asr_t *ep = ASR::make_GenericProcedure_t(
                         al, t->base.loc, current_scope, s2c(al, local_sym),
                         gp_procs.p, gp_procs.size(), dflt_access);
-                    current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
+                    current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*gp_sym));
                     ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(gp_sym);
@@ -1710,7 +1710,7 @@ public:
                 m->m_name, nullptr, 0, mfn->m_name,
                 dflt_access
                 );
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
+            current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(fn));
         } else if (ASR::is_a<ASR::Variable_t>(*t)) {
             if (current_scope->get_symbol(local_sym) != nullptr) {
                 throw SemanticError("Variable already defined", loc);
