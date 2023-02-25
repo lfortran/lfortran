@@ -2134,9 +2134,7 @@ public:
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
             tmp = ASR::make_DoLoop_t(al, x.base.base.loc, head, body.p, body.size());
-            if (var->type == ASR::exprType::Var) {
-                do_loop_variables.pop_back();
-            }
+            do_loop_variables.pop_back();
         } else {
             ASR::ttype_t* cond_type
                 = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
