@@ -7,6 +7,7 @@
 #include <lfortran/ast.h>
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
+#include <libasr/pass/intrinsic_function.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 
@@ -3114,8 +3115,13 @@ public:
                                 4, nullptr, 0));
         int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma);
         int64_t overload_id = 0;
+        ASR::expr_t *value = nullptr;
+        ASR::expr_t *arg_value = ASRUtils::expr_value(args[0]);
+        if (arg_value) {
+            value = eval_log_gamma(al, x.base.base.loc, arg_value);
+        }
         return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
-            intrinsic_id, args.p, args.n, overload_id, type, nullptr);
+            intrinsic_id, args.p, args.n, overload_id, type, value);
     }
 
 
