@@ -592,14 +592,7 @@ jobs:
 
       - uses: mamba-org/provision-with-micromamba@v12
         with:
-          environment-file: ci/environment_linux.yml
-          extra-specs: |
-            python=3.10
-            nbsphinx=0.8.9
-            myst-parser=0.18.0
-            sphinx=4.5.0
-            sphinx-copybutton=0.5.0
-            sphinx-material=0.0.35
+          environment-file: ci/environment_docs_linux.yml
 
       - uses: hendrikmuhs/ccache-action@main
         with:
