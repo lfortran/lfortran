@@ -866,7 +866,7 @@ public:
 // with their list. The ImplicitDeallocate node will deallocate them if they are allocated,
 // otherwise does nothing.
     ASR::stmt_t* create_implicit_deallocate(const Location& loc) {
-        Vec<ASR::symbol_t*> del_syms;
+        Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 0);
         for( auto& item: current_scope->get_scope() ) {
             if( item.second->type == ASR::symbolType::Variable ) {
@@ -874,13 +874,14 @@ public:
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
                 if( var->m_storage == ASR::storage_typeType::Allocatable &&
                     var->m_intent == ASR::intentType::Local ) {
-                    del_syms.push_back(al, item.second);
+                    del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, item.second)));
                 }
             }
         }
         if( del_syms.size() == 0 ) {
             return nullptr;
         }
+
         return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
                     del_syms.p, del_syms.size()));
     }
@@ -1282,7 +1283,7 @@ public:
             return nullptr;
         }
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-        Vec<ASR::symbol_t*> del_syms;
+        Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
             if( subrout_call->m_args[i].m_value &&
@@ -1297,7 +1298,7 @@ public:
                     if( var->m_storage == ASR::storage_typeType::Allocatable &&
                         orig_var->m_storage == ASR::storage_typeType::Allocatable &&
                         orig_var->m_intent == ASR::intentType::Out ) {
-                        del_syms.push_back(al, arg_var->m_v);
+                        del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x->base.loc, arg_var->m_v)));
                     }
                 }
             }

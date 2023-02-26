@@ -628,7 +628,7 @@ public:
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
         // TODO: check that every allocated variable is deallocated.
         for (size_t i=0; i<x.n_vars; i++) {
-            this->visit_symbol(*x.m_vars[i]);
+            this->visit_expr(*x.m_vars[i]);
         }
     }
 
