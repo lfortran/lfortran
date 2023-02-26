@@ -697,3 +697,5 @@ RUN(NAME enum_02 LABELS gfortran llvm EXTRAFILES
 RUN(NAME array_section_01 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm)
+
+RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
