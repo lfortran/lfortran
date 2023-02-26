@@ -361,7 +361,7 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 myreal]
+                        [(Var 2 myreal)]
                     )]
                 )
         })

@@ -893,9 +893,9 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 a
-                        2 b
-                        2 c]
+                        [(Var 2 a)
+                        (Var 2 b)
+                        (Var 2 c)]
                     )]
                 )
         })

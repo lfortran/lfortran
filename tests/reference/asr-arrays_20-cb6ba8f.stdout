@@ -89,9 +89,9 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 list_character
-                        2 list_integer
-                        2 list_logical]
+                        [(Var 2 list_character)
+                        (Var 2 list_integer)
+                        (Var 2 list_logical)]
                     )]
                 )
         })

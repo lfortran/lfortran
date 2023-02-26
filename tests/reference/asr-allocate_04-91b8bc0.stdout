@@ -65,8 +65,8 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 c
-                        2 string]
+                        [(Var 2 c)
+                        (Var 2 string)]
                     )]
                 )
         })
