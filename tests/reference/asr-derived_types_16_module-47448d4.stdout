@@ -116,7 +116,7 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [5 settings]
+                        [(Var 5 settings)]
                     )
                     (SubroutineCall
                         5 get_command_line_settings
@@ -201,7 +201,7 @@
                         []
                     )
                     (ImplicitDeallocate
-                        [5 settings]
+                        [(Var 5 settings)]
                     )]
                 ),
             fpm_command_line:

@@ -527,8 +527,8 @@
                                         ()
                                     )
                                     (ImplicitDeallocate
-                                        [13 obj
-                                        13 url]
+                                        [(Var 13 obj)
+                                        (Var 13 url)]
                                     )]
                                     ()
                                     Public
@@ -813,7 +813,7 @@
                                     (Var 6 table)
                                     (Var 6 error)]
                                     [(ImplicitDeallocate
-                                        [6 error]
+                                        [(Var 6 error)]
                                     )
                                     (SubroutineCall
                                         4 new_dependencies
