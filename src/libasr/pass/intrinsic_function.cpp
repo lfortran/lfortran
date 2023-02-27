@@ -38,13 +38,15 @@ ASR::symbol_t* instantiate_LogGamma(Allocator &al, Location &loc,
     SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
 
     Vec<ASR::expr_t*> args;
-    args.reserve(al, 1);
-    ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-        al, loc, fn_symtab, s2c(al, "x"), nullptr, 0, ASR::intentType::In,
-        nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-        ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false));
-    fn_symtab->add_symbol(s2c(al, "x"), arg);
-    args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
+    {
+        args.reserve(al, 1);
+        ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+            al, loc, fn_symtab, s2c(al, "x"), nullptr, 0, ASR::intentType::In,
+            nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false));
+        fn_symtab->add_symbol(s2c(al, "x"), arg);
+        args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
+    }
 
     ASR::symbol_t *return_var = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
         al, loc, fn_symtab, s2c(al, new_name), nullptr, 0, ASRUtils::intent_return_var,
@@ -55,13 +57,58 @@ ASR::symbol_t* instantiate_LogGamma(Allocator &al, Location &loc,
     Vec<ASR::stmt_t*> body;
     body.reserve(al, 1);
 
-    // TODO: Call the C implementation of LogGamma using BindC
-    body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-        ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
-        ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)), nullptr)));
+    Vec<char *> dep;
+    dep.reserve(al, 1);
+
+    {
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        std::string c_func_name;
+        if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+            c_func_name = "_lfortran_slog_gamma";
+        } else {
+            c_func_name = "_lfortran_dlog_gamma";
+        }
+        Vec<ASR::expr_t*> args_1;
+        {
+            args_1.reserve(al, 1);
+            ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                al, loc, fn_symtab_1, s2c(al, "x"), nullptr, 0, ASR::intentType::In,
+                nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, true));
+            fn_symtab_1->add_symbol(s2c(al, "x"), arg);
+            args_1.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
+        }
+
+        ASR::symbol_t *return_var_1 = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+            al, loc, fn_symtab_1, s2c(al, c_func_name), nullptr, 0, ASRUtils::intent_return_var,
+            nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
+            ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false));
+        fn_symtab_1->add_symbol(s2c(al, c_func_name), return_var_1);
+
+        ASR::symbol_t *s =  ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Function_t_util(al, loc, fn_symtab_1,
+            s2c(al, c_func_name), nullptr, 0, args_1.p, args_1.n, nullptr, 0,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var_1)),
+            ASR::abiType::BindC, ASR::accessType::Public,
+            ASR::deftypeType::Interface, s2c(al, c_func_name), false, false,
+            false, false, false, nullptr, 0, nullptr, 0, false, false, false));
+        fn_symtab->add_symbol(c_func_name, s);
+        dep.push_back(al, s2c(al, c_func_name));
+        Vec<ASR::call_arg_t> call_args;
+        {
+            call_args.reserve(al, 1);
+            ASR::call_arg_t arg;
+            arg.m_value = args[0];
+            call_args.push_back(al, arg);
+        }
+        body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
+            ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, s, s,
+            call_args.p, call_args.n, arg_type, nullptr, nullptr)), nullptr)));
+    }
 
     ASR::asr_t* new_subrout = ASRUtils::make_Function_t_util(al, loc,
-        fn_symtab, s2c(al, new_name), nullptr, 0, args.p, args.n, body.p, body.n,
+        fn_symtab, s2c(al, new_name), dep.p, dep.n, args.p, args.n, body.p, body.n,
         ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
         ASR::abiType::Source, ASR::accessType::Public,
         ASR::deftypeType::Implementation, nullptr, false, false, false,
