@@ -182,7 +182,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
         ASR::expr_t** current_expr_copy_35 = current_expr;
         current_expr = &(x->m_left);
-        if (x->m_left->type == ASR::exprType::FunctionCall) {
+        if (ASR::is_a<ASR::FunctionCall_t>(*x->m_left)) {
             result_var = result_var_copy;
         } else {
             result_var = nullptr;
