@@ -3111,12 +3111,11 @@ public:
 
     ASR::asr_t* create_LogGamma(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
-                                4, nullptr, 0));
         int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma);
         int64_t overload_id = 0;
         ASR::expr_t *value = nullptr;
         ASR::expr_t *arg_value = ASRUtils::expr_value(args[0]);
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
         if (arg_value) {
             value = eval_log_gamma(al, x.base.base.loc, arg_value);
         }
