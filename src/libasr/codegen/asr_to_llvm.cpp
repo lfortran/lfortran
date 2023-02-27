@@ -1312,13 +1312,13 @@ public:
             if (ASRUtils::is_character(*curr_arg_m_a_type)) {
                 int dims = ASR::down_cast<ASR::Character_t>(curr_arg_m_a_type)->n_dims;
                 if (dims == 0) {
-                    // Initialize allocatable strings with empty string.
                     // TODO: Add ASR reference to capture the length of the string
                     // during initialization.
-                    std::string _temp(1, ' ');
-                    llvm::Value *init_value = builder->CreateGlobalStringPtr(s2c(al, _temp));
-                    builder->CreateStore(init_value, x_arr);
-                    return;
+                    llvm::Value *len = llvm::ConstantInt::get(context, llvm::APInt(32, 16));
+                    std::vector<llvm::Value*> args = {x_arr, len};
+                    llvm::Function *fn = _AllocateString();
+                    builder->CreateCall(fn, args);
+                    continue;;
                 }
             }
             llvm::Type* llvm_data_type = get_type_from_ttype_t_util(asr_data_type);
@@ -1373,6 +1373,26 @@ public:
         return free_fn;
     }
 
+    inline void call_lfortran_free_string(llvm::Function* fn) {
+        std::vector<llvm::Value*> args = {tmp};
+        builder->CreateCall(fn, args);
+    }
+
+    llvm::Function* _AllocateString() {
+        std::string func_name = "_lfortran_string_alloc";
+        llvm::Function *alloc_fun = module->getFunction(func_name);
+        if (!alloc_fun) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        character_type->getPointerTo(),
+                        llvm::Type::getInt32Ty(context)
+                    }, true);
+            alloc_fun = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name, *module);
+        }
+        return alloc_fun;
+    }
+
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
         llvm::Function* free_fn = _Deallocate();
         for( size_t i = 0; i < x.n_vars; i++ ) {
@@ -1389,15 +1409,14 @@ public:
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                     symbol_get_past_external(curr_obj));
 
+            fetch_var(v);
             if (ASRUtils::is_character(*v->m_type)) {
                 int dims = ASR::down_cast<ASR::Character_t>(v->m_type)->n_dims;
                 if (dims == 0) {
-                    // TODO: Currently strings are just initialized with
-                    // empty chars during visit_Allocate.
+                    call_lfortran_free_string(free_fn);
                     continue;
                 }
             }
-            fetch_var(v);
             llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp);
             create_if_else(cond, [=]() {
                 call_lfortran_free(free_fn);

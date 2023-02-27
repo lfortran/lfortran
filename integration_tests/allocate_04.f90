@@ -8,7 +8,8 @@ implicit none
     allocate(character(len=8)::string)
     allocate(character(len=20)::message)
     allocate(c(3, 3, 3))
-    string = "lfortran"
+    num = "lfortran"
+    string = trim(num)
     if (string /= "lfortran") error stop
     num = "lfortran working"
     message = num(1:len_trim(num)+1)

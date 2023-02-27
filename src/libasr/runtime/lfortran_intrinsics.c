@@ -968,6 +968,10 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
     free((void*)ptr);
 }
 
+LFORTRAN_API void _lfortran_string_alloc(char** ptr, int32_t len) {
+    *ptr = (char *) malloc(sizeof(char)*len);
+}
+
 // size_plus_one is the size of the string including the null character
 LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s) {
     int size = size_plus_one-1;
