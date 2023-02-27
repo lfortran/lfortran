@@ -81,6 +81,16 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            trim:
+                                (ExternalSymbol
+                                    2
+                                    trim
+                                    4 trim
+                                    lfortran_intrinsic_string
+                                    []
+                                    trim
+                                    Private
                                 )
                         })
                     allocate_04
@@ -112,10 +122,29 @@
                         ()
                     )
                     (=
-                        (Var 2 string)
+                        (Var 2 num)
                         (StringConstant
                             "lfortran"
                             (Character 1 8 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 string)
+                        (FunctionCall
+                            2 trim
+                            ()
+                            [((Var 2 num))]
+                            (Character 1 -3 (FunctionCall
+                                2 len_trim
+                                ()
+                                [((Var 2 num))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            ) [])
+                            ()
+                            ()
                         )
                         ()
                     )
@@ -175,9 +204,9 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 c
-                        2 message
-                        2 string]
+                        [(Var 2 c)
+                        (Var 2 message)
+                        (Var 2 string)]
                     )]
                 ),
             iso_fortran_env:
