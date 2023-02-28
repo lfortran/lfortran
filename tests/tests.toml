@@ -1356,7 +1356,7 @@ cpp = true
 
 [[test]]
 filename = "../integration_tests/case_07.f90"
-asr = true
+pass = "select_case"
 
 [[test]]
 filename = "../integration_tests/include_01.f90"

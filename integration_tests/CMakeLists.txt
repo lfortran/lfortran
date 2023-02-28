@@ -439,6 +439,7 @@ RUN(NAME case_03 LABELS gfortran llvm cpp)
 RUN(NAME case_04 LABELS gfortran)
 RUN(NAME case_05 LABELS gfortran llvm cpp)
 RUN(NAME case_06 LABELS gfortran llvm cpp)
+RUN(NAME case_07 LABELS gfortran llvm)
 
 RUN(NAME select_type_01 LABELS gfortran)
 RUN(NAME select_type_04 LABELS gfortran
