@@ -1368,7 +1368,7 @@
                                         ()
                                     )
                                     (ImplicitDeallocate
-                                        [3 sep_local]
+                                        [(Var 3 sep_local)]
                                     )]
                                     (Var 3 msg_scalar)
                                     Public

@@ -75,6 +75,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     SymbolTable* current_scope;
     ASR::expr_t* result_var;
+    ASR::ttype_t* result_type;
 
     ReplaceArrayOp(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
                    bool& use_custom_loop_params_,
@@ -84,7 +85,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     al(al_), pass_result(pass_result_),
     result_counter(0), use_custom_loop_params(use_custom_loop_params_),
     result_lbound(result_lbound_), result_ubound(result_ubound_),
-    result_inc(result_inc_), current_scope(nullptr), result_var(nullptr) {}
+    result_inc(result_inc_), current_scope(nullptr),
+    result_var(nullptr), result_type(nullptr) {}
 
     void replace_Var(ASR::Var_t* x) {
         if( !(result_var != nullptr && PassUtils::is_array(result_var)) ) {
@@ -178,6 +180,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         const Location& loc = x->base.base.loc;
         bool current_status = use_custom_loop_params;
         use_custom_loop_params = false;
+        if( result_var ) {
+            result_type = ASRUtils::expr_type(result_var);
+        }
         ASR::expr_t* result_var_copy = result_var;
 
         ASR::expr_t** current_expr_copy_35 = current_expr;
@@ -196,6 +201,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
         use_custom_loop_params = current_status;
         result_var = result_var_copy;
+        result_type = nullptr;
 
         // TODO: Replace with ASRUtils::extract_dimensions_from_ttype
         int rank_left = PassUtils::get_rank(left);
@@ -576,8 +582,12 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         if (sub && ASR::is_a<ASR::Function_t>(*sub)
             && ASR::down_cast<ASR::Function_t>(sub)->m_return_var == nullptr) {
             if( result_var == nullptr ) {
+                ASR::ttype_t* result_var_type = x->m_type;
+                if( result_type ) {
+                    result_var_type = result_type;
+                }
                 result_var = PassUtils::create_var(result_counter, "_func_call_res",
-                                loc, x->m_type, al, current_scope);
+                                loc, result_var_type, al, current_scope);
                 result_counter += 1;
             }
             Vec<ASR::call_arg_t> s_args;

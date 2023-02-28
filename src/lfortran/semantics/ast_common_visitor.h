@@ -2015,6 +2015,23 @@ public:
         }
     }
 
+    template <typename T>
+    void fill_new_dims(T* t, const std::vector<ASR::expr_t*>& func_calls,
+        Vec<ASR::dimension_t>& new_dims) {
+        new_dims.reserve(al, t->n_dims);
+        for( size_t i = 0, j = 0; i < func_calls.size(); i += 2, j++ ) {
+            ASR::dimension_t new_dim;
+            if (func_calls[i] != nullptr) {
+                new_dim.loc = func_calls[i]->base.loc;
+                new_dim.m_start = func_calls[i];
+                new_dim.m_length = func_calls[i + 1];
+                new_dims.push_back(al, new_dim);
+            } else {
+                new_dims.push_back(al, t->m_dims[j]);
+            }
+        }
+    }
+
     ASR::ttype_t* handle_return_type(ASR::ttype_t *return_type, const Location &loc,
                                      Vec<ASR::call_arg_t>& args,
                                      ASR::Function_t* f=nullptr) {
@@ -2071,16 +2088,7 @@ public:
                 fill_expr_in_ttype_t(func_calls, t->m_dims, t->n_dims);
                 fix_exprs_ttype_t(func_calls, args, f);
                 Vec<ASR::dimension_t> new_dims;
-                new_dims.reserve(al, t->n_dims);
-                for( size_t i = 0; i < func_calls.size(); i += 2 ) {
-                    ASR::dimension_t new_dim;
-                    if (func_calls[i] != nullptr) {
-                        new_dim.loc = func_calls[i]->base.loc;
-                        new_dim.m_start = func_calls[i];
-                        new_dim.m_length = func_calls[i + 1];
-                        new_dims.push_back(al, new_dim);
-                    }
-                }
+                fill_new_dims(t, func_calls, new_dims);
                 return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
             }
             case ASR::ttypeType::Real: {
@@ -2088,16 +2096,7 @@ public:
                 fill_expr_in_ttype_t(func_calls, t->m_dims, t->n_dims);
                 fix_exprs_ttype_t(func_calls, args, f);
                 Vec<ASR::dimension_t> new_dims;
-                new_dims.reserve(al, t->n_dims);
-                for( size_t i = 0; i < func_calls.size(); i += 2 ) {
-                    ASR::dimension_t new_dim;
-                    if (func_calls[i] != nullptr) {
-                        new_dim.loc = func_calls[i]->base.loc;
-                        new_dim.m_start = func_calls[i];
-                        new_dim.m_length = func_calls[i + 1];
-                        new_dims.push_back(al, new_dim);
-                    }
-                }
+                fill_new_dims(t, func_calls, new_dims);
                 return ASRUtils::TYPE(ASR::make_Real_t(al, loc, t->m_kind, new_dims.p, new_dims.size()));
                 break;
             }

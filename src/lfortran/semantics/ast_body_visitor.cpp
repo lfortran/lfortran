@@ -31,6 +31,7 @@ public:
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     AST::stmt_t **starting_m_body = nullptr;
+    std::vector<ASR::symbol_t*> do_loop_variables;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
@@ -865,7 +866,7 @@ public:
 // with their list. The ImplicitDeallocate node will deallocate them if they are allocated,
 // otherwise does nothing.
     ASR::stmt_t* create_implicit_deallocate(const Location& loc) {
-        Vec<ASR::symbol_t*> del_syms;
+        Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 0);
         for( auto& item: current_scope->get_scope() ) {
             if( item.second->type == ASR::symbolType::Variable ) {
@@ -873,13 +874,14 @@ public:
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
                 if( var->m_storage == ASR::storage_typeType::Allocatable &&
                     var->m_intent == ASR::intentType::Local ) {
-                    del_syms.push_back(al, item.second);
+                    del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, item.second)));
                 }
             }
         }
         if( del_syms.size() == 0 ) {
             return nullptr;
         }
+
         return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
                     del_syms.p, del_syms.size()));
     }
@@ -1281,7 +1283,7 @@ public:
             return nullptr;
         }
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-        Vec<ASR::symbol_t*> del_syms;
+        Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
             if( subrout_call->m_args[i].m_value &&
@@ -1296,7 +1298,7 @@ public:
                     if( var->m_storage == ASR::storage_typeType::Allocatable &&
                         orig_var->m_storage == ASR::storage_typeType::Allocatable &&
                         orig_var->m_intent == ASR::intentType::Out ) {
-                        del_syms.push_back(al, arg_var->m_v);
+                        del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x->base.loc, arg_var->m_v)));
                     }
                 }
             }
@@ -1611,6 +1613,15 @@ public:
         this->visit_expr(*x.m_value);
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
+        if (target->type == ASR::exprType::Var) {
+            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
+            ASR::symbol_t *sym = var->m_v;
+            if (do_loop_variables.size() > 0 && std::find(do_loop_variables.begin(), do_loop_variables.end(), sym) != do_loop_variables.end()) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                std::string var_name = std::string(v->m_name);
+                throw SemanticError("Assignment to loop variable `" + std::string(to_lower(var_name)) +"` is not allowed", target->base.loc);
+            }
+        }
         if( ASRUtils::use_overloaded_assignment(target, value,
             current_scope, asr, al, x.base.base.loc, current_function_dependencies,
             current_module_dependencies,
@@ -2108,6 +2119,11 @@ public:
             increment = nullptr;
         }
 
+        if (var) {
+            ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(var);
+            ASR::symbol_t* loop_var_sym = loop_var->m_v;
+            do_loop_variables.push_back(loop_var_sym);
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
@@ -2119,6 +2135,7 @@ public:
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
             tmp = ASR::make_DoLoop_t(al, x.base.base.loc, head, body.p, body.size());
+            do_loop_variables.pop_back();
         } else {
             ASR::ttype_t* cond_type
                 = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));

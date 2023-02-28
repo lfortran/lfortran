@@ -165,7 +165,7 @@ stmt
     -- deallocates if allocated otherwise throws a runtime error
     | ExplicitDeallocate(expr* vars)
     -- deallocates if allocated otherwise does nothing
-    | ImplicitDeallocate(symbol* vars)
+    | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head head, stmt* body)
     | DoLoop(do_loop_head head, stmt* body)
     | ErrorStop(expr? code)

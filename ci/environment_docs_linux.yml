@@ -1,0 +1,31 @@
+name: lf
+channels:
+  - conda-forge
+dependencies:
+  - llvmdev=11.1.0
+  - toml
+  - pytest
+  - jupyter
+  - xeus=2.4.1
+  - xtl
+  - nlohmann_json
+  - cppzmq
+  - jupyter_kernel_test
+  - xonsh
+  - re2c
+  - numpy
+  - bison=3.4
+  - rapidjson
+  - ninja
+  - python=3.10
+  - nbsphinx=0.8.9
+  - myst-parser=0.18.0
+  - sphinx=4.5.0
+  - sphinx-copybutton=0.5.0
+  - lxml=4.9.2
+  - pip=23.0.1
+  - unidecode=1.3.6
+  - text-unidecode=1.3
+  - python-slugify=8.0.1
+  - pip:
+    - sphinx-material==0.0.35

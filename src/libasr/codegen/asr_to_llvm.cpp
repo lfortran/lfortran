@@ -1364,7 +1364,16 @@ public:
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
         llvm::Function* free_fn = _Deallocate();
         for( size_t i = 0; i < x.n_vars; i++ ) {
-            const ASR::symbol_t* curr_obj = x.m_vars[i];
+            const ASR::expr_t* tmp_expr = x.m_vars[i];
+            ASR::symbol_t* curr_obj = nullptr;
+            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
+                curr_obj = tmp_var->m_v;
+            } else {
+                throw CodeGenError("Cannot deallocate variables in expression " +
+                                    std::to_string(tmp_expr->type),
+                                    tmp_expr->base.loc);
+            }
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                     symbol_get_past_external(curr_obj));
             fetch_var(v);

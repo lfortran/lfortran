@@ -1847,7 +1847,7 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 array]
+                        [(Var 2 array)]
                     )]
                 )
         })
