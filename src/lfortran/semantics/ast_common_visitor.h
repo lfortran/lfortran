@@ -3295,7 +3295,7 @@ public:
             } else if( var_name == "all" ) {
                 tmp = create_ArrayAll(x);
             } else {
-                LCompilersException("create_" + var_name + " not implemented yet.");
+                throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
         }
