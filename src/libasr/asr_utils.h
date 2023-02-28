@@ -15,6 +15,14 @@ namespace LCompilers  {
 
     namespace ASRUtils  {
 
+enum class IntrinsicFunctions : int64_t {
+    Sin,
+    Cos,
+    Gamma,
+    LogGamma,
+    // ...
+};
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 
