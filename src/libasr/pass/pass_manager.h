@@ -26,6 +26,7 @@
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
+#include <libasr/pass/intrinsic_function.h>
 #include <libasr/pass/fma.h>
 #include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/sign_from_value.h>
@@ -60,6 +61,7 @@ namespace LCompilers {
         std::vector<std::string> _user_defined_passes;
         std::vector<std::string> _skip_passes;
         std::map<std::string, pass_function> _passes_db = {
+            {"intrinsic_function", &pass_replace_intrinsic_function},
             {"do_loops", &pass_replace_do_loops},
             {"global_stmts", &pass_wrap_global_stmts_into_function},
             {"implied_do_loops", &pass_replace_implied_do_loops},
@@ -143,6 +145,7 @@ namespace LCompilers {
         PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
                 "global_stmts",
+                "intrinsic_function",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_list_expr",
@@ -163,6 +166,7 @@ namespace LCompilers {
 
             _with_optimization_passes = {
                 "global_stmts",
+                "intrinsic_function",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_array_by_data",

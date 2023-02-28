@@ -7,6 +7,7 @@
 #include <lfortran/ast.h>
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
+#include <libasr/pass/intrinsic_function.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 
@@ -3087,6 +3088,41 @@ public:
         return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
     }
 
+    ASR::asr_t* create_sin(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+                                4, nullptr, 0));
+        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sin);
+        int64_t overload_id = 0;
+        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
+            intrinsic_id, args.p, args.n, overload_id, type, nullptr);
+    }
+
+    ASR::asr_t* create_cos(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
+                                4, nullptr, 0));
+        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos);
+        int64_t overload_id = 0;
+        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
+            intrinsic_id, args.p, args.n, overload_id, type, nullptr);
+    }
+
+    ASR::asr_t* create_LogGamma(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
+        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma);
+        int64_t overload_id = 0;
+        ASR::expr_t *value = nullptr;
+        ASR::expr_t *arg_value = ASRUtils::expr_value(args[0]);
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+        if (arg_value) {
+            value = eval_log_gamma(al, x.base.base.loc, arg_value);
+        }
+        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
+            intrinsic_id, args.p, args.n, overload_id, type, value);
+    }
+
+
     ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
@@ -3240,6 +3276,8 @@ public:
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "ichar" ) {
                 tmp = create_Ichar(x);
+            } else if( var_name == "log_gamma" ) {
+                tmp = create_LogGamma(x);
             } else if( var_name == "iachar" ) {
                 tmp = create_Iachar(x);
             } else if( var_name == "maxloc" ) {
@@ -3257,7 +3295,7 @@ public:
             } else if( var_name == "all" ) {
                 tmp = create_ArrayAll(x);
             } else {
-                LCompilersException("create_" + var_name + " not implemented yet.");
+                throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
             return nullptr;
         }

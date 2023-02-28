@@ -13,6 +13,7 @@ real, parameter :: &
     s7 = gamma(0.5), &
     s8 = atan2(0.5, 0.5), &
     s9 = log_gamma(0.5), &
+    s9_ = log_gamma(log_gamma(0.5) + 3*log_gamma(0.5+log_gamma(0.5))), &
     s10 = log10(0.5)
 
 integer, parameter :: &
@@ -31,6 +32,7 @@ real(dp), parameter :: &
     d7 = gamma(0.5_dp), &
     d8 = atan2(0.5_dp, 0.5_dp), &
     d9 = log_gamma(0.5_dp), &
+    d9_ = log_gamma(log_gamma(0.5_dp) + 3*log_gamma(0.5_dp+log_gamma(0.5_dp))), &
     d10 = log10(0.5_dp)
 
 integer, parameter :: &
@@ -57,10 +59,20 @@ print *, sqrt(0.5), sqrt(0.5_dp), s6, d6, sqrt(x), sqrt(y)
 print *, gamma(0.5), gamma(0.5_dp), s7, d7, gamma(x), gamma(y)
 print *, atan2(0.5, 0.5), atan2(0.5_dp, 0.5_dp), s8, d8, atan2(x,x), atan2(y,y)
 print *, log_gamma(0.5), log_gamma(0.5_dp), s9, d9, log_gamma(x), log_gamma(y)
+print *, s9_, log_gamma(log_gamma(x) + 3*log_gamma(x+log_gamma(x)))
+print *, d9_, log_gamma(log_gamma(y) + 3*log_gamma(y+log_gamma(y)))
 print *, log10(0.5), log10(0.5_dp), s10, d10, log10(x), log10(y)
 print *, nint(3.6), nint(3.6_dp), s11, d11, nint(x2), nint(y2)
 print *, floor(3.6), floor(3.6_dp), s12, d12, floor(x2), floor(y2)
 print *, nint(-3.6), nint(-3.6_dp), s13, d13, nint(-x2), nint(-y2)
 print *, floor(-3.6), floor(-3.6_dp), s14, d14, floor(-x2), floor(-y2)
 if (abs(dsqrt(4.0_dp) - 2.0_dp) > 1e-15_dp) error stop
-end
+
+if (abs(s9_ - log_gamma(log_gamma(x) + 3*log_gamma(x+log_gamma(x)))) > 1e-7) error stop
+if (abs(d9_ - log_gamma(log_gamma(y) + 3*log_gamma(y+log_gamma(y)))) > 1e-15_dp) error stop
+if (abs(s9 - 0.572364926) > 1e-7) error stop
+if (abs(d9 - 0.57236494292470008) > 1e-7_dp) error stop
+if (abs(s9_ - 0.656042993) > 1e-7) error stop
+if (abs(d9_ - 0.65604298092238577) > 1e-7_dp) error stop
+
+end program intrinsics_19
