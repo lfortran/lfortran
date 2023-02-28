@@ -258,6 +258,34 @@ public:
             ASR::PickleBaseVisitor<ASRPickleVisitor>::visit_Module(x);
         };
     }
+
+#define INTRINSIC_NAME_CASE(X)                                                 \
+            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : {   \
+                s.append(#X);                                                \
+                break;                                                         \
+            }
+
+    std::string convert_intrinsic_id(int x) {
+        std::string s;
+        if (use_colors) {
+            s.append(color(style::bold));
+            s.append(color(fg::green));
+        }
+        switch (x) {
+            INTRINSIC_NAME_CASE(Sin)
+            INTRINSIC_NAME_CASE(Cos)
+            INTRINSIC_NAME_CASE(Gamma)
+            INTRINSIC_NAME_CASE(LogGamma)
+            default : {
+                throw LCompilersException("pickle: intrinsic_id not implemented");
+            }
+        }
+        if (use_colors) {
+            s.append(color(fg::reset));
+            s.append(color(style::reset));
+        }
+        return s;
+    }
 };
 
 std::string pickle(ASR::asr_t &asr, bool colors, bool indent,
