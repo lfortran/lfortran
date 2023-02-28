@@ -109,292 +109,487 @@ define i32 @main(i32 %0, i8** %1) {
   %3 = icmp sle i32 91, %2
   %4 = load i32, i32* %marks, align 4
   %5 = icmp sle i32 %4, 100
-  %6 = mul i1 %3, %5
+  %6 = icmp eq i1 %3, false
+  %7 = alloca i1, align 1
   br i1 %6, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i32 0, i32* %out, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  br label %ifcont15
+  store i1 %3, i1* %7, align 1
+  br label %ifcont
 
 else:                                             ; preds = %.entry
-  %7 = load i32, i32* %marks, align 4
-  %8 = icmp sle i32 81, %7
+  store i1 %5, i1* %7, align 1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %8 = load i1, i1* %7, align 1
+  br i1 %8, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store i32 0, i32* %out, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  br label %ifcont30
+
+else2:                                            ; preds = %ifcont
   %9 = load i32, i32* %marks, align 4
-  %10 = icmp sle i32 %9, 90
-  %11 = mul i1 %8, %10
-  br i1 %11, label %then1, label %else2
-
-then1:                                            ; preds = %else
-  store i32 1, i32* %out, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
-  br label %ifcont14
-
-else2:                                            ; preds = %else
-  %12 = load i32, i32* %marks, align 4
-  %13 = icmp sle i32 71, %12
-  %14 = load i32, i32* %marks, align 4
-  %15 = icmp sle i32 %14, 80
-  %16 = mul i1 %13, %15
-  br i1 %16, label %then3, label %else4
+  %10 = icmp sle i32 81, %9
+  %11 = load i32, i32* %marks, align 4
+  %12 = icmp sle i32 %11, 90
+  %13 = icmp eq i1 %10, false
+  %14 = alloca i1, align 1
+  br i1 %13, label %then3, label %else4
 
 then3:                                            ; preds = %else2
-  store i32 2, i32* %out, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
-  br label %ifcont13
+  store i1 %10, i1* %14, align 1
+  br label %ifcont5
 
 else4:                                            ; preds = %else2
-  %17 = load i32, i32* %marks, align 4
-  %18 = icmp sle i32 61, %17
-  %19 = load i32, i32* %marks, align 4
-  %20 = icmp sle i32 %19, 70
-  %21 = mul i1 %18, %20
-  br i1 %21, label %then5, label %else6
+  store i1 %12, i1* %14, align 1
+  br label %ifcont5
 
-then5:                                            ; preds = %else4
-  store i32 3, i32* %out, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
-  br label %ifcont12
+ifcont5:                                          ; preds = %else4, %then3
+  %15 = load i1, i1* %14, align 1
+  br i1 %15, label %then6, label %else7
 
-else6:                                            ; preds = %else4
-  %22 = load i32, i32* %marks, align 4
-  %23 = icmp sle i32 41, %22
-  %24 = load i32, i32* %marks, align 4
-  %25 = icmp sle i32 %24, 60
-  %26 = mul i1 %23, %25
-  br i1 %26, label %then7, label %else8
+then6:                                            ; preds = %ifcont5
+  store i32 1, i32* %out, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
+  br label %ifcont29
 
-then7:                                            ; preds = %else6
-  store i32 4, i32* %out, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
-  br label %ifcont11
+else7:                                            ; preds = %ifcont5
+  %16 = load i32, i32* %marks, align 4
+  %17 = icmp sle i32 71, %16
+  %18 = load i32, i32* %marks, align 4
+  %19 = icmp sle i32 %18, 80
+  %20 = icmp eq i1 %17, false
+  %21 = alloca i1, align 1
+  br i1 %20, label %then8, label %else9
 
-else8:                                            ; preds = %else6
-  %27 = load i32, i32* %marks, align 4
-  %28 = icmp sle i32 %27, 40
-  br i1 %28, label %then9, label %else10
+then8:                                            ; preds = %else7
+  store i1 %17, i1* %21, align 1
+  br label %ifcont10
 
-then9:                                            ; preds = %else8
-  store i32 5, i32* %out, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @22, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @21, i32 0, i32 0))
-  br label %ifcont
+else9:                                            ; preds = %else7
+  store i1 %19, i1* %21, align 1
+  br label %ifcont10
 
-else10:                                           ; preds = %else8
-  store i32 6, i32* %out, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([14 x i8], [14 x i8]* @26, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @25, i32 0, i32 0))
-  br label %ifcont
+ifcont10:                                         ; preds = %else9, %then8
+  %22 = load i1, i1* %21, align 1
+  br i1 %22, label %then11, label %else12
 
-ifcont:                                           ; preds = %else10, %then9
-  br label %ifcont11
+then11:                                           ; preds = %ifcont10
+  store i32 2, i32* %out, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  br label %ifcont28
 
-ifcont11:                                         ; preds = %ifcont, %then7
-  br label %ifcont12
+else12:                                           ; preds = %ifcont10
+  %23 = load i32, i32* %marks, align 4
+  %24 = icmp sle i32 61, %23
+  %25 = load i32, i32* %marks, align 4
+  %26 = icmp sle i32 %25, 70
+  %27 = icmp eq i1 %24, false
+  %28 = alloca i1, align 1
+  br i1 %27, label %then13, label %else14
 
-ifcont12:                                         ; preds = %ifcont11, %then5
-  br label %ifcont13
-
-ifcont13:                                         ; preds = %ifcont12, %then3
-  br label %ifcont14
-
-ifcont14:                                         ; preds = %ifcont13, %then1
+then13:                                           ; preds = %else12
+  store i1 %24, i1* %28, align 1
   br label %ifcont15
 
-ifcont15:                                         ; preds = %ifcont14, %then
-  %29 = load i32, i32* %marks, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))
-  %30 = load i32, i32* %out, align 4
-  %31 = icmp ne i32 %30, 1
-  br i1 %31, label %then16, label %else17
+else14:                                           ; preds = %else12
+  store i1 %26, i1* %28, align 1
+  br label %ifcont15
+
+ifcont15:                                         ; preds = %else14, %then13
+  %29 = load i1, i1* %28, align 1
+  br i1 %29, label %then16, label %else17
 
 then16:                                           ; preds = %ifcont15
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @32, i32 0, i32 0))
-  call void @exit(i32 1)
-  br label %ifcont18
+  store i32 3, i32* %out, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
+  br label %ifcont27
 
 else17:                                           ; preds = %ifcont15
-  br label %ifcont18
-
-ifcont18:                                         ; preds = %else17, %then16
+  %30 = load i32, i32* %marks, align 4
+  %31 = icmp sle i32 41, %30
   %32 = load i32, i32* %marks, align 4
-  %33 = icmp sle i32 91, %32
-  %34 = load i32, i32* %marks, align 4
-  %35 = icmp sle i32 %34, 100
-  %36 = mul i1 %33, %35
-  br i1 %36, label %then19, label %else20
+  %33 = icmp sle i32 %32, 60
+  %34 = icmp eq i1 %31, false
+  %35 = alloca i1, align 1
+  br i1 %34, label %then18, label %else19
 
-then19:                                           ; preds = %ifcont18
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @36, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0))
-  br label %ifcont36
+then18:                                           ; preds = %else17
+  store i1 %31, i1* %35, align 1
+  br label %ifcont20
 
-else20:                                           ; preds = %ifcont18
+else19:                                           ; preds = %else17
+  store i1 %33, i1* %35, align 1
+  br label %ifcont20
+
+ifcont20:                                         ; preds = %else19, %then18
+  %36 = load i1, i1* %35, align 1
+  br i1 %36, label %then21, label %else22
+
+then21:                                           ; preds = %ifcont20
+  store i32 4, i32* %out, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  br label %ifcont26
+
+else22:                                           ; preds = %ifcont20
   %37 = load i32, i32* %marks, align 4
-  %38 = icmp sle i32 81, %37
-  %39 = load i32, i32* %marks, align 4
-  %40 = icmp sle i32 %39, 90
-  %41 = mul i1 %38, %40
-  br i1 %41, label %then21, label %else22
-
-then21:                                           ; preds = %else20
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @40, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0))
-  br label %ifcont35
-
-else22:                                           ; preds = %else20
-  %42 = load i32, i32* %marks, align 4
-  %43 = icmp sle i32 71, %42
-  %44 = load i32, i32* %marks, align 4
-  %45 = icmp sle i32 %44, 80
-  %46 = mul i1 %43, %45
-  br i1 %46, label %then23, label %else24
+  %38 = icmp sle i32 %37, 40
+  br i1 %38, label %then23, label %else24
 
 then23:                                           ; preds = %else22
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @44, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @42, i32 0, i32 0))
-  br label %ifcont34
+  store i32 5, i32* %out, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @22, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @21, i32 0, i32 0))
+  br label %ifcont25
 
 else24:                                           ; preds = %else22
-  %47 = load i32, i32* %marks, align 4
-  %48 = icmp sle i32 61, %47
-  %49 = load i32, i32* %marks, align 4
-  %50 = icmp sle i32 %49, 70
-  %51 = mul i1 %48, %50
-  br i1 %51, label %then25, label %else26
+  store i32 6, i32* %out, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([14 x i8], [14 x i8]* @26, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @25, i32 0, i32 0))
+  br label %ifcont25
 
-then25:                                           ; preds = %else24
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @48, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0))
+ifcont25:                                         ; preds = %else24, %then23
+  br label %ifcont26
+
+ifcont26:                                         ; preds = %ifcont25, %then21
+  br label %ifcont27
+
+ifcont27:                                         ; preds = %ifcont26, %then16
+  br label %ifcont28
+
+ifcont28:                                         ; preds = %ifcont27, %then11
+  br label %ifcont29
+
+ifcont29:                                         ; preds = %ifcont28, %then6
+  br label %ifcont30
+
+ifcont30:                                         ; preds = %ifcont29, %then1
+  %39 = load i32, i32* %marks, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 %39, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))
+  %40 = load i32, i32* %out, align 4
+  %41 = icmp ne i32 %40, 1
+  br i1 %41, label %then31, label %else32
+
+then31:                                           ; preds = %ifcont30
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @32, i32 0, i32 0))
+  call void @exit(i32 1)
   br label %ifcont33
 
-else26:                                           ; preds = %else24
-  %52 = load i32, i32* %marks, align 4
-  %53 = icmp sle i32 41, %52
-  %54 = load i32, i32* %marks, align 4
-  %55 = icmp sle i32 %54, 60
-  %56 = mul i1 %53, %55
-  br i1 %56, label %then27, label %else28
-
-then27:                                           ; preds = %else26
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @52, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @50, i32 0, i32 0))
-  br label %ifcont32
-
-else28:                                           ; preds = %else26
-  %57 = load i32, i32* %marks, align 4
-  %58 = icmp sle i32 %57, 40
-  br i1 %58, label %then29, label %else30
-
-then29:                                           ; preds = %else28
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @56, i32 0, i32 0), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @55, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @54, i32 0, i32 0))
-  br label %ifcont31
-
-else30:                                           ; preds = %else28
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @60, i32 0, i32 0), i8* getelementptr inbounds ([14 x i8], [14 x i8]* @59, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @58, i32 0, i32 0))
-  br label %ifcont31
-
-ifcont31:                                         ; preds = %else30, %then29
-  br label %ifcont32
-
-ifcont32:                                         ; preds = %ifcont31, %then27
+else32:                                           ; preds = %ifcont30
   br label %ifcont33
 
-ifcont33:                                         ; preds = %ifcont32, %then25
-  br label %ifcont34
+ifcont33:                                         ; preds = %else32, %then31
+  %42 = load i32, i32* %marks, align 4
+  %43 = icmp sle i32 91, %42
+  %44 = load i32, i32* %marks, align 4
+  %45 = icmp sle i32 %44, 100
+  %46 = icmp eq i1 %43, false
+  %47 = alloca i1, align 1
+  br i1 %46, label %then34, label %else35
 
-ifcont34:                                         ; preds = %ifcont33, %then23
-  br label %ifcont35
-
-ifcont35:                                         ; preds = %ifcont34, %then21
+then34:                                           ; preds = %ifcont33
+  store i1 %43, i1* %47, align 1
   br label %ifcont36
 
-ifcont36:                                         ; preds = %ifcont35, %then19
-  %59 = load i32, i32* %marks, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @64, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @63, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @61, i32 0, i32 0), i32 %59, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @62, i32 0, i32 0))
-  %60 = load i32, i32* %marks, align 4
-  %61 = icmp sle i32 91, %60
-  %62 = load i32, i32* %marks, align 4
-  %63 = icmp sle i32 %62, 100
-  %64 = mul i1 %61, %63
-  br i1 %64, label %then37, label %else38
+else35:                                           ; preds = %ifcont33
+  store i1 %45, i1* %47, align 1
+  br label %ifcont36
+
+ifcont36:                                         ; preds = %else35, %then34
+  %48 = load i1, i1* %47, align 1
+  br i1 %48, label %then37, label %else38
 
 then37:                                           ; preds = %ifcont36
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @68, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @67, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @66, i32 0, i32 0))
-  br label %ifcont54
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @36, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0))
+  br label %ifcont66
 
 else38:                                           ; preds = %ifcont36
-  %65 = load i32, i32* %marks, align 4
-  %66 = icmp sle i32 81, %65
-  %67 = load i32, i32* %marks, align 4
-  %68 = icmp sle i32 %67, 90
-  %69 = mul i1 %66, %68
-  br i1 %69, label %then39, label %else40
+  %49 = load i32, i32* %marks, align 4
+  %50 = icmp sle i32 81, %49
+  %51 = load i32, i32* %marks, align 4
+  %52 = icmp sle i32 %51, 90
+  %53 = icmp eq i1 %50, false
+  %54 = alloca i1, align 1
+  br i1 %53, label %then39, label %else40
 
 then39:                                           ; preds = %else38
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @72, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @71, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @70, i32 0, i32 0))
-  br label %ifcont53
+  store i1 %50, i1* %54, align 1
+  br label %ifcont41
 
 else40:                                           ; preds = %else38
+  store i1 %52, i1* %54, align 1
+  br label %ifcont41
+
+ifcont41:                                         ; preds = %else40, %then39
+  %55 = load i1, i1* %54, align 1
+  br i1 %55, label %then42, label %else43
+
+then42:                                           ; preds = %ifcont41
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @40, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @38, i32 0, i32 0))
+  br label %ifcont65
+
+else43:                                           ; preds = %ifcont41
+  %56 = load i32, i32* %marks, align 4
+  %57 = icmp sle i32 71, %56
+  %58 = load i32, i32* %marks, align 4
+  %59 = icmp sle i32 %58, 80
+  %60 = icmp eq i1 %57, false
+  %61 = alloca i1, align 1
+  br i1 %60, label %then44, label %else45
+
+then44:                                           ; preds = %else43
+  store i1 %57, i1* %61, align 1
+  br label %ifcont46
+
+else45:                                           ; preds = %else43
+  store i1 %59, i1* %61, align 1
+  br label %ifcont46
+
+ifcont46:                                         ; preds = %else45, %then44
+  %62 = load i1, i1* %61, align 1
+  br i1 %62, label %then47, label %else48
+
+then47:                                           ; preds = %ifcont46
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @44, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @42, i32 0, i32 0))
+  br label %ifcont64
+
+else48:                                           ; preds = %ifcont46
+  %63 = load i32, i32* %marks, align 4
+  %64 = icmp sle i32 61, %63
+  %65 = load i32, i32* %marks, align 4
+  %66 = icmp sle i32 %65, 70
+  %67 = icmp eq i1 %64, false
+  %68 = alloca i1, align 1
+  br i1 %67, label %then49, label %else50
+
+then49:                                           ; preds = %else48
+  store i1 %64, i1* %68, align 1
+  br label %ifcont51
+
+else50:                                           ; preds = %else48
+  store i1 %66, i1* %68, align 1
+  br label %ifcont51
+
+ifcont51:                                         ; preds = %else50, %then49
+  %69 = load i1, i1* %68, align 1
+  br i1 %69, label %then52, label %else53
+
+then52:                                           ; preds = %ifcont51
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @48, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0))
+  br label %ifcont63
+
+else53:                                           ; preds = %ifcont51
   %70 = load i32, i32* %marks, align 4
-  %71 = icmp sle i32 71, %70
+  %71 = icmp sle i32 41, %70
   %72 = load i32, i32* %marks, align 4
-  %73 = icmp sle i32 %72, 80
-  %74 = mul i1 %71, %73
-  br i1 %74, label %then41, label %else42
+  %73 = icmp sle i32 %72, 60
+  %74 = icmp eq i1 %71, false
+  %75 = alloca i1, align 1
+  br i1 %74, label %then54, label %else55
 
-then41:                                           ; preds = %else40
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @76, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @75, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @74, i32 0, i32 0))
-  br label %ifcont52
+then54:                                           ; preds = %else53
+  store i1 %71, i1* %75, align 1
+  br label %ifcont56
 
-else42:                                           ; preds = %else40
-  %75 = load i32, i32* %marks, align 4
-  %76 = icmp sle i32 61, %75
+else55:                                           ; preds = %else53
+  store i1 %73, i1* %75, align 1
+  br label %ifcont56
+
+ifcont56:                                         ; preds = %else55, %then54
+  %76 = load i1, i1* %75, align 1
+  br i1 %76, label %then57, label %else58
+
+then57:                                           ; preds = %ifcont56
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @52, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @50, i32 0, i32 0))
+  br label %ifcont62
+
+else58:                                           ; preds = %ifcont56
   %77 = load i32, i32* %marks, align 4
-  %78 = icmp sle i32 %77, 70
-  %79 = mul i1 %76, %78
-  br i1 %79, label %then43, label %else44
+  %78 = icmp sle i32 %77, 40
+  br i1 %78, label %then59, label %else60
 
-then43:                                           ; preds = %else42
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @80, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0))
-  br label %ifcont51
+then59:                                           ; preds = %else58
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @56, i32 0, i32 0), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @55, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @54, i32 0, i32 0))
+  br label %ifcont61
 
-else44:                                           ; preds = %else42
+else60:                                           ; preds = %else58
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @60, i32 0, i32 0), i8* getelementptr inbounds ([14 x i8], [14 x i8]* @59, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @58, i32 0, i32 0))
+  br label %ifcont61
+
+ifcont61:                                         ; preds = %else60, %then59
+  br label %ifcont62
+
+ifcont62:                                         ; preds = %ifcont61, %then57
+  br label %ifcont63
+
+ifcont63:                                         ; preds = %ifcont62, %then52
+  br label %ifcont64
+
+ifcont64:                                         ; preds = %ifcont63, %then47
+  br label %ifcont65
+
+ifcont65:                                         ; preds = %ifcont64, %then42
+  br label %ifcont66
+
+ifcont66:                                         ; preds = %ifcont65, %then37
+  %79 = load i32, i32* %marks, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @64, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @63, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @61, i32 0, i32 0), i32 %79, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @62, i32 0, i32 0))
   %80 = load i32, i32* %marks, align 4
-  %81 = icmp sle i32 41, %80
+  %81 = icmp sle i32 91, %80
   %82 = load i32, i32* %marks, align 4
-  %83 = icmp sle i32 %82, 60
-  %84 = mul i1 %81, %83
-  br i1 %84, label %then45, label %else46
+  %83 = icmp sle i32 %82, 100
+  %84 = icmp eq i1 %81, false
+  %85 = alloca i1, align 1
+  br i1 %84, label %then67, label %else68
 
-then45:                                           ; preds = %else44
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @84, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @83, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @82, i32 0, i32 0))
-  br label %ifcont50
+then67:                                           ; preds = %ifcont66
+  store i1 %81, i1* %85, align 1
+  br label %ifcont69
 
-else46:                                           ; preds = %else44
-  %85 = load i32, i32* %marks, align 4
-  %86 = icmp sle i32 %85, 40
-  br i1 %86, label %then47, label %else48
+else68:                                           ; preds = %ifcont66
+  store i1 %83, i1* %85, align 1
+  br label %ifcont69
 
-then47:                                           ; preds = %else46
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @88, i32 0, i32 0), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @87, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @86, i32 0, i32 0))
-  br label %ifcont49
+ifcont69:                                         ; preds = %else68, %then67
+  %86 = load i1, i1* %85, align 1
+  br i1 %86, label %then70, label %else71
 
-else48:                                           ; preds = %else46
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @92, i32 0, i32 0), i8* getelementptr inbounds ([14 x i8], [14 x i8]* @91, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @90, i32 0, i32 0))
-  br label %ifcont49
+then70:                                           ; preds = %ifcont69
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @68, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @67, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @66, i32 0, i32 0))
+  br label %ifcont99
 
-ifcont49:                                         ; preds = %else48, %then47
-  br label %ifcont50
-
-ifcont50:                                         ; preds = %ifcont49, %then45
-  br label %ifcont51
-
-ifcont51:                                         ; preds = %ifcont50, %then43
-  br label %ifcont52
-
-ifcont52:                                         ; preds = %ifcont51, %then41
-  br label %ifcont53
-
-ifcont53:                                         ; preds = %ifcont52, %then39
-  br label %ifcont54
-
-ifcont54:                                         ; preds = %ifcont53, %then37
+else71:                                           ; preds = %ifcont69
   %87 = load i32, i32* %marks, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @96, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @95, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @93, i32 0, i32 0), i32 %87, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @94, i32 0, i32 0))
+  %88 = icmp sle i32 81, %87
+  %89 = load i32, i32* %marks, align 4
+  %90 = icmp sle i32 %89, 90
+  %91 = icmp eq i1 %88, false
+  %92 = alloca i1, align 1
+  br i1 %91, label %then72, label %else73
+
+then72:                                           ; preds = %else71
+  store i1 %88, i1* %92, align 1
+  br label %ifcont74
+
+else73:                                           ; preds = %else71
+  store i1 %90, i1* %92, align 1
+  br label %ifcont74
+
+ifcont74:                                         ; preds = %else73, %then72
+  %93 = load i1, i1* %92, align 1
+  br i1 %93, label %then75, label %else76
+
+then75:                                           ; preds = %ifcont74
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @72, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @71, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @70, i32 0, i32 0))
+  br label %ifcont98
+
+else76:                                           ; preds = %ifcont74
+  %94 = load i32, i32* %marks, align 4
+  %95 = icmp sle i32 71, %94
+  %96 = load i32, i32* %marks, align 4
+  %97 = icmp sle i32 %96, 80
+  %98 = icmp eq i1 %95, false
+  %99 = alloca i1, align 1
+  br i1 %98, label %then77, label %else78
+
+then77:                                           ; preds = %else76
+  store i1 %95, i1* %99, align 1
+  br label %ifcont79
+
+else78:                                           ; preds = %else76
+  store i1 %97, i1* %99, align 1
+  br label %ifcont79
+
+ifcont79:                                         ; preds = %else78, %then77
+  %100 = load i1, i1* %99, align 1
+  br i1 %100, label %then80, label %else81
+
+then80:                                           ; preds = %ifcont79
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @76, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @75, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @74, i32 0, i32 0))
+  br label %ifcont97
+
+else81:                                           ; preds = %ifcont79
+  %101 = load i32, i32* %marks, align 4
+  %102 = icmp sle i32 61, %101
+  %103 = load i32, i32* %marks, align 4
+  %104 = icmp sle i32 %103, 70
+  %105 = icmp eq i1 %102, false
+  %106 = alloca i1, align 1
+  br i1 %105, label %then82, label %else83
+
+then82:                                           ; preds = %else81
+  store i1 %102, i1* %106, align 1
+  br label %ifcont84
+
+else83:                                           ; preds = %else81
+  store i1 %104, i1* %106, align 1
+  br label %ifcont84
+
+ifcont84:                                         ; preds = %else83, %then82
+  %107 = load i1, i1* %106, align 1
+  br i1 %107, label %then85, label %else86
+
+then85:                                           ; preds = %ifcont84
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @80, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0))
+  br label %ifcont96
+
+else86:                                           ; preds = %ifcont84
+  %108 = load i32, i32* %marks, align 4
+  %109 = icmp sle i32 41, %108
+  %110 = load i32, i32* %marks, align 4
+  %111 = icmp sle i32 %110, 60
+  %112 = icmp eq i1 %109, false
+  %113 = alloca i1, align 1
+  br i1 %112, label %then87, label %else88
+
+then87:                                           ; preds = %else86
+  store i1 %109, i1* %113, align 1
+  br label %ifcont89
+
+else88:                                           ; preds = %else86
+  store i1 %111, i1* %113, align 1
+  br label %ifcont89
+
+ifcont89:                                         ; preds = %else88, %then87
+  %114 = load i1, i1* %113, align 1
+  br i1 %114, label %then90, label %else91
+
+then90:                                           ; preds = %ifcont89
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @84, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @83, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @82, i32 0, i32 0))
+  br label %ifcont95
+
+else91:                                           ; preds = %ifcont89
+  %115 = load i32, i32* %marks, align 4
+  %116 = icmp sle i32 %115, 40
+  br i1 %116, label %then92, label %else93
+
+then92:                                           ; preds = %else91
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @88, i32 0, i32 0), i8* getelementptr inbounds ([18 x i8], [18 x i8]* @87, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @86, i32 0, i32 0))
+  br label %ifcont94
+
+else93:                                           ; preds = %else91
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @92, i32 0, i32 0), i8* getelementptr inbounds ([14 x i8], [14 x i8]* @91, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @90, i32 0, i32 0))
+  br label %ifcont94
+
+ifcont94:                                         ; preds = %else93, %then92
+  br label %ifcont95
+
+ifcont95:                                         ; preds = %ifcont94, %then90
+  br label %ifcont96
+
+ifcont96:                                         ; preds = %ifcont95, %then85
+  br label %ifcont97
+
+ifcont97:                                         ; preds = %ifcont96, %then80
+  br label %ifcont98
+
+ifcont98:                                         ; preds = %ifcont97, %then75
+  br label %ifcont99
+
+ifcont99:                                         ; preds = %ifcont98, %then70
+  %117 = load i32, i32* %marks, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @96, i32 0, i32 0), i8* getelementptr inbounds ([16 x i8], [16 x i8]* @95, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @93, i32 0, i32 0), i32 %117, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @94, i32 0, i32 0))
   ret i32 0
 }
 
