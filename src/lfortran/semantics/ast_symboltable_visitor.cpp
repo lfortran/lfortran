@@ -432,10 +432,10 @@ public:
                     char *start=letter_spec->m_start;
                     char *end=letter_spec->m_end;
                     if (!start) {
-                        implicit_dictionary[std::string(1, *end)] = type;
+                        implicit_dictionary[to_lower(std::string(1, *end))] = type;
                     } else {
                         for(char ch=*start; ch<=*end; ch++){
-                            implicit_dictionary[std::string(1, ch)] = type;
+                            implicit_dictionary[to_lower(std::string(1, ch))] = type;
                         }
                     }
                 }
