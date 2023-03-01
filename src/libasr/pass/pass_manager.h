@@ -61,11 +61,11 @@ namespace LCompilers {
         std::vector<std::string> _user_defined_passes;
         std::vector<std::string> _skip_passes;
         std::map<std::string, pass_function> _passes_db = {
-            {"intrinsic_function", &pass_replace_intrinsic_function},
             {"do_loops", &pass_replace_do_loops},
             {"global_stmts", &pass_wrap_global_stmts_into_function},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
+            {"intrinsic_function", &pass_replace_intrinsic_function},
             {"arr_slice", &pass_replace_arr_slice},
             {"print_arr", &pass_replace_print_arr},
             {"print_list", &pass_replace_print_list},
@@ -145,13 +145,13 @@ namespace LCompilers {
         PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
                 "global_stmts",
-                "intrinsic_function",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_list_expr",
                 "arr_slice",
                 "subroutine_from_function",
                 "array_op",
+                "intrinsic_function",
                 "pass_array_by_data",
                 "print_arr",
                 "print_list",
@@ -166,13 +166,13 @@ namespace LCompilers {
 
             _with_optimization_passes = {
                 "global_stmts",
-                "intrinsic_function",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_array_by_data",
                 "arr_slice",
                 "subroutine_from_function",
                 "array_op",
+                "intrinsic_function",
                 "print_arr",
                 "print_list",
                 "loop_vectorise",
