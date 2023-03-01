@@ -930,7 +930,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             // of the function (which returned array) now points
             // to the newly created subroutine.
             for( auto& item: replace_vec ) {
-                xx.m_global_scope->add_symbol(item.first, item.second);
+                xx.m_global_scope->overwrite_symbol(item.first, item.second);
             }
 
             // Now visit everything else
