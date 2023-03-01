@@ -238,6 +238,26 @@
                                                 )
                                         })
                                     reduce_sum
+                                    (FunctionType
+                                        [(Complex 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        (Complex 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 c)]
                                     [(=
@@ -330,17 +350,8 @@
                                         )]
                                     )]
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sum:
@@ -469,6 +480,32 @@
                                                 )
                                         })
                                     sum
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Real 4 [(()
+                                        ())
+                                        (()
+                                        ())])
+                                        (Complex 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)
@@ -843,20 +880,11 @@
                                         [(Var 3 c_copy)]
                                     )
                                     (ImplicitDeallocate
-                                        [3 c_copy]
+                                        [(Var 3 c_copy)]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })
@@ -1088,7 +1116,7 @@
                         )]
                     )
                     (ImplicitDeallocate
-                        [2 c]
+                        [(Var 2 c)]
                     )
                     (SubroutineCall
                         2 sum
@@ -1476,9 +1504,9 @@
                         []
                     )
                     (ImplicitDeallocate
-                        [2 a
-                        2 b
-                        2 c]
+                        [(Var 2 a)
+                        (Var 2 b)
+                        (Var 2 c)]
                     )]
                 )
         })

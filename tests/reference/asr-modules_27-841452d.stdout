@@ -1,0 +1,650 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            modules_27:
+                (Program
+                    (SymbolTable
+                        12
+                        {
+                            
+                        })
+                    modules_27
+                    []
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "running modules_27 program"
+                            (Character 1 26 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                ),
+            tomlf_build:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            @get_elem_array@:
+                                (ExternalSymbol
+                                    2
+                                    @get_elem_array@
+                                    4 get_elem_array
+                                    tomlf_build_array
+                                    []
+                                    get_elem_array
+                                    Public
+                                ),
+                            @get_elem_keyval@:
+                                (ExternalSymbol
+                                    2
+                                    @get_elem_keyval@
+                                    4 get_elem_keyval
+                                    tomlf_build_array
+                                    []
+                                    get_elem_keyval
+                                    Public
+                                ),
+                            @get_elem_table@:
+                                (ExternalSymbol
+                                    2
+                                    @get_elem_table@
+                                    4 get_elem_table
+                                    tomlf_build_array
+                                    []
+                                    get_elem_table
+                                    Public
+                                ),
+                            @get_value_float_dp@:
+                                (ExternalSymbol
+                                    2
+                                    @get_value_float_dp@
+                                    9 get_value_float_dp
+                                    tomlf_build_keyval
+                                    []
+                                    get_value_float_dp
+                                    Public
+                                ),
+                            @get_value_float_sp@:
+                                (ExternalSymbol
+                                    2
+                                    @get_value_float_sp@
+                                    9 get_value_float_sp
+                                    tomlf_build_keyval
+                                    []
+                                    get_value_float_sp
+                                    Public
+                                ),
+                            get_value:
+                                (GenericProcedure
+                                    2
+                                    get_value
+                                    [2 @get_elem_table@
+                                    2 @get_elem_array@
+                                    2 @get_elem_keyval@
+                                    2 @get_value_float_sp@
+                                    2 @get_value_float_dp@]
+                                    Public
+                                )
+                        })
+                    tomlf_build
+                    [tomlf_build_array
+                    tomlf_build_keyval]
+                    .false.
+                    .false.
+                ),
+            tomlf_build_array:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            get_elem_array:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            array:
+                                                (Variable
+                                                    5
+                                                    array
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            pos:
+                                                (Variable
+                                                    5
+                                                    pos
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ptr:
+                                                (Variable
+                                                    5
+                                                    ptr
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Real 4 [])
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            stat:
+                                                (Variable
+                                                    5
+                                                    stat
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                )
+                                        })
+                                    get_elem_array
+                                    (FunctionType
+                                        [(Complex 4 [])
+                                        (Integer 4 [])
+                                        (Pointer
+                                            (Real 4 [])
+                                        )
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 array)
+                                    (Var 5 pos)
+                                    (Var 5 ptr)
+                                    (Var 5 stat)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            get_elem_keyval:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            array:
+                                                (Variable
+                                                    6
+                                                    array
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            pos:
+                                                (Variable
+                                                    6
+                                                    pos
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ptr:
+                                                (Variable
+                                                    6
+                                                    ptr
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Complex 4 [])
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            stat:
+                                                (Variable
+                                                    6
+                                                    stat
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                )
+                                        })
+                                    get_elem_keyval
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])
+                                        (Pointer
+                                            (Complex 4 [])
+                                        )
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 6 array)
+                                    (Var 6 pos)
+                                    (Var 6 ptr)
+                                    (Var 6 stat)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            get_elem_table:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            array:
+                                                (Variable
+                                                    7
+                                                    array
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            pos:
+                                                (Variable
+                                                    7
+                                                    pos
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ptr:
+                                                (Variable
+                                                    7
+                                                    ptr
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Real 4 [])
+                                                    )
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            stat:
+                                                (Variable
+                                                    7
+                                                    stat
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                )
+                                        })
+                                    get_elem_table
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])
+                                        (Pointer
+                                            (Real 4 [])
+                                        )
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 7 array)
+                                    (Var 7 pos)
+                                    (Var 7 ptr)
+                                    (Var 7 stat)]
+                                    [(=
+                                        (Var 4 global_var)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            get_value:
+                                (GenericProcedure
+                                    4
+                                    get_value
+                                    [4 get_elem_table
+                                    4 get_elem_array
+                                    4 get_elem_keyval
+                                    4 get_value_float_sp
+                                    4 get_value_float_dp]
+                                    Public
+                                ),
+                            get_value_float_dp:
+                                (ExternalSymbol
+                                    4
+                                    get_value_float_dp
+                                    9 get_value_float_dp
+                                    tomlf_build_keyval
+                                    []
+                                    get_value_float_dp
+                                    Public
+                                ),
+                            get_value_float_sp:
+                                (ExternalSymbol
+                                    4
+                                    get_value_float_sp
+                                    9 get_value_float_sp
+                                    tomlf_build_keyval
+                                    []
+                                    get_value_float_sp
+                                    Public
+                                ),
+                            global_var:
+                                (ExternalSymbol
+                                    4
+                                    global_var
+                                    9 global_var
+                                    tomlf_build_keyval
+                                    []
+                                    global_var
+                                    Public
+                                )
+                        })
+                    tomlf_build_array
+                    [tomlf_build_keyval]
+                    .true.
+                    .false.
+                ),
+            tomlf_build_keyval:
+                (Module
+                    (SymbolTable
+                        9
+                        {
+                            get_value:
+                                (GenericProcedure
+                                    9
+                                    get_value
+                                    [9 get_value_float_sp
+                                    9 get_value_float_dp]
+                                    Public
+                                ),
+                            get_value_float_dp:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            self:
+                                                (Variable
+                                                    10
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            stat:
+                                                (Variable
+                                                    10
+                                                    stat
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            val:
+                                                (Variable
+                                                    10
+                                                    val
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    get_value_float_dp
+                                    (FunctionType
+                                        [(Complex 4 [])
+                                        (Real 8 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 10 self)
+                                    (Var 10 val)
+                                    (Var 10 stat)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            get_value_float_sp:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            self:
+                                                (Variable
+                                                    11
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            stat:
+                                                (Variable
+                                                    11
+                                                    stat
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            val:
+                                                (Variable
+                                                    11
+                                                    val
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    get_value_float_sp
+                                    (FunctionType
+                                        [(Complex 4 [])
+                                        (Real 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 11 self)
+                                    (Var 11 val)
+                                    (Var 11 stat)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            global_var:
+                                (Variable
+                                    9
+                                    global_var
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    tomlf_build_keyval
+                    []
+                    .true.
+                    .false.
+                )
+        })
+    []
+)

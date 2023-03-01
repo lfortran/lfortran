@@ -104,6 +104,21 @@
                                                 )
                                         })
                                     a1
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)]
                                     [(=
@@ -118,17 +133,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

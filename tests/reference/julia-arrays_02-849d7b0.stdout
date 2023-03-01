@@ -442,12 +442,7 @@ end
 
 function dsqrt(x::Float64)::Float64
     local r::Float64 = 0.0
-    if x ≥ Float64(0)
-        r = x ^ (  1.00000000000000000e+00 / Float64(2))
-    else
-        println(Base.stderr, "ERROR STOP")
-        exit(1)
-    end
+    r = sqrt(x)
     return r
 end
 
@@ -731,12 +726,7 @@ end
 
 function ssqrt(x::Float32)::Float32
     local r::Float32 = 0.0
-    if x ≥ Float32(0)
-        r = x ^ (  1.00000000000000000e+00 / Float32(2))
-    else
-        println(Base.stderr, "ERROR STOP")
-        exit(1)
-    end
+    r = sqrt(x)
     return r
 end
 

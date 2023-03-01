@@ -195,6 +195,52 @@
                                                 )
                                         })
                                     atleast
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Integer 4 [])
+                                        (Character 1 -1 () [])]
+                                        (Character 1 -3 (FunctionCall
+                                            3 max@imax
+                                            3 max
+                                            [((Var 3 length))
+                                            ((FunctionCall
+                                                3 len
+                                                ()
+                                                [((FunctionCall
+                                                    3 trim
+                                                    ()
+                                                    [((Var 3 line))]
+                                                    (Character 1 -3 (FunctionCall
+                                                        3 len_trim
+                                                        ()
+                                                        [((Var 3 line))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ) [])
+                                                    ()
+                                                    ()
+                                                ))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [len
                                     len_trim
                                     max@imax
@@ -299,17 +345,8 @@
                                         )]
                                     )]
                                     (Var 3 strout)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             print_dictionary:
@@ -488,6 +525,22 @@
                                                 )
                                         })
                                     print_dictionary
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Logical 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [atleast
                                     imax
                                     len
@@ -737,24 +790,80 @@
                                                 ()
                                             )
                                             ()
-                                            (Integer 4 [])
+                                            (Tuple
+                                                [(Character 1 -3 (FunctionCall
+                                                    4 imax
+                                                    3 max
+                                                    [((FunctionCall
+                                                        4 max@imax
+                                                        4 max
+                                                        [((FunctionCall
+                                                            4 len
+                                                            ()
+                                                            [((Var 4 keywords))]
+                                                            (Integer 4 [])
+                                                            ()
+                                                            ()
+                                                        ))
+                                                        ((IntegerConstant 8 (Integer 4 [])))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ))
+                                                    ((FunctionCall
+                                                        4 len
+                                                        ()
+                                                        [((FunctionCall
+                                                            4 trim
+                                                            ()
+                                                            [((ArrayItem
+                                                                (Var 4 keywords)
+                                                                [(()
+                                                                (Var 4 i)
+                                                                ())]
+                                                                (Character 1 -2 () [])
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            (Character 1 -3 (FunctionCall
+                                                                4 len_trim
+                                                                ()
+                                                                [((ArrayItem
+                                                                    (Var 4 keywords)
+                                                                    [(()
+                                                                    (Var 4 i)
+                                                                    ())]
+                                                                    (Character 1 -2 () [])
+                                                                    ColMajor
+                                                                    ()
+                                                                ))]
+                                                                (Integer 4 [])
+                                                                ()
+                                                                ()
+                                                            ) [])
+                                                            ()
+                                                            ()
+                                                        ))]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                ) [])
+                                                (Character 1 -2 () [])
+                                                (Logical 4 [])
+                                                (Character 1 -2 () [])]
+                                            )
                                             ()
                                         )]
                                         ()
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

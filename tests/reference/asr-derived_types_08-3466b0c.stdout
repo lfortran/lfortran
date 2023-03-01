@@ -2,6 +2,26 @@
     (SymbolTable
         1
         {
+            1_rectangle:
+                (ExternalSymbol
+                    1
+                    1_rectangle
+                    2 rectangle
+                    shape_mod
+                    []
+                    rectangle
+                    Public
+                ),
+            1_shape:
+                (ExternalSymbol
+                    1
+                    1_shape
+                    2 shape
+                    shape_mod
+                    []
+                    shape
+                    Public
+                ),
             derived_types_08:
                 (Program
                     (SymbolTable
@@ -22,7 +42,7 @@
                                     6
                                     1_rectangle_length
                                     4 length
-                                    rectangle
+                                    1_rectangle
                                     []
                                     length
                                     Public
@@ -32,7 +52,7 @@
                                     6
                                     1_rectangle_width
                                     4 width
-                                    rectangle
+                                    1_rectangle
                                     []
                                     width
                                     Public
@@ -42,7 +62,7 @@
                                     6
                                     1_shape_color
                                     3 color
-                                    shape
+                                    1_shape
                                     []
                                     color
                                     Public
@@ -52,7 +72,7 @@
                                     6
                                     1_shape_filled
                                     3 filled
-                                    shape
+                                    1_shape
                                     []
                                     filled
                                     Public
@@ -62,7 +82,7 @@
                                     6
                                     1_shape_x
                                     3 x
-                                    shape
+                                    1_shape
                                     []
                                     x
                                     Public
@@ -72,7 +92,7 @@
                                     6
                                     1_shape_y
                                     3 y
-                                    shape
+                                    1_shape
                                     []
                                     y
                                     Public
@@ -396,6 +416,28 @@
                                                 )
                                         })
                                     initialize_subrout
+                                    (FunctionType
+                                        [(Class
+                                            2 shape
+                                            []
+                                        )
+                                        (Integer 4 [])
+                                        (Logical 4 [])
+                                        (Integer 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 5 sh)
                                     (Var 5 color)
@@ -443,17 +485,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             rectangle:

@@ -29,6 +29,7 @@ LIBASR_DIR = os.path.dirname(TESTER_DIR)
 SRC_DIR = os.path.dirname(LIBASR_DIR)
 ROOT_DIR = os.path.dirname(SRC_DIR)
 
+no_color = False
 
 class RunException(Exception):
     pass
@@ -166,7 +167,7 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
     assert basename is not None and basename != ""
     pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
     if infile and not os.path.exists(infile):
-        raise RunException("The input file does not exist")
+        raise RunException("The input file %s does not exist" % (infile))
     outfile = os.path.join(out_dir, basename + "." + "out")
 
     infile = infile.replace("\\\\", "\\").replace("\\", "/")
@@ -329,7 +330,10 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
         raise RunException(
             "Testing with reference output failed." +
             full_err_str)
-    log.debug(s + " " + check())
+    if no_color:
+        log.debug(s + " PASS")
+    else:
+        log.debug(s + " " + check())
 
 
 def tester_main(compiler, single_test):
@@ -354,8 +358,12 @@ def tester_main(compiler, single_test):
                         help="Exclude specific backends, only works when -b is not specified"),
     parser.add_argument("--no-llvm", action="store_true",
                         help="Skip LLVM tests")
+    parser.add_argument("--skip-run-with-dbg", action="store_true",
+                        help="Skip runtime tests with debugging information enabled")
     parser.add_argument("-s", "--sequential", action="store_true",
                         help="Run all tests sequentially")
+    parser.add_argument("--no-color", action="store_true",
+                    help="Turn off colored tests output")
     args = parser.parse_args()
     update_reference = args.update
     list_tests = args.list
@@ -371,6 +379,9 @@ def tester_main(compiler, single_test):
         args.exclude_backend)) if args.exclude_backend and specific_backends is None else None
     verbose = args.verbose
     no_llvm = args.no_llvm
+    skip_run_with_dbg = args.skip_run_with_dbg
+    global no_color
+    no_color = args.no_color
 
     # So that the tests find the `lcompiler` executable
     os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
@@ -390,6 +401,19 @@ def tester_main(compiler, single_test):
     if excluded_backends:
         filtered_tests = [test for test in filtered_tests if any(
             b not in excluded_backends and b != "filename" for b in test)]
+
+    for test in filtered_tests:
+        if 'extrafiles' in test:
+            single_test(test,
+                update_reference=update_reference,
+                specific_backends=specific_backends,
+                excluded_backends=excluded_backends,
+                verbose=verbose,
+                no_llvm=no_llvm,
+                skip_run_with_dbg=True,
+                no_color=True)
+    filtered_tests = [test for test in filtered_tests if 'extrafiles' not in test]
+
     if args.sequential:
         for test in filtered_tests:
             single_test(test,
@@ -397,7 +421,9 @@ def tester_main(compiler, single_test):
                         specific_backends=specific_backends,
                         excluded_backends=excluded_backends,
                         verbose=verbose,
-                        no_llvm=no_llvm)
+                        no_llvm=no_llvm,
+                        skip_run_with_dbg=skip_run_with_dbg,
+                        no_color=no_color)
     # run in parallel
     else:
         single_tester_partial_args = partial(
@@ -406,7 +432,9 @@ def tester_main(compiler, single_test):
             specific_backends=specific_backends,
             excluded_backends=excluded_backends,
             verbose=verbose,
-            no_llvm=no_llvm)
+            no_llvm=no_llvm,
+            skip_run_with_dbg=skip_run_with_dbg,
+            no_color=no_color)
         with ThreadPoolExecutor() as ex:
             futures = ex.map(single_tester_partial_args, filtered_tests)
             for f in futures:
@@ -418,5 +446,9 @@ def tester_main(compiler, single_test):
     if update_reference:
         log.info("Test references updated.")
     else:
-        log.info(
-            f"{(color(fg.green) + color(style.bold))}TESTS PASSED{color(fg.reset) + color(style.reset)}")
+        if no_color:
+            log.info("TESTS PASSED")
+        else:
+            log.info(
+                f"{(color(fg.green) + color(style.bold))}TESTS PASSED"
+                f"{color(fg.reset) + color(style.reset)}")

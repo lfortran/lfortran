@@ -188,6 +188,21 @@
                                 )
                         })
                     f
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
                     []
                     []
                     [(DoLoop
@@ -437,17 +452,8 @@
                     )
                     (Return)]
                     ()
-                    Source
                     Public
-                    Implementation
-                    ()
                     .false.
-                    .false.
-                    .false.
-                    .false.
-                    .false.
-                    []
-                    []
                     .false.
                 )
         })

@@ -177,5 +177,6 @@ asr/asr_nodes/kinds_nodes/kinds.md
 asr/asr_nodes/statement_nodes/statement_nodes.md
 asr/asr_nodes/symbol_nodes/symbol.md
 asr/asr_nodes/symbol_nodes/program.md
+asr/asr_nodes/symbol_nodes/variable.md
 asr/asr_nodes/type_nodes/ttype.md
 ```

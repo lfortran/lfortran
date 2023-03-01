@@ -111,21 +111,27 @@
                                                                 )
                                                         })
                                                     f
+                                                    (FunctionType
+                                                        []
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     []
                                                     []
                                                     (Var 6 f)
-                                                    Source
                                                     Public
-                                                    Interface
-                                                    ()
                                                     .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
                                                     .false.
                                                 ),
                                             f_val:
@@ -175,6 +181,36 @@
                                                 )
                                         })
                                     solver
+                                    (FunctionType
+                                        [(FunctionType
+                                            []
+                                            (Integer 4 [])
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f
                                     sub1]
                                     [(Var 5 f)
@@ -243,17 +279,8 @@
                                         ()
                                     )]
                                     (Var 5 solver)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             solver_caller:
@@ -283,21 +310,27 @@
                                                                 )
                                                         })
                                                     f
+                                                    (FunctionType
+                                                        []
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     []
                                                     []
                                                     (Var 4 f)
-                                                    Source
                                                     Public
-                                                    Interface
-                                                    ()
                                                     .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
                                                     .false.
                                                 ),
                                             iter:
@@ -332,6 +365,36 @@
                                                 )
                                         })
                                     solver_caller
+                                    (FunctionType
+                                        [(FunctionType
+                                            []
+                                            (Integer 4 [])
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            []
+                                            .false.
+                                        )
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [solver]
                                     [(Var 3 f)
                                     (Var 3 iter)]
@@ -349,17 +412,8 @@
                                         ()
                                     )]
                                     (Var 3 solver_caller)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             sub1:
@@ -389,6 +443,21 @@
                                                                 )
                                                         })
                                                     getx
+                                                    (FunctionType
+                                                        []
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     []
                                                     [(Print
@@ -407,17 +476,8 @@
                                                         ()
                                                     )]
                                                     (Var 8 getx)
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
                                                     .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
                                                     .false.
                                                 ),
                                             iter:
@@ -497,6 +557,22 @@
                                                 )
                                         })
                                     sub1
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [getx
                                     solver_caller]
                                     [(Var 7 y)
@@ -557,17 +633,8 @@
                                         ()
                                     )]
                                     (Var 7 sub1)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

@@ -319,7 +319,7 @@ public:
         list_section_stmt = ASRUtils::STMT(ASR::make_Return_t(al, loc));
         body.push_back(al, list_section_stmt);
 
-        ASR::asr_t *fn = ASR::make_Function_t(
+        ASR::asr_t *fn = ASRUtils::make_Function_t_util(
             al, loc,
             /* a_symtab */ list_section_symtab,
             /* a_name */ s2c(al, fn_name),
@@ -335,7 +335,7 @@ public:
             false, false, false, false, false,
             nullptr, 0,
             nullptr, 0,
-            false);
+            false, false, false);
         ASR::symbol_t *fn_sym = ASR::down_cast<ASR::symbol_t>(fn);
         global_scope->add_symbol(fn_name, fn_sym);
         list_section_func_map[list_type_name] = fn_sym;
@@ -490,7 +490,7 @@ public:
         list_concat_stmt = ASRUtils::STMT(ASR::make_Return_t(al, loc));
         body.push_back(al, list_concat_stmt);
 
-        ASR::asr_t *fn = ASR::make_Function_t(
+        ASR::asr_t *fn = ASRUtils::make_Function_t_util(
             al, loc,
             /* a_symtab */ list_concat_symtab,
             /* a_name */ s2c(al, fn_name),
@@ -506,7 +506,7 @@ public:
             false, false, false, false, false,
             nullptr, 0,
             nullptr, 0,
-            false);
+            false, false, false);
         ASR::symbol_t *fn_sym = ASR::down_cast<ASR::symbol_t>(fn);
         global_scope->add_symbol(fn_name, fn_sym);
         list_concat_func_map[list_type_name] = fn_sym;

@@ -422,8 +422,14 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("    Struct& self() { return static_cast<Struct&>(*this); }")
         self.emit("public:")
         self.emit("    ASR::expr_t** current_expr;")
+        self.emit("    SymbolTable* current_scope;")
         self.emit("")
         self.emit("    void call_replacer() {}")
+        self.emit("    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {")
+        self.emit("    for (size_t i = 0; i < n_body; i++) {", 1)
+        self.emit("        self().visit_stmt(*m_body[i]);", 1)
+        self.emit("    }", 1)
+        self.emit("    }")
         super(CallReplacerOnExpressionsVisitor, self).visitModule(mod)
         self.emit("};")
 
@@ -440,14 +446,34 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
 
     def make_visitor(self, name, fields):
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        is_symtab_present = False
+        is_stmt_present = False
+        symtab_field_name = ""
+        for field in fields:
+            if field.type == "stmt":
+                is_stmt_present = True
+            if field.type == "symbol_table":
+                is_symtab_present = True
+                symtab_field_name = field.name
+            if is_stmt_present and is_symtab_present:
+                break
+        if is_stmt_present and name not in ("Assignment", "ForAllSingle"):
+            self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
         self.used = False
-        have_body = False
+
+        if is_symtab_present:
+            self.emit("SymbolTable* current_scope_copy = current_scope;", 2)
+            self.emit("current_scope = x.m_%s;" % symtab_field_name, 2)
+
         for field in fields:
             self.visitField(field)
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
             self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+
+        if is_symtab_present:
+            self.emit("current_scope = current_scope_copy;", 2)
         self.emit("}", 1)
 
     def insert_call_replacer_code(self, name, level, index=""):
@@ -462,6 +488,9 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
             field.type not in self.data.simple_types):
             level = 2
             if field.seq:
+                if field.type == "stmt":
+                    self.emit("self().transform_stmts(xx.m_%s, xx.n_%s);" % (field.name, field.name), level)
+                    return
                 self.used = True
                 self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
                 if field.type in products:
@@ -1104,10 +1133,12 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                 self.used = True
                 self.emit("for (size_t i = 0; i < x->n_%s; i++) {" % field.name, level)
                 if field.type == "call_arg":
-                    self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
-                    self.emit("    current_expr = &(x->m_%s[i].m_value);" % (field.name), level)
-                    self.emit("    self().replace_expr(x->m_%s[i].m_value);"%(field.name), level)
-                    self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
+                    self.emit("    if (x->m_%s[i].m_value != nullptr) {" % (field.name), level)
+                    self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + 1)
+                    self.emit("    current_expr = &(x->m_%s[i].m_value);" % (field.name), level + 1)
+                    self.emit("    self().replace_expr(x->m_%s[i].m_value);"%(field.name), level + 1)
+                    self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
+                    self.emit("    }", level)
                     self.current_expr_copy_variable_count += 1
                 self.emit("}", level)
             else:
@@ -1481,7 +1512,10 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(    's.append("()");', 3)
                     self.emit("}", 2)
                 else:
-                    self.emit('s.append(std::to_string(x.m_%s));' % field.name, 2)
+                    if field.name == "intrinsic_id":
+                        self.emit('s.append(self().convert_intrinsic_id(x.m_%s));' % field.name, 2)
+                    else:
+                        self.emit('s.append(std::to_string(x.m_%s));' % field.name, 2)
             elif field.type == "float" and not field.seq and not field.opt:
                 self.emit('s.append(std::to_string(x.m_%s));' % field.name, 2)
             elif field.type == "bool" and not field.seq and not field.opt:
@@ -2307,6 +2341,8 @@ static inline ASR::ttype_t* expr_type0(const ASR::expr_t *f)
                 LCOMPILERS_ASSERT(e->m_external);
                 LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));
                 s = e->m_external;
+            } else if (s->type == ASR::symbolType::Function) {
+                return ASR::down_cast<ASR::Function_t>(s)->m_function_signature;
             }
             return ASR::down_cast<ASR::Variable_t>(s)->m_type;
         }""" \

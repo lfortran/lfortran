@@ -67,6 +67,22 @@
                                                 )
                                         })
                                     add_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 x)
                                     (Var 3 y)]
@@ -82,17 +98,8 @@
                                         ()
                                     )]
                                     (Var 3 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             max_integer:
@@ -167,6 +174,22 @@
                                                 )
                                         })
                                     max_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [max@imax]
                                     [(Var 5 x)
                                     (Var 5 y)]
@@ -184,17 +207,8 @@
                                         ()
                                     )]
                                     (Var 5 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             min_integer:
@@ -269,6 +283,22 @@
                                                 )
                                         })
                                     min_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [min@imin]
                                     [(Var 6 x)
                                     (Var 6 y)]
@@ -286,17 +316,8 @@
                                         ()
                                     )]
                                     (Var 6 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             minus_integer:
@@ -351,6 +372,22 @@
                                                 )
                                         })
                                     minus_integer
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 4 x)
                                     (Var 4 y)]
@@ -366,17 +403,8 @@
                                         ()
                                     )]
                                     (Var 4 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             one_integer:
@@ -401,6 +429,21 @@
                                                 )
                                         })
                                     one_integer
+                                    (FunctionType
+                                        []
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -409,17 +452,8 @@
                                         ()
                                     )]
                                     (Var 8 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             zero_integer:
@@ -444,6 +478,21 @@
                                                 )
                                         })
                                     zero_integer
+                                    (FunctionType
+                                        []
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -452,17 +501,8 @@
                                         ()
                                     )]
                                     (Var 7 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })
@@ -528,6 +568,22 @@
                                                 )
                                         })
                                     add_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 10 x)
                                     (Var 10 y)]
@@ -543,17 +599,8 @@
                                         ()
                                     )]
                                     (Var 10 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             max_real:
@@ -628,6 +675,22 @@
                                                 )
                                         })
                                     max_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [max@smax]
                                     [(Var 13 x)
                                     (Var 13 y)]
@@ -645,17 +708,8 @@
                                         ()
                                     )]
                                     (Var 13 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             min_real:
@@ -730,6 +784,22 @@
                                                 )
                                         })
                                     min_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [min@smin]
                                     [(Var 14 x)
                                     (Var 14 y)]
@@ -747,17 +817,8 @@
                                         ()
                                     )]
                                     (Var 14 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             minus_real:
@@ -812,6 +873,22 @@
                                                 )
                                         })
                                     minus_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 11 x)
                                     (Var 11 y)]
@@ -827,17 +904,8 @@
                                         ()
                                     )]
                                     (Var 11 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             one_real:
@@ -862,6 +930,21 @@
                                                 )
                                         })
                                     one_real
+                                    (FunctionType
+                                        []
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -873,17 +956,8 @@
                                         ()
                                     )]
                                     (Var 16 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             slash_real:
@@ -938,6 +1012,22 @@
                                                 )
                                         })
                                     slash_real
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 12 x)
                                     (Var 12 y)]
@@ -953,17 +1043,8 @@
                                         ()
                                     )]
                                     (Var 12 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             zero_real:
@@ -988,6 +1069,21 @@
                                                 )
                                         })
                                     zero_real
+                                    (FunctionType
+                                        []
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(=
@@ -999,17 +1095,8 @@
                                         ()
                                     )]
                                     (Var 15 result)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })
@@ -1031,7 +1118,7 @@
                                     math_integer_m
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -1041,7 +1128,7 @@
                                     math_real_m
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             max_integer:
                                 (ExternalSymbol
@@ -1051,7 +1138,7 @@
                                     math_integer_m
                                     []
                                     max_integer
-                                    Private
+                                    Public
                                 ),
                             max_real:
                                 (ExternalSymbol
@@ -1061,7 +1148,7 @@
                                     math_real_m
                                     []
                                     max_real
-                                    Private
+                                    Public
                                 ),
                             min_integer:
                                 (ExternalSymbol
@@ -1071,7 +1158,7 @@
                                     math_integer_m
                                     []
                                     min_integer
-                                    Private
+                                    Public
                                 ),
                             min_real:
                                 (ExternalSymbol
@@ -1081,7 +1168,7 @@
                                     math_real_m
                                     []
                                     min_real
-                                    Private
+                                    Public
                                 ),
                             minus_integer:
                                 (ExternalSymbol
@@ -1091,7 +1178,7 @@
                                     math_integer_m
                                     []
                                     minus_integer
-                                    Private
+                                    Public
                                 ),
                             minus_real:
                                 (ExternalSymbol
@@ -1101,7 +1188,7 @@
                                     math_real_m
                                     []
                                     minus_real
-                                    Private
+                                    Public
                                 ),
                             one_integer:
                                 (ExternalSymbol
@@ -1111,7 +1198,7 @@
                                     math_integer_m
                                     []
                                     one_integer
-                                    Private
+                                    Public
                                 ),
                             one_real:
                                 (ExternalSymbol
@@ -1121,7 +1208,7 @@
                                     math_real_m
                                     []
                                     one_real
-                                    Private
+                                    Public
                                 ),
                             plus_t:
                                 (ExternalSymbol
@@ -1131,7 +1218,7 @@
                                     triple_m
                                     []
                                     plus_t
-                                    Private
+                                    Public
                                 ),
                             slash_real:
                                 (ExternalSymbol
@@ -1141,7 +1228,7 @@
                                     math_real_m
                                     []
                                     slash_real
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -1151,7 +1238,7 @@
                                     triple_m
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_add_triples:
                                 (ExternalSymbol
@@ -1161,7 +1248,7 @@
                                     use_triple_m
                                     []
                                     test_add_triples
-                                    Private
+                                    Public
                                 ),
                             test_max_triples:
                                 (ExternalSymbol
@@ -1171,7 +1258,7 @@
                                     use_triple_m
                                     []
                                     test_max_triples
-                                    Private
+                                    Public
                                 ),
                             test_minus_triples:
                                 (ExternalSymbol
@@ -1181,7 +1268,7 @@
                                     use_triple_m
                                     []
                                     test_minus_triples
-                                    Private
+                                    Public
                                 ),
                             triple_l:
                                 (ExternalSymbol
@@ -1191,7 +1278,7 @@
                                     triple_m
                                     []
                                     triple_l
-                                    Private
+                                    Public
                                 ),
                             triple_r:
                                 (ExternalSymbol
@@ -1201,7 +1288,7 @@
                                     triple_m
                                     []
                                     triple_r
-                                    Private
+                                    Public
                                 ),
                             zero_integer:
                                 (ExternalSymbol
@@ -1211,7 +1298,7 @@
                                     math_integer_m
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -1221,7 +1308,7 @@
                                     math_real_m
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 )
                         })
                     template_triple
@@ -1311,26 +1398,42 @@
                                                 )
                                         })
                                     plus_t
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .true.
+                                    )
                                     []
                                     [(Var 19 l)
                                     (Var 19 r)]
                                     []
                                     (Var 19 total)
-                                    Source
                                     Private
-                                    Implementation
-                                    ()
                                     .false.
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
-                                    .true.
                                 ),
                             t:
                                 (StructType
@@ -1391,6 +1494,30 @@
                                                 )
                                         })
                                     triple_l
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     [plus_t]
                                     [(Var 20 t)]
                                     [(=
@@ -1421,20 +1548,8 @@
                                         ()
                                     )]
                                     (Var 20 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
                                     .false.
                                 ),
                             triple_r:
@@ -1480,6 +1595,30 @@
                                                 )
                                         })
                                     triple_r
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
                                     [plus_t]
                                     [(Var 21 t)]
                                     [(=
@@ -1510,20 +1649,8 @@
                                         ()
                                     )]
                                     (Var 21 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    [(TypeParameter
-                                        t
-                                        []
-                                    )]
-                                    []
                                     .false.
                                 )
                         })
@@ -1545,7 +1672,7 @@
                                     math_integer_m
                                     []
                                     add_integer
-                                    Private
+                                    Public
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -1555,7 +1682,7 @@
                                     math_real_m
                                     []
                                     add_real
-                                    Private
+                                    Public
                                 ),
                             max_integer:
                                 (ExternalSymbol
@@ -1565,7 +1692,7 @@
                                     math_integer_m
                                     []
                                     max_integer
-                                    Private
+                                    Public
                                 ),
                             max_real:
                                 (ExternalSymbol
@@ -1575,7 +1702,7 @@
                                     math_real_m
                                     []
                                     max_real
-                                    Private
+                                    Public
                                 ),
                             min_integer:
                                 (ExternalSymbol
@@ -1585,7 +1712,7 @@
                                     math_integer_m
                                     []
                                     min_integer
-                                    Private
+                                    Public
                                 ),
                             min_real:
                                 (ExternalSymbol
@@ -1595,7 +1722,7 @@
                                     math_real_m
                                     []
                                     min_real
-                                    Private
+                                    Public
                                 ),
                             minus_integer:
                                 (ExternalSymbol
@@ -1605,7 +1732,7 @@
                                     math_integer_m
                                     []
                                     minus_integer
-                                    Private
+                                    Public
                                 ),
                             minus_real:
                                 (ExternalSymbol
@@ -1615,7 +1742,7 @@
                                     math_real_m
                                     []
                                     minus_real
-                                    Private
+                                    Public
                                 ),
                             one_integer:
                                 (ExternalSymbol
@@ -1625,7 +1752,7 @@
                                     math_integer_m
                                     []
                                     one_integer
-                                    Private
+                                    Public
                                 ),
                             one_real:
                                 (ExternalSymbol
@@ -1635,7 +1762,7 @@
                                     math_real_m
                                     []
                                     one_real
-                                    Private
+                                    Public
                                 ),
                             plus_t:
                                 (ExternalSymbol
@@ -1645,7 +1772,7 @@
                                     triple_m
                                     []
                                     plus_t
-                                    Private
+                                    Public
                                 ),
                             slash_real:
                                 (ExternalSymbol
@@ -1655,7 +1782,7 @@
                                     math_real_m
                                     []
                                     slash_real
-                                    Private
+                                    Public
                                 ),
                             t:
                                 (ExternalSymbol
@@ -1665,7 +1792,7 @@
                                     triple_m
                                     []
                                     t
-                                    Private
+                                    Public
                                 ),
                             test_add_triples:
                                 (Function
@@ -1683,7 +1810,7 @@
                                                     Default
                                                     (Integer 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 ),
@@ -1698,12 +1825,27 @@
                                                     Default
                                                     (Integer 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 )
                                         })
                                     test_add_triples
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [triple_add_l
                                     triple_add_r]
                                     []
@@ -1747,17 +1889,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
-                                    Private
-                                    Implementation
-                                    ()
+                                    Public
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             test_max_triples:
@@ -1776,7 +1909,7 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 ),
@@ -1791,12 +1924,27 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 )
                                         })
                                     test_max_triples
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [triple_max_l
                                     triple_max_r]
                                     []
@@ -1846,17 +1994,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
-                                    Private
-                                    Implementation
-                                    ()
+                                    Public
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             test_minus_triples:
@@ -1875,7 +2014,7 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 ),
@@ -1890,12 +2029,27 @@
                                                     Default
                                                     (Real 4 [])
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                 )
                                         })
                                     test_minus_triples
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [triple_minus_l
                                     triple_minus_r]
                                     []
@@ -1945,17 +2099,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
-                                    Private
-                                    Implementation
-                                    ()
+                                    Public
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             triple_add_l:
@@ -1995,6 +2140,21 @@
                                                 )
                                         })
                                     triple_add_l
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [add_integer]
                                     [(Var 124 t)]
                                     [(=
@@ -2019,17 +2179,8 @@
                                         ()
                                     )]
                                     (Var 124 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             triple_add_r:
@@ -2069,6 +2220,21 @@
                                                 )
                                         })
                                     triple_add_r
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [add_integer]
                                     [(Var 125 t)]
                                     [(=
@@ -2093,17 +2259,8 @@
                                         ()
                                     )]
                                     (Var 125 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             triple_l:
@@ -2114,7 +2271,7 @@
                                     triple_m
                                     []
                                     triple_l
-                                    Private
+                                    Public
                                 ),
                             triple_max_l:
                                 (Function
@@ -2153,6 +2310,21 @@
                                                 )
                                         })
                                     triple_max_l
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [max_real]
                                     [(Var 128 t)]
                                     [(=
@@ -2177,17 +2349,8 @@
                                         ()
                                     )]
                                     (Var 128 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             triple_max_r:
@@ -2227,6 +2390,21 @@
                                                 )
                                         })
                                     triple_max_r
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [max_real]
                                     [(Var 129 t)]
                                     [(=
@@ -2251,17 +2429,8 @@
                                         ()
                                     )]
                                     (Var 129 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             triple_minus_l:
@@ -2301,6 +2470,21 @@
                                                 )
                                         })
                                     triple_minus_l
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [minus_real]
                                     [(Var 126 t)]
                                     [(=
@@ -2325,17 +2509,8 @@
                                         ()
                                     )]
                                     (Var 126 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             triple_minus_r:
@@ -2375,6 +2550,21 @@
                                                 )
                                         })
                                     triple_minus_r
+                                    (FunctionType
+                                        [(Real 4 [])]
+                                        (Real 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [minus_real]
                                     [(Var 127 t)]
                                     [(=
@@ -2399,17 +2589,8 @@
                                         ()
                                     )]
                                     (Var 127 result)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             triple_r:
@@ -2420,7 +2601,7 @@
                                     triple_m
                                     []
                                     triple_r
-                                    Private
+                                    Public
                                 ),
                             zero_integer:
                                 (ExternalSymbol
@@ -2430,7 +2611,7 @@
                                     math_integer_m
                                     []
                                     zero_integer
-                                    Private
+                                    Public
                                 ),
                             zero_real:
                                 (ExternalSymbol
@@ -2440,7 +2621,7 @@
                                     math_real_m
                                     []
                                     zero_real
-                                    Private
+                                    Public
                                 )
                         })
                     use_triple_m

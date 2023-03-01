@@ -1,0 +1,513 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            derived_types_14_module:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            enum_type:
+                                (StructType
+                                    (SymbolTable
+                                        5
+                                        {
+                                            boolean:
+                                                (Variable
+                                                    5
+                                                    boolean
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 102 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            datetime:
+                                                (Variable
+                                                    5
+                                                    datetime
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 105 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            float:
+                                                (Variable
+                                                    5
+                                                    float
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 104 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            int:
+                                                (Variable
+                                                    5
+                                                    int
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 103 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            invalid:
+                                                (Variable
+                                                    5
+                                                    invalid
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 100 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            string:
+                                                (Variable
+                                                    5
+                                                    string
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 101 (Integer 4 []))
+                                                    ()
+                                                    Save
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    enum_type
+                                    []
+                                    [invalid
+                                    string
+                                    boolean
+                                    int
+                                    float
+                                    datetime]
+                                    Source
+                                    Private
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            toml_type:
+                                (Variable
+                                    4
+                                    toml_type
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Parameter
+                                    (Struct
+                                        4 enum_type
+                                        []
+                                    )
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    derived_types_14_module
+                    []
+                    .true.
+                    .false.
+                ),
+            derived_types_14_module1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            1_enum_type:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_type
+                                    4 enum_type
+                                    derived_types_14_module
+                                    []
+                                    enum_type
+                                    Public
+                                ),
+                            check:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            raw:
+                                                (Variable
+                                                    7
+                                                    raw
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    7
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    check
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 7 raw)]
+                                    [(=
+                                        (Var 7 res)
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4 [])
+                                        )
+                                        ()
+                                    )]
+                                    (Var 7 res)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            enum_type:
+                                (ExternalSymbol
+                                    2
+                                    enum_type
+                                    4 enum_type
+                                    derived_types_14_module
+                                    []
+                                    enum_type
+                                    Public
+                                ),
+                            toml_get_value_type:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            1_enum_type_boolean:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_enum_type_boolean
+                                                    5 boolean
+                                                    1_enum_type
+                                                    []
+                                                    boolean
+                                                    Public
+                                                ),
+                                            1_enum_type_datetime:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_enum_type_datetime
+                                                    5 datetime
+                                                    1_enum_type
+                                                    []
+                                                    datetime
+                                                    Public
+                                                ),
+                                            1_enum_type_float:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_enum_type_float
+                                                    5 float
+                                                    1_enum_type
+                                                    []
+                                                    float
+                                                    Public
+                                                ),
+                                            1_enum_type_int:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_enum_type_int
+                                                    5 int
+                                                    1_enum_type
+                                                    []
+                                                    int
+                                                    Public
+                                                ),
+                                            1_enum_type_invalid:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_enum_type_invalid
+                                                    5 invalid
+                                                    1_enum_type
+                                                    []
+                                                    invalid
+                                                    Public
+                                                ),
+                                            1_enum_type_string:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_enum_type_string
+                                                    5 string
+                                                    1_enum_type
+                                                    []
+                                                    string
+                                                    Public
+                                                ),
+                                            raw:
+                                                (Variable
+                                                    6
+                                                    raw
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            vtype:
+                                                (Variable
+                                                    6
+                                                    vtype
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    toml_get_value_type
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [check]
+                                    [(Var 6 raw)]
+                                    [(If
+                                        (FunctionCall
+                                            2 check
+                                            ()
+                                            [((Var 6 raw))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 6 vtype)
+                                            (StructInstanceMember
+                                                (Var 2 toml_type)
+                                                6 1_enum_type_string
+                                                (Integer 4 [])
+                                                (IntegerConstant 101 (Integer 4 []))
+                                            )
+                                            ()
+                                        )
+                                        (Return)]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            2 check
+                                            ()
+                                            [((Var 6 raw))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 6 vtype)
+                                            (StructInstanceMember
+                                                (Var 2 toml_type)
+                                                6 1_enum_type_boolean
+                                                (Integer 4 [])
+                                                (IntegerConstant 102 (Integer 4 []))
+                                            )
+                                            ()
+                                        )
+                                        (Return)]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            2 check
+                                            ()
+                                            [((Var 6 raw))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 6 vtype)
+                                            (StructInstanceMember
+                                                (Var 2 toml_type)
+                                                6 1_enum_type_int
+                                                (Integer 4 [])
+                                                (IntegerConstant 103 (Integer 4 []))
+                                            )
+                                            ()
+                                        )
+                                        (Return)]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            2 check
+                                            ()
+                                            [((Var 6 raw))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 6 vtype)
+                                            (StructInstanceMember
+                                                (Var 2 toml_type)
+                                                6 1_enum_type_float
+                                                (Integer 4 [])
+                                                (IntegerConstant 104 (Integer 4 []))
+                                            )
+                                            ()
+                                        )
+                                        (Return)]
+                                        []
+                                    )
+                                    (If
+                                        (FunctionCall
+                                            2 check
+                                            ()
+                                            [((Var 6 raw))]
+                                            (Logical 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 6 vtype)
+                                            (StructInstanceMember
+                                                (Var 2 toml_type)
+                                                6 1_enum_type_datetime
+                                                (Integer 4 [])
+                                                (IntegerConstant 105 (Integer 4 []))
+                                            )
+                                            ()
+                                        )
+                                        (Return)]
+                                        []
+                                    )
+                                    (=
+                                        (Var 6 vtype)
+                                        (StructInstanceMember
+                                            (Var 2 toml_type)
+                                            6 1_enum_type_invalid
+                                            (Integer 4 [])
+                                            (IntegerConstant 100 (Integer 4 []))
+                                        )
+                                        ()
+                                    )]
+                                    (Var 6 vtype)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            toml_type:
+                                (ExternalSymbol
+                                    2
+                                    toml_type
+                                    4 toml_type
+                                    derived_types_14_module
+                                    []
+                                    toml_type
+                                    Public
+                                )
+                        })
+                    derived_types_14_module1
+                    [derived_types_14_module
+                    derived_types_14_module1]
+                    .false.
+                    .false.
+                ),
+            main:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            
+                        })
+                    main
+                    []
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "running derived_types_14 main program"
+                            (Character 1 37 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

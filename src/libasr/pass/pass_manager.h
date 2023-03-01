@@ -26,6 +26,7 @@
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
+#include <libasr/pass/intrinsic_function.h>
 #include <libasr/pass/fma.h>
 #include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/sign_from_value.h>
@@ -40,6 +41,7 @@
 #include <libasr/pass/pass_array_by_data.h>
 #include <libasr/pass/pass_list_expr.h>
 #include <libasr/pass/subroutine_from_function.h>
+#include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/asr_verify.h>
 
 #include <map>
@@ -59,6 +61,7 @@ namespace LCompilers {
         std::vector<std::string> _user_defined_passes;
         std::vector<std::string> _skip_passes;
         std::map<std::string, pass_function> _passes_db = {
+            {"intrinsic_function", &pass_replace_intrinsic_function},
             {"do_loops", &pass_replace_do_loops},
             {"global_stmts", &pass_wrap_global_stmts_into_function},
             {"implied_do_loops", &pass_replace_implied_do_loops},
@@ -81,7 +84,8 @@ namespace LCompilers {
             {"array_dim_intrinsics_update", &pass_update_array_dim_intrinsic_calls},
             {"pass_list_expr", &pass_list_expr},
             {"pass_array_by_data", &pass_array_by_data},
-            {"subroutine_from_function", &pass_create_subroutine_from_function}
+            {"subroutine_from_function", &pass_create_subroutine_from_function},
+            {"transform_optional_argument_functions", &pass_transform_optional_argument_functions}
         };
 
         bool is_fast;
@@ -141,13 +145,14 @@ namespace LCompilers {
         PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
                 "global_stmts",
+                "intrinsic_function",
                 "class_constructor",
                 "implied_do_loops",
-                "pass_array_by_data",
                 "pass_list_expr",
                 "arr_slice",
                 "subroutine_from_function",
                 "array_op",
+                "pass_array_by_data",
                 "print_arr",
                 "print_list",
                 "array_dim_intrinsics_update",
@@ -155,11 +160,13 @@ namespace LCompilers {
                 "forall",
                 "select_case",
                 "inline_function_calls",
-                "unused_functions"
+                "unused_functions",
+                "transform_optional_argument_functions"
             };
 
             _with_optimization_passes = {
                 "global_stmts",
+                "intrinsic_function",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_array_by_data",
@@ -180,6 +187,7 @@ namespace LCompilers {
                 "sign_from_value",
                 "div_to_mul",
                 "fma",
+                "transform_optional_argument_functions",
                 "inline_function_calls"
             };
 

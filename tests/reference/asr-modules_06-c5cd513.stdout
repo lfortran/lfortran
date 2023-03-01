@@ -81,6 +81,21 @@
                                                 )
                                         })
                                     b
+                                    (FunctionType
+                                        []
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     []
                                     [(Print
@@ -98,17 +113,8 @@
                                         ()
                                     )]
                                     (Var 3 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

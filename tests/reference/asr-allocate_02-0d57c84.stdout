@@ -297,6 +297,26 @@
                                                 )
                                         })
                                     whole_square
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 a)
                                     (Var 3 b)
@@ -463,26 +483,17 @@
                                         ()
                                     )
                                     (ImplicitDeallocate
-                                        [3 a_2
-                                        3 ab
-                                        3 abc
-                                        3 b_2
-                                        3 bc
-                                        3 c_2
-                                        3 ca]
+                                        [(Var 3 a_2)
+                                        (Var 3 ab)
+                                        (Var 3 abc)
+                                        (Var 3 b_2)
+                                        (Var 3 bc)
+                                        (Var 3 c_2)
+                                        (Var 3 ca)]
                                     )]
                                     (Var 3 status)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })
@@ -538,9 +549,9 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 a
-                        2 b
-                        2 c]
+                        [(Var 2 a)
+                        (Var 2 b)
+                        (Var 2 c)]
                     )]
                 )
         })

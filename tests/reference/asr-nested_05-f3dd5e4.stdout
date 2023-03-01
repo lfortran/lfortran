@@ -45,6 +45,21 @@
                                                             
                                                         })
                                                     c
+                                                    (FunctionType
+                                                        []
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
                                                     []
                                                     []
                                                     [(Print
@@ -73,17 +88,8 @@
                                                         ()
                                                     )]
                                                     ()
-                                                    Source
                                                     Public
-                                                    Implementation
-                                                    ()
                                                     .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    []
                                                     .false.
                                                 ),
                                             x:
@@ -92,9 +98,9 @@
                                                     x
                                                     []
                                                     Local
-                                                    (IntegerConstant 6 (Integer 4 []))
                                                     ()
-                                                    Save
+                                                    ()
+                                                    Default
                                                     (Integer 4 [])
                                                     Source
                                                     Public
@@ -107,12 +113,9 @@
                                                     y
                                                     []
                                                     Local
-                                                    (RealConstant
-                                                        5.500000
-                                                        (Real 4 [])
-                                                    )
                                                     ()
-                                                    Save
+                                                    ()
+                                                    Default
                                                     (Real 4 [])
                                                     Source
                                                     Public
@@ -121,9 +124,37 @@
                                                 )
                                         })
                                     b
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [c]
                                     []
-                                    [(Print
+                                    [(=
+                                        (Var 3 x)
+                                        (IntegerConstant 6 (Integer 4 []))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 3 y)
+                                        (RealConstant
+                                            5.500000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )
+                                    (Print
                                         ()
                                         [(Var 3 x)]
                                         ()
@@ -154,17 +185,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })

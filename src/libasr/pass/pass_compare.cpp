@@ -217,7 +217,7 @@ public:
         // Return
         body.push_back(al, ASRUtils::STMT(ASR::make_Return_t(al, loc)));
 
-        ASR::asr_t *fn = ASR::make_Function_t(
+        ASR::asr_t *fn = ASRUtils::make_Function_t_util(
             al, loc,
             /* a_symtab */ tup_compare_symtab,
             /* a_name */ s2c(al, fn_name),
@@ -233,7 +233,7 @@ public:
             false, false, false, false, false,
             nullptr, 0,
             nullptr, 0,
-            false);
+            false, false, false);
         ASR::symbol_t *fn_sym = ASR::down_cast<ASR::symbol_t>(fn);
         global_scope->add_symbol(fn_name, fn_sym);
         compare_func_map[tuple_type_name] = fn_sym;
@@ -408,7 +408,7 @@ public:
         // Return
         body.push_back(al, ASRUtils::STMT(ASR::make_Return_t(al, loc)));
 
-        ASR::asr_t *fn = ASR::make_Function_t(
+        ASR::asr_t *fn = ASRUtils::make_Function_t_util(
             al, loc,
             /* a_symtab */ list_compare_symtab,
             /* a_name */ s2c(al, fn_name),
@@ -424,7 +424,7 @@ public:
             false, false, false, false, false,
             nullptr, 0,
             nullptr, 0,
-            false);
+            false, false, false);
         ASR::symbol_t *fn_sym = ASR::down_cast<ASR::symbol_t>(fn);
         global_scope->add_symbol(fn_name, fn_sym);
         compare_func_map[list_type_name] = fn_sym;

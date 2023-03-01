@@ -54,6 +54,26 @@
                                                 )
                                         })
                                     f
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 3 c)]
                                     [(Allocate
@@ -88,17 +108,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             g:
@@ -143,6 +154,26 @@
                                                 )
                                         })
                                     g
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f]
                                     [(Var 4 x)]
                                     [(Print
@@ -166,7 +197,7 @@
                                         ()
                                     )
                                     (ImplicitDeallocate
-                                        [4 x]
+                                        [(Var 4 x)]
                                     )
                                     (SubroutineCall
                                         2 f
@@ -219,17 +250,8 @@
                                         ()
                                     )]
                                     (Var 4 r)
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             h:
@@ -259,6 +281,26 @@
                                                 )
                                         })
                                     h
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [f]
                                     [(Var 5 c)]
                                     [(Print
@@ -282,7 +324,7 @@
                                         ()
                                     )
                                     (ImplicitDeallocate
-                                        [5 c]
+                                        [(Var 5 c)]
                                     )
                                     (SubroutineCall
                                         2 f
@@ -330,17 +372,8 @@
                                         ()
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             r:
@@ -426,7 +459,7 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 c]
+                        [(Var 2 c)]
                     )
                     (SubroutineCall
                         2 h
@@ -467,7 +500,7 @@
                         ()
                     )
                     (ImplicitDeallocate
-                        [2 c]
+                        [(Var 2 c)]
                     )]
                 )
         })

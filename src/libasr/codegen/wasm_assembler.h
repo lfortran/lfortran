@@ -168,13 +168,9 @@ void emit_import_fn(Vec<uint8_t> &code, Allocator &al,
     emit_u32(code, al, type_idx);
 }
 
-void emit_import_mem(Vec<uint8_t> &code, Allocator &al,
-                     const std::string &mod_name, const std::string &mem_name,
+void emit_declare_mem(Vec<uint8_t> &code, Allocator &al,
                      uint32_t min_no_pages, uint32_t max_no_pages = 0) {
-    emit_str(code, al, mod_name);
-    emit_str(code, al, mem_name);
-    emit_b8(code, al, 0x02);  // for importing memory
-    if (max_no_pages) {
+    if (max_no_pages > 0) {
         emit_b8(code, al,
                 0x01);  // for specifying min and max page limits of memory
         emit_u32(code, al, min_no_pages);
@@ -184,6 +180,31 @@ void emit_import_mem(Vec<uint8_t> &code, Allocator &al,
                 0x00);  // for specifying only min page limit of memory
         emit_u32(code, al, min_no_pages);
     }
+}
+
+void emit_import_mem(Vec<uint8_t> &code, Allocator &al,
+                     const std::string &mod_name, const std::string &mem_name,
+                     uint32_t min_no_pages, uint32_t max_no_pages = 0) {
+    emit_str(code, al, mod_name);
+    emit_str(code, al, mem_name);
+    emit_b8(code, al, 0x02);  // for importing memory
+    if (max_no_pages > 0) {
+        emit_b8(code, al,
+                0x01);  // for specifying min and max page limits of memory
+        emit_u32(code, al, min_no_pages);
+        emit_u32(code, al, max_no_pages);
+    } else {
+        emit_b8(code, al,
+                0x00);  // for specifying only min page limit of memory
+        emit_u32(code, al, min_no_pages);
+    }
+}
+
+void emit_export_mem(Vec<uint8_t> &code, Allocator &al, const std::string &name,
+                    uint32_t idx) {
+    emit_str(code, al, name);
+    emit_b8(code, al, 0x02);  // for exporting memory
+    emit_u32(code, al, idx);
 }
 
 void encode_section(Vec<uint8_t> &des, Vec<uint8_t> &section_content,
@@ -212,6 +233,18 @@ void emit_get_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
 // function to emit set local variable at given index
 void emit_set_local(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
     code.push_back(al, 0x21);
+    emit_u32(code, al, idx);
+}
+
+// function to emit get global variable at given index
+void emit_get_global(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
+    code.push_back(al, 0x23);
+    emit_u32(code, al, idx);
+}
+
+// function to emit set global variable at given index
+void emit_set_global(Vec<uint8_t> &code, Allocator &al, uint32_t idx) {
+    code.push_back(al, 0x24);
     emit_u32(code, al, idx);
 }
 
@@ -840,11 +873,35 @@ main();
     out.close();
 }
 
+void save_js_glue_wasi(std::string filename) {
+    std::string js_glue =
+R"(async function main() {
+    const fs = require("fs");
+    const { WASI } = require("wasi");
+    const wasi = new WASI();
+    const importObject = {
+        wasi_snapshot_preview1: wasi.wasiImport,
+        js: {
+            cpu_time: (time) => (Date.now() / 1000) // Date.now() returns milliseconds, so divide by 1000
+        }
+    };
+    const wasm = await WebAssembly.compile(fs.readFileSync(")" + filename + R"("));
+    const instance = await WebAssembly.instantiate(wasm, importObject);
+    wasi.start(instance);
+}
+main();
+)";
+    filename += ".js";
+    std::ofstream out(filename);
+    out << js_glue;
+    out.close();
+}
+
 void save_bin(Vec<uint8_t> &code, std::string filename) {
     std::ofstream out(filename);
     out.write((const char *)code.p, code.size());
     out.close();
-    save_js_glue(filename);
+    save_js_glue_wasi(filename);
 }
 
 /**************************** Type Conversion Operations

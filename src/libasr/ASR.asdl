@@ -84,10 +84,9 @@ symbol
         stmt* body)
     | Module(symbol_table symtab, identifier name, identifier* dependencies,
         bool loaded_from_mod, bool intrinsic)
-    | Function(symbol_table symtab, identifier name, identifier* dependencies, expr* args, stmt* body,
-        expr? return_var, abi abi, access access, deftype deftype,
-        string? bindc_name, bool elemental, bool pure, bool module, bool inline,
-        bool static, ttype* type_params, symbol* restrictions, bool is_restriction)
+    | Function(symbol_table symtab, identifier name, ttype function_signature,
+        identifier* dependencies, expr* args, stmt* body, expr? return_var,
+        access access, bool deterministic, bool side_effect_free)
     | GenericProcedure(symbol_table parent_symtab, identifier name,
         symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name,
@@ -166,7 +165,7 @@ stmt
     -- deallocates if allocated otherwise throws a runtime error
     | ExplicitDeallocate(expr* vars)
     -- deallocates if allocated otherwise does nothing
-    | ImplicitDeallocate(symbol* vars)
+    | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head head, stmt* body)
     | DoLoop(do_loop_head head, stmt* body)
     | ErrorStop(expr? code)
@@ -225,6 +224,8 @@ expr
     | NamedExpr(expr target, expr value, ttype type)
     | FunctionCall(symbol name, symbol? original_name, call_arg* args,
             ttype type, expr? value, expr? dt)
+    | IntrinsicFunction(int intrinsic_id, expr* args, int overload_id,
+            ttype type, expr? value)
     | StructTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | EnumTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | UnionTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
@@ -248,7 +249,6 @@ expr
     | LogicalNot(expr arg, ttype type, expr? value)
     | LogicalCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | LogicalBinOp(expr left, logicalbinop op, expr right, ttype type, expr? value)
-    | TemplateBinOp(expr left, binop op, expr right, ttype type, expr? value)
 
     | ListConstant(expr* args, ttype type)
     | ListLen(expr arg, ttype type, expr? value)
@@ -288,6 +288,7 @@ expr
     | ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
     | ArrayReshape(expr array, expr shape, ttype type, expr? value)
     | ArrayMaxloc(expr array, expr? dim, expr? mask, expr? kind, expr? back, ttype type, expr? value)
+    | ArrayAll(expr mask, expr? dim, ttype type, expr? value)
 
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
@@ -319,6 +320,8 @@ expr
 
     | PointerNullConstant(ttype type)
     | PointerAssociated(expr ptr, expr? tgt, ttype type, expr? value)
+
+    | IntrinsicFunctionSqrt(expr arg, ttype type, expr? value)
 
 
 -- `len` in Character:
@@ -358,6 +361,10 @@ ttype
     | Const(ttype type)
     | CPtr()
     | TypeParameter(identifier param, dimension* dims)
+    | FunctionType(ttype* arg_types, ttype? return_var_type,
+        abi abi, deftype deftype, string? bindc_name, bool elemental,
+        bool pure, bool module, bool inline, bool static, ttype* type_params,
+        symbol* restrictions, bool is_restriction)
 
 restriction_arg = RestrictionArg(identifier restriction_name, symbol restriction_func)
 

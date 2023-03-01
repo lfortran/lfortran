@@ -115,6 +115,21 @@
                                                 )
                                         })
                                     get_current_directory
+                                    (FunctionType
+                                        [(Character 1 -2 () [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     [c_associated
                                     getcwd]
                                     [(Var 38 path)]
@@ -161,20 +176,11 @@
                                         []
                                     )
                                     (ImplicitDeallocate
-                                        [38 cpath]
+                                        [(Var 38 cpath)]
                                     )]
                                     ()
-                                    Source
                                     Public
-                                    Implementation
-                                    ()
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 ),
                             getcwd:
@@ -230,22 +236,30 @@
                                                 )
                                         })
                                     getcwd
+                                    (FunctionType
+                                        [(Character 1 1 () [(()
+                                        ())])
+                                        (Integer 4 [])]
+                                        (CPtr)
+                                        BindC
+                                        Interface
+                                        "getcwd"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
                                     []
                                     [(Var 37 buf)
                                     (Var 37 bufsize)]
                                     []
                                     (Var 37 path)
-                                    BindC
                                     Public
-                                    Interface
-                                    "getcwd"
                                     .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    .false.
-                                    []
-                                    []
                                     .false.
                                 )
                         })
