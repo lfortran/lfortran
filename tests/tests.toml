@@ -2947,3 +2947,7 @@ asr = true
 [[test]]
 filename = "errors/do_loop_01.f90"
 asr = true
+
+[[test]]
+filename = "implicit_typing4.f90"
+asr_implicit_typing = true
