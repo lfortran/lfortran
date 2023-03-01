@@ -2,47 +2,37 @@
     (SymbolTable
         1
         {
-            ch12n:
+            clqmn:
                 (Function
                     (SymbolTable
                         2
                         {
-                            ch12n:
-                                (Variable
+                            dimag:
+                                (ExternalSymbol
                                     2
-                                    ch12n
+                                    dimag
+                                    4 dimag
+                                    lfortran_intrinsic_math
                                     []
-                                    ReturnVar
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
+                                    dimag
+                                    Private
                                 ),
-                            ci:
+                            dimag@zaimag:
+                                (ExternalSymbol
+                                    2
+                                    dimag@zaimag
+                                    4 zaimag
+                                    lfortran_intrinsic_math
+                                    []
+                                    zaimag
+                                    Private
+                                ),
+                            ls:
                                 (Variable
                                     2
-                                    ci
+                                    ls
                                     []
                                     Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Complex 8 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            n:
-                                (Variable
-                                    2
-                                    n
-                                    []
-                                    Unspecified
                                     ()
                                     ()
                                     Default
@@ -57,7 +47,7 @@
                                     2
                                     z
                                     []
-                                    Unspecified
+                                    Local
                                     ()
                                     ()
                                     Default
@@ -68,11 +58,10 @@
                                     .false.
                                 )
                         })
-                    ch12n
+                    clqmn
                     (FunctionType
-                        [(Integer 4 [])
-                        (Complex 8 [])]
-                        (Integer 4 [])
+                        []
+                        ()
                         Source
                         Implementation
                         ()
@@ -85,34 +74,46 @@
                         []
                         .false.
                     )
+                    [dimag@zaimag]
                     []
-                    [(Var 2 n)
-                    (Var 2 z)]
-                    [(=
-                        (Var 2 ci)
-                        (ComplexConstructor
+                    [(If
+                        (RealCompare
+                            (FunctionCall
+                                2 dimag@zaimag
+                                2 dimag
+                                [((Var 2 z))]
+                                (Real 8 [])
+                                ()
+                                ()
+                            )
+                            Eq
                             (RealConstant
                                 0.000000
                                 (Real 8 [])
                             )
-                            (RealConstant
-                                1.000000
-                                (Real 8 [])
-                            )
-                            (Complex 8 [])
-                            (ComplexConstant
-                                0.000000
-                                1.000000
-                                (Complex 8 [])
-                            )
+                            (Logical 4 [])
+                            ()
                         )
-                        ()
+                        [(=
+                            (Var 2 ls)
+                            (IntegerConstant 1 (Integer 4 []))
+                            ()
+                        )]
+                        []
                     )]
-                    (Var 2 ch12n)
+                    ()
                     Public
                     .false.
                     .false.
-                )
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math)
         })
     []
 )
