@@ -1185,6 +1185,10 @@ filename = "../integration_tests/allocate_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/allocate_05.f90"
+asr = true
+
+[[test]]
 filename = "allocate1.f90"
 ast = true
 ast_f90 = true

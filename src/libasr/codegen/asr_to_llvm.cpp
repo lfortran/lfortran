@@ -1309,6 +1309,18 @@ public:
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
             ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                 curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
+            if (ASRUtils::is_character(*curr_arg_m_a_type)) {
+                int dims = ASR::down_cast<ASR::Character_t>(curr_arg_m_a_type)->n_dims;
+                if (dims == 0) {
+                    // TODO: Add ASR reference to capture the length of the string
+                    // during initialization.
+                    llvm::Value *len = llvm::ConstantInt::get(context, llvm::APInt(32, 16));
+                    std::vector<llvm::Value*> args = {x_arr, len};
+                    llvm::Function *fn = _AllocateString();
+                    builder->CreateCall(fn, args);
+                    continue;;
+                }
+            }
             llvm::Type* llvm_data_type = get_type_from_ttype_t_util(asr_data_type);
             fill_malloc_array_details(x_arr, llvm_data_type, curr_arg.m_dims, curr_arg.n_dims);
         }
@@ -1361,6 +1373,26 @@ public:
         return free_fn;
     }
 
+    inline void call_lfortran_free_string(llvm::Function* fn) {
+        std::vector<llvm::Value*> args = {tmp};
+        builder->CreateCall(fn, args);
+    }
+
+    llvm::Function* _AllocateString() {
+        std::string func_name = "_lfortran_string_alloc";
+        llvm::Function *alloc_fun = module->getFunction(func_name);
+        if (!alloc_fun) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        character_type->getPointerTo(),
+                        llvm::Type::getInt32Ty(context)
+                    }, true);
+            alloc_fun = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name, *module);
+        }
+        return alloc_fun;
+    }
+
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
         llvm::Function* free_fn = _Deallocate();
         for( size_t i = 0; i < x.n_vars; i++ ) {
@@ -1376,7 +1408,15 @@ public:
             }
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                     symbol_get_past_external(curr_obj));
+
             fetch_var(v);
+            if (ASRUtils::is_character(*v->m_type)) {
+                int dims = ASR::down_cast<ASR::Character_t>(v->m_type)->n_dims;
+                if (dims == 0) {
+                    call_lfortran_free_string(free_fn);
+                    continue;
+                }
+            }
             llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp);
             create_if_else(cond, [=]() {
                 call_lfortran_free(free_fn);
@@ -4311,7 +4351,7 @@ public:
             }
             if( arr_descr->is_array(ASRUtils::get_contained_type(asr_target_type)) ) {
                 if( asr_target->m_type->type ==
-                    ASR::ttypeType::Character ) {
+                    ASR::ttypeType::Character) {
                     target = CreateLoad(arr_descr->get_pointer_to_data(target));
                 }
             }
