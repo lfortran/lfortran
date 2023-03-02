@@ -22,15 +22,33 @@ implicit none
    type(point), target :: p
    type(point_3d), target :: p3d
    type(color_point), target :: cp
+
+   p%x = 1.0
+   p%y = 2.0
+
+   p3d%x = 3.0
+   p3d%y = 4.0
+   p3d%z = 5.0
+
+   cp%x = 6.0
+   cp%y = 7.0
+   cp%color = 8
+
    class(point), pointer :: p_or_cp
    p_or_cp => cp
+
    select type ( an => p_or_cp )
-   class is ( point )
-                     ! "class ( point ) :: an" is implied here
-      print *, an%x, an%y     ! this block gets executed
-   type is ( point_3d )
-                     ! "type ( point_3d ) :: an" is implied here
-      print *, an%x, an%y, an%z
+      class is ( point )
+         print *, "point: ", an%x, an%y
+      type is ( color_point )
+         print *, "color_point: ", an%x, an%y, an%color
+   end select
+
+   select type ( an => p_or_cp )
+      class is ( point )
+         print *, "point: ", an%x, an%y
+      type is ( point_3d )
+         print *, "point3d: ", an%x, an%y, an%z
    end select
 
 end program select_type_02
