@@ -68,7 +68,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                                 extsym->m_scope_names, extsym->n_scope_names, new_subrout->m_name,
                                 extsym->m_access);
 
-                symtab->overwrite_symbol(newextsym->m_name, (ASR::symbol_t*)newextsym);
+                symtab->overwrite_symbol(extsym->m_name, (ASR::symbol_t*)newextsym);
             }
         }
 
