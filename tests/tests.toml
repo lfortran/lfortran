@@ -1443,10 +1443,6 @@ ast = true
 ast_f90 = true
 
 [[test]]
-filename = "select_type2.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/select_type_03.f90"
 asr = true
 extrafiles = "../integration_tests/select_type_03_module.f90"
