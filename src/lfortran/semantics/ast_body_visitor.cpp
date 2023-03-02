@@ -1024,6 +1024,8 @@ public:
     }
 
     void visit_SelectType(const AST::SelectType_t& x) {
+        // TODO: We might need to re-order all ASR::TypeStmtName
+        // before ASR::ClassStmt as per GFortran's semantics
         if( !x.m_selector ) {
             throw SemanticError("Selector expression is missing in select type statement.",
                                 x.base.base.loc);
@@ -1050,10 +1052,11 @@ public:
             SymbolTable* parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
             ASR::Variable_t* assoc_variable = nullptr;
+            ASR::symbol_t* assoc_sym = nullptr;
             if( x.m_assoc_name ) {
-                ASR::symbol_t* assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
                     al, x.base.base.loc, current_scope, x.m_assoc_name,
-                    nullptr, 0, ASR::intentType::Local, m_selector, nullptr,
+                    nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(std::string(x.m_assoc_name), assoc_sym);
@@ -1078,13 +1081,18 @@ public:
                         }
                         Vec<char*> assoc_deps;
                         assoc_deps.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
                     }
                     Vec<ASR::stmt_t*> class_stmt_body;
                     class_stmt_body.reserve(al, class_stmt->n_body);
+                    if( assoc_sym ) {
+                        class_stmt_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                            class_stmt->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            class_stmt->base.base.loc, assoc_sym)), m_selector)) );
+                    }
                     transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
@@ -1095,8 +1103,9 @@ public:
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_stmt->base.base.loc, -1, block_sym)));
-                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_ClassStmt_t(al,
                         class_stmt->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
+                    assoc_variable->m_type = selector_variable_type;
                     break;
                 }
                 case AST::type_stmtType::TypeStmtName: {
@@ -1115,13 +1124,18 @@ public:
                         }
                         Vec<char*> assoc_deps;
                         assoc_deps.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
                     }
                     Vec<ASR::stmt_t*> type_stmt_name_body;
                     type_stmt_name_body.reserve(al, type_stmt_name->n_body);
+                    if( assoc_sym ) {
+                        type_stmt_name_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                            type_stmt_name->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            type_stmt_name->base.base.loc, assoc_sym)), m_selector)) );
+                    }
                     transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
@@ -1134,6 +1148,7 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_name->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
                         type_stmt_name->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
+                    assoc_variable->m_type = selector_variable_type;
                     break;
                 }
                 case AST::type_stmtType::TypeStmtType: {
@@ -1148,13 +1163,18 @@ public:
                                                        type_stmt_type->m_vartype, false, m_dims);
                         Vec<char*> assoc_deps;
                         assoc_deps.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
                     }
                     Vec<ASR::stmt_t*> type_stmt_type_body;
                     type_stmt_type_body.reserve(al, type_stmt_type->n_body);
+                    if( assoc_sym ) {
+                        type_stmt_type_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                            type_stmt_type->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            type_stmt_type->base.base.loc, assoc_sym)), m_selector)) );
+                    }
                     transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
@@ -1167,6 +1187,7 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_type->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtType_t(al,
                         type_stmt_type->base.base.loc, selector_type, block_call_stmt.p, block_call_stmt.size())));
+                    assoc_variable->m_type = selector_variable_type;
                     break;
                 }
                 case AST::type_stmtType::ClassDefault: {
@@ -1189,7 +1210,8 @@ public:
         selector_variable->m_dependencies = selector_variable_dependencies;
         selector_variable->n_dependencies = selector_variable_n_dependencies;
 
-        tmp = ASR::make_SelectType_t(al, x.base.base.loc, select_type_body.p, select_type_body.size(),
+        tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector,
+                                     select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());
     }
 
