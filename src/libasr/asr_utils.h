@@ -2632,6 +2632,10 @@ static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::exp
 }
 
 static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vector<size_t>& v) {
+    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+            ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
+        return false;
+    }
     ASR::ttype_t* typei = nullptr;
     ASR::dimension_t* dims = nullptr;
     for( size_t i = 0; i < x->n_args; i++ ) {
