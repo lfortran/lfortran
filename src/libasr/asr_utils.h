@@ -2648,7 +2648,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
         if( ASRUtils::is_dimension_empty(dims, n_dims) &&
             (argi->m_intent == ASRUtils::intent_in ||
              argi->m_intent == ASRUtils::intent_out) &&
-            argi->m_storage != ASR::storage_typeType::Allocatable) {
+            argi->m_storage != ASR::storage_typeType::Allocatable
+            && typei->type != ASR::ttypeType::Character) {
             v.push_back(i);
         }
     }
