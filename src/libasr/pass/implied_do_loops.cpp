@@ -276,6 +276,7 @@ public:
             }
         } else if( !ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) &&
                    !ASR::is_a<ASR::FunctionCall_t>(*x.m_value) && // This will be converted to SubroutineCall in array_op.cpp
+                   !ASR::is_a<ASR::IntrinsicFunction_t>(*x.m_value) && // TODO: Remove this and the above check, implied_do_loops.cpp should only handle ArrayConstant
                    PassUtils::is_array(x.m_target)) {
             contains_array = true;
             visit_expr(*(x.m_value)); // TODO: Add support for updating contains array in all types of expressions
@@ -308,6 +309,7 @@ public:
             pass_result.push_back(al, doloop);
         } else if ( !ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) &&
                    !ASR::is_a<ASR::FunctionCall_t>(*x.m_value) &&
+                   !ASR::is_a<ASR::IntrinsicFunction_t>(*x.m_value) && // TODO: Remove this and the above check, implied_do_loops.cpp should only handle ArrayConstant
                    ASR::is_a<ASR::ArraySection_t>(*x.m_target) ) {
             contains_array = true;
             visit_expr(*(x.m_value)); // TODO: Add support for updating contains array in all types of expressions
