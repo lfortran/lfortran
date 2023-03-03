@@ -559,6 +559,102 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_ArrayOpCommon<ASR::LogicalCompare_t>(x, "_logical_comp_op_res");
     }
 
+    void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
+        LCOMPILERS_ASSERT(current_scope != nullptr);
+        const Location& loc = x->base.base.loc;
+        std::vector<bool> array_mask(x->n_args, false);
+        bool at_least_one_array = false;
+        for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
+            array_mask[iarg] = ASRUtils::is_array(
+                ASRUtils::expr_type(x->m_args[iarg]));
+            at_least_one_array = at_least_one_array || array_mask[iarg];
+        }
+        if (!at_least_one_array) {
+            return ;
+        }
+        std::string res_prefix = "_elemental_func_call_res";
+        ASR::expr_t* result_var_copy = result_var;
+        bool is_all_rank_0 = true;
+        std::vector<ASR::expr_t*> operands;
+        ASR::expr_t* operand = nullptr;
+        int common_rank = 0;
+        bool are_all_rank_same = true;
+        for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
+            result_var = nullptr;
+            ASR::expr_t** current_expr_copy_9 = current_expr;
+            current_expr = &(x->m_args[iarg]);
+            self().replace_expr(x->m_args[iarg]);
+            operand = *current_expr;
+            current_expr = current_expr_copy_9;
+            operands.push_back(operand);
+            int rank_operand = PassUtils::get_rank(operand);
+            if( common_rank == 0 ) {
+                common_rank = rank_operand;
+            }
+            if( common_rank != rank_operand &&
+                rank_operand > 0 ) {
+                are_all_rank_same = false;
+            }
+            array_mask[iarg] = (rank_operand > 0);
+            is_all_rank_0 = is_all_rank_0 && (rank_operand <= 0);
+        }
+        if( is_all_rank_0 ) {
+            return ;
+        }
+        if( !are_all_rank_same ) {
+            throw LCompilersException("Broadcasting support not yet available "
+                                        "for different shape arrays.");
+        }
+        result_var = result_var_copy;
+        if( result_var == nullptr ) {
+            result_var = PassUtils::create_var(result_counter, res_prefix,
+                            loc, operand, al, current_scope);
+            result_counter += 1;
+        }
+        *current_expr = result_var;
+
+        int n_dims = common_rank;
+        Vec<ASR::expr_t*> idx_vars;
+        PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope);
+        ASR::stmt_t* doloop = nullptr;
+        for( int i = n_dims - 1; i >= 0; i-- ) {
+            // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
+            ASR::do_loop_head_t head;
+            head.m_v = idx_vars[i];
+            head.m_start = PassUtils::get_bound(result_var, i + 1, "lbound", al);
+            head.m_end = PassUtils::get_bound(result_var, i + 1, "ubound", al);
+            head.m_increment = nullptr;
+            head.loc = head.m_v->base.loc;
+            Vec<ASR::stmt_t*> doloop_body;
+            doloop_body.reserve(al, 1);
+            if( doloop == nullptr ) {
+                Vec<ASR::expr_t*> ref_args;
+                ref_args.reserve(al, x->n_args);
+                for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
+                    ASR::expr_t* ref = operands[iarg];
+                    if( array_mask[iarg] ) {
+                        ref = PassUtils::create_array_ref(operands[iarg], idx_vars, al);
+                    }
+                    ref_args.push_back(al, ref);
+                }
+                Vec<ASR::dimension_t> empty_dim;
+                empty_dim.reserve(al, 1);
+                ASR::ttype_t* dim_less_type = ASRUtils::duplicate_type(al, x->m_type, &empty_dim);
+                ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASR::make_IntrinsicFunction_t(al, loc,
+                    x->m_intrinsic_id, ref_args.p, ref_args.size(), x->m_overload_id,
+                    dim_less_type, nullptr));
+                ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
+                ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, op_el_wise, nullptr));
+                doloop_body.push_back(al, assign);
+            } else {
+                doloop_body.push_back(al, doloop);
+            }
+            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, head, doloop_body.p, doloop_body.size()));
+        }
+        pass_result.push_back(al, doloop);
+        result_var = nullptr;
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         std::string x_name;
         if( x->m_name->type == ASR::symbolType::ExternalSymbol ) {
@@ -732,8 +828,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
 
         void call_replacer() {
             replacer.current_expr = current_expr;
-            replacer.replace_expr(*current_expr);
             replacer.current_scope = current_scope;
+            replacer.replace_expr(*current_expr);
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -831,7 +927,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             // of the function (which returned array) now points
             // to the newly created subroutine.
             for( auto& item: replace_vec ) {
-                xx.m_global_scope->add_symbol(item.first, item.second);
+                xx.m_global_scope->overwrite_symbol(item.first, item.second);
             }
 
             // Now visit everything else
