@@ -206,7 +206,7 @@ stmt
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
-    | SelectType(type_stmt* body, stmt* default)
+    | SelectType(expr selector, type_stmt* body, stmt* default)
     | CPtrToPointer(expr cptr, expr ptr, expr? shape)
     | BlockCall(int label, symbol m)
     | SetInsert(expr a, expr ele)
@@ -420,7 +420,10 @@ do_loop_head = (expr? v, expr? start, expr? end, expr? increment)
 
 case_stmt = CaseStmt(expr* test, stmt* body) | CaseStmt_Range(expr? start, expr? end, stmt* body)
 
-type_stmt = TypeStmtName(symbol sym, stmt* body) | TypeStmtType(ttype type, stmt* body)
+type_stmt
+    = TypeStmtName(symbol sym, stmt* body)
+    | ClassStmt(symbol sym, stmt* body)
+    | TypeStmtType(ttype type, stmt* body)
 
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 

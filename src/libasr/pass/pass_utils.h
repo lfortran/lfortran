@@ -98,6 +98,9 @@ namespace LCompilers {
             return ASR::is_a<ASR::Struct_t>(*ASRUtils::expr_type(var));
         }
 
+        // TODO: Update asdl_cpp.py to call transform_stmts
+        // in BaseWalkVisitor instead of calling visit_stmt
+        // directly.
         template <class Struct>
         class PassVisitor: public ASR::BaseWalkVisitor<Struct> {
 
@@ -246,6 +249,31 @@ namespace LCompilers {
                     self().visit_expr(*xx.m_test);
                     for (size_t i=0; i<xx.n_body; i++) {
                         self().visit_case_stmt(*xx.m_body[i]);
+                    }
+                    transform_stmts(xx.m_default, xx.n_default);
+                }
+
+                void visit_TypeStmtName(const ASR::TypeStmtName_t &x) {
+                    ASR::TypeStmtName_t& xx = const_cast<ASR::TypeStmtName_t&>(x);
+                    transform_stmts(xx.m_body, xx.n_body);
+                }
+
+                void visit_ClassStmt(const ASR::ClassStmt_t &x) {
+                    ASR::ClassStmt_t& xx = const_cast<ASR::ClassStmt_t&>(x);
+                    transform_stmts(xx.m_body, xx.n_body);
+                }
+
+                void visit_TypeStmtType(const ASR::TypeStmtType_t &x) {
+                    self().visit_ttype(*x.m_type);
+                    ASR::TypeStmtType_t& xx = const_cast<ASR::TypeStmtType_t&>(x);
+                    transform_stmts(xx.m_body, xx.n_body);
+                }
+
+                void visit_SelectType(const ASR::SelectType_t& x) {
+                    ASR::SelectType_t &xx = const_cast<ASR::SelectType_t&>(x);
+                    self().visit_expr(*xx.m_selector);
+                    for (size_t i=0; i<xx.n_body; i++) {
+                        self().visit_type_stmt(*xx.m_body[i]);
                     }
                     transform_stmts(xx.m_default, xx.n_default);
                 }

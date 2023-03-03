@@ -743,6 +743,48 @@
                         ()
                         ()
                     )
+                    (If
+                        (RealCompare
+                            (StructInstanceMember
+                                (Var 6 a)
+                                6 1_complextype_r
+                                (Real 4 [])
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                2.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (StructInstanceMember
+                                (Var 6 a)
+                                6 1_complextype_i
+                                (Real 4 [])
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                2.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (SubroutineCall
                         6 1_real_add_subrout
                         6 1_add
@@ -767,6 +809,48 @@
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (StructInstanceMember
+                                (Var 6 a)
+                                6 1_complextype_r
+                                (Real 4 [])
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (StructInstanceMember
+                                (Var 6 a)
+                                6 1_complextype_i
+                                (Real 4 [])
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 )
         })

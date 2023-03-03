@@ -922,6 +922,7 @@
                                                     trim]
                                                     [(Var 5 generic)]
                                                     [(SelectType
+                                                        (Var 5 generic)
                                                         [(TypeStmtType
                                                             (Integer 1 [])
                                                             [(BlockCall

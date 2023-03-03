@@ -286,6 +286,9 @@ static inline std::string type_to_str(const ASR::ttype_t *t)
         case ASR::ttypeType::Struct: {
             return ASRUtils::symbol_name(ASR::down_cast<ASR::Struct_t>(t)->m_derived_type);
         }
+        case ASR::ttypeType::Class: {
+            return ASRUtils::symbol_name(ASR::down_cast<ASR::Class_t>(t)->m_class_type);
+        }
         case ASR::ttypeType::Union: {
             return "union";
         }
@@ -2643,6 +2646,9 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
             continue;
         }
         typei = ASRUtils::expr_type(x->m_args[i]);
+        if( ASR::is_a<ASR::Class_t>(*typei) ) {
+            continue ;
+        }
         int n_dims = ASRUtils::extract_dimensions_from_ttype(typei, dims);
         ASR::Variable_t* argi = ASRUtils::EXPR2VAR(x->m_args[i]);
         if( ASRUtils::is_dimension_empty(dims, n_dims) &&
@@ -2733,6 +2739,16 @@ static inline ASR::EnumType_t* get_EnumType_from_symbol(ASR::symbol_t* s) {
     ASR::symbol_t* enum_type_cand = ASR::down_cast<ASR::symbol_t>(s_var->m_parent_symtab->asr_owner);
     LCOMPILERS_ASSERT(ASR::is_a<ASR::EnumType_t>(*enum_type_cand));
     return ASR::down_cast<ASR::EnumType_t>(enum_type_cand);
+}
+
+static inline bool is_abstract_class_type(ASR::ttype_t* type) {
+    if( !ASR::is_a<ASR::Class_t>(*type) ) {
+        return false;
+    }
+    ASR::Class_t* class_t = ASR::down_cast<ASR::Class_t>(type);
+    return std::string( ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(class_t->m_class_type))
+                ) == "~abstract_type";
 }
 
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
