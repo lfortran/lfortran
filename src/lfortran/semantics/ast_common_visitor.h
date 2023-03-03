@@ -1947,6 +1947,9 @@ public:
                 v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
         } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
+            if (ASR::is_a<ASR::Pointer_t>(*v_type)) {
+                v_type = ASR::down_cast<ASR::Pointer_t>(v_type)->m_type;
+            }
             if (ASR::is_a<ASR::Character_t>(*v_type)) {
                 int dims = ASR::down_cast<ASR::Character_t>(v_type)->n_dims;
                 if (dims == 0) {
