@@ -22,6 +22,7 @@ implicit none
    type(point), target :: p
    type(point_3d), target :: p3d
    type(color_point), target :: cp
+   class(point), pointer :: p_or_cp
 
    p%x = 1.0
    p%y = 2.0
@@ -34,7 +35,6 @@ implicit none
    cp%y = 7.0
    cp%color = 8
 
-   class(point), pointer :: p_or_cp
    p_or_cp => cp
 
    select type ( an => p_or_cp )
