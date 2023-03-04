@@ -2882,6 +2882,9 @@ public:
                 if( !is_pointer_ ) {
                     llvm_type = llvm_type->getPointerTo();
                 }
+                if (n_dims == 0 && ASR::is_a<ASR::Character_t>(*t2)){
+                    llvm_type = character_type;
+                }
                 break;
             }
             case (ASR::ttypeType::List) : {
@@ -4319,6 +4322,15 @@ public:
         uint32_t target_h = get_hash((ASR::asr_t*)asr_target);
         llvm::Value* llvm_target = llvm_symtab[target_h];
         llvm::Value* llvm_value = llvm_symtab[value_h];
+        ASR::ttype_t *type = ASRUtils::get_contained_type(asr_target->m_type);
+        if (ASR::is_a<ASR::Character_t>(*type)) {
+            int dims = ASR::down_cast<ASR::Character_t>(type)->n_dims;
+            if (dims == 0) {
+                builder->CreateStore(CreateLoad(llvm_value),
+                    llvm_target);
+                return;
+            }
+        }
         bool is_target_class = ASR::is_a<ASR::Class_t>(
             *ASRUtils::type_get_past_pointer(asr_target->m_type));
         bool is_value_class = ASR::is_a<ASR::Class_t>(
