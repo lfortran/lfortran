@@ -91,8 +91,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);
             if( x_sym_symtab->get_counter() != current_proc_scope->get_counter() ) {
                 // xx.m_name points to the function/procedure present inside
-                // original function's symtab. Make it point to the new function's
-                // symtab.
+                // original function's symtab. Make it point to the symbol in
+                // new function's symtab.
                 std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
                 xx.m_name = current_proc_scope->resolve_symbol(x_sym_name);
                 LCOMPILERS_ASSERT(xx.m_name != nullptr);
