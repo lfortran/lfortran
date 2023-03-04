@@ -270,6 +270,7 @@ RUN(NAME arrays_18_func LABELS gfortran llvm)
 RUN(NAME arrays_19 LABELS gfortran llvm)
 RUN(NAME arrays_20 LABELS gfortran llvm)
 RUN(NAME arrays_22 LABELS gfortran llvm)
+RUN(NAME arrays_23 LABELS gfortran llvm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)

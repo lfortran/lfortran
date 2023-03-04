@@ -1,4 +1,4 @@
-module array11
+module arrays_23
 implicit none
    type :: toml_context
 
@@ -35,4 +35,11 @@ subroutine add_context(message, context)
       & '   |'
 
 end subroutine add_context
-end module array11
+end module arrays_23
+
+
+program main
+   use arrays_23
+   implicit none
+   print *, "working"
+end program main
