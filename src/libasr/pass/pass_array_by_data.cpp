@@ -88,9 +88,14 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
             ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
             ASR::symbol_t* x_sym = xx.m_name;
-            std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-            if( current_proc_scope->get_symbol(x_sym_name) != x_sym ) {
-                xx.m_name = current_proc_scope->get_symbol(x_sym_name);
+            SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);
+            if( x_sym_symtab->get_counter() != current_proc_scope->get_counter() ) {
+                // xx.m_name points to the function/procedure present inside
+                // original function's symtab. Make it point to the new function's
+                // symtab.
+                std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
+                xx.m_name = current_proc_scope->resolve_symbol(x_sym_name);
+                LCOMPILERS_ASSERT(xx.m_name != nullptr);
             }
         }
 
