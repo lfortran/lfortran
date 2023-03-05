@@ -673,9 +673,9 @@ RUN(NAME template_add LABELS llvm wasm)
 RUN(NAME template_nested LABELS llvm wasm)
 RUN(NAME template_travel LABELS llvm wasm)
 RUN(NAME template_triple LABELS llvm wasm)
-RUN(NAME template_array_01 LABELS llvm)
+RUN(NAME template_array_01 LABELS llvm wasm)
 RUN(NAME template_array_01b LABELS llvm wasm)
-RUN(NAME template_array_02 LABELS llvm)
+RUN(NAME template_array_02 LABELS llvm wasm)
 RUN(NAME template_array_02b LABELS llvm wasm)
 RUN(NAME template_array_03 LABELS llvm wasm)
 RUN(NAME template_array_04 LABELS llvm)
@@ -688,6 +688,7 @@ RUN(NAME implied_do_loops3 LABELS gfortran)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
+RUN(NAME minpack_02 LABELS gfortran llvm)
 
 RUN(NAME external_01 LABELS gfortran llvm)
 
