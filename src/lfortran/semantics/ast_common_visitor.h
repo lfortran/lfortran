@@ -1836,9 +1836,8 @@ public:
                                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0))));
                         }
                     } else {
-                        m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
-                                    v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0)),
-                                    nullptr));
+                        // Handled in the backend
+                        m_end = nullptr;
                     }
                 } else {
                     m_end = ASRUtils::get_bound(v_Var, i + 1, "ubound", al);
@@ -1974,8 +1973,17 @@ public:
                         char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
                                         1, -1, nullptr, nullptr, 0));
                     }
-                    return ASR::make_StringSection_t(al, loc, v_Var, args[0].m_left,
-                            args[0].m_right, args[0].m_step, char_type, arr_ref_val);
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                                    4, nullptr, 0));
+                    ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                                                1, int_type));
+                    ASR::expr_t *l = nullptr, *r = args[0].m_right;
+                    if (args[0].m_left) {
+                        l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                            args[0].m_left, ASR::binopType::Sub, const_1, int_type, nullptr));
+                    }
+                    return ASR::make_StringSection_t(al, loc, v_Var, l,
+                            r, args[0].m_step, char_type, arr_ref_val);
                 }
             }
             return ASR::make_ArraySection_t(al, loc,
