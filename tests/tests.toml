@@ -713,7 +713,7 @@ ast = true
 ast_f90 = true
 
 [[test]]
-filename = "array11.f90"
+filename = "../integration_tests/arrays_23.f90"
 asr = true
 
 [[test]]
