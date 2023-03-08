@@ -2405,7 +2405,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         m_func_name_idx_map.end())
         wasm::emit_call(m_code_section, m_al,
                         m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
-        for (auto return_expr : vars_passed_by_refs) {
+        for (int i = (int)vars_passed_by_refs.size() - 1; i >= 0; i--) {
+            ASR::expr_t* return_expr = vars_passed_by_refs[i];
             if (ASR::is_a<ASR::Var_t>(*return_expr)) {
                 auto return_var = ASRUtils::EXPR2VAR(return_expr);
                 LCOMPILERS_ASSERT(
