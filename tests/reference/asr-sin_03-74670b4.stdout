@@ -2,14 +2,8 @@
     (SymbolTable
         1
         {
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             sin_03:
                 (Program
                     (SymbolTable
@@ -24,26 +18,6 @@
                                     []
                                     real64
                                     Public
-                                ),
-                            sin:
-                                (ExternalSymbol
-                                    2
-                                    sin
-                                    6 sin
-                                    lfortran_intrinsic_math
-                                    []
-                                    sin
-                                    Private
-                                ),
-                            sin@dsin:
-                                (ExternalSymbol
-                                    2
-                                    sin@dsin
-                                    6 dsin
-                                    lfortran_intrinsic_math
-                                    []
-                                    dsin
-                                    Private
                                 ),
                             x:
                                 (Variable
@@ -65,19 +39,18 @@
                     [iso_fortran_env]
                     [(=
                         (Var 2 x)
-                        (FunctionCall
-                            2 sin@dsin
-                            2 sin
-                            [((RealConstant
+                        (IntrinsicFunction
+                            Sin
+                            [(RealConstant
                                 1.500000
                                 (Real 8 [])
-                            ))]
+                            )]
+                            0
                             (Real 8 [])
                             (RealConstant
                                 0.997495
                                 (Real 8 [])
                             )
-                            ()
                         )
                         ()
                     )

@@ -7,24 +7,34 @@
                     (SymbolTable
                         2
                         {
-                            sin:
+                            abs:
                                 (ExternalSymbol
                                     2
-                                    sin
-                                    4 sin
+                                    abs
+                                    4 abs
                                     lfortran_intrinsic_math
                                     []
-                                    sin
+                                    abs
                                     Private
                                 ),
-                            sin@ssin:
+                            abs@dabs:
                                 (ExternalSymbol
                                     2
-                                    sin@ssin
-                                    4 ssin
+                                    abs@dabs
+                                    4 dabs
                                     lfortran_intrinsic_math
                                     []
-                                    ssin
+                                    dabs
+                                    Private
+                                ),
+                            abs@sabs:
+                                (ExternalSymbol
+                                    2
+                                    abs@sabs
+                                    4 sabs
+                                    lfortran_intrinsic_math
+                                    []
+                                    sabs
                                     Private
                                 ),
                             x:
@@ -33,10 +43,37 @@
                                     x
                                     []
                                     Local
+                                    (IntrinsicFunction
+                                        Sin
+                                        [(RealConstant
+                                            1.500000
+                                            (Real 4 [])
+                                        )]
+                                        0
+                                        (Real 4 [])
+                                        (RealConstant
+                                            0.997495
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    ()
+                                    Save
+                                    (Real 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 8 [])
                                     Source
                                     Public
                                     Required
@@ -46,28 +83,315 @@
                     intrinsics_02
                     []
                     [(=
-                        (Var 2 x)
-                        (FunctionCall
-                            2 sin@ssin
-                            2 sin
-                            [((RealConstant
-                                1.500000
+                        (Var 2 y)
+                        (Cast
+                            (IntrinsicFunction
+                                Sin
+                                [(RealConstant
+                                    1.500000
+                                    (Real 4 [])
+                                )]
+                                0
                                 (Real 4 [])
-                            ))]
-                            (Real 4 [])
+                                (RealConstant
+                                    0.997495
+                                    (Real 4 [])
+                                )
+                            )
+                            RealToReal
+                            (Real 8 [])
                             (RealConstant
                                 0.997495
-                                (Real 4 [])
+                                (Real 8 [])
                             )
-                            ()
                         )
                         ()
                     )
                     (Print
                         ()
-                        [(Var 2 x)]
+                        [(Var 2 x)
+                        (Var 2 y)]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (Var 2 x)
+                            NotEq
+                            (RealConstant
+                                0.997495
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Sin
+                                [(Var 2 x)]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            NotEq
+                            (RealConstant
+                                0.840115
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                2 abs@dabs
+                                2 abs
+                                [((RealBinOp
+                                    (Var 2 y)
+                                    Sub
+                                    (Cast
+                                        (RealConstant
+                                            0.997495
+                                            (Real 4 [])
+                                        )
+                                        RealToReal
+                                        (Real 8 [])
+                                        (RealConstant
+                                            0.997495
+                                            (Real 8 [])
+                                        )
+                                    )
+                                    (Real 8 [])
+                                    ()
+                                ))]
+                                (Real 8 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4 [])
+                                )
+                                RealToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    0.000000
+                                    (Real 8 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                2 abs@sabs
+                                2 abs
+                                [((RealBinOp
+                                    (IntrinsicFunction
+                                        Sin
+                                        [(RealBinOp
+                                            (IntrinsicFunction
+                                                Sin
+                                                [(RealConstant
+                                                    1.500000
+                                                    (Real 4 [])
+                                                )]
+                                                0
+                                                (Real 4 [])
+                                                (RealConstant
+                                                    0.997495
+                                                    (Real 4 [])
+                                                )
+                                            )
+                                            Add
+                                            (IntrinsicFunction
+                                                Sin
+                                                [(RealBinOp
+                                                    (RealConstant
+                                                        0.500000
+                                                        (Real 4 [])
+                                                    )
+                                                    Add
+                                                    (IntrinsicFunction
+                                                        Sin
+                                                        [(RealConstant
+                                                            0.500000
+                                                            (Real 4 [])
+                                                        )]
+                                                        0
+                                                        (Real 4 [])
+                                                        (RealConstant
+                                                            0.479426
+                                                            (Real 4 [])
+                                                        )
+                                                    )
+                                                    (Real 4 [])
+                                                    (RealConstant
+                                                        0.979426
+                                                        (Real 4 [])
+                                                    )
+                                                )]
+                                                0
+                                                (Real 4 [])
+                                                (RealConstant
+                                                    0.830177
+                                                    (Real 4 [])
+                                                )
+                                            )
+                                            (Real 4 [])
+                                            (RealConstant
+                                                1.827672
+                                                (Real 4 [])
+                                            )
+                                        )]
+                                        0
+                                        (Real 4 [])
+                                        (RealConstant
+                                            0.967188
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        0.967188
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    (RealConstant
+                                        -0.000000
+                                        (Real 4 [])
+                                    )
+                                ))]
+                                (Real 4 [])
+                                (RealConstant
+                                    0.000000
+                                    (Real 4 [])
+                                )
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                2 abs@dabs
+                                2 abs
+                                [((RealBinOp
+                                    (IntrinsicFunction
+                                        Sin
+                                        [(RealBinOp
+                                            (IntrinsicFunction
+                                                Sin
+                                                [(Var 2 y)]
+                                                0
+                                                (Real 8 [])
+                                                ()
+                                            )
+                                            Add
+                                            (Cast
+                                                (IntrinsicFunction
+                                                    Sin
+                                                    [(RealBinOp
+                                                        (Var 2 x)
+                                                        Add
+                                                        (IntrinsicFunction
+                                                            Sin
+                                                            [(Var 2 x)]
+                                                            0
+                                                            (Real 4 [])
+                                                            ()
+                                                        )
+                                                        (Real 4 [])
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Real 4 [])
+                                                    ()
+                                                )
+                                                RealToReal
+                                                (Real 8 [])
+                                                ()
+                                            )
+                                            (Real 8 [])
+                                            ()
+                                        )]
+                                        0
+                                        (Real 8 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (Cast
+                                        (RealConstant
+                                            0.972762
+                                            (Real 4 [])
+                                        )
+                                        RealToReal
+                                        (Real 8 [])
+                                        (RealConstant
+                                            0.972762
+                                            (Real 8 [])
+                                        )
+                                    )
+                                    (Real 8 [])
+                                    ()
+                                ))]
+                                (Real 8 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4 [])
+                                )
+                                RealToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    0.000000
+                                    (Real 8 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 ),
             iso_c_binding:
