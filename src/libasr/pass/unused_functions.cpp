@@ -111,6 +111,14 @@ public:
             if( x.m_args[i].m_value ) {
                 visit_expr(*(x.m_args[i].m_value));
             }
+            if (x.m_args[i].m_value && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value);
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*var->m_v)) {
+                    ASR::ExternalSymbol_t* extsym = ASR::down_cast<ASR::ExternalSymbol_t>(var->m_v);
+                    uint64_t h = get_hash((ASR::asr_t*)extsym);
+                    fn_used[h] = extsym->m_name;
+                }
+            }
         }
     }
 
