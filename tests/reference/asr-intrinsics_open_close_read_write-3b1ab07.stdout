@@ -100,26 +100,6 @@
                                     Required
                                     .false.
                                 ),
-                            sin:
-                                (ExternalSymbol
-                                    2
-                                    sin
-                                    4 sin
-                                    lfortran_intrinsic_math
-                                    []
-                                    sin
-                                    Private
-                                ),
-                            sin@ssin:
-                                (ExternalSymbol
-                                    2
-                                    sin@ssin
-                                    4 ssin
-                                    lfortran_intrinsic_math
-                                    []
-                                    ssin
-                                    Private
-                                ),
                             u:
                                 (Variable
                                     2
@@ -234,10 +214,9 @@
                                 ()
                             )
                             (RealBinOp
-                                (FunctionCall
-                                    2 sin@ssin
-                                    2 sin
-                                    [((ArrayItem
+                                (IntrinsicFunction
+                                    Sin
+                                    [(ArrayItem
                                         (Var 2 x)
                                         [(()
                                         (Var 2 i)
@@ -245,9 +224,9 @@
                                         (Real 4 [])
                                         ColMajor
                                         ()
-                                    ))]
+                                    )]
+                                    0
                                     (Real 4 [])
-                                    ()
                                     ()
                                 )
                                 Mul
