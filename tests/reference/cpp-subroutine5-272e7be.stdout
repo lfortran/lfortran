@@ -23,11 +23,5 @@ struct dimension_descriptor
     int32_t lower_bound, length;
 };
 // Forward declarations
-void add(float a, float b, float &c);
 
 // Implementations
-void add(float a, float b, float &c)
-{
-    c = a + b;
-}
-
