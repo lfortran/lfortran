@@ -1836,8 +1836,9 @@ public:
                                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0))));
                         }
                     } else {
-                        // Handled in the backend
-                        m_end = nullptr;
+                        m_end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
+                                    v_Var, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0)),
+                                    nullptr));
                     }
                 } else {
                     m_end = ASRUtils::get_bound(v_Var, i + 1, "ubound", al);
@@ -1977,10 +1978,13 @@ public:
                                     4, nullptr, 0));
                     ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
                                                 1, int_type));
-                    ASR::expr_t *l = nullptr, *r = args[0].m_right;
-                    if (args[0].m_left) {
+                    ASR::expr_t *l = nullptr, *r = nullptr;
+                    if (m_args[0].m_start) {
                         l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                             args[0].m_left, ASR::binopType::Sub, const_1, int_type, nullptr));
+                    }
+                    if (m_args[0].m_end) {
+                        r = args[0].m_right;
                     }
                     return ASR::make_StringSection_t(al, loc, v_Var, l,
                             r, args[0].m_step, char_type, arr_ref_val);

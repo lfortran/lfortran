@@ -4423,6 +4423,65 @@ public:
 
     }
 
+    void handle_StringSection_Assignment(ASR::expr_t *target, ASR::expr_t *value) {
+        // Handles the case when LHS of assignment is string.
+        std::string runtime_func_name = "_lfortran_str_slice_assign";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    character_type, {
+                        character_type, character_type, llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        ASR::StringSection_t *ss = ASR::down_cast<ASR::StringSection_t>(target);
+        llvm::Value *lp, *rp;
+        llvm::Value *str, *idx1, *idx2, *step, *str_val;
+        int ptr_load_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(ss->m_arg, true);
+        str = tmp;
+        ptr_loads = ptr_load_copy;
+        this->visit_expr_wrapper(value, true);
+        str_val = tmp;
+        if (!ss->m_start && !ss->m_end) {
+            builder->CreateStore(str_val, str);
+            return;
+        }
+        if (ss->m_start) {
+            this->visit_expr_wrapper(ss->m_start, true);
+            idx1 = tmp;
+            lp = llvm::ConstantInt::get(context,
+                llvm::APInt(1, 1));
+        } else {
+            lp = llvm::ConstantInt::get(context,
+                llvm::APInt(1, 0));
+            idx1 = llvm::Constant::getNullValue(llvm::Type::getInt32Ty(context));
+        }
+        if (ss->m_end) {
+            this->visit_expr_wrapper(ss->m_end, true);
+            idx2 = tmp;
+            rp = llvm::ConstantInt::get(context,
+                llvm::APInt(1, 1));
+        } else {
+            rp = llvm::ConstantInt::get(context,
+                llvm::APInt(1, 0));
+            idx2 = llvm::Constant::getNullValue(llvm::Type::getInt32Ty(context));
+        }
+        if (ss->m_step) {
+            this->visit_expr_wrapper(ss->m_step, true);
+            step = tmp;
+        } else {
+            step = llvm::ConstantInt::get(context,
+                llvm::APInt(32, 0));
+        }
+        tmp = builder->CreateCall(fn, {CreateLoad(str), str_val, idx1, idx2, step, lp, rp});
+        builder->CreateStore(tmp, str);
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( x.m_overloaded ) {
@@ -4440,6 +4499,10 @@ public:
         bool is_value_dict = ASR::is_a<ASR::Dict_t>(*asr_value_type);
         bool is_target_struct = ASR::is_a<ASR::Struct_t>(*asr_target_type);
         bool is_value_struct = ASR::is_a<ASR::Struct_t>(*asr_value_type);
+        if (ASR::is_a<ASR::StringSection_t>(*x.m_target)) {
+            handle_StringSection_Assignment(x.m_target, x.m_value);
+            return;
+        }
         if( is_target_list && is_value_list ) {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
