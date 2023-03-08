@@ -455,6 +455,7 @@ public:
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
+        in_Subroutine = true;
         std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear();
         if (compiler_options.implicit_typing) {
@@ -611,6 +612,7 @@ public:
             implicit_dictionary.clear();
         }
         current_function_dependencies = current_function_dependencies_copy;
+        in_Subroutine = false;
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -631,6 +633,7 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        in_Subroutine = true;
         std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear();
         if (compiler_options.implicit_typing) {
@@ -929,6 +932,7 @@ public:
             implicit_dictionary.clear();
         }
         current_function_dependencies = current_function_dependencies_copy;
+        in_Subroutine = false;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
