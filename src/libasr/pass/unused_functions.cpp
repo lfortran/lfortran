@@ -182,6 +182,15 @@ class ProgramVisitor :
 public:
     bool program_present=false;
 
+    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        for (auto &a : x.m_global_scope->get_scope()) {
+            if (ASR::is_a<ASR::Program_t>(*a.second)) {
+                this->visit_symbol(*a.second);
+                break;
+            }
+        }
+    }
+
     void visit_Program(const ASR::Program_t &/*x*/) {
         program_present = true;
     }
