@@ -5,13 +5,13 @@
             clqmn:
                 (Function
                     (SymbolTable
-                        2
+                        3
                         {
                             dimag:
                                 (ExternalSymbol
-                                    2
+                                    3
                                     dimag
-                                    4 dimag
+                                    5 dimag
                                     lfortran_intrinsic_math
                                     []
                                     dimag
@@ -19,9 +19,9 @@
                                 ),
                             dimag@zaimag:
                                 (ExternalSymbol
-                                    2
+                                    3
                                     dimag@zaimag
-                                    4 zaimag
+                                    5 zaimag
                                     lfortran_intrinsic_math
                                     []
                                     zaimag
@@ -29,7 +29,7 @@
                                 ),
                             ls:
                                 (Variable
-                                    2
+                                    3
                                     ls
                                     []
                                     Local
@@ -44,7 +44,7 @@
                                 ),
                             z:
                                 (Variable
-                                    2
+                                    3
                                     z
                                     []
                                     Local
@@ -79,29 +79,97 @@
                     [(If
                         (RealCompare
                             (FunctionCall
-                                2 dimag@zaimag
-                                2 dimag
-                                [((Var 2 z))]
+                                3 dimag@zaimag
+                                3 dimag
+                                [((Var 3 z))]
                                 (Real 8 [])
                                 ()
                                 ()
                             )
                             Eq
-                            (RealConstant
-                                0.000000
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4 [])
+                                )
+                                RealToReal
                                 (Real 8 [])
+                                (RealConstant
+                                    0.000000
+                                    (Real 8 [])
+                                )
                             )
                             (Logical 4 [])
                             ()
                         )
                         [(=
-                            (Var 2 ls)
+                            (Var 3 ls)
                             (IntegerConstant 1 (Integer 4 []))
                             ()
                         )]
                         []
                     )]
                     ()
+                    Public
+                    .false.
+                    .false.
+                ),
+            dnan:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            dnan:
+                                (Variable
+                                    2
+                                    dnan
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    dnan
+                    (FunctionType
+                        []
+                        (Real 8 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (Var 2 dnan)
+                        (Cast
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            RealToReal
+                            (Real 8 [])
+                            (RealConstant
+                                0.000000
+                                (Real 8 [])
+                            )
+                        )
+                        ()
+                    )]
+                    (Var 2 dnan)
                     Public
                     .false.
                     .false.
