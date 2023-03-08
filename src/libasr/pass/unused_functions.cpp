@@ -23,14 +23,10 @@ public:
     std::map<uint64_t, std::string> fn_declarations;
     std::map<uint64_t, std::string> fn_used;
 
-    // TODO: Do subroutines just like Functions:
-
     void visit_Function(const ASR::Function_t &x) {
-        if (x.m_return_var) {
-            uint64_t h = get_hash((ASR::asr_t*)&x);
-            if (ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC) {
-                fn_declarations[h] = x.m_name;
-            }
+        uint64_t h = get_hash((ASR::asr_t*)&x);
+        if (ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC) {
+            fn_declarations[h] = x.m_name;
         }
 
         for( size_t i = 0; i < x.n_args; i++ ) {
@@ -56,8 +52,7 @@ public:
     }
 
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
-        if (ASR::is_a<ASR::Function_t>(*x.m_external) &&
-                ASR::down_cast<ASR::Function_t>(x.m_external)->m_return_var) {
+        if (ASR::is_a<ASR::Function_t>(*x.m_external)) {
             uint64_t h = get_hash((ASR::asr_t*)&x);
             fn_declarations[h] = x.m_name;
             h = get_hash((ASR::asr_t*)x.m_external);
@@ -72,7 +67,8 @@ public:
     }
 
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+    template <typename T>
+    void visit_FuncSubCall(const T& x) {
         {
             const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
             if (ASR::is_a<ASR::Function_t>(*s)) {
@@ -116,9 +112,19 @@ public:
                 visit_expr(*(x.m_args[i].m_value));
             }
         }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        visit_FuncSubCall(x);
         visit_ttype(*x.m_type);
         if (x.m_value)
             visit_expr(*x.m_value);
+        if (x.m_dt)
+            visit_expr(*x.m_dt);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        visit_FuncSubCall(x);
         if (x.m_dt)
             visit_expr(*x.m_dt);
     }
