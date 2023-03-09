@@ -271,7 +271,7 @@
                                                 (Var 8 i)
                                                 ())]
                                                 (Integer 4 [])
-                                                RowMajor
+                                                ColMajor
                                                 ()
                                             ))
                                             ((ArrayItem
@@ -280,7 +280,7 @@
                                                 (Var 8 j)
                                                 ())]
                                                 (Integer 4 [])
-                                                RowMajor
+                                                ColMajor
                                                 ()
                                             ))]
                                             ()
