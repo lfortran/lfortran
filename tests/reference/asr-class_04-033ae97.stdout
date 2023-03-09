@@ -94,6 +94,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     ()
                                 ),
@@ -124,6 +125,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     2 bar_a
                                 ),
@@ -153,6 +155,7 @@
                                     [c]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     2 bar_b
@@ -205,6 +208,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     ()
                                 ),
@@ -238,6 +242,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     2 foo_a
                                 ),
@@ -270,6 +275,7 @@
                                     [m_bar_c]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     2 foo_b
