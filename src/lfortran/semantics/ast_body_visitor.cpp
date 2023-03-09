@@ -1687,17 +1687,19 @@ public:
                                         ASRUtils::expr_type(value))) {
                 std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(target));
                 std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
-                bool equal_types = true;
                 if(value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     for (size_t i = 0; i < ac->n_args; i++) {
                         if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ac->m_args[i]), ASRUtils::expr_type(target))) {
-                            equal_types = false;
-                            break;
+                            diag.semantic_error_label(
+                                "Type mismatch in assignment, the types must be compatible",
+                                {target->base.loc, value->base.loc},
+                                "type mismatch (" + ltype + " and " + rtype + ")"
+                            );
+                            throw SemanticAbort();
                         }
                     }
-                }
-                if(!equal_types) {
+                } else {
                     diag.semantic_error_label(
                         "Type mismatch in assignment, the types must be compatible",
                         {target->base.loc, value->base.loc},
