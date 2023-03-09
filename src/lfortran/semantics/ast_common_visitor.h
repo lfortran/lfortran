@@ -1725,7 +1725,7 @@ public:
                 current_scope = al.make_new<SymbolTable>(parent_scope);
                 ASR::asr_t* dtype = ASR::make_StructType_t(al, loc, current_scope,
                                                 s2c(al, to_lower(derived_type_name)), nullptr, 0, nullptr, 0,
-                                                ASR::abiType::Source, dflt_access, false, nullptr, nullptr);
+                                                ASR::abiType::Source, dflt_access, false, true, nullptr, nullptr);
                 v = ASR::down_cast<ASR::symbol_t>(dtype);
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;

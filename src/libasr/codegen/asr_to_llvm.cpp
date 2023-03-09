@@ -244,6 +244,7 @@ public:
     std::map<ASR::symbol_t*, std::map<SymbolTable*, std::vector<llvm::Value*>>> class2vtab;
     std::map<ASR::symbol_t*, llvm::Type*> type2vtabtype;
     std::map<ASR::symbol_t*, int> type2vtabid;
+    std::map<ASR::symbol_t*, std::map<std::string, int64_t>> vtabtype2procidx;
     llvm::Type* current_select_type_block_type;
     std::string current_select_type_block_der_type;
 
@@ -867,6 +868,19 @@ public:
         }
         llvm::StructType* der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
         name2dertype[der_type_name] = der_type_llvm;
+        if( is_pointer ) {
+            return der_type_llvm->getPointerTo();
+        }
+        return (llvm::Type*) der_type_llvm;
+    }
+
+    llvm::Type* getClassType(ASR::StructType_t* der_type, bool is_pointer=false) {
+        std::string der_type_name = std::string(der_type->m_name) + std::string("_polymorphic");
+        llvm::StructType* der_type_llvm = nullptr;
+        if( name2dertype.find(der_type_name) != name2dertype.end() ) {
+            der_type_llvm = name2dertype[der_type_name];
+        }
+        LCOMPILERS_ASSERT(der_type_llvm != nullptr);
         if( is_pointer ) {
             return der_type_llvm->getPointerTo();
         }
@@ -3030,8 +3044,9 @@ public:
             return ;
         }
         if( type2vtabtype.find(struct_type_sym) == type2vtabtype.end() ) {
+            std::vector<llvm::Type*> type_vec = {getIntType(8)};
             type2vtabtype[struct_type_sym] = llvm::StructType::create(
-                                                context, {getIntType(8)},
+                                                context, type_vec,
                                                 std::string("__vtab_") +
                                                 std::string(struct_type_t->m_name));
         }
@@ -3781,6 +3796,14 @@ public:
             F = llvm_symtab_fn[h];
         } else {
             llvm::FunctionType* function_type = get_function_type(x);
+            if( ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface ) {
+                ASR::FunctionType_t* asr_function_type = ASRUtils::get_FunctionType(x);
+                for( size_t i = 0; i < asr_function_type->n_arg_types; i++ ) {
+                    if( ASR::is_a<ASR::Class_t>(*asr_function_type->m_arg_types[i]) ) {
+                        return ;
+                    }
+                }
+            }
             std::string fn_name;
             if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
                 if (ASRUtils::get_FunctionType(x)->m_bindc_name) {
@@ -4341,8 +4364,10 @@ public:
             ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::type_get_past_pointer(asr_value->m_type));
             ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
-            LCOMPILERS_ASSERT(type2vtab.find(struct_sym) != type2vtab.end() &&
-                type2vtab[struct_sym].find(current_scope) != type2vtab[struct_sym].end() );
+            if (type2vtab.find(struct_sym) == type2vtab.end() ||
+                type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end()) {
+                create_vtab_for_struct_type(struct_sym, current_scope);
+            }
             llvm::Value* vtab_obj = type2vtab[struct_sym][current_scope];
             llvm::Value* struct_type_hash = CreateLoad(llvm_utils->create_gep(vtab_obj, 0));
             builder->CreateStore(struct_type_hash, vtab_address_ptr);
@@ -7312,6 +7337,99 @@ public:
         return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
     }
 
+    void visit_RuntimePolymorphicFunctionCall(const ASR::FunctionCall_t& x, std::string proc_sym_name) {
+        std::vector<std::pair<llvm::Value*, ASR::symbol_t*>> vtabs;
+        ASR::Var_t* dt_Var = ASR::down_cast<ASR::Var_t>(x.m_dt);
+        ASR::symbol_t* dt_sym = ASRUtils::symbol_get_past_external(dt_Var->m_v);
+        ASR::StructType_t* dt_sym_type = nullptr;
+        ASR::ttype_t* dt_ttype_t = ASRUtils::type_get_past_pointer(
+                                        ASRUtils::symbol_type(dt_sym));
+        if( ASR::is_a<ASR::Struct_t>(*dt_ttype_t) ) {
+            ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(dt_ttype_t);
+            dt_sym_type = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
+        } else if( ASR::is_a<ASR::Class_t>(*dt_ttype_t) ) {
+            ASR::Class_t* class_t = ASR::down_cast<ASR::Class_t>(dt_ttype_t);
+            dt_sym_type = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::symbol_get_past_external(class_t->m_class_type));
+        }
+        LCOMPILERS_ASSERT(dt_sym_type != nullptr);
+        for( auto& item: type2vtab ) {
+            ASR::StructType_t* a_dt = ASR::down_cast<ASR::StructType_t>(item.first);
+            if( !a_dt->m_is_abstract &&
+                (a_dt == dt_sym_type ||
+                ASRUtils::is_parent(a_dt, dt_sym_type) ||
+                ASRUtils::is_parent(dt_sym_type, a_dt)) ) {
+                for( auto& item2: item.second ) {
+                    if( item2.first == current_scope ) {
+                        vtabs.push_back(std::make_pair(item2.second, item.first));
+                    }
+                }
+            }
+        }
+
+        uint64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        visit_Var(*dt_Var);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* llvm_dt = tmp;
+        tmp = builder->CreateAlloca(get_type_from_ttype_t_util(x.m_type));
+        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+        for( size_t i = 0; i < vtabs.size(); i++ ) {
+            llvm::Function *fn = builder->GetInsertBlock()->getParent();
+
+            llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+            llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+
+            llvm::Value* vptr_int_hash = CreateLoad(llvm_utils->create_gep(llvm_dt, 0));
+            llvm::Value* dt_data = CreateLoad(llvm_utils->create_gep(llvm_dt, 1));
+            ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_dt);
+            if( ASRUtils::is_array(selector_var_type) ) {
+                vptr_int_hash = CreateLoad(llvm_utils->create_gep(vptr_int_hash, 0));
+            }
+            ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(vtabs[i].second);
+            llvm::Value* type_sym_vtab = vtabs[i].first;
+            llvm::Value* cond = builder->CreateICmpEQ(
+                                    vptr_int_hash,
+                                    CreateLoad(
+                                        llvm_utils->create_gep(type_sym_vtab, 0) ) );
+
+            builder->CreateCondBr(cond, thenBB, elseBB);
+            builder->SetInsertPoint(thenBB);
+            {
+                std::vector<llvm::Value*> args;
+                ASR::StructType_t* struct_type_t = ASR::down_cast<ASR::StructType_t>(type_sym);
+                llvm::Type* target_dt_type = getStructType(struct_type_t, true);
+                llvm::Type* target_class_dt_type = getClassType(struct_type_t);
+                llvm::Value* target_dt = builder->CreateAlloca(target_class_dt_type);
+                llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
+                builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
+                llvm::Value* target_dt_data_ptr = llvm_utils->create_gep(target_dt, 1);
+                builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
+                                     target_dt_data_ptr);
+                args.push_back(target_dt);
+                ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
+                ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::ClassProcedure_t>(s_class_proc)->m_proc);
+                uint32_t h = get_hash((ASR::asr_t*) s_proc);
+                llvm::Function* fn = llvm_symtab_fn[h];
+                ASR::Function_t* s = ASR::down_cast<ASR::Function_t>(s_proc);
+                LCOMPILERS_ASSERT(s != nullptr);
+                std::vector<llvm::Value *> args2 = convert_call_args(x, true);
+                args.insert(args.end(), args2.begin(), args2.end());
+                ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
+                builder->CreateStore(CreateCallUtil(fn, args, return_var_type0), tmp);
+            }
+            builder->CreateBr(mergeBB);
+
+            start_new_block(elseBB);
+            current_select_type_block_type = nullptr;
+            current_select_type_block_der_type.clear();
+        }
+        start_new_block(mergeBB);
+        tmp = CreateLoad(tmp);
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
@@ -7322,11 +7440,25 @@ public:
         }
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
-            return;
+            return ;
         }
+
+        const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
+        std::string proc_sym_name = "";
+        bool is_deferred = false;
+        if( ASR::is_a<ASR::ClassProcedure_t>(*proc_sym) ) {
+            ASR::ClassProcedure_t* class_proc =
+                ASR::down_cast<ASR::ClassProcedure_t>(proc_sym);
+            is_deferred = class_proc->m_is_deferred;
+            proc_sym_name = class_proc->m_name;
+        }
+        if( is_deferred ) {
+            visit_RuntimePolymorphicFunctionCall(x, proc_sym_name);
+            return ;
+        }
+
         ASR::Function_t *s = nullptr;
         std::vector<llvm::Value*> args;
-        const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
             s = ASR::down_cast<ASR::Function_t>(proc_sym);
         } else {
@@ -7364,7 +7496,7 @@ public:
                 return ;
             }
         }
-        if (parent_function){
+        if (parent_function) {
             push_nested_stack(parent_function);
         }
         bool intrinsic_function = ASRUtils::is_intrinsic_function2(s);
