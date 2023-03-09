@@ -51,11 +51,11 @@ void main2() {
     b->dims[0].lower_bound = 1;
     b->dims[0].length = 3;
     Kokkos::View<float*> r;
-    r = from_std_vector<float>({1, 2, 3});
-    a->data = (float)(&r);
+    r = from_std_vector<float>({(float)(1), (float)(2), (float)(3)});
+    a->data = &r;
     Kokkos::View<float*> r;
-    r = from_std_vector<float>({1, 2, 3});
-    b->data = (float)(&r);
+    r = from_std_vector<float>({(float)(1), (float)(2), (float)(3)});
+    b->data = &r;
 }
 
 }
