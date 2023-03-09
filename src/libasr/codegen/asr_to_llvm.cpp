@@ -2392,6 +2392,11 @@ public:
         }
     }
 
+    void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
+        llvm::Type* value_type = get_type_from_ttype_t_util(x.m_type);
+        tmp = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
+    }
+
     void visit_EnumType(const ASR::EnumType_t& x) {
         if( x.m_enum_value_type == ASR::enumtypeType::IntegerUnique &&
             x.m_abi == ASR::abiType::BindC ) {
@@ -4312,6 +4317,30 @@ public:
                 ASRUtils::get_contained_type(ASRUtils::expr_type(fptr)));
             llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_type->getPointerTo());
             builder->CreateStore(llvm_cptr, llvm_fptr);
+        }
+    }
+
+    void visit_PointerAssociated(const ASR::PointerAssociated_t& x) {
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        ASR::Variable_t *p = EXPR2VAR(x.m_ptr);
+        uint32_t value_h = get_hash((ASR::asr_t*)p);
+        llvm::Value *ptr = llvm_symtab[value_h], *nptr;
+        ptr = CreateLoad(ptr);
+        ptr = builder->CreatePtrToInt(ptr, getIntType(8, false));
+        if (x.m_tgt) {
+            ASR::Variable_t *t = EXPR2VAR(x.m_tgt);
+            uint32_t t_h = get_hash((ASR::asr_t*)t);
+            nptr = llvm_symtab[t_h];
+            nptr = builder->CreatePtrToInt(nptr, getIntType(8, false));
+            tmp = builder->CreateICmpEQ(ptr, nptr);
+        } else {
+            llvm::Type* value_type = get_type_from_ttype_t_util(p->m_type);
+            nptr = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
+            nptr = builder->CreatePtrToInt(nptr, getIntType(8, false));
+            tmp = builder->CreateICmpNE(ptr, nptr);
         }
     }
 
