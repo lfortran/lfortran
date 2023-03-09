@@ -1542,6 +1542,15 @@ public:
             a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
+            if(sym_type->m_kind) {
+                this->visit_expr(*sym_type->m_kind->m_value);
+                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
+                if (kind_value != 4 && kind_value != 8) {
+                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Real",
+                                    loc);
+                }
+            }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 a_kind, dims.p, dims.size()));
             if (is_pointer) {
