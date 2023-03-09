@@ -11,6 +11,7 @@
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/pass_array_by_data.h>
+#include <libasr/pass/print_arr.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 
@@ -73,9 +74,11 @@ const int NO_OF_RT_FUNCS = rt_funcs_last;
 
 enum GLOBAL_VAR {
     cur_mem_loc = 0,
-    tmp_reg_f32 = 1,
-    tmp_reg_f64 = 2,
-    global_vars_cnt = 3
+    tmp_reg_i32 = 1,
+    tmp_reg_i64 = 2,
+    tmp_reg_f32 = 3,
+    tmp_reg_f64 = 4,
+    global_vars_cnt = 5
 };
 
 enum IMPORT_FUNC {
@@ -699,6 +702,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         no_of_exports++;
 
         declare_global_var(wasm::type::i32, cur_mem_loc, 0, true);
+        declare_global_var(wasm::type::i32, tmp_reg_i32, 0, true);
+        declare_global_var(wasm::type::i64, tmp_reg_i64, 0, true);
         declare_global_var(wasm::type::f32, tmp_reg_f32, 0, true);
         declare_global_var(wasm::type::f64, tmp_reg_f64, 0, true);
 
@@ -2275,6 +2280,106 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         m_func_name_idx_map[get_hash((ASR::asr_t *)fn)]->index);
     }
 
+    void temp_value_set(ASR::expr_t* expr) {
+        auto ttype = ASRUtils::expr_type(expr);
+        auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+        GLOBAL_VAR global_var;
+        switch (ttype->type) {
+            case ASR::ttypeType::Integer: {
+                switch (kind) {
+                    case 4: global_var = tmp_reg_i32; break;
+                    case 8: global_var = tmp_reg_i64; break;
+                    default: throw CodeGenError(
+                        "temp_value_set: Unsupported Integer kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                switch (kind) {
+                    case 4: global_var = tmp_reg_f32; break;
+                    case 8: global_var = tmp_reg_f64; break;
+                    default: throw CodeGenError(
+                        "temp_value_set: Unsupported Real kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Logical: {
+                switch (kind) {
+                    case 4: global_var = tmp_reg_i32; break;
+                    default: throw CodeGenError(
+                        "temp_value_set: Unsupported Logical kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Character: {
+                switch (kind) {
+                    case 4: global_var = tmp_reg_i32; break;
+                    case 8: global_var = tmp_reg_i64; break;
+                    default: throw CodeGenError(
+                        "temp_value_set: Unsupported Character kind");
+                }
+                break;
+            }
+            default: {
+                throw CodeGenError("temp_value_set: Type " +
+                                   ASRUtils::type_to_str(ttype) +
+                                   " not yet supported");
+            }
+        }
+        wasm::emit_set_global(m_code_section, m_al,
+                            m_global_var_name_idx_map[global_var]);
+    }
+
+    void temp_value_get(ASR::expr_t* expr) {
+        auto ttype = ASRUtils::expr_type(expr);
+        auto kind = ASRUtils::extract_kind_from_ttype_t(ttype);
+        GLOBAL_VAR global_var;
+        switch (ttype->type) {
+            case ASR::ttypeType::Integer: {
+                switch (kind) {
+                    case 4: global_var = tmp_reg_i32; break;
+                    case 8: global_var = tmp_reg_i64; break;
+                    default: throw CodeGenError(
+                        "temp_value_get: Unsupported Integer kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                switch (kind) {
+                    case 4: global_var = tmp_reg_f32; break;
+                    case 8: global_var = tmp_reg_f64; break;
+                    default: throw CodeGenError(
+                        "temp_value_get: Unsupported Real kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Logical: {
+                switch (kind) {
+                    case 4: global_var = tmp_reg_i32; break;
+                    default: throw CodeGenError(
+                        "temp_value_get: Unsupported Logical kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Character: {
+                switch (kind) {
+                    case 4: global_var = tmp_reg_i32; break;
+                    case 8: global_var = tmp_reg_i64; break;
+                    default: throw CodeGenError(
+                        "temp_value_get: Unsupported Character kind");
+                }
+                break;
+            }
+            default: {
+                throw CodeGenError("temp_value_get: Type " +
+                                   ASRUtils::type_to_str(ttype) +
+                                   " not yet supported");
+            }
+        }
+        wasm::emit_get_global(m_code_section, m_al,
+                            m_global_var_name_idx_map[global_var]);
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
@@ -2301,7 +2406,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         m_func_name_idx_map.end())
         wasm::emit_call(m_code_section, m_al,
                         m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
-        for (auto return_expr : vars_passed_by_refs) {
+        for (int i = (int)vars_passed_by_refs.size() - 1; i >= 0; i--) {
+            ASR::expr_t* return_expr = vars_passed_by_refs[i];
             if (ASR::is_a<ASR::Var_t>(*return_expr)) {
                 auto return_var = ASRUtils::EXPR2VAR(return_expr);
                 LCOMPILERS_ASSERT(
@@ -2311,11 +2417,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     m_code_section, m_al,
                     m_var_name_idx_map[get_hash((ASR::asr_t *)return_var)]);
             } else if (ASR::is_a<ASR::ArrayItem_t>(*return_expr)) {
-                // emit_memory_store(ASRUtils::EXPR(return_var));
-
-                throw CodeGenError(
-                    "Passing array elements as arguments (with intent out, "
-                    "inout, unspecified) to Subroutines is not yet supported");
+                temp_value_set(return_expr);
+                emit_array_item_address_onto_stack(*(ASR::down_cast<ASR::ArrayItem_t>(return_expr)));
+                temp_value_get(return_expr);
+                emit_memory_store(return_expr);
             } else {
                 LCOMPILERS_ASSERT(false);
             }
@@ -2900,8 +3005,9 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
     Vec<uint8_t> wasm_bytes;
 
     LCompilers::PassOptions pass_options;
-    pass_replace_do_loops(al, asr, pass_options);
     pass_array_by_data(al, asr, pass_options);
+    pass_replace_print_arr(al, asr, pass_options);
+    pass_replace_do_loops(al, asr, pass_options);
     pass_options.always_run = true;
     pass_unused_functions(al, asr, pass_options);
 
