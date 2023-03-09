@@ -193,6 +193,7 @@
                                                     next_token
                                                     4 next_token
                                                     Source
+                                                    .false.
                                                 )
                                         })
                                     toml_character_tokenizer
@@ -200,6 +201,7 @@
                                     [conf]
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     ()
                                     4 toml_tokenizer
@@ -440,6 +442,7 @@
                                     Source
                                     Private
                                     .false.
+                                    .false.
                                     ()
                                     ()
                                 ),
@@ -483,6 +486,7 @@
                                                     next_token
                                                     8 next_token
                                                     Source
+                                                    .true.
                                                 )
                                         })
                                     toml_tokenizer
@@ -491,6 +495,7 @@
                                     Source
                                     Private
                                     .false.
+                                    .true.
                                     ()
                                     ()
                                 ),
@@ -507,6 +512,7 @@
                                     Source
                                     Private
                                     .false.
+                                    .true.
                                     ()
                                     8 toml_tokenizer
                                 )
