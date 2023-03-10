@@ -1974,8 +1974,20 @@ public:
                         char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
                                         1, -1, nullptr, nullptr, 0));
                     }
-                    return ASR::make_StringSection_t(al, loc, v_Var, args[0].m_left,
-                            args[0].m_right, args[0].m_step, char_type, arr_ref_val);
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                                    4, nullptr, 0));
+                    ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                                                1, int_type));
+                    ASR::expr_t *l = nullptr, *r = nullptr;
+                    if (m_args[0].m_start) {
+                        l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                            args[0].m_left, ASR::binopType::Sub, const_1, int_type, nullptr));
+                    }
+                    if (m_args[0].m_end) {
+                        r = args[0].m_right;
+                    }
+                    return ASR::make_StringSection_t(al, loc, v_Var, l,
+                            r, args[0].m_step, char_type, arr_ref_val);
                 }
             }
             return ASR::make_ArraySection_t(al, loc,
