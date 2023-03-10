@@ -689,7 +689,6 @@ public:
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     // fields for generics
-    // TODO: simplify these fields
     std::vector<ASR::asr_t*> current_requirement_type_parameters;
     std::vector<ASR::asr_t*> current_requirement_functions;
     std::map<std::string, std::map<std::string, ASR::asr_t*>> requirement_map;
