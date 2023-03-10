@@ -110,6 +110,16 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
     return ASR::expr_type0(f);
 }
 
+static inline ASR::ttype_t* subs_expr_type(std::map<std::string, ASR::ttype_t*> subs,
+        const ASR::expr_t *expr) {
+    ASR::ttype_t *ttype = ASRUtils::expr_type(expr);
+    if (ASR::is_a<ASR::TypeParameter_t>(*ttype)) {
+        ASR::TypeParameter_t *tparam = ASR::down_cast<ASR::TypeParameter_t>(ttype);
+        ttype = subs[tparam->m_param];
+    }
+    return ttype;
+}
+
 static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
 {
     switch( f->type ) {
