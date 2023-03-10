@@ -1,9 +1,9 @@
-module template_add_m
+module template_add_01_m
     implicit none
     private
     public :: add_t
 
-    requirement R(T, F) 
+    requirement R(T, F)
         type :: T; end type
         function F(x, y) result(z)
             type(T), intent(in) :: x, y
@@ -24,7 +24,7 @@ module template_add_m
     end template
 
 contains
-    
+
     real function func_arg_real(x, y) result(z)
         real, intent(in) :: x, y
         z = x + y
@@ -52,10 +52,10 @@ contains
     end subroutine
 end module
 
-program template_add
-use template_add_m
+program template_add_01
+use template_add_01_m
 implicit none
 
 call test_template()
 
-end program template_add
+end program
