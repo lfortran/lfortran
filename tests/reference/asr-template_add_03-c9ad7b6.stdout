@@ -10,7 +10,7 @@
                 (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math),
-            template_add:
+            template_add_03:
                 (Program
                     (SymbolTable
                         7
@@ -20,7 +20,7 @@
                                     7
                                     add_generic
                                     2 add_generic
-                                    template_add_m
+                                    template_add_03_m
                                     []
                                     add_generic
                                     Public
@@ -30,7 +30,7 @@
                                     7
                                     f
                                     2 f
-                                    template_add_m
+                                    template_add_03_m
                                     []
                                     f
                                     Public
@@ -40,7 +40,7 @@
                                     7
                                     t
                                     2 t
-                                    template_add_m
+                                    template_add_03_m
                                     []
                                     t
                                     Public
@@ -50,14 +50,14 @@
                                     7
                                     test_template
                                     2 test_template
-                                    template_add_m
+                                    template_add_03_m
                                     []
                                     test_template
                                     Public
                                 )
                         })
-                    template_add
-                    [template_add_m]
+                    template_add_03
+                    [template_add_03_m]
                     [(SubroutineCall
                         7 test_template
                         ()
@@ -65,7 +65,7 @@
                         ()
                     )]
                 ),
-            template_add_m:
+            template_add_03_m:
                 (Module
                     (SymbolTable
                         2
@@ -647,9 +647,9 @@
                                     .true.
                                 )
                         })
-                    template_add_m
+                    template_add_03_m
                     [lfortran_intrinsic_math
-                    template_add_m]
+                    template_add_03_m]
                     .false.
                     .false.
                 )
