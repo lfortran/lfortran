@@ -15,7 +15,13 @@
                                     Local
                                     (StringSection
                                         (Var 2 hex_digits)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerBinOp
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
                                         (IntegerConstant 10 (Integer 4 []))
                                         (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 22 () [])
@@ -64,7 +70,13 @@
                                     Local
                                     (StringSection
                                         (Var 2 fullhex_digits)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerBinOp
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
                                         (IntegerConstant 16 (Integer 4 []))
                                         (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 22 () [])
@@ -113,8 +125,14 @@
                                     Local
                                     (StringSection
                                         (Var 2 letters)
-                                        (IntegerConstant 27 (Integer 4 []))
-                                        (IntegerConstant 52 (Integer 4 []))
+                                        (IntegerBinOp
+                                            (IntegerConstant 27 (Integer 4 []))
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
                                         (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 52 () [])
                                         (StringConstant
@@ -162,7 +180,13 @@
                                     Local
                                     (StringSection
                                         (Var 2 digits)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerBinOp
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
                                         (IntegerConstant 8 (Integer 4 []))
                                         (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 22 () [])
@@ -190,7 +214,13 @@
                                     Local
                                     (StringSection
                                         (Var 2 letters)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerBinOp
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
                                         (IntegerConstant 26 (Integer 4 []))
                                         (IntegerConstant 1 (Integer 4 []))
                                         (Character 1 52 () [])

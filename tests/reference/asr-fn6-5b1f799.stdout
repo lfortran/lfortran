@@ -582,12 +582,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
@@ -616,12 +618,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
@@ -650,12 +654,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
@@ -684,12 +690,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
@@ -718,12 +726,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
@@ -752,12 +762,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
@@ -786,12 +798,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
@@ -829,12 +843,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
@@ -877,12 +893,14 @@
                                                                         0
                                                                         (StringSection
                                                                             (Var 3 line)
-                                                                            (Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
+                                                                            ()
                                                                             (IntegerConstant 1 (Integer 4 []))
                                                                             (Character 1 -1 () [])
                                                                             ()
