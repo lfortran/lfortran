@@ -671,17 +671,17 @@ public:
                     ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
                         al, x.base.base.loc, current_scope, s2c(al, func_name),
                         nullptr, 0, args.p, 2, body.p, 1, return_expr,
-                        ASR::abiType::Source, ASR::accessType::Public, 
+                        ASR::abiType::Source, ASR::accessType::Public,
                         ASR::deftypeType::Implementation, nullptr, false, true,
                         false, false, false, nullptr, 0, nullptr, 0, false, false, true);
-                    
+
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
                     current_scope = parent_scope;
                     restriction_subs[restriction->m_name] = op_sym;
                 }
             } else {
-                LCOMPILERS_ASSERT(false);
+                throw SemanticError("Unsupported restriction argument", x.base.base.loc);
             }
         }
 
