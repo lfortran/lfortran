@@ -26,10 +26,12 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_nested.f90"
+ast = true
 asr = true
 
 [[test]]
 filename = "../integration_tests/template_travel.f90"
+ast = true
 asr = true
 
 [[test]]
