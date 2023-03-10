@@ -1,10 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%c_ptr = type { i32 }
-%array = type { i32*, i32, %dimension_descriptor*, i1, i32 }
-%dimension_descriptor = type { i32, i32, i32 }
-
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @c_null_ptr = external global void*
 @1 = private unnamed_addr constant [2 x i8] c" \00", align 1
@@ -31,16 +27,6 @@ source_filename = "LFortran"
 
 declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
 
-declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i1*, i32*, i1*, i32*, i1*, i8**, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i1*, i32*, i1*, i32*, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i1*, i32*, i1*, i32*, i1*, i1*, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
-
-declare void @__module_lfortran_intrinsic_iso_c_binding_c_f_pointer(%c_ptr*, i32**, %array*, i1*)
-
 define i32 @__module_lfortran_intrinsic_kind_kind(i1* %x) {
 .entry:
   %r = alloca i32, align 4
@@ -51,17 +37,6 @@ return:                                           ; preds = %.entry
   %0 = load i32, i32* %r, align 4
   ret i32 %0
 }
-
-define void @__module_lfortran_intrinsic_math_cpu_time(double* %t) {
-.entry:
-  call void @_lfortran_cpu_time(double* %t)
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
-
-declare void @_lfortran_cpu_time(double*)
 
 define double @__module_lfortran_intrinsic_math_datan(double* %x) {
 .entry:
@@ -77,39 +52,6 @@ return:                                           ; preds = %.entry
 }
 
 declare double @_lfortran_datan(double)
-
-define void @__module_lfortran_intrinsic_math_dp_rand_num(double* %harvest) {
-.entry:
-  call void @_lfortran_dp_rand_num(double* %harvest)
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
-
-declare void @_lfortran_dp_rand_num(double*)
-
-define void @__module_lfortran_intrinsic_math_i32sys_clock(i32* %count, i32* %count_rate, i32* %count_max) {
-.entry:
-  call void @_lfortran_i32sys_clock(i32* %count, i32* %count_rate, i32* %count_max)
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
-
-declare void @_lfortran_i32sys_clock(i32*, i32*, i32*)
-
-define void @__module_lfortran_intrinsic_math_i64sys_clock(i64* %count, i64* %count_rate, i64* %count_max) {
-.entry:
-  call void @_lfortran_i64sys_clock(i64* %count, i64* %count_rate, i64* %count_max)
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
-
-declare void @_lfortran_i64sys_clock(i64*, i64*, i64*)
 
 define float @__module_lfortran_intrinsic_math_sacos(float* %x) {
 .entry:
@@ -200,17 +142,6 @@ return:                                           ; preds = %.entry
 }
 
 declare float @_lfortran_satanh(float)
-
-define void @__module_lfortran_intrinsic_math_sp_rand_num(float* %harvest) {
-.entry:
-  call void @_lfortran_sp_rand_num(float* %harvest)
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
-
-declare void @_lfortran_sp_rand_num(float*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

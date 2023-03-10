@@ -235,7 +235,7 @@
                                         )]
                                     )
                                     (ImplicitDeallocate
-                                        [44 string_fortran]
+                                        [(Var 44 string_fortran)]
                                     )]
                                     ()
                                     Public
@@ -617,6 +617,7 @@
                                     [s]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()

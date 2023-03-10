@@ -162,7 +162,7 @@
                                     (Var 5 iostat)
                                     (Var 5 iomsg)]
                                     [(ImplicitDeallocate
-                                        [5 line]
+                                        [(Var 5 line)]
                                     )]
                                     ()
                                     Private
@@ -195,6 +195,7 @@
                                     [raw]
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     ()
                                     ()

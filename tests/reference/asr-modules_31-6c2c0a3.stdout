@@ -195,7 +195,7 @@
                                         (Var 7 deps)
                                     )
                                     (ImplicitDeallocate
-                                        [7 error]
+                                        [(Var 7 error)]
                                     )]
                                     ()
                                     Public
@@ -268,6 +268,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .true.
                                     ()
                                     ()
                                 ),
@@ -331,6 +332,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     4 fpm_cmd_settings
                                 )
@@ -387,6 +389,7 @@
                                     path]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()
@@ -471,6 +474,7 @@
                                     update]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     9 dependency_config_t
@@ -574,6 +578,7 @@
                                                     update_dependency
                                                     9 update_dependency
                                                     Source
+                                                    .false.
                                                 ),
                                             verbosity:
                                                 (Variable
@@ -601,6 +606,7 @@
                                     cache]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()
@@ -631,6 +637,7 @@
                                     [message]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()

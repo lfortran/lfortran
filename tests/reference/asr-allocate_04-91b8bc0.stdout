@@ -27,6 +27,46 @@
                                     Required
                                     .false.
                                 ),
+                            len_trim:
+                                (ExternalSymbol
+                                    2
+                                    len_trim
+                                    4 len_trim
+                                    lfortran_intrinsic_string
+                                    []
+                                    len_trim
+                                    Private
+                                ),
+                            message:
+                                (Variable
+                                    2
+                                    message
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Character 1 -2 () [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            num:
+                                (Variable
+                                    2
+                                    num
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 20 () [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             string:
                                 (Variable
                                     2
@@ -41,12 +81,29 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            trim:
+                                (ExternalSymbol
+                                    2
+                                    trim
+                                    4 trim
+                                    lfortran_intrinsic_string
+                                    []
+                                    trim
+                                    Private
                                 )
                         })
                     allocate_04
                     []
                     [(Allocate
                         [((Var 2 string)
+                        [])]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 message)
                         [])]
                         ()
                         ()
@@ -64,11 +121,106 @@
                         ()
                         ()
                     )
+                    (=
+                        (Var 2 num)
+                        (StringConstant
+                            "lfortran"
+                            (Character 1 8 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 string)
+                        (FunctionCall
+                            2 trim
+                            ()
+                            [((Var 2 num))]
+                            (Character 1 -3 (FunctionCall
+                                2 len_trim
+                                ()
+                                [((Var 2 num))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            ) [])
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 string)
+                            NotEq
+                            (StringConstant
+                                "lfortran"
+                                (Character 1 8 () [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 num)
+                        (StringConstant
+                            "lfortran working"
+                            (Character 1 16 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 message)
+                        (StringSection
+                            (Var 2 num)
+                            (IntegerBinOp
+                                (IntegerConstant 1 (Integer 4 []))
+                                Sub
+                                (IntegerConstant 1 (Integer 4 []))
+                                (Integer 4 [])
+                                ()
+                            )
+                            (IntegerBinOp
+                                (FunctionCall
+                                    2 len_trim
+                                    ()
+                                    [((Var 2 num))]
+                                    (Integer 4 [])
+                                    ()
+                                    ()
+                                )
+                                Add
+                                (IntegerConstant 1 (Integer 4 []))
+                                (Integer 4 [])
+                                ()
+                            )
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Character 1 -1 () [])
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 message)]
+                        ()
+                        ()
+                    )
                     (ImplicitDeallocate
-                        [2 c
-                        2 string]
+                        [(Var 2 c)
+                        (Var 2 message)
+                        (Var 2 string)]
                     )]
-                )
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string)
         })
     []
 )

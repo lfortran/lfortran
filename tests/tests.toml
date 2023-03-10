@@ -49,6 +49,10 @@ filename = "../integration_tests/template_array_03.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_array_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/test_backspace_01.f90"
 asr = true
 
@@ -714,7 +718,7 @@ ast = true
 ast_f90 = true
 
 [[test]]
-filename = "array11.f90"
+filename = "../integration_tests/arrays_23.f90"
 asr = true
 
 [[test]]
@@ -1190,6 +1194,10 @@ filename = "../integration_tests/allocate_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/allocate_05.f90"
+asr = true
+
+[[test]]
 filename = "allocate1.f90"
 ast = true
 ast_f90 = true
@@ -1361,7 +1369,7 @@ cpp = true
 
 [[test]]
 filename = "../integration_tests/case_07.f90"
-asr = true
+pass = "select_case"
 
 [[test]]
 filename = "../integration_tests/include_01.f90"
@@ -1438,10 +1446,6 @@ ast_f90 = true
 filename = "select_type1.f90"
 ast = true
 ast_f90 = true
-
-[[test]]
-filename = "select_type2.f90"
-asr = true
 
 [[test]]
 filename = "../integration_tests/select_type_03.f90"
@@ -2947,4 +2951,16 @@ asr = true
 
 [[test]]
 filename = "block2.f90"
+asr = true
+
+[[test]]
+filename = "errors/do_loop_01.f90"
+asr = true
+
+[[test]]
+filename = "implicit_typing4.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/kind1.f90"
 asr = true

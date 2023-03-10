@@ -3,11 +3,11 @@
 set -e
 set -x
 
-branch_name=${GITHUB_REF##*/}
+git_ref=${GITHUB_REF}
 
-if [[ $branch_name != "main" ]]; then
+if [[ $git_ref != "refs/heads/main" ]]; then
     # Development version
-    dest_branch=${branch_name}
+    dest_branch=${git_ref}
     deploy_repo="git@gitlab.com:lfortran/web/docs.lfortran.org-testing.git"
 else
     # Release version

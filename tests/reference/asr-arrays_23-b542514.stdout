@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            array11:
+            arrays_23:
                 (Module
                     (SymbolTable
                         2
@@ -54,7 +54,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     len_trim
-                                                    6 len_trim
+                                                    7 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -164,9 +164,15 @@
                                         (=
                                             (Var 4 message)
                                             (StringConcat
-                                                (ArraySection
+                                                (StringSection
                                                     (Var 4 num)
-                                                    [((IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerBinOp
+                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        Sub
+                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        (Integer 4 [])
+                                                        ()
+                                                    )
                                                     (IntegerBinOp
                                                         (FunctionCall
                                                             4 len_trim
@@ -181,12 +187,12 @@
                                                         (Integer 4 [])
                                                         ()
                                                     )
-                                                    (IntegerConstant 1 (Integer 4 [])))]
-                                                    (Character 1 20 () [])
+                                                    (IntegerConstant 1 (Integer 4 []))
+                                                    (Character 1 -1 () [])
                                                     ()
                                                 )
                                                 (Var 4 message)
-                                                (Character 1 18 () [])
+                                                (Character 1 -3 () [])
                                                 ()
                                             )
                                             ()
@@ -206,27 +212,33 @@
                                                     (Character 1 3 () [])
                                                     ()
                                                 )
-                                                (ArraySection
+                                                (StringSection
                                                     (StructInstanceMember
                                                         (Var 4 context)
                                                         4 1_toml_context_ptr
                                                         (Character 1 -2 () [])
                                                         ()
                                                     )
-                                                    [((IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerBinOp
+                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        Sub
+                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        (Integer 4 [])
+                                                        ()
+                                                    )
                                                     (Var 4 line_break)
-                                                    (IntegerConstant 1 (Integer 4 [])))]
-                                                    (Character 1 -2 () [])
+                                                    (IntegerConstant 1 (Integer 4 []))
+                                                    (Character 1 -1 () [])
                                                     ()
                                                 )
-                                                (Character 1 1 () [])
+                                                (Character 1 2 () [])
                                                 ()
                                             )
                                             (StringConstant
                                                 "   |"
                                                 (Character 1 4 () [])
                                             )
-                                            (Character 1 5 () [])
+                                            (Character 1 6 () [])
                                             ()
                                         )
                                         ()
@@ -297,11 +309,12 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     ()
                                 )
                         })
-                    array11
+                    arrays_23
                     [lfortran_intrinsic_string]
                     .false.
                     .false.
@@ -311,7 +324,45 @@
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_string:
-                (IntrinsicModule lfortran_intrinsic_string)
+                (IntrinsicModule lfortran_intrinsic_string),
+            main:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            add_context:
+                                (ExternalSymbol
+                                    5
+                                    add_context
+                                    2 add_context
+                                    arrays_23
+                                    []
+                                    add_context
+                                    Public
+                                ),
+                            toml_context:
+                                (ExternalSymbol
+                                    5
+                                    toml_context
+                                    2 toml_context
+                                    arrays_23
+                                    []
+                                    toml_context
+                                    Public
+                                )
+                        })
+                    main
+                    [arrays_23]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "working"
+                            (Character 1 7 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                )
         })
     []
 )

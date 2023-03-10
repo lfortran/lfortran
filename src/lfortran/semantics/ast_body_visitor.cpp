@@ -31,6 +31,7 @@ public:
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     AST::stmt_t **starting_m_body = nullptr;
+    std::vector<ASR::symbol_t*> do_loop_variables;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
@@ -1004,7 +1005,7 @@ public:
 // with their list. The ImplicitDeallocate node will deallocate them if they are allocated,
 // otherwise does nothing.
     ASR::stmt_t* create_implicit_deallocate(const Location& loc) {
-        Vec<ASR::symbol_t*> del_syms;
+        Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 0);
         for( auto& item: current_scope->get_scope() ) {
             if( item.second->type == ASR::symbolType::Variable ) {
@@ -1012,13 +1013,14 @@ public:
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
                 if( var->m_storage == ASR::storage_typeType::Allocatable &&
                     var->m_intent == ASR::intentType::Local ) {
-                    del_syms.push_back(al, item.second);
+                    del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, item.second)));
                 }
             }
         }
         if( del_syms.size() == 0 ) {
             return nullptr;
         }
+
         return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
                     del_syms.p, del_syms.size()));
     }
@@ -1161,6 +1163,8 @@ public:
     }
 
     void visit_SelectType(const AST::SelectType_t& x) {
+        // TODO: We might need to re-order all ASR::TypeStmtName
+        // before ASR::ClassStmt as per GFortran's semantics
         if( !x.m_selector ) {
             throw SemanticError("Selector expression is missing in select type statement.",
                                 x.base.base.loc);
@@ -1187,10 +1191,11 @@ public:
             SymbolTable* parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
             ASR::Variable_t* assoc_variable = nullptr;
+            ASR::symbol_t* assoc_sym = nullptr;
             if( x.m_assoc_name ) {
-                ASR::symbol_t* assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
                     al, x.base.base.loc, current_scope, x.m_assoc_name,
-                    nullptr, 0, ASR::intentType::Local, m_selector, nullptr,
+                    nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(std::string(x.m_assoc_name), assoc_sym);
@@ -1215,13 +1220,18 @@ public:
                         }
                         Vec<char*> assoc_deps;
                         assoc_deps.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
                     }
                     Vec<ASR::stmt_t*> class_stmt_body;
                     class_stmt_body.reserve(al, class_stmt->n_body);
+                    if( assoc_sym ) {
+                        class_stmt_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                            class_stmt->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            class_stmt->base.base.loc, assoc_sym)), m_selector)) );
+                    }
                     transform_stmts(class_stmt_body, class_stmt->n_body, class_stmt->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
@@ -1232,8 +1242,9 @@ public:
                     Vec<ASR::stmt_t*> block_call_stmt;
                     block_call_stmt.reserve(al, 1);
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, class_stmt->base.base.loc, -1, block_sym)));
-                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
+                    select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_ClassStmt_t(al,
                         class_stmt->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
+                    assoc_variable->m_type = selector_variable_type;
                     break;
                 }
                 case AST::type_stmtType::TypeStmtName: {
@@ -1252,13 +1263,18 @@ public:
                         }
                         Vec<char*> assoc_deps;
                         assoc_deps.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
                     }
                     Vec<ASR::stmt_t*> type_stmt_name_body;
                     type_stmt_name_body.reserve(al, type_stmt_name->n_body);
+                    if( assoc_sym ) {
+                        type_stmt_name_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                            type_stmt_name->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            type_stmt_name->base.base.loc, assoc_sym)), m_selector)) );
+                    }
                     transform_stmts(type_stmt_name_body, type_stmt_name->n_body, type_stmt_name->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
@@ -1271,6 +1287,7 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_name->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtName_t(al,
                         type_stmt_name->base.base.loc, sym, block_call_stmt.p, block_call_stmt.size())));
+                    assoc_variable->m_type = selector_variable_type;
                     break;
                 }
                 case AST::type_stmtType::TypeStmtType: {
@@ -1285,13 +1302,18 @@ public:
                                                        type_stmt_type->m_vartype, false, m_dims);
                         Vec<char*> assoc_deps;
                         assoc_deps.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type, m_selector);
+                        ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
                         assoc_variable->n_dependencies = assoc_deps.size();
                         assoc_variable->m_type = selector_type;
                     }
                     Vec<ASR::stmt_t*> type_stmt_type_body;
                     type_stmt_type_body.reserve(al, type_stmt_type->n_body);
+                    if( assoc_sym ) {
+                        type_stmt_type_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                            type_stmt_type->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            type_stmt_type->base.base.loc, assoc_sym)), m_selector)) );
+                    }
                     transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
                     std::string block_name = parent_scope->get_unique_name("~select_type_block_");
                     ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
@@ -1304,6 +1326,7 @@ public:
                     block_call_stmt.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, type_stmt_type->base.base.loc, -1, block_sym)));
                     select_type_body.push_back(al, ASR::down_cast<ASR::type_stmt_t>(ASR::make_TypeStmtType_t(al,
                         type_stmt_type->base.base.loc, selector_type, block_call_stmt.p, block_call_stmt.size())));
+                    assoc_variable->m_type = selector_variable_type;
                     break;
                 }
                 case AST::type_stmtType::ClassDefault: {
@@ -1326,7 +1349,8 @@ public:
         selector_variable->m_dependencies = selector_variable_dependencies;
         selector_variable->n_dependencies = selector_variable_n_dependencies;
 
-        tmp = ASR::make_SelectType_t(al, x.base.base.loc, select_type_body.p, select_type_body.size(),
+        tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector,
+                                     select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());
     }
 
@@ -1420,7 +1444,7 @@ public:
             return nullptr;
         }
         ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-        Vec<ASR::symbol_t*> del_syms;
+        Vec<ASR::expr_t*> del_syms;
         del_syms.reserve(al, 1);
         for( size_t i = 0; i < subrout_call->n_args; i++ ) {
             if( subrout_call->m_args[i].m_value &&
@@ -1435,7 +1459,7 @@ public:
                     if( var->m_storage == ASR::storage_typeType::Allocatable &&
                         orig_var->m_storage == ASR::storage_typeType::Allocatable &&
                         orig_var->m_intent == ASR::intentType::Out ) {
-                        del_syms.push_back(al, arg_var->m_v);
+                        del_syms.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x->base.loc, arg_var->m_v)));
                     }
                 }
             }
@@ -1735,7 +1759,7 @@ public:
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
             nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
             /* n_type_parameters */ 0, nullptr, 0, false, false, false);
-        parent_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        parent_scope->overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
 
@@ -1750,6 +1774,15 @@ public:
         this->visit_expr(*x.m_value);
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
+        if (target->type == ASR::exprType::Var) {
+            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
+            ASR::symbol_t *sym = var->m_v;
+            if (do_loop_variables.size() > 0 && std::find(do_loop_variables.begin(), do_loop_variables.end(), sym) != do_loop_variables.end()) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                std::string var_name = std::string(v->m_name);
+                throw SemanticError("Assignment to loop variable `" + std::string(to_lower(var_name)) +"` is not allowed", target->base.loc);
+            }
+        }
         if( ASRUtils::use_overloaded_assignment(target, value,
             current_scope, asr, al, x.base.base.loc, current_function_dependencies,
             current_module_dependencies,
@@ -1760,6 +1793,7 @@ public:
         if( target->type != ASR::exprType::Var &&
             target->type != ASR::exprType::ArrayItem &&
             target->type != ASR::exprType::ArraySection &&
+            target->type != ASR::exprType::StringSection &&
             target->type != ASR::exprType::StructInstanceMember )
         {
             throw SemanticError(
@@ -1777,20 +1811,41 @@ public:
                 target->type == ASR::exprType::ArrayItem ||
                 target->type == ASR::exprType::ArraySection) &&
                 !ASRUtils::check_equal_type(target_type, value_type)) {
-                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                                                        value_type, target_type);
-
+                if (value->type == ASR::exprType::ArrayConstant) {
+                    ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    for (size_t i = 0; i < ac->n_args; i++) {
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &ac->m_args[i],
+                                                                ASRUtils::expr_type(ac->m_args[i]), target_type);
+                    }
+                } else {
+                    ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                                        value_type, target_type);
+                }
             }
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
                                         ASRUtils::expr_type(value))) {
                 std::string ltype = ASRUtils::type_to_str(ASRUtils::expr_type(target));
                 std::string rtype = ASRUtils::type_to_str(ASRUtils::expr_type(value));
-                diag.semantic_error_label(
-                    "Type mismatch in assignment, the types must be compatible",
-                    {target->base.loc, value->base.loc},
-                    "type mismatch (" + ltype + " and " + rtype + ")"
-                );
-                throw SemanticAbort();
+                if(value->type == ASR::exprType::ArrayConstant) {
+                    ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    for (size_t i = 0; i < ac->n_args; i++) {
+                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ac->m_args[i]), ASRUtils::expr_type(target))) {
+                            diag.semantic_error_label(
+                                "Type mismatch in assignment, the types must be compatible",
+                                {target->base.loc, value->base.loc},
+                                "type mismatch (" + ltype + " and " + rtype + ")"
+                            );
+                            throw SemanticAbort();
+                        }
+                    }
+                } else {
+                    diag.semantic_error_label(
+                        "Type mismatch in assignment, the types must be compatible",
+                        {target->base.loc, value->base.loc},
+                        "type mismatch (" + ltype + " and " + rtype + ")"
+                    );
+                    throw SemanticAbort();
+                }
             }
         }
         tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
@@ -1986,7 +2041,7 @@ public:
                 original_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
                     p->base.base.loc, current_scope, s2c(al, s_name), original_sym,
                     s2c(al, original_sym_owner_name), nullptr, 0, p->m_name, ASR::accessType::Private));
-                current_scope->add_symbol(s_name, original_sym);
+                current_scope->add_or_overwrite_symbol(s_name, original_sym);
                 int idx;
                 if( x.n_member >= 1 ) {
                     idx = ASRUtils::select_generic_procedure(args_with_mdt, *p, x.base.base.loc,
@@ -2247,6 +2302,11 @@ public:
             increment = nullptr;
         }
 
+        if (var) {
+            ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(var);
+            ASR::symbol_t* loop_var_sym = loop_var->m_v;
+            do_loop_variables.push_back(loop_var_sym);
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
@@ -2258,6 +2318,7 @@ public:
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
             tmp = ASR::make_DoLoop_t(al, x.base.base.loc, head, body.p, body.size());
+            do_loop_variables.pop_back();
         } else {
             ASR::ttype_t* cond_type
                 = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));

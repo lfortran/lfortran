@@ -235,6 +235,7 @@
                                                     add_log_file
                                                     2 add_log_file
                                                     Source
+                                                    .false.
                                                 ),
                                             log_io_error:
                                                 (ClassProcedure
@@ -244,6 +245,7 @@
                                                     log_io_error
                                                     2 log_io_error
                                                     Source
+                                                    .false.
                                                 )
                                         })
                                     logger_type
@@ -251,6 +253,7 @@
                                     []
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()

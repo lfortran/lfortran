@@ -1005,8 +1005,8 @@
                                         []
                                     )
                                     (ImplicitDeallocate
-                                        [5 indexarray
-                                        5 sorted]
+                                        [(Var 5 indexarray)
+                                        (Var 5 sorted)]
                                     )]
                                     ()
                                     Public
@@ -1130,6 +1130,7 @@
                                     [key]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()

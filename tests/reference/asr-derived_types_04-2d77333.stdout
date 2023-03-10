@@ -86,6 +86,7 @@
                                                     all_abstract
                                                     2 all_abstract
                                                     Source
+                                                    .true.
                                                 ),
                                             num_bits:
                                                 (Variable
@@ -109,6 +110,7 @@
                                     Source
                                     Private
                                     .false.
+                                    .true.
                                     ()
                                     ()
                                 )

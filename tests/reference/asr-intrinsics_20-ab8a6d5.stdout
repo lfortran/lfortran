@@ -168,26 +168,6 @@
                                     Required
                                     .false.
                                 ),
-                            sin:
-                                (ExternalSymbol
-                                    2
-                                    sin
-                                    13 sin
-                                    lfortran_intrinsic_math
-                                    []
-                                    sin
-                                    Private
-                                ),
-                            sin@ssin:
-                                (ExternalSymbol
-                                    2
-                                    sin@ssin
-                                    13 ssin
-                                    lfortran_intrinsic_math
-                                    []
-                                    ssin
-                                    Private
-                                ),
                             x:
                                 (Variable
                                     2
@@ -466,10 +446,9 @@
                             )
                             Add
                             (RealBinOp
-                                (FunctionCall
-                                    2 sin@ssin
-                                    2 sin
-                                    [((RealBinOp
+                                (IntrinsicFunction
+                                    Sin
+                                    [(RealBinOp
                                         (Var 2 x)
                                         Add
                                         (Cast
@@ -486,13 +465,13 @@
                                             1.300593
                                             (Real 4 [])
                                         )
-                                    ))]
+                                    )]
+                                    0
                                     (Real 4 [])
                                     (RealConstant
                                         0.963717
                                         (Real 4 [])
                                     )
-                                    ()
                                 )
                                 Pow
                                 (Cast

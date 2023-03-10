@@ -104,6 +104,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .true.
                                     ()
                                     10 toml_structure
                                 ),
@@ -120,6 +121,7 @@
                                                     destroy
                                                     10 destroy
                                                     Source
+                                                    .true.
                                                 )
                                         })
                                     toml_structure
@@ -128,6 +130,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .true.
                                     ()
                                     ()
                                 )
@@ -392,6 +395,7 @@
                                                     destroy
                                                     2 destroy
                                                     Source
+                                                    .false.
                                                 ),
                                             list:
                                                 (Variable
@@ -417,6 +421,7 @@
                                     [list]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     2 toml_value
@@ -519,6 +524,7 @@
                                                     destroy
                                                     4 destroy
                                                     Source
+                                                    .true.
                                                 ),
                                             key:
                                                 (Variable
@@ -542,6 +548,7 @@
                                     Source
                                     Private
                                     .false.
+                                    .true.
                                     ()
                                     ()
                                 )
