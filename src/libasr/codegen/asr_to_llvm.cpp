@@ -5316,18 +5316,16 @@ public:
         });
     }
 
+    void visit_ExitBlock(const ASR::ExitBlock_t & /* x */) {
+        builder->CreateBr(block_end_label);
+        llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
+        start_new_block(bb);
+    }
+
     void visit_Exit(const ASR::Exit_t & /* x */) {
-        if ( in_block ) {
-            // If we are in a block, we need to exit the block.
-            // This is done by jumping to the end of the block.
-            builder->CreateBr(block_end_label);
-            llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
-            start_new_block(bb);
-        } else {
-            builder->CreateBr(do_loop_end.back());
-            llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
-            start_new_block(bb);
-        }
+        builder->CreateBr(do_loop_end.back());
+        llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
+        start_new_block(bb);
     }
 
     void visit_Cycle(const ASR::Cycle_t & /* x */) {
