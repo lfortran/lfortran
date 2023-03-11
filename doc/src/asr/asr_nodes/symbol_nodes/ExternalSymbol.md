@@ -17,7 +17,7 @@ ExternalSymbol(symbol_table parent_symtab, identifier name,
 | Argument Name              | Denotes                    |
 |----------------------------|----------------------------|
 | `parent_symtab`            | the parent symbol table that contains the external symbol |
-| `name`                     | the name of the external symbol |
+| `name`                     | the name of the external symbol in the current symbol table |
 | `external`                 | pointer to the actual symbol definition |
 | `module_name`              | the name of the module the symbol is in |
 | `scope_names`              | a list of names if the symbol is in a nested symbol table. For example if it is a local variable in a function `f` that is nested in function `g`, then `scope_names=[g, f]` |
