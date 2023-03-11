@@ -31,7 +31,11 @@ None.
 ## Description
 
 ExternalSymbol represents symbols that cannot be looked up in the current scoped symbol table. As an example, if a variable is defined in a module, but used in a nested subroutine, that is not an external symbol because it can be resolved in the current symbol table (nested subroutine) by following the parents. However if a symbol is used from a different module, then it is an external symbol, because usual symbol resolution by going to the parents will not find the definition.
+The `ExternalSymbol` is the only way to reference a symbol that cannot be accessed in the scoped symbol table by visiting the parents. There is a special handling for it in the serialization and deserialization: the `external` member is not serialized (since it is a pointer) and in deserialization the pointer is reconstructed from the `original_name` and `scope_names`.
 
+The `scope_names` contains the names of the external symbol table starting from the top how to get to the symbol. This approach allows to reference any nested symbol (such as a local variable in a function in a module). However, we might later change the design to only allow referencing top level module entities.
+
+One can think of the `ExternalSymbol` as the "import" statement in Python, or the "use" statement in Fortran.
 ## Types
 
 
