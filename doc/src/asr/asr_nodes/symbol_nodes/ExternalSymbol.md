@@ -1,6 +1,6 @@
 # ExternalSymbol
 
-External symbol, an **ExternalSymbol** node.
+The **ExternalSymbol** is a `symbol` node that represents a symbol declared in another module.
 
 ## Declaration
 
