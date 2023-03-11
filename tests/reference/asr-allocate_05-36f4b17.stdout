@@ -56,6 +56,27 @@
                         ()
                     )
                     (=
+                        (Var 2 string)
+                        (Var 2 num)
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 string)
+                            NotEq
+                            (StringConstant
+                                "abc"
+                                (Character 1 3 () [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
                         (StringSection
                             (Var 2 string)
                             ()

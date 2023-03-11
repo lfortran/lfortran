@@ -1139,6 +1139,20 @@ public:
         return builder->CreateCall(fn, {str, idx1, idx2, step, left_present, right_present});
     }
 
+    llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src) {
+        std::string runtime_func_name = "_lfortran_strcpy";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                     llvm::Type::getVoidTy(context), {
+                        character_type->getPointerTo(), character_type
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        return builder->CreateCall(fn, {dest, src});
+    }
+
     llvm::Value* lfortran_type_to_str(llvm::Value* arg, llvm::Type* value_type, std::string type, int value_kind) {
         std::string func_name = "_lfortran_" + type + "_to_str" + std::to_string(value_kind);
          llvm::Function *fn = module->getFunction(func_name);
@@ -4448,6 +4462,13 @@ public:
         this->visit_expr_wrapper(value, true);
         str_val = tmp;
         if (!ss->m_start && !ss->m_end) {
+            if (ASR::is_a<ASR::Var_t>(*ss->m_arg)) {
+                ASR::Variable_t *asr_target = EXPR2VAR(ss->m_arg);
+                if (asr_target->m_storage == ASR::storage_typeType::Allocatable) {
+                    tmp = lfortran_str_copy(str, str_val);
+                    return;
+                }
+            }
             builder->CreateStore(str_val, str);
             return;
         }
@@ -4479,6 +4500,13 @@ public:
                 llvm::APInt(32, 0));
         }
         tmp = builder->CreateCall(fn, {CreateLoad(str), str_val, idx1, idx2, step, lp, rp});
+        if (ASR::is_a<ASR::Var_t>(*ss->m_arg)) {
+            ASR::Variable_t *asr_target = EXPR2VAR(ss->m_arg);
+            if (asr_target->m_storage == ASR::storage_typeType::Allocatable) {
+                tmp = lfortran_str_copy(str, tmp);
+                return;
+            }
+        }
         builder->CreateStore(tmp, str);
     }
 
@@ -4706,6 +4734,13 @@ public:
             if (t->n_dims == 0) {
                 if (lhs_is_string_arrayref) {
                     value = CreateLoad(value);
+                }
+                if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                    ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
+                    if (asr_target->m_storage == ASR::storage_typeType::Allocatable) {
+                        tmp = lfortran_str_copy(target, value);
+                        return;
+                    }
                 }
             }
         }
