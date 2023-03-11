@@ -13,7 +13,11 @@ program main
             end if
         end do inner
         print *, "out of inner loop"
-        exit outer
+        if ( i == 2 ) then
+            exit outer
+        end if
     end do outer
+    if (i /= 2) error stop
+    if (j /= 5) error stop
     print *, "out of outer loop"
 end program
