@@ -164,7 +164,7 @@ public:
     Allocator &al;
 
     llvm::Value *tmp;
-    llvm::BasicBlock *current_loophead, *current_loopend, *proc_return, *block_end_label;
+    llvm::BasicBlock *current_loophead, *proc_return, *block_end_label;
     std::string mangle_prefix;
     bool prototype_only;
     llvm::StructType *complex_type_4, *complex_type_8;
@@ -218,6 +218,9 @@ public:
         from the nested_vars analysis pass to determine if we need to save or
         reload a local scope (and increment or decrement the stack pointer) */
     const ASR::Function_t *parent_function = nullptr;
+    std::vector<llvm::BasicBlock*> do_loop_end; /* For saving the end of a do
+        loop, so that we can jump to the end of the loop when we are done
+        executing the loop body */
 
     std::unique_ptr<LLVMUtils> llvm_utils;
     std::unique_ptr<LLVMList> list_api;
@@ -339,8 +342,8 @@ public:
         llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
         llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
         llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+        do_loop_end.push_back(loopend);
         this->current_loophead = loophead;
-        this->current_loopend = loopend;
 
         // head
         start_new_block(loophead); {
@@ -355,6 +358,7 @@ public:
         }
 
         // end
+        do_loop_end.pop_back();
         start_new_block(loopend);
         dict_api_lp->reset_iterators();
         dict_api_sc->reset_iterators();
@@ -5320,7 +5324,7 @@ public:
             llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
             start_new_block(bb);
         } else {
-            builder->CreateBr(current_loopend);
+            builder->CreateBr(do_loop_end.back());
             llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
             start_new_block(bb);
         }
