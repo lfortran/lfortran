@@ -720,3 +720,5 @@ RUN(NAME array_01 LABELS gfortran llvm)
 RUN(NAME array_02 LABELS gfortran llvm)
 
 RUN(NAME do_loop_02 LABELS gfortran llvm)
+
+RUN(NAME block_07 LABELS gfortran llvm)
