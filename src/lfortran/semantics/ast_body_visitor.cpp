@@ -32,6 +32,7 @@ public:
     size_t starting_n_body = 0;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
+    std::vector<std::string> block_names;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
@@ -46,6 +47,9 @@ public:
 
     void visit_Block(const AST::Block_t &x) {
         from_block = true;
+        if(x.m_stmt_name) {
+            block_names.push_back(x.m_stmt_name);
+        }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -67,6 +71,9 @@ public:
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
                                     ASR::down_cast<ASR::symbol_t>(block));
+        if (x.m_stmt_name) {
+            block_names.pop_back();
+        }
         from_block = false;
     }
 
@@ -2420,6 +2427,13 @@ public:
     void visit_Exit(const AST::Exit_t &x) {
         // TODO: add a check here that we are inside a While loop
         tmp = ASR::make_Exit_t(al, x.base.base.loc);
+        if (x.m_stmt_name) {
+            std::string exit_label = x.m_stmt_name;
+            // Check if it is an exit from block, if so, create an ExitBlock
+            if (block_names.size() > 0 && std::find(block_names.begin(), block_names.end(), exit_label) != block_names.end()) {
+                tmp = ASR::make_ExitBlock_t(al, x.base.base.loc);
+            }
+        }
     }
 
     void visit_Cycle(const AST::Cycle_t &x) {
