@@ -170,6 +170,7 @@ stmt
     | DoLoop(do_loop_head head, stmt* body)
     | ErrorStop(expr? code)
     | Exit()
+    | ExitBlock()
     | ForAllSingle(do_loop_head head, stmt assign_stmt)
         -- GoTo points to a GoToTarget with the corresponding target_id within
         -- the same procedure. We currently use `int` IDs to link GoTo with

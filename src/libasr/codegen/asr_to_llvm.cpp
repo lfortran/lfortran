@@ -232,7 +232,6 @@ public:
     int64_t ptr_loads;
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
-    bool in_block = false;
 
     CompilerOptions &compiler_options;
 
@@ -4886,7 +4885,6 @@ public:
          *   inner most label. Instead we need to jump to the actual label
          *   provided.
          */
-        in_block = true;
         if( x.m_label != -1 ) {
             if( llvm_goto_targets.find(x.m_label) == llvm_goto_targets.end() ) {
                 llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -4917,7 +4915,6 @@ public:
             builder->CreateBr(block_end);
         }
         builder->SetInsertPoint(block_end);
-        in_block=false;
     }
 
     inline void visit_expr_wrapper(const ASR::expr_t* x, bool load_ref=false) {
@@ -5316,18 +5313,16 @@ public:
         });
     }
 
+    void visit_ExitBlock(const ASR::ExitBlock_t & /* x */) {
+        builder->CreateBr(block_end_label);
+        llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
+        start_new_block(bb);
+    }
+
     void visit_Exit(const ASR::Exit_t & /* x */) {
-        if ( in_block ) {
-            // If we are in a block, we need to exit the block.
-            // This is done by jumping to the end of the block.
-            builder->CreateBr(block_end_label);
-            llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
-            start_new_block(bb);
-        } else {
-            builder->CreateBr(do_loop_end.back());
-            llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
-            start_new_block(bb);
-        }
+        builder->CreateBr(do_loop_end.back());
+        llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
+        start_new_block(bb);
     }
 
     void visit_Cycle(const ASR::Cycle_t & /* x */) {
