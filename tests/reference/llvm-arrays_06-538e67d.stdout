@@ -45,8 +45,11 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
   %__1_k = alloca i32, align 4
+  %__1_t = alloca i32, align 4
   %__2_k = alloca i32, align 4
+  %__2_t = alloca i32, align 4
   %__3_k = alloca i32, align 4
+  %__3_t = alloca i32, align 4
   %a = alloca %array, align 8
   %2 = getelementptr %array, %array* %a, i32 0, i32 1
   store i32 0, i32* %2, align 4
@@ -657,19 +660,19 @@ loop.end21:                                       ; preds = %loop.head19
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0))
   %456 = getelementptr %array, %array* %a, i32 0, i32 2
   %457 = load %dimension_descriptor*, %dimension_descriptor** %456, align 8
-  %458 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %457, i32 2
+  %458 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %457, i32 0
   %459 = getelementptr %dimension_descriptor, %dimension_descriptor* %458, i32 0, i32 1
   %460 = load i32, i32* %459, align 4
   %461 = sub i32 %460, 1
-  store i32 %461, i32* %__1_k, align 4
+  store i32 %461, i32* %__1_t, align 4
   br label %loop.head22
 
 loop.head22:                                      ; preds = %loop.end29, %loop.end21
-  %462 = load i32, i32* %__1_k, align 4
+  %462 = load i32, i32* %__1_t, align 4
   %463 = add i32 %462, 1
   %464 = getelementptr %array, %array* %a, i32 0, i32 2
   %465 = load %dimension_descriptor*, %dimension_descriptor** %464, align 8
-  %466 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %465, i32 2
+  %466 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %465, i32 0
   %467 = getelementptr %dimension_descriptor, %dimension_descriptor* %466, i32 0, i32 1
   %468 = load i32, i32* %467, align 4
   %469 = getelementptr %dimension_descriptor, %dimension_descriptor* %466, i32 0, i32 2
@@ -680,24 +683,24 @@ loop.head22:                                      ; preds = %loop.end29, %loop.e
   br i1 %473, label %loop.body23, label %loop.end30
 
 loop.body23:                                      ; preds = %loop.head22
-  %474 = load i32, i32* %__1_k, align 4
+  %474 = load i32, i32* %__1_t, align 4
   %475 = add i32 %474, 1
-  store i32 %475, i32* %__1_k, align 4
+  store i32 %475, i32* %__1_t, align 4
   %476 = getelementptr %array, %array* %a, i32 0, i32 2
   %477 = load %dimension_descriptor*, %dimension_descriptor** %476, align 8
-  %478 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %477, i32 2
+  %478 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %477, i32 1
   %479 = getelementptr %dimension_descriptor, %dimension_descriptor* %478, i32 0, i32 1
   %480 = load i32, i32* %479, align 4
   %481 = sub i32 %480, 1
-  store i32 %481, i32* %__2_k, align 4
+  store i32 %481, i32* %__2_t, align 4
   br label %loop.head24
 
 loop.head24:                                      ; preds = %loop.end28, %loop.body23
-  %482 = load i32, i32* %__2_k, align 4
+  %482 = load i32, i32* %__2_t, align 4
   %483 = add i32 %482, 1
   %484 = getelementptr %array, %array* %a, i32 0, i32 2
   %485 = load %dimension_descriptor*, %dimension_descriptor** %484, align 8
-  %486 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %485, i32 2
+  %486 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %485, i32 1
   %487 = getelementptr %dimension_descriptor, %dimension_descriptor* %486, i32 0, i32 1
   %488 = load i32, i32* %487, align 4
   %489 = getelementptr %dimension_descriptor, %dimension_descriptor* %486, i32 0, i32 2
@@ -708,20 +711,20 @@ loop.head24:                                      ; preds = %loop.end28, %loop.b
   br i1 %493, label %loop.body25, label %loop.end29
 
 loop.body25:                                      ; preds = %loop.head24
-  %494 = load i32, i32* %__2_k, align 4
+  %494 = load i32, i32* %__2_t, align 4
   %495 = add i32 %494, 1
-  store i32 %495, i32* %__2_k, align 4
+  store i32 %495, i32* %__2_t, align 4
   %496 = getelementptr %array, %array* %a, i32 0, i32 2
   %497 = load %dimension_descriptor*, %dimension_descriptor** %496, align 8
   %498 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %497, i32 2
   %499 = getelementptr %dimension_descriptor, %dimension_descriptor* %498, i32 0, i32 1
   %500 = load i32, i32* %499, align 4
   %501 = sub i32 %500, 1
-  store i32 %501, i32* %__3_k, align 4
+  store i32 %501, i32* %__3_t, align 4
   br label %loop.head26
 
 loop.head26:                                      ; preds = %loop.body27, %loop.body25
-  %502 = load i32, i32* %__3_k, align 4
+  %502 = load i32, i32* %__3_t, align 4
   %503 = add i32 %502, 1
   %504 = getelementptr %array, %array* %a, i32 0, i32 2
   %505 = load %dimension_descriptor*, %dimension_descriptor** %504, align 8
@@ -736,12 +739,12 @@ loop.head26:                                      ; preds = %loop.body27, %loop.
   br i1 %513, label %loop.body27, label %loop.end28
 
 loop.body27:                                      ; preds = %loop.head26
-  %514 = load i32, i32* %__3_k, align 4
+  %514 = load i32, i32* %__3_t, align 4
   %515 = add i32 %514, 1
-  store i32 %515, i32* %__3_k, align 4
-  %516 = load i32, i32* %__1_k, align 4
-  %517 = load i32, i32* %__2_k, align 4
-  %518 = load i32, i32* %__3_k, align 4
+  store i32 %515, i32* %__3_t, align 4
+  %516 = load i32, i32* %__1_t, align 4
+  %517 = load i32, i32* %__2_t, align 4
+  %518 = load i32, i32* %__3_t, align 4
   %519 = getelementptr %array, %array* %a, i32 0, i32 2
   %520 = load %dimension_descriptor*, %dimension_descriptor** %519, align 8
   %521 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %520, i32 0

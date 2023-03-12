@@ -770,7 +770,7 @@ loop.end6:                                        ; preds = %loop.head1
   br label %loop.head
 
 loop.end7:                                        ; preds = %loop.head
-  %210 = getelementptr %array, %array* %b, i32 0, i32 2
+  %210 = getelementptr %array, %array* %a, i32 0, i32 2
   %211 = load %dimension_descriptor*, %dimension_descriptor** %210, align 8
   %212 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %211, i32 0
   %213 = getelementptr %dimension_descriptor, %dimension_descriptor* %212, i32 0, i32 1
@@ -1015,7 +1015,7 @@ loop.end16:                                       ; preds = %loop.head8
   %401 = alloca %array, align 8
   store i32 0, i32* %call_arg_value17, align 4
   call void @verify(%array* %c, i32* %call_arg_value17)
-  %402 = getelementptr %array, %array* %b, i32 0, i32 2
+  %402 = getelementptr %array, %array* %a, i32 0, i32 2
   %403 = load %dimension_descriptor*, %dimension_descriptor** %402, align 8
   %404 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %403, i32 0
   %405 = getelementptr %dimension_descriptor, %dimension_descriptor* %404, i32 0, i32 1
@@ -1260,7 +1260,7 @@ loop.end29:                                       ; preds = %loop.head18
   %593 = alloca %array, align 8
   store i32 1, i32* %call_arg_value30, align 4
   call void @verify(%array* %c, i32* %call_arg_value30)
-  %594 = getelementptr %array, %array* %b, i32 0, i32 2
+  %594 = getelementptr %array, %array* %a, i32 0, i32 2
   %595 = load %dimension_descriptor*, %dimension_descriptor** %594, align 8
   %596 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %595, i32 0
   %597 = getelementptr %dimension_descriptor, %dimension_descriptor* %596, i32 0, i32 1
@@ -1495,7 +1495,7 @@ loop.end39:                                       ; preds = %loop.head31
   %786 = alloca %array, align 8
   store i32 2, i32* %call_arg_value40, align 4
   call void @verify(%array* %c, i32* %call_arg_value40)
-  %787 = getelementptr %array, %array* %a, i32 0, i32 2
+  %787 = getelementptr %array, %array* %b, i32 0, i32 2
   %788 = load %dimension_descriptor*, %dimension_descriptor** %787, align 8
   %789 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %788, i32 0
   %790 = getelementptr %dimension_descriptor, %dimension_descriptor* %789, i32 0, i32 1
