@@ -13,44 +13,50 @@ source_filename = "LFortran"
 
 define void @f_x_y(i32* %x, i32* %__1x, i32* %__2x, i32* %y, i32* %__1y, i32* %__2y) {
 .entry:
-  %__1_k = alloca i32, align 4
-  %0 = load i32, i32* %__1y, align 4
-  %1 = sub i32 %0, 1
-  store i32 %1, i32* %__1_k, align 4
+  %__1_t = alloca i32, align 4
+  %__1_v = alloca i32, align 4
+  %0 = load i32, i32* %__1x, align 4
+  store i32 %0, i32* %__1_v, align 4
+  %1 = load i32, i32* %__1y, align 4
+  %2 = sub i32 %1, 1
+  store i32 %2, i32* %__1_t, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %2 = load i32, i32* %__1_k, align 4
-  %3 = add i32 %2, 1
-  %4 = load i32, i32* %__2y, align 4
-  %5 = load i32, i32* %__1y, align 4
-  %6 = add i32 %4, %5
-  %7 = sub i32 %6, 1
-  %8 = icmp sle i32 %3, %7
-  br i1 %8, label %loop.body, label %loop.end
+  %3 = load i32, i32* %__1_t, align 4
+  %4 = add i32 %3, 1
+  %5 = load i32, i32* %__2y, align 4
+  %6 = load i32, i32* %__1y, align 4
+  %7 = add i32 %5, %6
+  %8 = sub i32 %7, 1
+  %9 = icmp sle i32 %4, %8
+  br i1 %9, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %9 = load i32, i32* %__1_k, align 4
-  %10 = add i32 %9, 1
-  store i32 %10, i32* %__1_k, align 4
-  %11 = load i32, i32* %__1_k, align 4
-  %12 = load i32, i32* %__1y, align 4
-  %13 = load i32, i32* %__2y, align 4
-  %14 = sub i32 %11, %12
-  %15 = mul i32 1, %14
-  %16 = add i32 0, %15
-  %17 = mul i32 1, %13
-  %18 = getelementptr inbounds i32, i32* %y, i32 %16
-  %19 = load i32, i32* %__1_k, align 4
-  %20 = load i32, i32* %__1x, align 4
-  %21 = load i32, i32* %__2x, align 4
-  %22 = sub i32 %19, %20
-  %23 = mul i32 1, %22
-  %24 = add i32 0, %23
-  %25 = mul i32 1, %21
-  %26 = getelementptr inbounds i32, i32* %x, i32 %24
-  %27 = load i32, i32* %26, align 4
-  store i32 %27, i32* %18, align 4
+  %10 = load i32, i32* %__1_t, align 4
+  %11 = add i32 %10, 1
+  store i32 %11, i32* %__1_t, align 4
+  %12 = load i32, i32* %__1_t, align 4
+  %13 = load i32, i32* %__1y, align 4
+  %14 = load i32, i32* %__2y, align 4
+  %15 = sub i32 %12, %13
+  %16 = mul i32 1, %15
+  %17 = add i32 0, %16
+  %18 = mul i32 1, %14
+  %19 = getelementptr inbounds i32, i32* %y, i32 %17
+  %20 = load i32, i32* %__1_v, align 4
+  %21 = load i32, i32* %__1x, align 4
+  %22 = load i32, i32* %__2x, align 4
+  %23 = sub i32 %20, %21
+  %24 = mul i32 1, %23
+  %25 = add i32 0, %24
+  %26 = mul i32 1, %22
+  %27 = getelementptr inbounds i32, i32* %x, i32 %25
+  %28 = load i32, i32* %27, align 4
+  store i32 %28, i32* %19, align 4
+  %29 = load i32, i32* %__1_v, align 4
+  %30 = add i32 %29, 1
+  store i32 %30, i32* %__1_v, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
@@ -68,6 +74,7 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value = alloca i32, align 4
   call void @_lpython_set_argv(i32 %0, i8** %1)
   %__1_k = alloca i32, align 4
+  %__1_t = alloca i32, align 4
   %x = alloca %array, align 8
   %2 = getelementptr %array, %array* %x, i32 0, i32 1
   store i32 0, i32* %2, align 4
@@ -124,11 +131,11 @@ define i32 @main(i32 %0, i8** %1) {
   %35 = getelementptr %dimension_descriptor, %dimension_descriptor* %34, i32 0, i32 1
   %36 = load i32, i32* %35, align 4
   %37 = sub i32 %36, 1
-  store i32 %37, i32* %__1_k, align 4
+  store i32 %37, i32* %__1_t, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %38 = load i32, i32* %__1_k, align 4
+  %38 = load i32, i32* %__1_t, align 4
   %39 = add i32 %38, 1
   %40 = getelementptr %array, %array* %x, i32 0, i32 2
   %41 = load %dimension_descriptor*, %dimension_descriptor** %40, align 8
@@ -143,10 +150,10 @@ loop.head:                                        ; preds = %loop.body, %.entry
   br i1 %49, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %50 = load i32, i32* %__1_k, align 4
+  %50 = load i32, i32* %__1_t, align 4
   %51 = add i32 %50, 1
-  store i32 %51, i32* %__1_k, align 4
-  %52 = load i32, i32* %__1_k, align 4
+  store i32 %51, i32* %__1_t, align 4
+  %52 = load i32, i32* %__1_t, align 4
   %53 = getelementptr %array, %array* %x, i32 0, i32 2
   %54 = load %dimension_descriptor*, %dimension_descriptor** %53, align 8
   %55 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %54, i32 0
