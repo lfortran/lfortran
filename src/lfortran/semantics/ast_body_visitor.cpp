@@ -1789,6 +1789,13 @@ public:
                 std::string var_name = std::string(v->m_name);
                 throw SemanticError("Assignment to loop variable `" + std::string(to_lower(var_name)) +"` is not allowed", target->base.loc);
             }
+            if (sym->type == ASR::symbolType::Variable) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::intentType intent = v->m_intent;
+                if (intent == ASR::intentType::In) {
+                    throw SemanticError("Argument `" + std::string(v->m_name) + "` with INTENT(IN) in variable definition context (assignment)", target->base.loc);
+                }
+            }
         }
         if( ASRUtils::use_overloaded_assignment(target, value,
             current_scope, asr, al, x.base.base.loc, current_function_dependencies,
