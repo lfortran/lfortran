@@ -6542,6 +6542,37 @@ public:
         throw CodeGenAbort();
     }
 
+    void visit_FileOpen(const ASR::FileOpen_t &x) {
+        llvm::Value *unit_val = nullptr, *f_name = nullptr;
+        llvm::Value *status = nullptr;
+        this->visit_expr_wrapper(x.m_newunit, true);
+        unit_val = tmp;
+        if (x.m_filename) {
+            this->visit_expr_wrapper(x.m_filename, true);
+            f_name = tmp;
+        } else {
+            f_name = llvm::Constant::getNullValue(character_type);
+        }
+        if (x.m_status) {
+            this->visit_expr_wrapper(x.m_status, true);
+            status = tmp;
+        } else {
+            status = llvm::Constant::getNullValue(character_type);
+        }
+        std::string runtime_func_name = "_lfortran_open";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt64Ty(context), {
+                        llvm::Type::getInt32Ty(context),
+                        character_type, character_type
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {unit_val, f_name, status});
+    }
+
     void visit_Print(const ASR::Print_t &x) {
         if (x.m_fmt != nullptr) {
             diag.codegen_warning_label("format string in `print` is not implemented yet and it is currently treated as '*'",

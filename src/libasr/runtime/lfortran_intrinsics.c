@@ -1269,7 +1269,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     strcpy(unit_to_string[unit_num], f_name);
 
     // Presently we just consider write append mode.
-    status = "w+";
+    status = "r+";
     return _lpython_open(f_name, status);
 }
 
