@@ -1250,6 +1250,29 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
     return (int64_t)fd;
 }
 
+char* unit_to_string[100];
+bool is_unit_to_string_init = false;
+
+LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status)
+{
+    if (!is_unit_to_string_init) {
+        for (int32_t i=0; i<100; i++) unit_to_string[i] = NULL;
+        is_unit_to_string_init = true;
+    }
+    if (f_name == NULL) {
+        f_name = "_lfortran_generated_file.txt";
+    }
+    if (unit_to_string[unit_num]) {
+        free(unit_to_string[unit_num]);
+    }
+    unit_to_string[unit_num] = (char *) malloc(strlen(f_name) + 1);
+    strcpy(unit_to_string[unit_num], f_name);
+
+    // Presently we just consider write append mode.
+    status = "w+";
+    return _lpython_open(f_name, status);
+}
+
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 {
     char *c = (char *) calloc(n, sizeof(char));
