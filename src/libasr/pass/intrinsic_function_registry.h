@@ -44,10 +44,24 @@ enum class IntrinsicFunctions : int64_t {
 
 namespace UnaryIntrinsicFunction {
 
-static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &loc,
-    SymbolTable *global_scope, std::string new_name,
-    ASR::ttype_t *arg_type, Vec<ASR::call_arg_t>& new_args,
-    ASR::expr_t *value) {
+#define create_variable(var_sym, name, intent, abi, value_attr, symtab) \
+    ASR::symbol_t *var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t( \
+        al, loc, symtab, s2c(al, name), nullptr, 0, intent, nullptr, nullptr, \
+        ASR::storage_typeType::Default, arg_type, abi, ASR::Public, \
+        ASR::presenceType::Required, value_attr)); \
+    symtab->add_symbol(s2c(al, name), var_sym);
+
+#define make_Function_t(name, symtab, dep, args, body, return_var, abi, deftype, bindc_name) \
+    ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(al, loc, \
+    symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n, \
+    ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)), ASR::abiType::abi, \
+    ASR::accessType::Public, ASR::deftypeType::deftype, bindc_name, false, \
+    false, false, false, false, nullptr, 0, nullptr, 0, false, false, false));
+
+static inline ASR::expr_t* instantiate_functions(Allocator &al,
+        const Location &loc, SymbolTable *global_scope, std::string new_name,
+        ASR::ttype_t *arg_type, Vec<ASR::call_arg_t>& new_args,
+        ASR::expr_t *value) {
     std::string c_func_name;
     if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
         c_func_name = "_lfortran_s" + new_name;
@@ -78,19 +92,13 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &
     Vec<ASR::expr_t*> args;
     {
         args.reserve(al, 1);
-        ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-            al, loc, fn_symtab, s2c(al, "x"), nullptr, 0, ASR::intentType::In,
-            nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false));
-        fn_symtab->add_symbol(s2c(al, "x"), arg);
+        create_variable(arg, "x", ASR::intentType::In, ASR::abiType::Source,
+            false, fn_symtab);
         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
     }
 
-    ASR::symbol_t *return_var = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-        al, loc, fn_symtab, s2c(al, new_name), nullptr, 0, ASRUtils::intent_return_var,
-        nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-        ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false));
-    fn_symtab->add_symbol(s2c(al, new_name), return_var);
+    create_variable(return_var, new_name, ASRUtils::intent_return_var,
+        ASR::abiType::Source, false, fn_symtab);
 
     Vec<ASR::stmt_t*> body;
     body.reserve(al, 1);
@@ -103,27 +111,18 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &
         Vec<ASR::expr_t*> args_1;
         {
             args_1.reserve(al, 1);
-            ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-                al, loc, fn_symtab_1, s2c(al, "x"), nullptr, 0, ASR::intentType::In,
-                nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, true));
-            fn_symtab_1->add_symbol(s2c(al, "x"), arg);
+            create_variable(arg, "x", ASR::intentType::In, ASR::abiType::BindC,
+                true, fn_symtab_1);
             args_1.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
         }
 
-        ASR::symbol_t *return_var_1 = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-            al, loc, fn_symtab_1, s2c(al, c_func_name), nullptr, 0, ASRUtils::intent_return_var,
-            nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-            ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false));
-        fn_symtab_1->add_symbol(s2c(al, c_func_name), return_var_1);
+        create_variable(return_var_1, c_func_name, ASRUtils::intent_return_var,
+            ASR::abiType::BindC, false, fn_symtab_1);
 
-        ASR::symbol_t *s =  ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Function_t_util(al, loc, fn_symtab_1,
-            s2c(al, c_func_name), nullptr, 0, args_1.p, args_1.n, nullptr, 0,
-            ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var_1)),
-            ASR::abiType::BindC, ASR::accessType::Public,
-            ASR::deftypeType::Interface, s2c(al, c_func_name), false, false,
-            false, false, false, nullptr, 0, nullptr, 0, false, false, false));
+        Vec<char *> dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, BindC, Interface, s2c(al, c_func_name));
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
         Vec<ASR::call_arg_t> call_args;
@@ -139,13 +138,8 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &
             call_args.p, call_args.n, arg_type, nullptr, nullptr)), nullptr)));
     }
 
-    ASR::asr_t* new_subrout = ASRUtils::make_Function_t_util(al, loc,
-        fn_symtab, s2c(al, new_name), dep.p, dep.n, args.p, args.n, body.p, body.n,
-        ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)),
-        ASR::abiType::Source, ASR::accessType::Public,
-        ASR::deftypeType::Implementation, nullptr, false, false, false,
-        false, false, nullptr, 0, nullptr, 0, false, false, false);
-    ASR::symbol_t *new_symbol = ASR::down_cast<ASR::symbol_t>(new_subrout);
+    ASR::symbol_t *new_symbol = make_Function_t(new_name, fn_symtab, dep, args,
+        body, return_var, Source, Implementation, nullptr);
     global_scope->add_symbol(new_name, new_symbol);
     return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, new_symbol,
         new_symbol, new_args.p, new_args.size(), arg_type, value, nullptr));
