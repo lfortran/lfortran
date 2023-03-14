@@ -30,16 +30,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            cos:
-                                                (ExternalSymbol
-                                                    7
-                                                    cos
-                                                    10 cos
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    cos
-                                                    Private
-                                                ),
                                             cos2d:
                                                 (Variable
                                                     7
@@ -57,16 +47,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            cos@dcos:
-                                                (ExternalSymbol
-                                                    7
-                                                    cos@dcos
-                                                    10 dcos
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dcos
-                                                    Private
                                                 ),
                                             i:
                                                 (Variable
@@ -115,8 +95,7 @@
                                         []
                                         .false.
                                     )
-                                    [cos@dcos
-                                    verify2d]
+                                    [verify2d]
                                     []
                                     [(DoLoop
                                         ((Var 7 i)
@@ -160,15 +139,14 @@
                                     (=
                                         (Var 7 cos2d)
                                         (RealBinOp
-                                            (FunctionCall
-                                                7 cos@dcos
-                                                7 cos
-                                                [((Var 7 array2d))]
+                                            (IntrinsicFunction
+                                                Cos
+                                                [(Var 7 array2d)]
+                                                0
                                                 (Real 8 [((IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 256 (Integer 4 [])))
                                                 ((IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 64 (Integer 4 [])))])
-                                                ()
                                                 ()
                                             )
                                             Pow
@@ -563,26 +541,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            cos:
-                                                (ExternalSymbol
-                                                    8
-                                                    cos
-                                                    10 cos
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    cos
-                                                    Private
-                                                ),
-                                            cos@dcos:
-                                                (ExternalSymbol
-                                                    8
-                                                    cos@dcos
-                                                    10 dcos
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dcos
-                                                    Private
-                                                ),
                                             eps:
                                                 (Variable
                                                     8
@@ -729,8 +687,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs
-                                    cos@dcos]
+                                    [abs@dabs]
                                     []
                                     [(=
                                         (Var 8 eps)
@@ -871,10 +828,10 @@
                                             )
                                             Add
                                             (RealBinOp
-                                                (FunctionCall
-                                                    8 cos@dcos
-                                                    8 cos
-                                                    [((Var 8 arraynd))]
+                                                (IntrinsicFunction
+                                                    Cos
+                                                    [(Var 8 arraynd)]
+                                                    0
                                                     (Real 8 [((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 64 (Integer 4 [])))
                                                     ((IntegerConstant 1 (Integer 4 []))
@@ -883,7 +840,6 @@
                                                     (IntegerConstant 8 (Integer 4 [])))
                                                     ((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 4 (Integer 4 [])))])
-                                                    ()
                                                     ()
                                                 )
                                                 Pow
@@ -1263,26 +1219,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            cos:
-                                                (ExternalSymbol
-                                                    5
-                                                    cos
-                                                    10 cos
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    cos
-                                                    Private
-                                                ),
-                                            cos@dcos:
-                                                (ExternalSymbol
-                                                    5
-                                                    cos@dcos
-                                                    10 dcos
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dcos
-                                                    Private
-                                                ),
                                             eps:
                                                 (Variable
                                                     5
@@ -1402,8 +1338,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs
-                                    cos@dcos]
+                                    [abs@dabs]
                                     [(Var 5 array)
                                     (Var 5 result)
                                     (Var 5 size1)
@@ -1441,10 +1376,9 @@
                                                         5 abs
                                                         [((RealBinOp
                                                             (RealBinOp
-                                                                (FunctionCall
-                                                                    5 cos@dcos
-                                                                    5 cos
-                                                                    [((ArrayItem
+                                                                (IntrinsicFunction
+                                                                    Cos
+                                                                    [(ArrayItem
                                                                         (Var 5 array)
                                                                         [(()
                                                                         (Var 5 i)
@@ -1455,9 +1389,9 @@
                                                                         (Real 8 [])
                                                                         ColMajor
                                                                         ()
-                                                                    ))]
+                                                                    )]
+                                                                    0
                                                                     (Real 8 [])
-                                                                    ()
                                                                     ()
                                                                 )
                                                                 Pow
