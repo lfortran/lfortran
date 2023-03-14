@@ -3107,7 +3107,20 @@ public:
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
                                 kind_value, nullptr, 0));
-        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
+        ASR::expr_t* x_value = ASRUtils::expr_value(x_);
+        ASR::expr_t* y_value = ASRUtils::expr_value(y_);
+        ASR::expr_t* cc_expr = nullptr;
+        double x_value_ = 0.0;
+        double y_value_ = 0.0;
+        if (x_value && y_value && ASR::is_a<ASR::RealConstant_t>(*x_value) && ASR::is_a<ASR::RealConstant_t>(*y_value)) {
+            ASR::RealConstant_t* x_real = ASR::down_cast<ASR::RealConstant_t>(x_value);
+            x_value_ = x_real->m_r;
+            ASR::RealConstant_t* y_real = ASR::down_cast<ASR::RealConstant_t>(y_value);
+            y_value_ = y_real->m_r;
+            cc_expr = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
+                                                                 x_value_, y_value_, type));
+        }
+        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
     }
 
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
