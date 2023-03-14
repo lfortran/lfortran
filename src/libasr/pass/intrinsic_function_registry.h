@@ -288,6 +288,23 @@ namespace IntrinsicFunctionRegistry {
         return intrinsic_function_by_id_db.at(id);
     }
 
+} // namespace IntrinsicFunctionRegistry
+
+#define INTRINSIC_NAME_CASE(X)                                         \
+    case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : {   \
+        return #X;                                                     \
+    }
+
+inline std::string get_intrinsic_name(int x) {
+    switch (x) {
+        INTRINSIC_NAME_CASE(sin)
+        INTRINSIC_NAME_CASE(cos)
+        INTRINSIC_NAME_CASE(Gamma)
+        INTRINSIC_NAME_CASE(LogGamma)
+        default : {
+            throw LCompilersException("pickle: intrinsic_id not implemented");
+        }
+    }
 }
 
 } // namespace ASRUtils
