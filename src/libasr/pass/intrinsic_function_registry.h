@@ -246,6 +246,48 @@ static inline ASR::expr_t* instantiate_Sin (instantiate_UnaryFunctionArgs) {
 
 } // namespace Sin
 
+namespace Cos {
+
+static inline ASR::expr_t *eval_cos(Allocator &al,
+    const Location &loc, Vec<ASR::expr_t*>& args) {
+    LCOMPILERS_ASSERT(args.size() == 1);
+    double rv;
+    ASR::ttype_t *t = ASRUtils::expr_type(args[0]);
+    if( ASRUtils::extract_value(args[0], rv) ) {
+        double val = cos(rv);
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, val, t));
+    } else {
+        std::complex<double> crv;
+        if( ASRUtils::extract_value(args[0], crv) ) {
+            std::complex<double> val = std::cos(crv);
+            return ASRUtils::EXPR(ASR::make_ComplexConstant_t(
+                al, loc, val.real(), val.imag(), t));
+        }
+    }
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_Cos(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+
+    if (!ASRUtils::is_real(*type) && !ASRUtils::is_complex(*type)) {
+        err("`x` argument of `cos` must be real or complex",
+            args[0]->base.loc);
+    }
+
+    return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args,
+            eval_cos, static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos),
+            0, type);
+}
+
+static inline ASR::expr_t* instantiate_Cos (instantiate_UnaryFunctionArgs) {
+    instantiate_UnaryFunctionBody(cos)
+}
+
+} // namespace Cos
+
 namespace IntrinsicFunctionRegistry {
 
     static const std::map<int64_t, impl_function>& intrinsic_function_by_id_db = {
@@ -253,14 +295,17 @@ namespace IntrinsicFunctionRegistry {
             &LogGamma::instantiate_LogGamma},
 
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sin),
-            &Sin::instantiate_Sin}
+            &Sin::instantiate_Sin},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos),
+            &Cos::instantiate_Cos}
     };
 
     static const std::map<std::string,
         std::pair<create_intrinsic_function,
                     eval_intrinsic_function>>& intrinsic_function_by_name_db = {
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_log_gamma}},
-                {"sin", {&Sin::create_Sin, &Sin::eval_sin}}
+                {"sin", {&Sin::create_Sin, &Sin::eval_sin}},
+                {"cos", {&Cos::create_Cos, &Cos::eval_cos}}
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
