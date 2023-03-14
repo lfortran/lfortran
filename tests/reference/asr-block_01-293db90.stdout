@@ -98,7 +98,7 @@
                                                         (Var 2 d)
                                                         (Cast
                                                             (IntrinsicFunction
-                                                                Cos
+                                                                cos
                                                                 [(RealBinOp
                                                                     (Var 4 b)
                                                                     Add

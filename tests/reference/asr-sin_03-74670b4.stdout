@@ -40,7 +40,7 @@
                     [(=
                         (Var 2 x)
                         (IntrinsicFunction
-                            Sin
+                            sin
                             [(RealConstant
                                 1.500000
                                 (Real 8 [])

@@ -141,7 +141,7 @@
                     (=
                         (Var 2 x)
                         (IntrinsicFunction
-                            Cos
+                            cos
                             [(RealConstant
                                 9.500000
                                 (Real 4 [])
@@ -194,7 +194,7 @@
                                 2 abs
                                 [((RealBinOp
                                     (IntrinsicFunction
-                                        Cos
+                                        cos
                                         [(Var 2 a)]
                                         0
                                         (Real 8 [])
@@ -248,10 +248,10 @@
                                 2 abs
                                 [((RealBinOp
                                     (IntrinsicFunction
-                                        Cos
+                                        cos
                                         [(RealBinOp
                                             (IntrinsicFunction
-                                                Cos
+                                                cos
                                                 [(RealConstant
                                                     1.500000
                                                     (Real 4 [])
@@ -266,12 +266,12 @@
                                             Add
                                             (Cast
                                                 (IntrinsicFunction
-                                                    Cos
+                                                    cos
                                                     [(RealBinOp
                                                         (Var 2 a)
                                                         Add
                                                         (IntrinsicFunction
-                                                            Cos
+                                                            cos
                                                             [(Var 2 a)]
                                                             0
                                                             (Real 8 [])

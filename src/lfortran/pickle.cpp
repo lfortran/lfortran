@@ -273,8 +273,8 @@ public:
             s.append(color(fg::green));
         }
         switch (x) {
-            INTRINSIC_NAME_CASE(Sin)
-            INTRINSIC_NAME_CASE(Cos)
+            INTRINSIC_NAME_CASE(sin)
+            INTRINSIC_NAME_CASE(cos)
             INTRINSIC_NAME_CASE(Gamma)
             INTRINSIC_NAME_CASE(LogGamma)
             default : {
