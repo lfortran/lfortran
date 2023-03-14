@@ -626,6 +626,7 @@ int emit_asr(const std::string &infile,
     pass_options.always_run = true;
     pass_options.run_fun = "f";
     pass_options.verbose = compiler_options.verbose;
+    pass_options.pass_cumulative = compiler_options.pass_cumulative;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
@@ -1677,6 +1678,7 @@ int main(int argc, char *argv[])
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
+        app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
 
 
         if( compiler_options.fast ) {
