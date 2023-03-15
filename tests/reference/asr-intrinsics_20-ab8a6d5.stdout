@@ -37,26 +37,6 @@
                                     sacos
                                     Private
                                 ),
-                            cos:
-                                (ExternalSymbol
-                                    2
-                                    cos
-                                    13 cos
-                                    lfortran_intrinsic_math
-                                    []
-                                    cos
-                                    Private
-                                ),
-                            cos@scos:
-                                (ExternalSymbol
-                                    2
-                                    cos@scos
-                                    13 scos
-                                    lfortran_intrinsic_math
-                                    []
-                                    scos
-                                    Private
-                                ),
                             dp:
                                 (Variable
                                     2
@@ -174,10 +154,9 @@
                                     x
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 cos@scos
-                                        2 cos
-                                        [((RealBinOp
+                                    (IntrinsicFunction
+                                        Cos
+                                        [(RealBinOp
                                             (Cast
                                                 (IntegerBinOp
                                                     (IntegerConstant 3 (Integer 4 []))
@@ -203,13 +182,13 @@
                                                 49.000000
                                                 (Real 4 [])
                                             )
-                                        ))]
+                                        )]
+                                        0
                                         (Real 4 [])
                                         (RealConstant
                                             0.300593
                                             (Real 4 [])
                                         )
-                                        ()
                                     )
                                     (RealConstant
                                         0.300593
@@ -281,10 +260,9 @@
                     )
                     (Print
                         ()
-                        [(FunctionCall
-                            2 cos@scos
-                            2 cos
-                            [((RealBinOp
+                        [(IntrinsicFunction
+                            Cos
+                            [(RealBinOp
                                 (Cast
                                     (IntegerBinOp
                                         (IntegerConstant 3 (Integer 4 []))
@@ -310,23 +288,22 @@
                                     49.000000
                                     (Real 4 [])
                                 )
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
                             (RealConstant
                                 0.300593
                                 (Real 4 [])
                             )
-                            ()
                         )]
                         ()
                         ()
                     )
                     (Print
                         ()
-                        [(FunctionCall
-                            2 cos@scos
-                            2 cos
-                            [((RealBinOp
+                        [(IntrinsicFunction
+                            Cos
+                            [(RealBinOp
                                 (Cast
                                     (IntegerBinOp
                                         (Var 2 y)
@@ -346,9 +323,9 @@
                                 )
                                 (Real 4 [])
                                 ()
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
-                            ()
                             ()
                         )]
                         ()
@@ -356,10 +333,9 @@
                     )
                     (Print
                         ()
-                        [(FunctionCall
-                            2 cos@scos
-                            2 cos
-                            [((RealBinOp
+                        [(IntrinsicFunction
+                            Cos
+                            [(RealBinOp
                                 (Cast
                                     (IntegerBinOp
                                         (Var 2 y2)
@@ -385,13 +361,13 @@
                                     49.000000
                                     (Real 4 [])
                                 )
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
                             (RealConstant
                                 0.300593
                                 (Real 4 [])
                             )
-                            ()
                         )]
                         ()
                         ()
@@ -400,10 +376,9 @@
                         ()
                         [(RealBinOp
                             (RealBinOp
-                                (FunctionCall
-                                    2 cos@scos
-                                    2 cos
-                                    [((RealBinOp
+                                (IntrinsicFunction
+                                    Cos
+                                    [(RealBinOp
                                         (Var 2 x)
                                         Add
                                         (Cast
@@ -420,13 +395,13 @@
                                             1.300593
                                             (Real 4 [])
                                         )
-                                    ))]
+                                    )]
+                                    0
                                     (Real 4 [])
                                     (RealConstant
                                         0.266928
                                         (Real 4 [])
                                     )
-                                    ()
                                 )
                                 Pow
                                 (Cast

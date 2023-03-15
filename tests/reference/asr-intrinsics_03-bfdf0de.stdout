@@ -22,24 +22,34 @@
                                     Required
                                     .false.
                                 ),
-                            cos:
+                            abs:
                                 (ExternalSymbol
                                     2
-                                    cos
-                                    6 cos
+                                    abs
+                                    6 abs
                                     lfortran_intrinsic_math
                                     []
-                                    cos
+                                    abs
                                     Private
                                 ),
-                            cos@scos:
+                            abs@dabs:
                                 (ExternalSymbol
                                     2
-                                    cos@scos
-                                    6 scos
+                                    abs@dabs
+                                    6 dabs
                                     lfortran_intrinsic_math
                                     []
-                                    scos
+                                    dabs
+                                    Private
+                                ),
+                            abs@sabs:
+                                (ExternalSymbol
+                                    2
+                                    abs@sabs
+                                    6 sabs
+                                    lfortran_intrinsic_math
+                                    []
+                                    sabs
                                     Private
                                 ),
                             dabs:
@@ -121,36 +131,194 @@
                     intrinsics_03
                     [iso_fortran_env]
                     [(=
-                        (Var 2 x)
-                        (FunctionCall
-                            2 cos@scos
-                            2 cos
-                            [((RealConstant
-                                9.500000
-                                (Real 4 [])
-                            ))]
-                            (Real 4 [])
-                            (RealConstant
-                                -0.997172
-                                (Real 4 [])
-                            )
-                            ()
-                        )
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(Var 2 x)]
-                        ()
-                        ()
-                    )
-                    (=
                         (Var 2 a)
                         (RealConstant
                             4.200000
                             (Real 8 [])
                         )
                         ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (IntrinsicFunction
+                            Cos
+                            [(RealConstant
+                                9.500000
+                                (Real 4 [])
+                            )]
+                            0
+                            (Real 4 [])
+                            (RealConstant
+                                -0.997172
+                                (Real 4 [])
+                            )
+                        )
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                2 abs@sabs
+                                2 abs
+                                [((RealBinOp
+                                    (Var 2 x)
+                                    Add
+                                    (RealConstant
+                                        0.997172
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                ))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                2 abs@dabs
+                                2 abs
+                                [((RealBinOp
+                                    (IntrinsicFunction
+                                        Cos
+                                        [(Var 2 a)]
+                                        0
+                                        (Real 8 [])
+                                        ()
+                                    )
+                                    Add
+                                    (Cast
+                                        (RealConstant
+                                            0.490261
+                                            (Real 4 [])
+                                        )
+                                        RealToReal
+                                        (Real 8 [])
+                                        (RealConstant
+                                            0.490261
+                                            (Real 8 [])
+                                        )
+                                    )
+                                    (Real 8 [])
+                                    ()
+                                ))]
+                                (Real 8 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4 [])
+                                )
+                                RealToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    0.000000
+                                    (Real 8 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                2 abs@sabs
+                                2 abs
+                                [((RealBinOp
+                                    (IntrinsicFunction
+                                        Cos
+                                        [(RealBinOp
+                                            (IntrinsicFunction
+                                                Cos
+                                                [(RealConstant
+                                                    1.500000
+                                                    (Real 4 [])
+                                                )]
+                                                0
+                                                (Real 4 [])
+                                                (RealConstant
+                                                    0.070737
+                                                    (Real 4 [])
+                                                )
+                                            )
+                                            Add
+                                            (Cast
+                                                (IntrinsicFunction
+                                                    Cos
+                                                    [(RealBinOp
+                                                        (Var 2 a)
+                                                        Add
+                                                        (IntrinsicFunction
+                                                            Cos
+                                                            [(Var 2 a)]
+                                                            0
+                                                            (Real 8 [])
+                                                            ()
+                                                        )
+                                                        (Real 8 [])
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Real 8 [])
+                                                    ()
+                                                )
+                                                RealToReal
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            (Real 4 [])
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        0.716404
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                ))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )
                     (=
                         (Var 2 r1)
