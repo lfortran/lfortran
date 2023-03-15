@@ -700,7 +700,9 @@ enum_var_modifiers
     ;
 
 derived_type_decl
-    : KW_TYPE var_modifiers id sep var_decl_star
+    : KW_TYPE "," KW_DEFERRED "::" id sep {
+            $$ = DERIVED_TYPE2($5, TRIVIA_AFTER($6, @$), @$); }
+    | KW_TYPE var_modifiers id sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE($2, $3, TRIVIA($4, $8, @$), $5, $6, @$); }
     | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
