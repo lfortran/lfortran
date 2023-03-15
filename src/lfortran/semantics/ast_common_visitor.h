@@ -3112,11 +3112,7 @@ public:
         ASR::expr_t* cc_expr = nullptr;
         double x_value_ = 0.0;
         double y_value_ = 0.0;
-        if (x_value && y_value && ASR::is_a<ASR::RealConstant_t>(*x_value) && ASR::is_a<ASR::RealConstant_t>(*y_value)) {
-            ASR::RealConstant_t* x_real = ASR::down_cast<ASR::RealConstant_t>(x_value);
-            x_value_ = x_real->m_r;
-            ASR::RealConstant_t* y_real = ASR::down_cast<ASR::RealConstant_t>(y_value);
-            y_value_ = y_real->m_r;
+        if (x_value && y_value && ASRUtils::extract_value(x_value, x_value_) && ASRUtils::extract_value(y_value, y_value_)) {
             cc_expr = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
                                                                  x_value_, y_value_, type));
         }
