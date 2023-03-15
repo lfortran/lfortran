@@ -237,7 +237,11 @@
                                 (Real 8 [])
                             )
                             (Complex 8 [])
-                            ()
+                            (ComplexConstant
+                                42.000000
+                                0.000000
+                                (Complex 8 [])
+                            )
                         )
                         ()
                     )
@@ -250,7 +254,11 @@
                                 (Real 8 [])
                             )
                             (Complex 8 [])
-                            ()
+                            (ComplexConstant
+                                3.140000
+                                0.000000
+                                (Complex 8 [])
+                            )
                         )
                         ()
                     )
@@ -260,7 +268,11 @@
                             (Var 2 real_part)
                             (Var 2 img_part)
                             (Complex 8 [])
-                            ()
+                            (ComplexConstant
+                                42.000000
+                                3.140000
+                                (Complex 8 [])
+                            )
                         )
                         ()
                     )
