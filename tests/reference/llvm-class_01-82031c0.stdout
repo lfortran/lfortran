@@ -1,7 +1,9 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+%circle_polymorphic = type { i64, %circle* }
 %circle = type { float }
+%__vtab_circle = type { i64 }
 
 @pi = global float 0x400921FB60000000
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
@@ -10,33 +12,43 @@ source_filename = "LFortran"
 @3 = private unnamed_addr constant [9 x i8] c" area = \00", align 1
 @4 = private unnamed_addr constant [25 x i8] c"%s%s%13.8e%s%s%s%13.8e%s\00", align 1
 
-define float @__module_class_circle1_circle_area(%circle* %this) {
+define float @__module_class_circle1_circle_area(%circle_polymorphic* %this) {
 .entry:
+  %0 = alloca %__vtab_circle, align 8
+  %1 = getelementptr %__vtab_circle, %__vtab_circle* %0, i32 0, i32 0
+  store i64 0, i64* %1, align 4
   %area = alloca float, align 4
-  %0 = load float, float* @pi, align 4
-  %1 = getelementptr %circle, %circle* %this, i32 0, i32 0
-  %2 = load float, float* %1, align 4
-  %3 = call float @llvm.pow.f32(float %2, float 2.000000e+00)
-  %4 = fmul float %0, %3
-  store float %4, float* %area, align 4
+  %2 = load float, float* @pi, align 4
+  %3 = getelementptr %circle_polymorphic, %circle_polymorphic* %this, i32 0, i32 1
+  %4 = load %circle*, %circle** %3, align 8
+  %5 = getelementptr %circle, %circle* %4, i32 0, i32 0
+  %6 = load float, float* %5, align 4
+  %7 = call float @llvm.pow.f32(float %6, float 2.000000e+00)
+  %8 = fmul float %2, %7
+  store float %8, float* %area, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %5 = load float, float* %area, align 4
-  ret float %5
+  %9 = load float, float* %area, align 4
+  ret float %9
 }
 
-define void @__module_class_circle1_circle_print(%circle* %this) {
+define void @__module_class_circle1_circle_print(%circle_polymorphic* %this) {
 .entry:
+  %0 = alloca %__vtab_circle, align 8
+  %1 = getelementptr %__vtab_circle, %__vtab_circle* %0, i32 0, i32 0
+  store i64 0, i64* %1, align 4
   %area = alloca float, align 4
-  %0 = call float @__module_class_circle1_circle_area(%circle* %this)
-  store float %0, float* %area, align 4
-  %1 = getelementptr %circle, %circle* %this, i32 0, i32 0
-  %2 = load float, float* %1, align 4
-  %3 = fpext float %2 to double
-  %4 = load float, float* %area, align 4
-  %5 = fpext float %4 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i8* getelementptr inbounds ([13 x i8], [13 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %2 = call float @__module_class_circle1_circle_area(%circle_polymorphic* %this)
+  store float %2, float* %area, align 4
+  %3 = getelementptr %circle_polymorphic, %circle_polymorphic* %this, i32 0, i32 1
+  %4 = load %circle*, %circle** %3, align 8
+  %5 = getelementptr %circle, %circle* %4, i32 0, i32 0
+  %6 = load float, float* %5, align 4
+  %7 = fpext float %6 to double
+  %8 = load float, float* %area, align 4
+  %9 = fpext float %8 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i8* getelementptr inbounds ([13 x i8], [13 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry
@@ -55,10 +67,20 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = getelementptr %circle, %circle* %c, i32 0, i32 0
   %3 = getelementptr %circle, %circle* %c, i32 0, i32 0
   store float 1.500000e+00, float* %3, align 4
-  call void @__module_class_circle1_circle_print(%circle* %c)
-  %4 = getelementptr %circle, %circle* %c, i32 0, i32 0
-  store float 2.000000e+00, float* %4, align 4
-  call void @__module_class_circle1_circle_print(%circle* %c)
+  %4 = alloca %circle_polymorphic, align 8
+  %5 = getelementptr %circle_polymorphic, %circle_polymorphic* %4, i32 0, i32 0
+  store i64 0, i64* %5, align 4
+  %6 = getelementptr %circle_polymorphic, %circle_polymorphic* %4, i32 0, i32 1
+  store %circle* %c, %circle** %6, align 8
+  call void @__module_class_circle1_circle_print(%circle_polymorphic* %4)
+  %7 = getelementptr %circle, %circle* %c, i32 0, i32 0
+  store float 2.000000e+00, float* %7, align 4
+  %8 = alloca %circle_polymorphic, align 8
+  %9 = getelementptr %circle_polymorphic, %circle_polymorphic* %8, i32 0, i32 0
+  store i64 0, i64* %9, align 4
+  %10 = getelementptr %circle_polymorphic, %circle_polymorphic* %8, i32 0, i32 1
+  store %circle* %c, %circle** %10, align 8
+  call void @__module_class_circle1_circle_print(%circle_polymorphic* %8)
   ret i32 0
 }
 

@@ -118,6 +118,7 @@
                                             ()
                                         )
                                         [(SelectType
+                                            (Var 7 ptr)
                                             [(TypeStmtName
                                                 4 child_value
                                                 [(BlockCall
@@ -166,6 +167,7 @@
                                     [ok]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     4 toml_value
@@ -282,6 +284,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .true.
                                     ()
                                     ()
                                 )

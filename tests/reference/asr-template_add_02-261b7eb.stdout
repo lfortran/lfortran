@@ -10,7 +10,7 @@
                 (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_math:
                 (IntrinsicModule lfortran_intrinsic_math),
-            template_add:
+            template_add_02:
                 (Program
                     (SymbolTable
                         9
@@ -20,7 +20,7 @@
                                     9
                                     add_generic
                                     2 add_generic
-                                    template_add_m
+                                    template_add_02_m
                                     []
                                     add_generic
                                     Public
@@ -30,7 +30,7 @@
                                     9
                                     f
                                     2 f
-                                    template_add_m
+                                    template_add_02_m
                                     []
                                     f
                                     Public
@@ -40,7 +40,7 @@
                                     9
                                     func_arg_int
                                     2 func_arg_int
-                                    template_add_m
+                                    template_add_02_m
                                     []
                                     func_arg_int
                                     Public
@@ -50,7 +50,7 @@
                                     9
                                     func_arg_real
                                     2 func_arg_real
-                                    template_add_m
+                                    template_add_02_m
                                     []
                                     func_arg_real
                                     Public
@@ -60,7 +60,7 @@
                                     9
                                     t
                                     2 t
-                                    template_add_m
+                                    template_add_02_m
                                     []
                                     t
                                     Public
@@ -70,14 +70,24 @@
                                     9
                                     test_template
                                     2 test_template
-                                    template_add_m
+                                    template_add_02_m
                                     []
                                     test_template
                                     Public
+                                ),
+                            ~add:
+                                (ExternalSymbol
+                                    9
+                                    ~add
+                                    2 ~add
+                                    template_add_02_m
+                                    []
+                                    ~add
+                                    Public
                                 )
                         })
-                    template_add
-                    [template_add_m]
+                    template_add_02
+                    [template_add_02_m]
                     [(SubroutineCall
                         9 test_template
                         ()
@@ -85,7 +95,7 @@
                         ()
                     )]
                 ),
-            template_add_m:
+            template_add_02_m:
                 (Module
                     (SymbolTable
                         2
@@ -199,95 +209,6 @@
                                         ()
                                     )]
                                     (Var 5 z)
-                                    Public
-                                    .false.
-                                    .false.
-                                ),
-                            add_integer:
-                                (Function
-                                    (SymbolTable
-                                        11
-                                        {
-                                            x:
-                                                (Variable
-                                                    11
-                                                    x
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            y:
-                                                (Variable
-                                                    11
-                                                    y
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            z:
-                                                (Variable
-                                                    11
-                                                    z
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    add_integer
-                                    (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        []
-                                        .false.
-                                    )
-                                    [func_arg_int]
-                                    [(Var 11 x)
-                                    (Var 11 y)]
-                                    [(=
-                                        (Var 11 z)
-                                        (FunctionCall
-                                            2 func_arg_int
-                                            ()
-                                            [((Var 11 x))
-                                            ((Var 11 y))]
-                                            (Integer 4 [])
-                                            ()
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 11 z)
                                     Public
                                     .false.
                                     .false.
@@ -666,6 +587,7 @@
                                     Source
                                     Private
                                     .false.
+                                    .false.
                                     ()
                                     ()
                                 ),
@@ -674,26 +596,11 @@
                                     (SymbolTable
                                         8
                                         {
-                                            a:
-                                                (Variable
-                                                    8
-                                                    a
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
                                             abs:
                                                 (ExternalSymbol
                                                     8
                                                     abs
-                                                    13 abs
+                                                    12 abs
                                                     lfortran_intrinsic_math
                                                     []
                                                     abs
@@ -703,26 +610,11 @@
                                                 (ExternalSymbol
                                                     8
                                                     abs@sabs
-                                                    13 sabs
+                                                    12 sabs
                                                     lfortran_intrinsic_math
                                                     []
                                                     sabs
                                                     Private
-                                                ),
-                                            b:
-                                                (Variable
-                                                    8
-                                                    b
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -772,7 +664,6 @@
                                         .false.
                                     )
                                     [abs@sabs
-                                    add_integer
                                     add_real]
                                     []
                                     [(=
@@ -848,65 +739,23 @@
                                             ()
                                         )]
                                         []
-                                    )
-                                    (=
-                                        (Var 8 a)
-                                        (IntegerConstant 5 (Integer 4 []))
-                                        ()
-                                    )
-                                    (=
-                                        (Var 8 b)
-                                        (IntegerConstant 9 (Integer 4 []))
-                                        ()
-                                    )
-                                    (Print
-                                        ()
-                                        [(StringConstant
-                                            "The result is "
-                                            (Character 1 14 () [])
-                                        )
-                                        (FunctionCall
-                                            2 add_integer
-                                            ()
-                                            [((Var 8 a))
-                                            ((Var 8 b))]
-                                            (Integer 4 [])
-                                            ()
-                                            ()
-                                        )]
-                                        ()
-                                        ()
-                                    )
-                                    (If
-                                        (IntegerCompare
-                                            (FunctionCall
-                                                2 add_integer
-                                                ()
-                                                [((Var 8 a))
-                                                ((Var 8 b))]
-                                                (Integer 4 [])
-                                                ()
-                                                ()
-                                            )
-                                            NotEq
-                                            (IntegerConstant 14 (Integer 4 []))
-                                            (Logical 4 [])
-                                            ()
-                                        )
-                                        [(ErrorStop
-                                            ()
-                                        )]
-                                        []
                                     )]
                                     ()
                                     Private
                                     .false.
                                     .false.
+                                ),
+                            ~add:
+                                (CustomOperator
+                                    2
+                                    ~add
+                                    [2 func_arg_real]
+                                    Public
                                 )
                         })
-                    template_add_m
+                    template_add_02_m
                     [lfortran_intrinsic_math
-                    template_add_m]
+                    template_add_02_m]
                     .false.
                     .false.
                 )

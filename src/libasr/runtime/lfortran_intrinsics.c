@@ -919,6 +919,46 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int3
     return dest_char;
 }
 
+LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, int32_t idx2, int32_t step,
+                        bool idx1_present, bool idx2_present) {
+    int s_len = strlen(s);
+    int r_len = strlen(r);
+    if (step == 0) {
+        printf("slice step cannot be zero\n");
+        exit(1);
+    }
+    s_len = (s_len < r_len) ? r_len : s_len;
+    idx1 = idx1 < 0 ? idx1 + s_len : idx1;
+    idx2 = idx2 < 0 ? idx2 + s_len : idx2;
+    if (!idx1_present) {
+        if (step > 0) {
+            idx1 = 0;
+        } else {
+            idx1 = s_len - 1;
+        }
+    }
+    if (!idx2_present) {
+        if (step > 0) {
+            idx2 = s_len;
+        } else {
+            idx2 = -1;
+        }
+    }
+    if (idx1 == idx2 ||
+        (step > 0 && (idx1 > idx2 || idx1 >= s_len)) ||
+        (step < 0 && (idx1 < idx2 || idx2 >= s_len-1)))
+        return "";
+    char* dest_char = (char*)malloc(s_len);
+    strcpy(dest_char, s);
+    int s_i = idx1, d_i = 0;
+    while((step > 0 && s_i >= idx1 && s_i < idx2) ||
+        (step < 0 && s_i <= idx1 && s_i > idx2)) {
+        dest_char[s_i] = r[d_i++];
+        s_i += step;
+    }
+    return dest_char;
+}
+
 LFORTRAN_API int32_t _lfortran_str_len(char** s)
 {
     return strlen(*s);
@@ -966,6 +1006,10 @@ LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size) {
 
 LFORTRAN_API void _lfortran_free(char* ptr) {
     free((void*)ptr);
+}
+
+LFORTRAN_API void _lfortran_string_alloc(char** ptr, int32_t len) {
+    *ptr = (char *) malloc(sizeof(char)*len);
 }
 
 // size_plus_one is the size of the string including the null character

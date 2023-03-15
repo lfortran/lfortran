@@ -132,7 +132,7 @@
                                             (IntegerConstant 1 (Integer 4 []))
                                             ())]
                                             (Integer 4 [])
-                                            RowMajor
+                                            ColMajor
                                             ()
                                         )
                                         (Var 7 i)
@@ -146,7 +146,7 @@
                                             (IntegerConstant 1 (Integer 4 []))
                                             ())]
                                             (Integer 4 [])
-                                            RowMajor
+                                            ColMajor
                                             ()
                                         )
                                         ()
@@ -299,6 +299,7 @@
                                     []
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     ()
                                     ()

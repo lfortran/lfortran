@@ -861,13 +861,34 @@
             []
             [(Instantiate
                 travel_tmpl
-                [real
-                real
-                real
-                add_real
-                add_real
-                slash_real
-                slash_real]
+                [(UseSymbol
+                    real
+                    ()
+                )
+                (UseSymbol
+                    real
+                    ()
+                )
+                (UseSymbol
+                    real
+                    ()
+                )
+                (UseSymbol
+                    add_real
+                    ()
+                )
+                (UseSymbol
+                    add_real
+                    ()
+                )
+                (UseSymbol
+                    slash_real
+                    ()
+                )
+                (UseSymbol
+                    slash_real
+                    ()
+                )]
                 [(UseSymbol
                     avg_S_from_T
                     avg_real_S_from_T
@@ -875,13 +896,34 @@
             )
             (Instantiate
                 travel_tmpl
-                [real
-                real
-                real
-                add_real
-                add_real
-                slash_real
-                slash_real]
+                [(UseSymbol
+                    real
+                    ()
+                )
+                (UseSymbol
+                    real
+                    ()
+                )
+                (UseSymbol
+                    real
+                    ()
+                )
+                (UseSymbol
+                    add_real
+                    ()
+                )
+                (UseSymbol
+                    add_real
+                    ()
+                )
+                (UseSymbol
+                    slash_real
+                    ()
+                )
+                (UseSymbol
+                    slash_real
+                    ()
+                )]
                 [(UseSymbol
                     avg_S_from_S
                     avg_real_S_from_S

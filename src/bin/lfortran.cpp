@@ -625,6 +625,7 @@ int emit_asr(const std::string &infile,
 
     pass_options.always_run = true;
     pass_options.run_fun = "f";
+    pass_options.verbose = compiler_options.verbose;
 
     pass_manager.apply_passes(al, asr, pass_options, diagnostics);
     if (compiler_options.tree) {
@@ -1675,6 +1676,7 @@ int main(int argc, char *argv[])
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
+        app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
 
 
         if( compiler_options.fast ) {

@@ -405,6 +405,111 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
             self.emit(  "this->visit_symbol(*a.second);", 3)
             self.emit("}", 2)
 
+class ASRPassWalkVisitorVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Walk Visitor base class")
+        self.emit("")
+        self.emit("template <class Struct>")
+        self.emit("class ASRPassBaseWalkVisitor : public BaseVisitor<Struct>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit("    Struct& self() { return static_cast<Struct&>(*this); }")
+        self.emit("public:")
+        self.emit("    SymbolTable* current_scope;")
+        self.emit("    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {")
+        self.emit("    for (size_t i = 0; i < n_body; i++) {", 1)
+        self.emit("        self().visit_stmt(*m_body[i]);", 1)
+        self.emit("    }", 1)
+        self.emit("}", 1)
+        super(ASRPassWalkVisitorVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(ASRPassWalkVisitorVisitor, self).visitType(tp, tp.name)
+
+    def visitProduct(self, prod, name):
+        self.make_visitor(name, prod.fields)
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        is_symtab_present = False
+        is_stmt_present = False
+        symtab_field_name = ""
+        for field in fields:
+            if field.type == "stmt":
+                is_stmt_present = True
+            if field.type == "symbol_table":
+                is_symtab_present = True
+                symtab_field_name = field.name
+            if is_stmt_present and is_symtab_present:
+                break
+        if is_stmt_present and name not in ("Assignment", "ForAllSingle"):
+            self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
+        self.used = False
+
+        if is_symtab_present:
+            self.emit("SymbolTable* current_scope_copy = current_scope;", 2)
+            self.emit("current_scope = x.m_%s;" % symtab_field_name, 2)
+
+        for field in fields:
+            self.visitField(field)
+        if not self.used:
+            # Note: a better solution would be to change `&x` to `& /* x */`
+            # above, but we would need to change emit to return a string.
+            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+
+        if is_symtab_present:
+            self.emit("current_scope = current_scope_copy;", 2)
+
+        self.emit("}", 1)
+
+    def visitField(self, field):
+        if (field.type not in asdl.builtin_types and
+            field.type not in self.data.simple_types):
+            level = 2
+            if field.seq:
+                if field.type == "stmt":
+                    self.emit("self().transform_stmts(xx.m_%s, xx.n_%s);" % (field.name, field.name), level)
+                    return
+                self.used = True
+                self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
+                if field.type in products:
+                    self.emit("    self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level)
+                else:
+                    if field.type != "symbol":
+                        self.emit("    self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level)
+                self.emit("}", level)
+            else:
+                if field.type in products:
+                    self.used = True
+                    if field.opt:
+                        self.emit("if (x.m_%s)" % field.name, 2)
+                        level = 3
+                    if field.opt:
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+                    else:
+                        self.emit("self().visit_%s(x.m_%s);" % (field.type, field.name), level)
+                else:
+                    if field.type != "symbol":
+                        self.used = True
+                        if field.opt:
+                            self.emit("if (x.m_%s)" % field.name, 2)
+                            level = 3
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+        elif field.type == "symbol_table" and field.name in["symtab",
+                "global_scope"]:
+            self.used = True
+            self.emit("for (auto &a : x.m_%s->get_scope()) {" % field.name, 2)
+            self.emit(  "this->visit_symbol(*a.second);", 3)
+            self.emit("}", 2)
+
 class CallReplacerOnExpressionsVisitor(ASDLVisitor):
 
     def __init__(self, stream, data):
@@ -975,14 +1080,16 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "array_index" or
             field.type == "alloc_arg" or
             field.type == "case_stmt" or
-            field.type == "ttype"):
+            field.type == "ttype" or
+            field.type == "dimension"):
             level = 2
             if field.seq:
                 self.used = True
                 pointer_char = ''
                 if (field.type != "call_arg" and
                     field.type != "array_index" and
-                    field.type != "alloc_arg"):
+                    field.type != "alloc_arg" and
+                    field.type != "dimension"):
                     pointer_char = '*'
                 self.emit("Vec<%s_t%s> m_%s;" % (field.type, pointer_char, field.name), level)
                 self.emit("m_%s.reserve(al, x->n_%s);" % (field.name, field.name), level)
@@ -1017,6 +1124,12 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    array_index_copy.m_right = duplicate_expr(x->m_%s[i].m_right);"%(field.name), level)
                     self.emit("    array_index_copy.m_step = duplicate_expr(x->m_%s[i].m_step);"%(field.name), level)
                     self.emit("    m_%s.push_back(al, array_index_copy);"%(field.name), level)
+                elif field.type == "dimension":
+                    self.emit("    ASR::dimension_t dim_copy;", level)
+                    self.emit("    dim_copy.loc = x->m_%s[i].loc;"%(field.name), level)
+                    self.emit("    dim_copy.m_start = self().duplicate_expr(x->m_%s[i].m_start);"%(field.name), level)
+                    self.emit("    dim_copy.m_length = self().duplicate_expr(x->m_%s[i].m_length);"%(field.name), level)
+                    self.emit("    m_%s.push_back(al, dim_copy);" % (field.name), level)
                 else:
                     self.emit("    m_%s.push_back(al, self().duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)
                 self.emit("}", level)
@@ -2582,6 +2695,8 @@ def main(argv):
 
     try:
         if is_asr:
+            ASRPassWalkVisitorVisitor(fp, data).visit(mod)
+            fp.write("\n\n")
             ExprStmtDuplicatorVisitor(fp, data).visit(mod)
             fp.write("\n\n")
             ExprBaseReplacerVisitor(fp, data).visit(mod)

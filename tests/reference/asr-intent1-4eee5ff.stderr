@@ -1,0 +1,5 @@
+semantic error: Argument `y` with INTENT(IN) in variable definition context (assignment)
+ --> tests/errors/intent1.f90:9:5
+  |
+9 |     y = 99  
+  |     ^ 

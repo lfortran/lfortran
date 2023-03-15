@@ -340,8 +340,14 @@
             []
             [(Instantiate
                 add_t
-                [real
-                func_arg_real]
+                [(UseSymbol
+                    real
+                    ()
+                )
+                (UseSymbol
+                    func_arg_real
+                    ()
+                )]
                 [(UseSymbol
                     call_add_generic
                     add_real

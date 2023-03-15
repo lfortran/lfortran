@@ -128,6 +128,7 @@
                                                     circle_area
                                                     2 circle_area
                                                     Source
+                                                    .false.
                                                 ),
                                             print:
                                                 (ClassProcedure
@@ -137,6 +138,7 @@
                                                     circle_print
                                                     2 circle_print
                                                     Source
+                                                    .false.
                                                 ),
                                             radius:
                                                 (Variable
@@ -159,6 +161,7 @@
                                     [radius]
                                     Source
                                     Private
+                                    .false.
                                     .false.
                                     ()
                                     ()

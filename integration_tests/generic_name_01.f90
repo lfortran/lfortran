@@ -48,6 +48,10 @@ program generic_name_01
     c = ComplexType(fpone, fptwo)
     call c%add(ione, izero, a)
     print *, a%r, a%i
+    if( a%r /= 2.0 ) error stop
+    if( a%i /= 2.0 ) error stop
     call c%add(fpzero, negfpone, a)
     print *, a%r, a%i
+    if( a%r /= 1.0 ) error stop
+    if( a%i /= 1.0 ) error stop
 end program

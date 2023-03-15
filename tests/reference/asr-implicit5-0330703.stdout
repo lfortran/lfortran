@@ -61,7 +61,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 8 [])
                                     Source
                                     Public
                                     Required
@@ -111,7 +111,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 8 [])
                                     Source
                                     Public
                                     Required
@@ -126,7 +126,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 8 [])
                                     Source
                                     Public
                                     Required
@@ -172,33 +172,17 @@
                     (Var 2 cdn)]
                     [(=
                         (Var 2 eps)
-                        (Cast
-                            (RealConstant
-                                0.000000
-                                (Real 8 [])
-                            )
-                            RealToReal
-                            (Real 4 [])
-                            (RealConstant
-                                0.000000
-                                (Real 4 [])
-                            )
+                        (RealConstant
+                            0.000000
+                            (Real 8 [])
                         )
                         ()
                     )
                     (=
                         (Var 2 pi)
-                        (Cast
-                            (RealConstant
-                                3.141593
-                                (Real 8 [])
-                            )
-                            RealToReal
-                            (Real 4 [])
-                            (RealConstant
-                                3.141593
-                                (Real 4 [])
-                            )
+                        (RealConstant
+                            3.141593
+                            (Real 8 [])
                         )
                         ()
                     )
@@ -253,33 +237,28 @@
                     )
                     (=
                         (Var 2 va0)
-                        (Cast
+                        (RealBinOp
+                            (RealConstant
+                                0.500000
+                                (Real 8 [])
+                            )
+                            Mul
                             (RealBinOp
                                 (RealConstant
-                                    0.500000
+                                    1.000000
                                     (Real 8 [])
                                 )
-                                Mul
-                                (RealBinOp
-                                    (RealConstant
-                                        1.000000
-                                        (Real 8 [])
-                                    )
-                                    Sub
-                                    (Cast
-                                        (Var 2 n)
-                                        IntegerToReal
-                                        (Real 8 [])
-                                        ()
-                                    )
+                                Sub
+                                (Cast
+                                    (Var 2 n)
+                                    IntegerToReal
                                     (Real 8 [])
                                     ()
                                 )
                                 (Real 8 [])
                                 ()
                             )
-                            RealToReal
-                            (Real 4 [])
+                            (Real 8 [])
                             ()
                         )
                         ()

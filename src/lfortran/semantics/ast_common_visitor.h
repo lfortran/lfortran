@@ -7,7 +7,7 @@
 #include <lfortran/ast.h>
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
-#include <libasr/pass/intrinsic_function.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 
@@ -685,6 +685,7 @@ public:
     bool is_instantiate = false;
     bool is_current_procedure_templated = false;
     bool is_Function = false;
+    bool in_Subroutine = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     // fields for generics
@@ -772,8 +773,10 @@ public:
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
         if (compiler_options.implicit_typing) {
-            if (implicit_dictionary.find(std::string(1,var_name[0])) == implicit_dictionary.end()) {
-                implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+            if (!in_Subroutine) {
+                if (implicit_mapping.size() != 0) {
+                    implicit_dictionary = implicit_mapping[get_hash(current_scope->asr_owner)];
+                }
             }
         }
         // Check for the variable in enum symtab, if enum is declared
@@ -1539,6 +1542,15 @@ public:
             a_kind = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
+            if(sym_type->m_kind) {
+                this->visit_expr(*sym_type->m_kind->m_value);
+                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                int kind_value = ASRUtils::extract_kind<SemanticError>(kind_expr, loc);
+                if (kind_value != 4 && kind_value != 8) {
+                    throw SemanticError("Kind " + std::to_string(kind_value) + " is not supported for Real",
+                                    loc);
+                }
+            }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 a_kind, dims.p, dims.size()));
             if (is_pointer) {
@@ -1725,7 +1737,7 @@ public:
                 current_scope = al.make_new<SymbolTable>(parent_scope);
                 ASR::asr_t* dtype = ASR::make_StructType_t(al, loc, current_scope,
                                                 s2c(al, to_lower(derived_type_name)), nullptr, 0, nullptr, 0,
-                                                ASR::abiType::Source, dflt_access, false, nullptr, nullptr);
+                                                ASR::abiType::Source, dflt_access, false, true, nullptr, nullptr);
                 v = ASR::down_cast<ASR::symbol_t>(dtype);
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;
@@ -1946,6 +1958,38 @@ public:
             return ASR::make_ArrayItem_t(al, loc,
                 v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
         } else {
+            ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
+            if (ASR::is_a<ASR::Pointer_t>(*v_type)) {
+                v_type = ASR::down_cast<ASR::Pointer_t>(v_type)->m_type;
+            }
+            if (ASR::is_a<ASR::Character_t>(*v_type)) {
+                int dims = ASR::down_cast<ASR::Character_t>(v_type)->n_dims;
+                if (dims == 0) {
+                    // this is the case of String Section (or slicing)
+                    LCOMPILERS_ASSERT(n_args == 1);
+                    ASR::ttype_t *char_type = nullptr;
+                    if (arr_ref_val) {
+                        char_type = ASRUtils::expr_type(arr_ref_val);
+                    } else {
+                        char_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
+                                        1, -1, nullptr, nullptr, 0));
+                    }
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                                    4, nullptr, 0));
+                    ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                                                1, int_type));
+                    ASR::expr_t *l = nullptr, *r = nullptr;
+                    if (m_args[0].m_start) {
+                        l = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                            args[0].m_left, ASR::binopType::Sub, const_1, int_type, nullptr));
+                    }
+                    if (m_args[0].m_end) {
+                        r = args[0].m_right;
+                    }
+                    return ASR::make_StringSection_t(al, loc, v_Var, l,
+                            r, args[0].m_step, char_type, arr_ref_val);
+                }
+            }
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
         }
@@ -3088,41 +3132,6 @@ public:
         return ASR::make_Ichar_t(al, x.base.base.loc, arg, type, ichar_value);
     }
 
-    ASR::asr_t* create_sin(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
-                                4, nullptr, 0));
-        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sin);
-        int64_t overload_id = 0;
-        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
-            intrinsic_id, args.p, args.n, overload_id, type, nullptr);
-    }
-
-    ASR::asr_t* create_cos(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
-                                4, nullptr, 0));
-        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos);
-        int64_t overload_id = 0;
-        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
-            intrinsic_id, args.p, args.n, overload_id, type, nullptr);
-    }
-
-    ASR::asr_t* create_LogGamma(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
-        int64_t intrinsic_id = static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma);
-        int64_t overload_id = 0;
-        ASR::expr_t *value = nullptr;
-        ASR::expr_t *arg_value = ASRUtils::expr_value(args[0]);
-        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
-        if (arg_value) {
-            value = eval_log_gamma(al, x.base.base.loc, arg_value);
-        }
-        return ASR::make_IntrinsicFunction_t(al, x.base.base.loc,
-            intrinsic_id, args.p, args.n, overload_id, type, value);
-    }
-
-
     ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
         std::vector<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
@@ -3254,9 +3263,16 @@ public:
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
         if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
-            intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ) {
+            intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
+            ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
             is_function = false;
-            if( var_name == "size" ) {
+            if( ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
+                ASRUtils::create_intrinsic_function create_func =
+                    ASRUtils::IntrinsicFunctionRegistry::get_create_function(var_name);
+                Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
+                tmp = create_func(al, x.base.base.loc, args,
+                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+            } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
                 tmp = create_ArrayBound(x, var_name);
@@ -3276,8 +3292,6 @@ public:
                 tmp = create_ArrayReshape(x);
             } else if( var_name == "ichar" ) {
                 tmp = create_Ichar(x);
-            } else if( var_name == "log_gamma" ) {
-                tmp = create_LogGamma(x);
             } else if( var_name == "iachar" ) {
                 tmp = create_Iachar(x);
             } else if( var_name == "maxloc" ) {

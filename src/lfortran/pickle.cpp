@@ -4,6 +4,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/string_utils.h>
 
 using LCompilers::LFortran::AST::ast_t;
