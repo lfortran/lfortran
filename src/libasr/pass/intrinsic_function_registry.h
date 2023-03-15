@@ -35,8 +35,8 @@ typedef ASR::asr_t* (*create_intrinsic_function)(
     const std::function<void (const std::string &, const Location &)>);
 
 enum class IntrinsicFunctions : int64_t {
-    sin,
-    cos,
+    Sin,
+    Cos,
     Gamma,
     LogGamma,
     // ...
@@ -204,7 +204,12 @@ static inline ASR::expr_t* instantiate_LogGamma (instantiate_UnaryFunctionArgs) 
 
 } // namespace LogGamma
 
-#define create_trig(X)                                                           \
+// `X` is the name of the function in the IntrinsicFunctions enum and we use
+// the same name for `create_X` and other places
+// `stdeval` is the name of the function in the `std` namespace for compile
+//  numerical time evaluation
+// `lcompilers_name` is the name that we use in the C runtime library
+#define create_trig(X, stdeval, lcompilers_name)                                 \
 namespace X {                                                                    \
     static inline ASR::expr_t *eval_##X(Allocator &al,                           \
             const Location &loc, Vec<ASR::expr_t*>& args) {                      \
@@ -212,12 +217,12 @@ namespace X {                                                                   
         double rv;                                                               \
         ASR::ttype_t *t = ASRUtils::expr_type(args[0]);                          \
         if( ASRUtils::extract_value(args[0], rv) ) {                             \
-            double val = std::X(rv);                                             \
+            double val = std::stdeval(rv);                                       \
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, val, t));    \
         } else {                                                                 \
             std::complex<double> crv;                                            \
             if( ASRUtils::extract_value(args[0], crv) ) {                        \
-                std::complex<double> val = std::cos(crv);                        \
+                std::complex<double> val = std::stdeval(crv);                    \
                 return ASRUtils::EXPR(ASR::make_ComplexConstant_t(               \
                     al, loc, val.real(), val.imag(), t));                        \
             }                                                                    \
@@ -245,12 +250,12 @@ namespace X {                                                                   
         LCOMPILERS_ASSERT(arg_types.size() == 1);                                \
         ASR::ttype_t* arg_type = arg_types[0];                                   \
         return UnaryIntrinsicFunction::instantiate_functions(al, loc, scope,     \
-            #X, arg_type, new_args, compile_time_value);                         \
+            #lcompilers_name, arg_type, new_args, compile_time_value);           \
     }                                                                            \
 } // namespace X
 
-create_trig(sin)
-create_trig(cos)
+create_trig(Sin, sin, sin)
+create_trig(Cos, cos, cos)
 
 namespace IntrinsicFunctionRegistry {
 
@@ -258,18 +263,18 @@ namespace IntrinsicFunctionRegistry {
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::LogGamma),
             &LogGamma::instantiate_LogGamma},
 
-        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::sin),
-            &sin::instantiate_sin},
-        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::cos),
-            &cos::instantiate_cos}
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sin),
+            &Sin::instantiate_Sin},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos),
+            &Cos::instantiate_Cos}
     };
 
     static const std::map<std::string,
         std::pair<create_intrinsic_function,
                     eval_intrinsic_function>>& intrinsic_function_by_name_db = {
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_log_gamma}},
-                {"sin", {&sin::create_sin, &sin::eval_sin}},
-                {"cos", {&cos::create_cos, &cos::eval_cos}}
+                {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
+                {"cos", {&Cos::create_Cos, &Cos::eval_Cos}}
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -297,8 +302,8 @@ namespace IntrinsicFunctionRegistry {
 
 inline std::string get_intrinsic_name(int x) {
     switch (x) {
-        INTRINSIC_NAME_CASE(sin)
-        INTRINSIC_NAME_CASE(cos)
+        INTRINSIC_NAME_CASE(Sin)
+        INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
         default : {
