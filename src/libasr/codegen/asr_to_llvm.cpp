@@ -6527,19 +6527,48 @@ public:
         }
     }
 
+    llvm::Function* get_read_function(ASR::ttype_t *type) {
+        if (ASR::is_a<ASR::Integer_t>(*type)) {
+            std::string runtime_func_name = "_lfortran_read_int32";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context)->getPointerTo(),
+                            llvm::Type::getInt32Ty(context)
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+            }
+            return fn;
+        } else {
+            throw CodeGenError("Read function not implemented");
+        }
+    }
+
     void visit_FileRead(const ASR::FileRead_t &x) {
         if (x.m_fmt != nullptr) {
             diag.codegen_warning_label("format string in read() is not implemented yet and it is currently treated as '*'",
                 {x.m_fmt->base.loc}, "treated as '*'");
         }
-        if (x.m_unit != nullptr) {
-            diag.codegen_error_label("unit in read() is not implemented yet",
-                {x.m_unit->base.loc}, "not implemented");
-            throw CodeGenAbort();
+        llvm::Value *unit_val;
+        if (x.m_unit == nullptr) {
+            // Read from stdin
+            unit_val = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, -1));
+        } else {
+            this->visit_expr_wrapper(x.m_unit, true);
+            unit_val = tmp;
         }
-        diag.codegen_error_label("The intrinsic function read() is not implemented yet in the LLVM backend",
-            {x.base.base.loc}, "not implemented");
-        throw CodeGenAbort();
+        for (size_t i=0; i<x.n_values; i++) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*x.m_values[i]);
+            ptr_loads = ptr_copy;
+            llvm::Function *fn = get_read_function(
+                    ASRUtils::expr_type(x.m_values[i]));
+            builder->CreateCall(fn, {tmp, unit_val});
+        }
     }
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {
@@ -6571,6 +6600,23 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
         tmp = builder->CreateCall(fn, {unit_val, f_name, status});
+    }
+
+    void visit_FileClose(const ASR::FileClose_t &x) {
+        llvm::Value *unit_val = nullptr;
+        this->visit_expr_wrapper(x.m_unit, true);
+        unit_val = tmp;
+        std::string runtime_func_name = "_lfortran_close";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context),
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {unit_val});
     }
 
     void visit_Print(const ASR::Print_t &x) {
