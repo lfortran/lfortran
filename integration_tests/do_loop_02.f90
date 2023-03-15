@@ -2,9 +2,9 @@ program main
     implicit none
     integer :: i, j
     i = 0
-    j = 0
     outer : do
         i = i + 1
+        j = 0
         inner : do
             j = j + 1
             if (j == 5) then
