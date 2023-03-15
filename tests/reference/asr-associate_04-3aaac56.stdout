@@ -105,7 +105,7 @@
                                             )
                                             Mul
                                             (IntrinsicFunction
-                                                cos
+                                                Cos
                                                 [(Var 2 theta)]
                                                 0
                                                 (Real 4 [])

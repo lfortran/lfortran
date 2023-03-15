@@ -155,7 +155,7 @@
                                     []
                                     Local
                                     (IntrinsicFunction
-                                        cos
+                                        Cos
                                         [(RealBinOp
                                             (Cast
                                                 (IntegerBinOp
@@ -261,7 +261,7 @@
                     (Print
                         ()
                         [(IntrinsicFunction
-                            cos
+                            Cos
                             [(RealBinOp
                                 (Cast
                                     (IntegerBinOp
@@ -302,7 +302,7 @@
                     (Print
                         ()
                         [(IntrinsicFunction
-                            cos
+                            Cos
                             [(RealBinOp
                                 (Cast
                                     (IntegerBinOp
@@ -334,7 +334,7 @@
                     (Print
                         ()
                         [(IntrinsicFunction
-                            cos
+                            Cos
                             [(RealBinOp
                                 (Cast
                                     (IntegerBinOp
@@ -377,7 +377,7 @@
                         [(RealBinOp
                             (RealBinOp
                                 (IntrinsicFunction
-                                    cos
+                                    Cos
                                     [(RealBinOp
                                         (Var 2 x)
                                         Add
@@ -422,7 +422,7 @@
                             Add
                             (RealBinOp
                                 (IntrinsicFunction
-                                    sin
+                                    Sin
                                     [(RealBinOp
                                         (Var 2 x)
                                         Add

@@ -140,7 +140,7 @@
                                         (Var 7 cos2d)
                                         (RealBinOp
                                             (IntrinsicFunction
-                                                cos
+                                                Cos
                                                 [(Var 7 array2d)]
                                                 0
                                                 (Real 8 [((IntegerConstant 1 (Integer 4 []))
@@ -356,9 +356,9 @@
                                     (=
                                         (Var 6 sin1d)
                                         (IntrinsicFunction
-                                            sin
+                                            Sin
                                             [(IntrinsicFunction
-                                                sin
+                                                Sin
                                                 [(Var 6 array1d)]
                                                 0
                                                 (Real 8 [((IntegerConstant 1 (Integer 4 []))
@@ -438,7 +438,7 @@
                                         (Var 6 sinnd)
                                         (RealBinOp
                                             (IntrinsicFunction
-                                                sin
+                                                Sin
                                                 [(Var 6 arraynd)]
                                                 0
                                                 (Real 8 [((IntegerConstant 1 (Integer 4 []))
@@ -779,7 +779,7 @@
                                         (RealBinOp
                                             (RealBinOp
                                                 (IntrinsicFunction
-                                                    sin
+                                                    Sin
                                                     [(Var 8 arraynd)]
                                                     0
                                                     (Real 8 [((IntegerConstant 1 (Integer 4 []))
@@ -829,7 +829,7 @@
                                             Add
                                             (RealBinOp
                                                 (IntrinsicFunction
-                                                    cos
+                                                    Cos
                                                     [(Var 8 arraynd)]
                                                     0
                                                     (Real 8 [((IntegerConstant 1 (Integer 4 []))
@@ -1123,9 +1123,9 @@
                                                     3 abs
                                                     [((RealBinOp
                                                         (IntrinsicFunction
-                                                            sin
+                                                            Sin
                                                             [(IntrinsicFunction
-                                                                sin
+                                                                Sin
                                                                 [(ArrayItem
                                                                     (Var 3 array)
                                                                     [(()
@@ -1377,7 +1377,7 @@
                                                         [((RealBinOp
                                                             (RealBinOp
                                                                 (IntrinsicFunction
-                                                                    cos
+                                                                    Cos
                                                                     [(ArrayItem
                                                                         (Var 5 array)
                                                                         [(()
@@ -1690,7 +1690,7 @@
                                                             [((RealBinOp
                                                                 (RealBinOp
                                                                     (IntrinsicFunction
-                                                                        sin
+                                                                        Sin
                                                                         [(ArrayItem
                                                                             (Var 4 array)
                                                                             [(()

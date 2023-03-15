@@ -44,7 +44,7 @@
                                     []
                                     Local
                                     (IntrinsicFunction
-                                        sin
+                                        Sin
                                         [(RealConstant
                                             1.500000
                                             (Real 4 [])
@@ -86,7 +86,7 @@
                         (Var 2 y)
                         (Cast
                             (IntrinsicFunction
-                                sin
+                                Sin
                                 [(RealConstant
                                     1.500000
                                     (Real 4 [])
@@ -133,7 +133,7 @@
                     (If
                         (RealCompare
                             (IntrinsicFunction
-                                sin
+                                Sin
                                 [(Var 2 x)]
                                 0
                                 (Real 4 [])
@@ -207,10 +207,10 @@
                                 2 abs
                                 [((RealBinOp
                                     (IntrinsicFunction
-                                        sin
+                                        Sin
                                         [(RealBinOp
                                             (IntrinsicFunction
-                                                sin
+                                                Sin
                                                 [(RealConstant
                                                     1.500000
                                                     (Real 4 [])
@@ -224,7 +224,7 @@
                                             )
                                             Add
                                             (IntrinsicFunction
-                                                sin
+                                                Sin
                                                 [(RealBinOp
                                                     (RealConstant
                                                         0.500000
@@ -232,7 +232,7 @@
                                                     )
                                                     Add
                                                     (IntrinsicFunction
-                                                        sin
+                                                        Sin
                                                         [(RealConstant
                                                             0.500000
                                                             (Real 4 [])
@@ -311,10 +311,10 @@
                                 2 abs
                                 [((RealBinOp
                                     (IntrinsicFunction
-                                        sin
+                                        Sin
                                         [(RealBinOp
                                             (IntrinsicFunction
-                                                sin
+                                                Sin
                                                 [(Var 2 y)]
                                                 0
                                                 (Real 8 [])
@@ -323,12 +323,12 @@
                                             Add
                                             (Cast
                                                 (IntrinsicFunction
-                                                    sin
+                                                    Sin
                                                     [(RealBinOp
                                                         (Var 2 x)
                                                         Add
                                                         (IntrinsicFunction
-                                                            sin
+                                                            Sin
                                                             [(Var 2 x)]
                                                             0
                                                             (Real 4 [])
