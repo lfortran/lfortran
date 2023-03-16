@@ -998,7 +998,7 @@
                                         (Var 38 res)
                                         (StructTypeConstructor
                                             6 string_type
-                                            [(FunctionCall
+                                            [((FunctionCall
                                                 6 padl_char_pad_with
                                                 6 padl
                                                 [((FunctionCall
@@ -1053,7 +1053,7 @@
                                                 ) [])
                                                 ()
                                                 ()
-                                            )]
+                                            ))]
                                             (Struct
                                                 6 string_type
                                                 []
@@ -1215,7 +1215,7 @@
                                         (Var 39 res)
                                         (StructTypeConstructor
                                             6 string_type
-                                            [(FunctionCall
+                                            [((FunctionCall
                                                 6 padl_char_pad_with
                                                 6 padl
                                                 [((FunctionCall
@@ -1267,7 +1267,7 @@
                                                 ) [])
                                                 ()
                                                 ()
-                                            )]
+                                            ))]
                                             (Struct
                                                 6 string_type
                                                 []

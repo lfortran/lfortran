@@ -124,7 +124,20 @@
                                     toml_type
                                     []
                                     Local
-                                    ()
+                                    (StructTypeConstructor
+                                        4 enum_type
+                                        [(())
+                                        (())
+                                        (())
+                                        (())
+                                        (())
+                                        (())]
+                                        (Struct
+                                            4 enum_type
+                                            []
+                                        )
+                                        ()
+                                    )
                                     ()
                                     Parameter
                                     (Struct

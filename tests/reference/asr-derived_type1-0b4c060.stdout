@@ -151,7 +151,15 @@
                                     toml_escape
                                     []
                                     Local
-                                    ()
+                                    (StructTypeConstructor
+                                        2 enum_escape
+                                        [(())]
+                                        (Struct
+                                            2 enum_escape
+                                            []
+                                        )
+                                        ()
+                                    )
                                     ()
                                     Parameter
                                     (Struct

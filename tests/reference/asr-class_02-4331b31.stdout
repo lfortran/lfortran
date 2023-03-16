@@ -371,10 +371,10 @@
                                         (Var 6 c)
                                         (StructTypeConstructor
                                             2 circle
-                                            [(RealConstant
+                                            [((RealConstant
                                                 1.000000
                                                 (Real 4 [])
-                                            )]
+                                            ))]
                                             (Struct
                                                 2 circle
                                                 []
