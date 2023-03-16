@@ -295,16 +295,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            sin:
-                                                (ExternalSymbol
-                                                    6
-                                                    sin
-                                                    10 sin
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sin
-                                                    Private
-                                                ),
                                             sin1d:
                                                 (Variable
                                                     6
@@ -320,16 +310,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            sin@dsin:
-                                                (ExternalSymbol
-                                                    6
-                                                    sin@dsin
-                                                    10 dsin
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dsin
-                                                    Private
                                                 ),
                                             sinnd:
                                                 (Variable
@@ -368,8 +348,7 @@
                                         []
                                         .false.
                                     )
-                                    [sin@dsin
-                                    verify1d
+                                    [verify1d
                                     verifynd]
                                     []
                                     [(DoLoop
@@ -398,21 +377,19 @@
                                     )
                                     (=
                                         (Var 6 sin1d)
-                                        (FunctionCall
-                                            6 sin@dsin
-                                            6 sin
-                                            [((FunctionCall
-                                                6 sin@dsin
-                                                6 sin
-                                                [((Var 6 array1d))]
+                                        (IntrinsicFunction
+                                            Sin
+                                            [(IntrinsicFunction
+                                                Sin
+                                                [(Var 6 array1d)]
+                                                0
                                                 (Real 8 [((IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 256 (Integer 4 [])))])
                                                 ()
-                                                ()
-                                            ))]
+                                            )]
+                                            0
                                             (Real 8 [((IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 256 (Integer 4 [])))])
-                                            ()
                                             ()
                                         )
                                         ()
@@ -482,17 +459,16 @@
                                     (=
                                         (Var 6 sinnd)
                                         (RealBinOp
-                                            (FunctionCall
-                                                6 sin@dsin
-                                                6 sin
-                                                [((Var 6 arraynd))]
+                                            (IntrinsicFunction
+                                                Sin
+                                                [(Var 6 arraynd)]
+                                                0
                                                 (Real 8 [((IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 256 (Integer 4 [])))
                                                 ((IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 64 (Integer 4 [])))
                                                 ((IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 16 (Integer 4 [])))])
-                                                ()
                                                 ()
                                             )
                                             Pow
@@ -735,26 +711,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            sin:
-                                                (ExternalSymbol
-                                                    8
-                                                    sin
-                                                    10 sin
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sin
-                                                    Private
-                                                ),
-                                            sin@dsin:
-                                                (ExternalSymbol
-                                                    8
-                                                    sin@dsin
-                                                    10 dsin
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dsin
-                                                    Private
                                                 )
                                         })
                                     elemental_trig_identity
@@ -774,8 +730,7 @@
                                         .false.
                                     )
                                     [abs@dabs
-                                    cos@dcos
-                                    sin@dsin]
+                                    cos@dcos]
                                     []
                                     [(=
                                         (Var 8 eps)
@@ -866,10 +821,10 @@
                                         (Var 8 observed)
                                         (RealBinOp
                                             (RealBinOp
-                                                (FunctionCall
-                                                    8 sin@dsin
-                                                    8 sin
-                                                    [((Var 8 arraynd))]
+                                                (IntrinsicFunction
+                                                    Sin
+                                                    [(Var 8 arraynd)]
+                                                    0
                                                     (Real 8 [((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 64 (Integer 4 [])))
                                                     ((IntegerConstant 1 (Integer 4 []))
@@ -878,7 +833,6 @@
                                                     (IntegerConstant 8 (Integer 4 [])))
                                                     ((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 4 (Integer 4 [])))])
-                                                    ()
                                                     ()
                                                 )
                                                 Pow
@@ -1145,26 +1099,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            sin:
-                                                (ExternalSymbol
-                                                    3
-                                                    sin
-                                                    10 sin
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sin
-                                                    Private
-                                                ),
-                                            sin@dsin:
-                                                (ExternalSymbol
-                                                    3
-                                                    sin@dsin
-                                                    10 dsin
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dsin
-                                                    Private
-                                                ),
                                             size:
                                                 (Variable
                                                     3
@@ -1201,8 +1135,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs
-                                    sin@dsin]
+                                    [abs@dabs]
                                     [(Var 3 array)
                                     (Var 3 result)
                                     (Var 3 size)]
@@ -1233,13 +1166,11 @@
                                                     3 abs@dabs
                                                     3 abs
                                                     [((RealBinOp
-                                                        (FunctionCall
-                                                            3 sin@dsin
-                                                            3 sin
-                                                            [((FunctionCall
-                                                                3 sin@dsin
-                                                                3 sin
-                                                                [((ArrayItem
+                                                        (IntrinsicFunction
+                                                            Sin
+                                                            [(IntrinsicFunction
+                                                                Sin
+                                                                [(ArrayItem
                                                                     (Var 3 array)
                                                                     [(()
                                                                     (Var 3 i)
@@ -1247,13 +1178,13 @@
                                                                     (Real 8 [])
                                                                     ColMajor
                                                                     ()
-                                                                ))]
+                                                                )]
+                                                                0
                                                                 (Real 8 [])
                                                                 ()
-                                                                ()
-                                                            ))]
+                                                            )]
+                                                            0
                                                             (Real 8 [])
-                                                            ()
                                                             ()
                                                         )
                                                         Sub
@@ -1704,26 +1635,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            sin:
-                                                (ExternalSymbol
-                                                    4
-                                                    sin
-                                                    10 sin
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sin
-                                                    Private
-                                                ),
-                                            sin@dsin:
-                                                (ExternalSymbol
-                                                    4
-                                                    sin@dsin
-                                                    10 dsin
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dsin
-                                                    Private
-                                                ),
                                             size1:
                                                 (Variable
                                                     4
@@ -1800,8 +1711,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs
-                                    sin@dsin]
+                                    [abs@dabs]
                                     [(Var 4 array)
                                     (Var 4 result)
                                     (Var 4 size1)
@@ -1845,10 +1755,9 @@
                                                             4 abs
                                                             [((RealBinOp
                                                                 (RealBinOp
-                                                                    (FunctionCall
-                                                                        4 sin@dsin
-                                                                        4 sin
-                                                                        [((ArrayItem
+                                                                    (IntrinsicFunction
+                                                                        Sin
+                                                                        [(ArrayItem
                                                                             (Var 4 array)
                                                                             [(()
                                                                             (Var 4 i)
@@ -1862,9 +1771,9 @@
                                                                             (Real 8 [])
                                                                             ColMajor
                                                                             ()
-                                                                        ))]
+                                                                        )]
+                                                                        0
                                                                         (Real 8 [])
-                                                                        ()
                                                                         ()
                                                                     )
                                                                     Pow

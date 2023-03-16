@@ -72,6 +72,7 @@ public:
     std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, std::string>>> class_procedures;
+    std::map<std::string, std::vector<std::string>> class_deferred_procedures;
     std::vector<std::string> assgn_proc_names;
     std::string dt_name;
     bool in_submodule = false;
@@ -432,10 +433,10 @@ public:
                     char *start=letter_spec->m_start;
                     char *end=letter_spec->m_end;
                     if (!start) {
-                        implicit_dictionary[std::string(1, *end)] = type;
+                        implicit_dictionary[to_lower(std::string(1, *end))] = type;
                     } else {
                         for(char ch=*start; ch<=*end; ch++){
-                            implicit_dictionary[std::string(1, ch)] = type;
+                            implicit_dictionary[to_lower(std::string(1, ch))] = type;
                         }
                     }
                 }
@@ -455,6 +456,7 @@ public:
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
+        in_Subroutine = true;
         std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear();
         if (compiler_options.implicit_typing) {
@@ -611,6 +613,7 @@ public:
             implicit_dictionary.clear();
         }
         current_function_dependencies = current_function_dependencies_copy;
+        in_Subroutine = false;
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -631,6 +634,7 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        in_Subroutine = true;
         std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear();
         if (compiler_options.implicit_typing) {
@@ -929,6 +933,7 @@ public:
             implicit_dictionary.clear();
         }
         current_function_dependencies = current_function_dependencies_copy;
+        in_Subroutine = false;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -944,6 +949,7 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         data_member_names.reserve(al, 0);
         is_derived_type = true;
+        bool is_abstract = false;
         dt_name = to_lower(x.m_name);
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
@@ -955,6 +961,11 @@ public:
                     }
                     attr_extend = (AST::AttrExtends_t*)(&(x.m_attrtype[i]->base));
                     break;
+                }
+                case AST::decl_attributeType::SimpleAttribute: {
+                    AST::SimpleAttribute_t* simple_attr =
+                        AST::down_cast<AST::SimpleAttribute_t>(x.m_attrtype[i]);
+                    is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
                 }
                 default:
                     break;
@@ -1009,7 +1020,7 @@ public:
         tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
-            ASR::abiType::Source, dflt_access, false, nullptr, parent_sym);
+            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, parent_sym);
             parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         is_derived_type = false;
@@ -1047,6 +1058,13 @@ public:
                         LCOMPILERS_ASSERT(class_procedures[dt_name][use_sym_name].find("pass") == class_procedures[dt_name][use_sym_name].end());
                         class_procedures[dt_name][use_sym_name]["pass"] = std::string(attr_pass->m_name);
                         break ;
+                    }
+                    case AST::decl_attributeType::SimpleAttribute: {
+                        AST::SimpleAttribute_t* attr_deferred = AST::down_cast<AST::SimpleAttribute_t>(x.m_attr[i]);
+                        if( attr_deferred->m_attr == AST::simple_attributeType::AttrDeferred ) {
+                            class_deferred_procedures[dt_name].push_back(use_sym_name);
+                        }
+                        break;
                     }
                     default: {
                         break ;
@@ -1364,9 +1382,17 @@ public:
                 if( pname.second.find("pass") != pname.second.end() ) {
                     pass_arg_name = s2c(al, pname.second["pass"]);
                 }
+                bool is_deferred = false;
+                if( class_deferred_procedures.find(proc.first) != class_deferred_procedures.end() &&
+                    std::find(class_deferred_procedures[proc.first].begin(),
+                              class_deferred_procedures[proc.first].end(), pname.first) !=
+                              class_deferred_procedures[proc.first].end() ) {
+                    is_deferred = true;
+                }
                 ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
-                    proc_name, proc_sym, ASR::abiType::Source);
+                    proc_name, proc_sym, ASR::abiType::Source,
+                    is_deferred);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
             }

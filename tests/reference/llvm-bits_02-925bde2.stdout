@@ -11,49 +11,7 @@ source_filename = "LFortran"
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [7 x i8] c"%lld%s\00", align 1
 
-define void @__module_lfortran_intrinsic_bit_mvbits32(i32* %from, i32* %frompos, i32* %len, i32* %to, i32* %topos) {
-.entry:
-  %0 = load i32, i32* %from, align 4
-  %1 = load i32, i32* %frompos, align 4
-  %2 = load i32, i32* %len, align 4
-  %3 = load i32, i32* %to, align 4
-  %4 = load i32, i32* %topos, align 4
-  %5 = call i32 @_lfortran_mvbits32(i32 %0, i32 %1, i32 %2, i32 %3, i32 %4)
-  store i32 %5, i32* %to, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
-
-declare i32 @_lfortran_mvbits32(i32, i32, i32, i32, i32)
-
-define void @__module_lfortran_intrinsic_bit_mvbits64(i64* %from, i32* %frompos, i32* %len, i64* %to, i32* %topos) {
-.entry:
-  %0 = load i64, i64* %from, align 4
-  %1 = load i32, i32* %frompos, align 4
-  %2 = load i32, i32* %len, align 4
-  %3 = load i64, i64* %to, align 4
-  %4 = load i32, i32* %topos, align 4
-  %5 = call i64 @_lfortran_mvbits64(i64 %0, i32 %1, i32 %2, i64 %3, i32 %4)
-  store i64 %5, i64* %to, align 4
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
-
-declare i64 @_lfortran_mvbits64(i64, i32, i32, i64, i32)
-
 declare i32 @__module_lfortran_intrinsic_builtin_bit_size(i32*)
-
-declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i1*, i32*, i1*, i32*, i1*, i8**, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i1*, i32*, i1*, i32*, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i1*, i32*, i1*, i32*, i1*, i1*, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

@@ -14,23 +14,7 @@ source_filename = "LFortran"
 @10 = private unnamed_addr constant [25 x i8] c"test is found at index: \00", align 1
 @11 = private unnamed_addr constant [9 x i8] c"%s%s%d%s\00", align 1
 
-declare void @__module_lfortran_intrinsic_builtin_execute_command_line(i8**, i1*, i1*, i32*, i1*, i32*, i1*, i8**, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_get_command_argument(i32*, i8**, i1*, i32*, i1*, i32*, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_get_environment_variable(i8**, i8**, i1*, i32*, i1*, i32*, i1*, i1*, i1*)
-
 declare i32 @__module_lfortran_intrinsic_builtin_len(i8**, i32*, i1*)
-
-declare void @__module_lfortran_intrinsic_builtin_move_alloc(i32*, i32*)
-
-define void @__module_lfortran_intrinsic_string_date_and_time(i8** %date, i1* %is_date_present_, i8** %time, i1* %is_time_present_, i8** %zone, i1* %is_zone_present_, i32* %values, i1* %is_values_present_) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
 
 define i32 @__module_lfortran_intrinsic_string_index(i8** %string_, i8** %substring_) {
 .entry:

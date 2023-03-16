@@ -532,6 +532,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     2 shape
                                 ),
@@ -578,6 +579,7 @@
                                                     initialize_subrout
                                                     2 initialize_subrout
                                                     Source
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -618,6 +620,7 @@
                                     y]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()

@@ -25,15 +25,6 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define void @__module_overload_assignment_m_logical_gets_integer_use(i1* %tf, i32* %i) {
-.entry:
-  call void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %i)
-  br label %return
-
-return:                                           ; preds = %.entry
-  ret void
-}
-
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   %call_arg_value1 = alloca i32, align 4

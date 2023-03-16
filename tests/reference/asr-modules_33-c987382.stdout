@@ -276,6 +276,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     ()
                                 ),
@@ -360,6 +361,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     7 dependency_config_t
                                 ),
@@ -384,6 +386,7 @@
                                                     add_project
                                                     7 add_project
                                                     Source
+                                                    .false.
                                                 ),
                                             add_project_dependencies:
                                                 (ClassProcedure
@@ -393,6 +396,7 @@
                                                     add_project_dependencies
                                                     7 add_project_dependencies
                                                     Source
+                                                    .false.
                                                 ),
                                             cache:
                                                 (Variable
@@ -488,6 +492,7 @@
                                                     update_dependency
                                                     7 update_dependency
                                                     Source
+                                                    .false.
                                                 ),
                                             verbosity:
                                                 (Variable
@@ -515,6 +520,7 @@
                                     cache]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()
@@ -546,6 +552,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     ()
                                 ),
@@ -575,6 +582,7 @@
                                     [name]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()
@@ -835,6 +843,7 @@
                                     include_tests]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()

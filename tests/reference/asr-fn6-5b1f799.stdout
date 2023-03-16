@@ -199,6 +199,7 @@
                                                     Source
                                                     Public
                                                     .false.
+                                                    .true.
                                                     ()
                                                     ()
                                                 )
@@ -579,16 +580,18 @@
                                                                     ~select_type_block_
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -613,16 +616,18 @@
                                                                     ~select_type_block_1
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -647,16 +652,18 @@
                                                                     ~select_type_block_2
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -681,16 +688,18 @@
                                                                     ~select_type_block_3
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -715,16 +724,18 @@
                                                                     ~select_type_block_4
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -749,16 +760,18 @@
                                                                     ~select_type_block_5
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -783,16 +796,18 @@
                                                                     ~select_type_block_6
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -826,16 +841,18 @@
                                                                     ~select_type_block_7
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -874,16 +891,18 @@
                                                                     ~select_type_block_8
                                                                     [(FileWrite
                                                                         0
-                                                                        (ArraySection
+                                                                        (StringSection
                                                                             (Var 3 line)
-                                                                            [((Var 3 istart)
-                                                                            (StringLen
-                                                                                (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4 []))
                                                                                 (Integer 4 [])
                                                                                 ()
                                                                             )
-                                                                            (IntegerConstant 1 (Integer 4 [])))]
-                                                                            (Character 1 4096 () [])
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4 []))
+                                                                            (Character 1 -1 () [])
                                                                             ()
                                                                         )
                                                                         (StringConstant
@@ -922,6 +941,7 @@
                                                     trim]
                                                     [(Var 5 generic)]
                                                     [(SelectType
+                                                        (Var 5 generic)
                                                         [(TypeStmtType
                                                             (Integer 1 [])
                                                             [(BlockCall
@@ -1087,6 +1107,7 @@
                                                     Source
                                                     Public
                                                     .false.
+                                                    .true.
                                                     ()
                                                     ()
                                                 )

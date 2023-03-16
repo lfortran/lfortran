@@ -461,6 +461,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .false.
                                     ()
                                     ()
                                 ),
@@ -520,6 +521,7 @@
                                     lst]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     ()
@@ -689,6 +691,7 @@
                                                     destroy
                                                     6 destroy
                                                     Source
+                                                    .false.
                                                 ),
                                             raw:
                                                 (Variable
@@ -711,6 +714,7 @@
                                     [raw]
                                     Source
                                     Public
+                                    .false.
                                     .false.
                                     ()
                                     6 toml_value
@@ -943,6 +947,7 @@
                                                     destroy
                                                     2 destroy
                                                     Source
+                                                    .true.
                                                 ),
                                             key:
                                                 (Variable
@@ -967,6 +972,7 @@
                                                     match_key
                                                     2 match_key
                                                     Source
+                                                    .false.
                                                 )
                                         })
                                     toml_value
@@ -975,6 +981,7 @@
                                     Source
                                     Public
                                     .false.
+                                    .true.
                                     ()
                                     ()
                                 )
