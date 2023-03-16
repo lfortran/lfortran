@@ -860,6 +860,10 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             replacer.replace_expr(*current_expr);
         }
 
+        void visit_Function(const ASR::Function_t& x) {
+            ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor>::visit_Function(x);
+        }
+
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);

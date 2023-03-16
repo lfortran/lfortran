@@ -39,15 +39,16 @@ enum class IntrinsicFunctions : int64_t {
     Cos,
     Gamma,
     LogGamma,
+    Any,
     // ...
 };
 
 namespace UnaryIntrinsicFunction {
 
-#define create_variable(var_sym, name, intent, abi, value_attr, symtab) \
+#define create_variable(var_sym, name, intent, abi, value_attr, symtab, type) \
     ASR::symbol_t *var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t( \
         al, loc, symtab, s2c(al, name), nullptr, 0, intent, nullptr, nullptr, \
-        ASR::storage_typeType::Default, arg_type, abi, ASR::Public, \
+        ASR::storage_typeType::Default, type, abi, ASR::Public, \
         ASR::presenceType::Required, value_attr)); \
     symtab->add_symbol(s2c(al, name), var_sym);
 
@@ -93,12 +94,12 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     {
         args.reserve(al, 1);
         create_variable(arg, "x", ASR::intentType::In, ASR::abiType::Source,
-            false, fn_symtab);
+            false, fn_symtab, arg_type);
         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
     }
 
     create_variable(return_var, new_name, ASRUtils::intent_return_var,
-        ASR::abiType::Source, false, fn_symtab);
+        ASR::abiType::Source, false, fn_symtab, arg_type);
 
     Vec<ASR::stmt_t*> body;
     body.reserve(al, 1);
@@ -112,12 +113,12 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         {
             args_1.reserve(al, 1);
             create_variable(arg, "x", ASR::intentType::In, ASR::abiType::BindC,
-                true, fn_symtab_1);
+                true, fn_symtab_1, arg_type);
             args_1.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
         }
 
         create_variable(return_var_1, c_func_name, ASRUtils::intent_return_var,
-            ASR::abiType::BindC, false, fn_symtab_1);
+            ASR::abiType::BindC, false, fn_symtab_1, arg_type);
 
         Vec<char *> dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -257,6 +258,103 @@ namespace X {                                                                   
 create_trig(Sin, sin, sin)
 create_trig(Cos, cos, cos)
 
+namespace Any {
+
+static inline ASR::expr_t *eval_Any(Allocator &/*al*/,
+    const Location &/*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_Any(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> /*err*/) {
+    LCOMPILERS_ASSERT(args.size() == 1 || args.size() == 2);
+    if( args.size() == 1 ) {
+        ASR::expr_t *value = nullptr;
+        ASR::expr_t *arg_value = ASRUtils::expr_value(args[0]);
+        if (arg_value) {
+            Vec<ASR::expr_t*> arg_values;
+            arg_values.reserve(al, 1);
+            arg_values.push_back(al, arg_value);
+            value = eval_Any(al, loc, arg_values);
+        }
+
+        ASR::ttype_t* logical_scalar = ASRUtils::TYPE(ASR::make_Logical_t(
+                                        al, loc, 4, nullptr, 0));
+
+        return ASR::make_IntrinsicFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
+            args.p, args.n, 0, logical_scalar, value);
+    } else {
+        LCOMPILERS_ASSERT(false);
+    }
+}
+
+static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
+    SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+    Vec<ASR::call_arg_t>& new_args, ASR::expr_t* compile_time_value) {
+    if( new_args.size() == 1 ) {
+        ASR::ttype_t* arg_type = arg_types[0];
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        int rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
+        std::string new_name = "any_" + std::to_string(kind) +
+                                "_" + std::to_string(rank) + "_";
+        // Check if Function is already defined.
+        {
+            std::string new_func_name = new_name;
+            int i = 1;
+            while (scope->get_symbol(new_func_name) != nullptr) {
+                ASR::symbol_t *s = scope->get_symbol(new_func_name);
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+                int return_rank = ASRUtils::extract_n_dims_from_ttype(
+                                    ASRUtils::expr_type(f->m_return_var));
+                if (ASRUtils::types_equal(ASRUtils::expr_type(f->m_return_var),
+                        arg_type) && return_rank == rank) {
+                    return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, s,
+                        s, new_args.p, new_args.size(), arg_type, compile_time_value,
+                        nullptr));
+                } else {
+                    new_func_name += std::to_string(i);
+                    i++;
+                }
+            }
+        }
+        new_name = scope->get_unique_name(new_name);
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
+
+        Vec<ASR::expr_t*> args;
+        {
+            args.reserve(al, 1);
+            create_variable(arg, "x", ASR::intentType::In, ASR::abiType::Source,
+                false, fn_symtab, arg_type);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
+        }
+
+        ASR::ttype_t* logical_scalar = ASRUtils::TYPE(ASR::make_Logical_t(
+                                        al, loc, 4, nullptr, 0));
+        create_variable(return_var, new_name, ASRUtils::intent_return_var,
+            ASR::abiType::Source, false, fn_symtab, logical_scalar);
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+
+        Vec<char *> dep;
+        dep.reserve(al, 1);
+
+        ASR::symbol_t *new_symbol = make_Function_t(new_name, fn_symtab, dep, args,
+            body, return_var, Source, Implementation, nullptr);
+        scope->add_symbol(new_name, new_symbol);
+        return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, new_symbol,
+                new_symbol, new_args.p, new_args.size(), logical_scalar,
+                compile_time_value, nullptr));
+    } else {
+        LCOMPILERS_ASSERT(false);
+    }
+    return nullptr;
+}
+
+} // namespace Any
+
 namespace IntrinsicFunctionRegistry {
 
     static const std::map<int64_t, impl_function>& intrinsic_function_by_id_db = {
@@ -266,7 +364,10 @@ namespace IntrinsicFunctionRegistry {
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sin),
             &Sin::instantiate_Sin},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos),
-            &Cos::instantiate_Cos}
+            &Cos::instantiate_Cos},
+
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
+            &Any::instantiate_Any}
     };
 
     static const std::map<std::string,
@@ -274,7 +375,8 @@ namespace IntrinsicFunctionRegistry {
                     eval_intrinsic_function>>& intrinsic_function_by_name_db = {
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_log_gamma}},
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
-                {"cos", {&Cos::create_Cos, &Cos::eval_Cos}}
+                {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
+                {"any", {&Any::create_Any, &Any::eval_Any}}
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -306,6 +408,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
+        INTRINSIC_NAME_CASE(Any)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
