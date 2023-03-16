@@ -10,17 +10,10 @@ implicit none
 
   class(base), pointer :: bptr
 
-  ! TODO: Re-enable after initialisation at declaration
-  ! is supported in LFortran
-  type(base), target :: base_target ! = base(10)
-  type(child), target :: child_target ! = child(20, 30)
+  type(base), target :: base_target = base(10)
+  type(child), target :: child_target
 
-  ! TODO: Re-enable after fixing class_constructor.cpp
-  ! base_target = base(10)
-  ! child_target = child(20, 30)
-  base_target%i = 10
-  child_target%i = 20
-  child_target%j = 30
+  child_target = child(20, 30)
 
   print *, base_target%i
   print *, child_target%i, child_target%j
