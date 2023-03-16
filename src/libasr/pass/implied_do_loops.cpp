@@ -162,6 +162,16 @@ public:
         if( ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) ) {
             ASR::ArrayConstant_t* arr_init = ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
             if( arr_init->n_args == 0 ) {
+                /*
+                 TODO: We might need to handle cases like,
+
+                 character(len=*), allocatable :: strings(:)
+                 strings = [character(len=len(strings)) ::]
+
+                 by replacing them with,
+
+                 allocate(character(len=len(strings)) :: strings))
+                */
                 remove_original_stmt = true;
                 return ;
             }
@@ -283,6 +293,8 @@ void pass_replace_implied_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
     std::string rl_path = pass_options.runtime_library_dir;
     ImpliedDoLoopVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);
+    PassUtils::UpdateDependenciesVisitor w(al);
+    w.visit_TranslationUnit(unit);
 }
 
 

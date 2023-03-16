@@ -153,6 +153,7 @@ namespace LCompilers {
                         } else if(!remove_original_stmt) {
                             body.push_back(al, m_body[i]);
                         }
+                        remove_original_stmt = false;
                     }
                     m_body = body.p;
                     n_body = body.size();
