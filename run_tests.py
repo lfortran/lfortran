@@ -46,6 +46,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     llvm = is_included("llvm")
     cpp = is_included("cpp")
     c = is_included("c")
+    is_cumulative_pass = is_included("cumulative")
     julia = is_included("julia")
     wat = is_included("wat")
     obj = is_included("obj")
@@ -259,7 +260,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference)
 
     if pass_ is not None:
-        cmd = "lfortran --pass=" + pass_ + \
+        cmd = "lfortran "
+        if is_cumulative_pass:
+            cmd += "--cumulative "
+        cmd += "--pass=" + pass_ + \
             " --indent --show-asr --no-color {infile} -o {outfile}"
         run_test(filename, "pass_{}".format(pass_), cmd,
                  filename, update_reference, extra_args)
