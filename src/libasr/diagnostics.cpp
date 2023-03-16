@@ -89,8 +89,8 @@ std::string Diagnostics::render(LocationManager &lm,
                 }
                 out += "\n\n";
                 out += bold + "Note" + reset
-                    + ": if any of the above error or warning messages are not clear or are lacking\n";
-                out += "context please report it to us (we consider that a bug that needs to be fixed).\n";
+                    + ": if any of the above error or warning messages are not clear or are lacking "
+                    "context please report it to us (we consider that a bug that needs to be fixed).\n";
             }
         }
     }
