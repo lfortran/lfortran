@@ -1827,7 +1827,7 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
                 ASR::intentType intent = v->m_intent;
                 if (intent == ASR::intentType::In) {
-                    throw SemanticError("Argument `" + std::string(v->m_name) + "` with INTENT(IN) in variable definition context (assignment)", target->base.loc);
+                    throw SemanticError("Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`", target->base.loc);
                 }
             }
         }
