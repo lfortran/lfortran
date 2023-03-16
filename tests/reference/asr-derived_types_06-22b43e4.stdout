@@ -1538,7 +1538,9 @@
                                         )
                                         (StructTypeConstructor
                                             4 toml_date
-                                            []
+                                            [(())
+                                            (())
+                                            (())]
                                             (Struct
                                                 4 toml_date
                                                 []

@@ -2596,6 +2596,12 @@ filename = "../integration_tests/derived_types_18.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/derived_types_20.f90"
+asr = true
+pass = "class_constructor"
+extrafiles = "../integration_tests/derived_types_20_module2.f90, ../integration_tests/derived_types_20_module1.f90"
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 

@@ -33,7 +33,15 @@
                                     type_y
                                     []
                                     Local
-                                    ()
+                                    (StructTypeConstructor
+                                        2 y
+                                        [(())]
+                                        (Struct
+                                            2 y
+                                            []
+                                        )
+                                        ()
+                                    )
                                     ()
                                     Parameter
                                     (Struct

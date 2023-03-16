@@ -711,8 +711,8 @@
                         (Var 6 c)
                         (StructTypeConstructor
                             6 complextype
-                            [(Var 6 fpone)
-                            (Var 6 fptwo)]
+                            [((Var 6 fpone))
+                            ((Var 6 fptwo))]
                             (Struct
                                 6 complextype
                                 []
