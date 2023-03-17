@@ -435,7 +435,7 @@ y: u64
                     ()
                     ()
                     Default
-                    (ModularInteger 65536 [])
+                    (ModularInteger 16 [])
                     Source
                     Public
                     Required
@@ -450,7 +450,7 @@ y: u64
                     ()
                     ()
                     Default
-                    (ModularInteger 18446744073709551616 [])
+                    (ModularInteger 64 [])
                     Source
                     Public
                     Required
