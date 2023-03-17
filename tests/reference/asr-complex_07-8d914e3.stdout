@@ -101,7 +101,11 @@
                                             (Real 4 [])
                                         )
                                         (Complex 4 [])
-                                        ()
+                                        (ComplexConstant
+                                            42.000000
+                                            0.000000
+                                            (Complex 4 [])
+                                        )
                                     )
                                     ()
                                     Save
@@ -139,7 +143,11 @@
                                             (Real 4 [])
                                         )
                                         (Complex 4 [])
-                                        ()
+                                        (ComplexConstant
+                                            3.140000
+                                            0.000000
+                                            (Complex 4 [])
+                                        )
                                     )
                                     ()
                                     Save
@@ -175,7 +183,11 @@
                                         (Var 2 real_part)
                                         (Var 2 img_part)
                                         (Complex 4 [])
-                                        ()
+                                        (ComplexConstant
+                                            42.000000
+                                            3.140000
+                                            (Complex 4 [])
+                                        )
                                     )
                                     ()
                                     Save

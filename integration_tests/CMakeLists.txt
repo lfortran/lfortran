@@ -730,3 +730,6 @@ RUN(NAME do_loop_02 LABELS gfortran llvm)
 RUN(NAME block_07 LABELS gfortran llvm)
 
 RUN(NAME complex_11 LABELS gfortran llvmImplicit)
+RUN(NAME complex_12 LABELS gfortran llvm)
+RUN(NAME complex_13 LABELS gfortran llvm)
+RUN(NAME complex_14 LABELS gfortran llvm)
