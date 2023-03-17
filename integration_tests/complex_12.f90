@@ -4,7 +4,7 @@ program main
     real::re,im
     re=3
     im=4
-    k = cmplx(re, im)
+    k = cmplx(re, 0) + cmplx(0, im)
     print *, k
     if (real(k) /= 3) error stop
     if (aimag(k) /= 4) error stop
