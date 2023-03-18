@@ -192,6 +192,8 @@ public:
         relationship between enclosing and nested functions */
     std::vector<uint64_t> nested_globals; /* For saving the hash of variables
         from a parent scope needed in a nested function */
+    std::map<uint64_t, llvm::Value*> nested_globals_value; /* For saving the
+        value of a variable from a parent scope needed in a nested function */
     std::map<uint64_t, std::vector<llvm::Type*>> nested_func_types; /* For
         saving the hash of a parent function needing to give access to
         variables in a nested function, as well as the variable types */
@@ -2590,6 +2592,20 @@ public:
         mangle_prefix = "";
         current_scope = current_scope_copy;
     }
+    
+    void store_nested_globals_value() {
+        for (auto it: nested_globals_value) {
+            auto finder = std::find(nested_globals.begin(),
+                    nested_globals.end(), it.first);
+            if (finder != nested_globals.end() && nested_globals_value.find(it.first) != nested_globals_value.end()) {
+                llvm::Value* ptr = module->getOrInsertGlobal(nested_desc_name,
+                        nested_global_struct);
+                int idx = std::distance(nested_globals.begin(), finder);
+                builder->CreateStore(it.second, llvm_utils->create_gep(ptr, idx));
+            }
+        }
+        nested_globals_value.clear();
+    }
 
     void visit_Program(const ASR::Program_t &x) {
         SymbolTable* current_scope_copy = current_scope;
@@ -2654,8 +2670,13 @@ public:
 
         declare_vars(x);
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            ASR::stmt_t* stmt = x.m_body[i];
+            if (stmt->type == ASR::stmtType::SubroutineCall) {
+                store_nested_globals_value();
+            }
+            this->visit_stmt(*stmt);
         }
+        store_nested_globals_value();
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -3245,6 +3266,10 @@ public:
                     }
 
                     llvm_symtab[h] = ptr;
+                    auto finder = std::find(nested_globals.begin(), nested_globals.end(), h);
+                    if (finder != nested_globals.end() && !is_array_type && !is_malloc_array_type && !is_list) {
+                        nested_globals_value[h] = ptr;
+                    }
                     fill_array_details_(ptr, m_dims, n_dims,
                         is_malloc_array_type,
                         is_array_type, is_list, v->m_type);
@@ -4820,6 +4845,8 @@ public:
                     nested_global_struct);
             int idx = std::distance(nested_globals.begin(), finder);
             builder->CreateStore(target, llvm_utils->create_gep(ptr, idx));
+            // remove from nested_globals_value
+            nested_globals_value.erase(h);
         }
         if (is_a<ASR::ArrayItem_t>(*x.m_target)) {
             ASR::ArrayItem_t *asr_target0 = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
