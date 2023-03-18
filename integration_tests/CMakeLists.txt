@@ -735,3 +735,5 @@ RUN(NAME complex_11 LABELS gfortran llvmImplicit)
 RUN(NAME complex_12 LABELS gfortran llvm)
 RUN(NAME complex_13 LABELS gfortran llvm)
 RUN(NAME complex_14 LABELS gfortran llvm)
+
+RUN(NAME array_op_01 LABELS gfortran llvm)
