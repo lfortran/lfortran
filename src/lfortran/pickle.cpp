@@ -361,6 +361,8 @@ class ASRJsonVisitor :
     public ASR::JsonBaseVisitor<ASRJsonVisitor>
 {
 public:
+    bool show_intrinsic_modules;
+
     using ASR::JsonBaseVisitor<ASRJsonVisitor>::JsonBaseVisitor;
 
     std::string get_str() {
@@ -425,14 +427,15 @@ public:
     }
 };
 
-std::string pickle_json(ASR::asr_t &asr, LocationManager &lm) {
+std::string pickle_json(ASR::asr_t &asr, LocationManager &lm, bool show_intrinsic_modules) {
     ASRJsonVisitor v(lm);
+    v.show_intrinsic_modules = show_intrinsic_modules;
     v.visit_asr(asr);
     return v.get_str();
 }
 
-std::string pickle_json(ASR::TranslationUnit_t &asr, LocationManager &lm) {
-    return pickle_json((ASR::asr_t &)asr, lm);
+std::string pickle_json(ASR::TranslationUnit_t &asr, LocationManager &lm, bool show_intrinsic_modules) {
+    return pickle_json((ASR::asr_t &)asr, lm, show_intrinsic_modules);
 }
 
 } // namespace LCompilers::LFortran
