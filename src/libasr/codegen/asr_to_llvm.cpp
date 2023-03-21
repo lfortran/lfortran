@@ -4950,7 +4950,10 @@ public:
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
             if( load_ref ) {
-                tmp = CreateLoad(tmp);
+                // check if the tmp is a pointer
+                if( tmp->getType()->isPointerTy() ) {
+                    tmp = CreateLoad(tmp);
+                }
             }
         }
     }
