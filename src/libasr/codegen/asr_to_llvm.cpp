@@ -2592,7 +2592,7 @@ public:
         mangle_prefix = "";
         current_scope = current_scope_copy;
     }
-    
+
     void store_nested_globals_value() {
         for (auto it: nested_globals_value) {
             auto finder = std::find(nested_globals.begin(),
@@ -4944,16 +4944,14 @@ public:
         builder->SetInsertPoint(block_end);
     }
 
-    inline void visit_expr_wrapper(const ASR::expr_t* x, bool load_ref=false) {
+    inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false) {
         this->visit_expr(*x);
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
-            if( load_ref ) {
-                // check if the tmp is a pointer
-                if( tmp->getType()->isPointerTy() ) {
-                    tmp = CreateLoad(tmp);
-                }
+            if( load_ref &&
+                !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) ) {
+                tmp = CreateLoad(tmp);
             }
         }
     }
