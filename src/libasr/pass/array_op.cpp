@@ -922,17 +922,20 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             }
             LCOMPILERS_ASSERT(s->m_return_var)
             a_args.push_back(al, s->m_return_var);
-            ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(s->m_function_signature);
-            ASR::asr_t* s_sub_asr = ASRUtils::make_Function_t_util(al, s->base.base.loc,
-                s->m_symtab, s->m_name, s->m_dependencies, s->n_dependencies,
-                a_args.p, a_args.size(), s->m_body, s->n_body,
-                nullptr, s_func_type->m_abi, s->m_access, s_func_type->m_deftype,
-                nullptr, false, false, false, s_func_type->m_inline, s_func_type->m_static,
-                s_func_type->m_type_params, s_func_type->n_type_params, s_func_type->m_restrictions,
-                s_func_type->n_restrictions, s_func_type->m_is_restriction, s->m_deterministic,
-                s->m_side_effect_free);
-            ASR::symbol_t* s_sub = ASR::down_cast<ASR::symbol_t>(s_sub_asr);
-            return s_sub;
+            s->m_args = a_args.p;
+            s->n_args = a_args.n;
+            s->m_return_var = nullptr;
+            ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(
+                s->m_function_signature);
+            Vec<ASR::ttype_t*> arg_types;
+            arg_types.reserve(al, a_args.n);
+            for(auto &e: a_args) {
+                arg_types.push_back(al, ASRUtils::expr_type(e));
+            }
+            s_func_type->m_arg_types = arg_types.p;
+            s_func_type->n_arg_types = arg_types.n;
+            s_func_type->m_return_var_type = nullptr;
+            return ASR::down_cast<ASR::symbol_t>((ASR::asr_t*) s);
         }
 
         // TODO: Only Program and While is processed, we need to process all calls
