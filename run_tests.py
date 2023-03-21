@@ -256,7 +256,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_indent",
-            "lfortran --indent --show-asr --indent --no-color {infile} -o {outfile}",
+            "lfortran --show-asr --indent --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
