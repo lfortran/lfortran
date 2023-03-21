@@ -42,6 +42,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
+    asr_json = is_included("asr_json")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
     cpp = is_included("cpp")
@@ -247,6 +248,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "asr_indent",
             "lfortran --indent --show-asr --indent --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
+
+    if asr_json:
+        run_test(
+            filename,
+            "asr_json",
+            "lfortran --show-asr --json {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
