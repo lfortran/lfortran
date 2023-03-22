@@ -2606,6 +2606,10 @@ filename = "../integration_tests/derived_types_18.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/modules_38.f90"
+llvm = true
+
+[[test]]
 filename = "../integration_tests/derived_types_20.f90"
 asr = true
 pass = "class_constructor"
