@@ -64,36 +64,6 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
         }
 
-        void visit_alloc_arg(const ASR::alloc_arg_t& x) {
-            PassVisitor::visit_alloc_arg(x);
-            if( !is_editing_procedure ) {
-                return ;
-            }
-            ASR::alloc_arg_t& xx = const_cast<ASR::alloc_arg_t&>(x);
-            ASR::symbol_t* x_sym = nullptr;
-            ASR::expr_t* tmp_expr = xx.m_a;
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                x_sym = tmp_var->m_v;
-            } else {
-                throw LCompilersException(
-                    "Cannot deallocate variables in expression " +
-                    std::to_string(tmp_expr->type));
-            }
-
-            SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);
-            if( x_sym_symtab->get_counter() != current_proc_scope->get_counter() &&
-                !ASRUtils::is_parent(x_sym_symtab, current_proc_scope) ) {
-                // xx.m_a points to the function/procedure present inside
-                // original function's symtab. Make it point to the symbol in
-                // new function's symtab.
-                std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-                ASR::symbol_t* x_sym_new = current_proc_scope->resolve_symbol(x_sym_name);
-                xx.m_a = ASRUtils::EXPR(ASR::make_Var_t(al, x_sym_new->base.loc, x_sym_new));
-                LCOMPILERS_ASSERT(xx.m_a != nullptr);
-            }
-        }
-
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
             PassVisitor::visit_FunctionCall(x);
             if( !is_editing_procedure ) {
@@ -113,6 +83,67 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
         }
 
+        bool duplicate_SymbolTable(SymbolTable* symtab, SymbolTable* new_symtab) {
+            for( auto& item: symtab->get_scope() ) {
+                ASR::symbol_t* new_arg = nullptr;
+                if( ASR::is_a<ASR::Variable_t>(*item.second) ) {
+                    ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(item.second);
+                    node_duplicator.success = true;
+                    ASR::expr_t* m_symbolic_value = node_duplicator.duplicate_expr(arg->m_symbolic_value);
+                    if( !node_duplicator.success ) {
+                        return false;
+                    }
+                    node_duplicator.success = true;
+                    ASR::expr_t* m_value = node_duplicator.duplicate_expr(arg->m_value);
+                    if( !node_duplicator.success ) {
+                        return false;
+                    }
+                    node_duplicator.success = true;
+                    ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(arg->m_type);
+                    if( !node_duplicator.success ) {
+                        return false;
+                    }
+                    new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
+                                                arg->base.base.loc, new_symtab, s2c(al, item.first),
+                                                nullptr, 0, arg->m_intent, m_symbolic_value, m_value,
+                                                arg->m_storage, m_type, arg->m_abi, arg->m_access,
+                                                arg->m_presence, arg->m_value_attr));
+                } else if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
+                    ASR::ExternalSymbol_t* arg = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                    new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, arg->base.base.loc,
+                                    new_symtab, s2c(al, item.first), arg->m_external, arg->m_module_name,
+                                    arg->m_scope_names, arg->n_scope_names, arg->m_original_name, arg->m_access));
+                } else if( ASR::is_a<ASR::AssociateBlock_t>(*item.second) ) {
+                    ASR::AssociateBlock_t* arg = ASR::down_cast<ASR::AssociateBlock_t>(item.second);
+                    SymbolTable* current_scope_copy = current_scope;
+                    current_scope = new_symtab;
+                    SymbolTable* associate_block_symtab = al.make_new<SymbolTable>(current_scope);
+                    duplicate_SymbolTable(arg->m_symtab, associate_block_symtab);
+                    current_scope = current_scope_copy;
+                    Vec<ASR::stmt_t*> new_body;
+                    new_body.reserve(al, arg->n_body);
+                    ASRUtils::ExprStmtDuplicator node_duplicator_(al);
+                    node_duplicator_.allow_procedure_calls = true;
+                    node_duplicator_.allow_reshape = false;
+                    for( size_t i = 0; i < arg->n_body; i++ ) {
+                        node_duplicator_.success = true;
+                        ASR::stmt_t* new_stmt = node_duplicator_.duplicate_stmt(arg->m_body[i]);
+                        if( !node_duplicator_.success ) {
+                            return false;
+                        }
+                        new_body.push_back(al, new_stmt);
+                    }
+
+                    node_duplicator_.allow_procedure_calls = true;
+                    new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_AssociateBlock_t(al,
+                                    arg->base.base.loc, associate_block_symtab, arg->m_name,
+                                    new_body.p, new_body.size()));
+                }
+                new_symtab->add_symbol(item.first, new_arg);
+            }
+            return true;
+        }
+
         ASR::symbol_t* insert_new_procedure(ASR::Function_t* x, std::vector<size_t>& indices) {
             Vec<ASR::stmt_t*> new_body;
             new_body.reserve(al, x->n_body);
@@ -129,37 +160,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
             node_duplicator.allow_procedure_calls = true;
             SymbolTable* new_symtab = al.make_new<SymbolTable>(current_scope);
-            for( auto& item: x->m_symtab->get_scope() ) {
-                ASR::symbol_t* new_arg = nullptr;
-                if( ASR::is_a<ASR::Variable_t>(*item.second) ) {
-                    ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(item.second);
-                    node_duplicator.success = true;
-                    ASR::expr_t* m_symbolic_value = node_duplicator.duplicate_expr(arg->m_symbolic_value);
-                    if( !node_duplicator.success ) {
-                        return nullptr;
-                    }
-                    node_duplicator.success = true;
-                    ASR::expr_t* m_value = node_duplicator.duplicate_expr(arg->m_value);
-                    if( !node_duplicator.success ) {
-                        return nullptr;
-                    }
-                    node_duplicator.success = true;
-                    ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(arg->m_type);
-                    if( !node_duplicator.success ) {
-                        return nullptr;
-                    }
-                    new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
-                                                arg->base.base.loc, new_symtab, s2c(al, item.first),
-                                                nullptr, 0, arg->m_intent, m_symbolic_value, m_value,
-                                                arg->m_storage, m_type, arg->m_abi, arg->m_access,
-                                                arg->m_presence, arg->m_value_attr));
-                } else if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
-                    ASR::ExternalSymbol_t* arg = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
-                    new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, arg->base.base.loc,
-                                    new_symtab, s2c(al, item.first), arg->m_external, arg->m_module_name,
-                                    arg->m_scope_names, arg->n_scope_names, arg->m_original_name, arg->m_access));
-                }
-                new_symtab->add_symbol(item.first, new_arg);
+            if( !duplicate_SymbolTable(x->m_symtab, new_symtab) ) {
+                return nullptr;
             }
             Vec<ASR::expr_t*> new_args;
             std::string suffix = "";
@@ -249,6 +251,11 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             for( auto& itr: x->m_symtab->get_scope() ) {
                 if( ASR::is_a<ASR::Variable_t>(*itr.second) ) {
                     PassVisitor::visit_ttype(*ASR::down_cast<ASR::Variable_t>(itr.second)->m_type);
+                } else if( ASR::is_a<ASR::AssociateBlock_t>(*itr.second) ) {
+                    SymbolTable* current_proc_scope_copy = current_proc_scope;
+                    current_proc_scope = ASRUtils::symbol_symtab(itr.second);
+                    visit_symbol(*itr.second);
+                    current_proc_scope = current_proc_scope_copy;
                 }
             }
             for( size_t i = 0; i < x->n_body; i++ ) {
