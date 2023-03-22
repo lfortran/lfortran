@@ -2944,6 +2944,11 @@ filename = "data2.f90"
 asr = true
 
 [[test]]
+filename = "special_chars_json.f90"
+ast_json = true
+asr_json = true
+
+[[test]]
 filename = "redeclaration1.f90"
 asr_implicit_typing = true
 
