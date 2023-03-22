@@ -60,6 +60,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 // new function's symtab.
                 std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
                 xx.m_v = current_proc_scope->resolve_symbol(x_sym_name);
+                std::cout<<"x_sym_name: "<<x_sym_name<<std::endl;
                 LCOMPILERS_ASSERT(xx.m_v != nullptr);
             }
         }
@@ -212,6 +213,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         }
 
         void edit_new_procedure(ASR::Function_t* x, std::vector<size_t>& indices) {
+            std::cout<<"editing.begin: "<<x->m_name<<std::endl;
             Vec<ASR::expr_t*> new_args;
             new_args.reserve(al, x->n_args);
             for( size_t i = 0; i < x->n_args; i++ ) {
@@ -263,6 +265,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
             is_editing_procedure = false;
             current_proc_scope = nullptr;
+            std::cout<<"editing.end: "<<x->m_name<<std::endl;
         }
 
         void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {

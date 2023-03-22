@@ -781,16 +781,27 @@ public:
             }
         }
         // Check for the variable in enum symtab, if enum is declared
+        bool from_enum = false;
         {
             int i = 1;
             std::string enum_name = "_nameless_enum";
+            std::string selected_enum_name = "";
             while (v == nullptr && scope->resolve_symbol(std::to_string(i) +
                     enum_name) != nullptr) {
                 ASR::symbol_t *enum_s = scope->resolve_symbol(std::to_string(i)
                     + enum_name);
                 ASR::EnumType_t *enum_ = ASR::down_cast<ASR::EnumType_t>(enum_s);
                 v = enum_->m_symtab->get_symbol(var_name);
-                i ++;
+                from_enum = v;
+                selected_enum_name = std::to_string(i) + enum_name;
+                i++;
+            }
+            if( v && from_enum ) {
+                std::string var_name_ = current_scope->get_unique_name(std::string("1_") + var_name);
+                v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc, current_scope,
+                        s2c(al, var_name_), v, s2c(al, selected_enum_name), nullptr, 0, s2c(al, var_name),
+                        ASR::accessType::Public));
+                current_scope->add_symbol(var_name_, v);
             }
         }
         if (!v) {
