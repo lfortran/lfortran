@@ -316,44 +316,46 @@ message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 add_subdirectory(src)
 
 
-if(WIN32)
-  set(LFORTRAN_PATH "${CMAKE_BINARY_DIR}/src/bin/lfortran.exe")
-else()
-  set(LFORTRAN_PATH "${CMAKE_BINARY_DIR}/src/bin/lfortran")
-endif()
+if(LFORTRAN_BUILD_TO_WASM)
+  if(WIN32)
+    set(LFORTRAN_PATH "${CMAKE_BINARY_DIR}/src/bin/lfortran.exe")
+  else()
+    set(LFORTRAN_PATH "${CMAKE_BINARY_DIR}/src/bin/lfortran")
+  endif()
 
 
-add_custom_target(configure_runtime
-  ALL
-  COMMAND "${CMAKE_COMMAND}"
-  "-G ${CMAKE_GENERATOR}"
-  "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
-  "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
-  "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-  "-DCMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\""
-  "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
-  "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
-  "-DLFORTRAN_NESTED_BUILD=yes"
-  "${CMAKE_SOURCE_DIR}/src/runtime/"
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
+  add_custom_target(configure_runtime
+    ALL
+    COMMAND "${CMAKE_COMMAND}"
+    "-G ${CMAKE_GENERATOR}"
+    "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
+    "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+    "-DCMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\""
+    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
+    "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
+    "-DLFORTRAN_NESTED_BUILD=yes"
+    "${CMAKE_SOURCE_DIR}/src/runtime/"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
 
-add_dependencies(configure_runtime lfortran)
+  add_dependencies(configure_runtime lfortran)
 
-add_custom_target(build_runtime
-  ALL
-  COMMAND "${CMAKE_COMMAND}" --build  "${CMAKE_BINARY_DIR}/src/runtime"
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
+  add_custom_target(build_runtime
+    ALL
+    COMMAND "${CMAKE_COMMAND}" --build  "${CMAKE_BINARY_DIR}/src/runtime"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
+  
+  add_dependencies(build_runtime configure_runtime)
+  
+  # This is called after lfortran has been installed
+  # For more info https://stackoverflow.com/a/29979349/16568788
+  if (WITH_RUNTIME_LIBRARY)
+    add_subdirectory(cmake/postinstall)
 
-add_dependencies(build_runtime configure_runtime)
-
-# This is called after lfortran has been installed
-# For more info https://stackoverflow.com/a/29979349/16568788
-if (WITH_RUNTIME_LIBRARY)
-  add_subdirectory(cmake/postinstall)
-
-  install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
-  install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
-  install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
-  install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
+    install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
+    install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
+    install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
+    install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
+  endif()
 endif()
 
