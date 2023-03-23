@@ -1539,7 +1539,7 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
             break;
         }
         default:
-            throw LCompilersException("Not implemented.");
+            throw LCompilersException("Not implemented " + std::to_string(x->type) + ".");
     }
     return n_dims;
 }
@@ -2680,7 +2680,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
             continue;
         }
         typei = ASRUtils::expr_type(x->m_args[i]);
-        if( ASR::is_a<ASR::Class_t>(*typei) ) {
+        if( ASR::is_a<ASR::Class_t>(*typei) ||
+            ASR::is_a<ASR::FunctionType_t>(*typei) ) {
             continue ;
         }
         int n_dims = ASRUtils::extract_dimensions_from_ttype(typei, dims);

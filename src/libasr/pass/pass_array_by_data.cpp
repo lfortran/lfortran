@@ -60,7 +60,6 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 // new function's symtab.
                 std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
                 xx.m_v = current_proc_scope->resolve_symbol(x_sym_name);
-                std::cout<<"x_sym_name: "<<x_sym_name<<std::endl;
                 LCOMPILERS_ASSERT(xx.m_v != nullptr);
             }
         }
@@ -139,6 +138,10 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_AssociateBlock_t(al,
                                     arg->base.base.loc, associate_block_symtab, arg->m_name,
                                     new_body.p, new_body.size()));
+                } else if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                    return false;
+                } else {
+                    LCOMPILERS_ASSERT(false);
                 }
                 new_symtab->add_symbol(item.first, new_arg);
             }
@@ -213,7 +216,6 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         }
 
         void edit_new_procedure(ASR::Function_t* x, std::vector<size_t>& indices) {
-            std::cout<<"editing.begin: "<<x->m_name<<std::endl;
             Vec<ASR::expr_t*> new_args;
             new_args.reserve(al, x->n_args);
             for( size_t i = 0; i < x->n_args; i++ ) {
@@ -265,7 +267,6 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
             is_editing_procedure = false;
             current_proc_scope = nullptr;
-            std::cout<<"editing.end: "<<x->m_name<<std::endl;
         }
 
         void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
@@ -358,7 +359,8 @@ class ReplaceSubroutineCallsVisitor : public PassUtils::PassVisitor<ReplaceSubro
             new_args.reserve(al, x.n_args);
             for( size_t i = 0; i < x.n_args; i++ ) {
                 new_args.push_back(al, x.m_args[i]);
-                if( std::find(indices.begin(), indices.end(), i) == indices.end() ) {
+                if( std::find(indices.begin(), indices.end(), i) == indices.end() ||
+                    x.m_args[i].m_value == nullptr ) {
                     continue ;
                 }
 
@@ -440,7 +442,8 @@ class ReplaceFunctionCalls: public ASR::BaseExprReplacer<ReplaceFunctionCalls> {
         new_args.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
             new_args.push_back(al, x->m_args[i]);
-            if( std::find(indices.begin(), indices.end(), i) == indices.end() ) {
+            if( std::find(indices.begin(), indices.end(), i) == indices.end() ||
+                x->m_args[i].m_value == nullptr ) {
                 continue ;
             }
 
@@ -455,7 +458,10 @@ class ReplaceFunctionCalls: public ASR::BaseExprReplacer<ReplaceFunctionCalls> {
             }
         }
 
-        LCOMPILERS_ASSERT(new_args.size() == ASR::down_cast<ASR::Function_t>(new_func_sym)->n_args);
+        // TODO: Replace ASR::down_cast<ASR::Function_t>(new_func_sym)->n_args with
+        // a range, minimum would be without optional arguments and maximum
+        // would be with optional arguments
+        LCOMPILERS_ASSERT(new_args.size() <= ASR::down_cast<ASR::Function_t>(new_func_sym)->n_args);
         ASR::symbol_t* new_func_sym_ = new_func_sym;
         if( is_external ) {
             ASR::ExternalSymbol_t* func_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x->m_name);
