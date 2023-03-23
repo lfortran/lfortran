@@ -83,6 +83,25 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
         }
 
+        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            PassVisitor::visit_SubroutineCall(x);
+            if( !is_editing_procedure ) {
+                return ;
+            }
+            ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
+            ASR::symbol_t* x_sym = xx.m_name;
+            SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);
+            if( x_sym_symtab->get_counter() != current_proc_scope->get_counter() &&
+                !ASRUtils::is_parent(x_sym_symtab, current_proc_scope) ) {
+                // xx.m_name points to the function/procedure present inside
+                // original function's symtab. Make it point to the symbol in
+                // new function's symtab.
+                std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
+                xx.m_name = current_proc_scope->resolve_symbol(x_sym_name);
+                LCOMPILERS_ASSERT(xx.m_name != nullptr);
+            }
+        }
+
         bool duplicate_SymbolTable(SymbolTable* symtab, SymbolTable* new_symtab) {
             for( auto& item: symtab->get_scope() ) {
                 ASR::symbol_t* new_arg = nullptr;
@@ -228,7 +247,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     Vec<ASR::expr_t*> dim_variables;
                     std::string arg_name = std::string(arg->m_name);
                     PassUtils::create_vars(dim_variables, 2 * n_dims, arg->base.base.loc, al,
-                                           x->m_symtab, arg_name, ASR::intentType::In);
+                                           x->m_symtab, arg_name, ASR::intentType::In,
+                                           arg->m_presence);
                     Vec<ASR::dimension_t> new_dims;
                     new_dims.reserve(al, n_dims);
                     for( int j = 0, k = 0; j < n_dims; j++ ) {
