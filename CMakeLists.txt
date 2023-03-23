@@ -315,8 +315,11 @@ message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 
 add_subdirectory(src)
 
+if(LFORTRAN_BUILD_TO_WASM)
+  set(WITH_RUNTIME_LIBRARY No)
+endif()
 
-if(NOT LFORTRAN_BUILD_TO_WASM)
+if (WITH_RUNTIME_LIBRARY)
   if(WIN32)
     set(LFORTRAN_PATH "${CMAKE_BINARY_DIR}/src/bin/lfortran.exe")
   else()
@@ -349,13 +352,11 @@ if(NOT LFORTRAN_BUILD_TO_WASM)
   
   # This is called after lfortran has been installed
   # For more info https://stackoverflow.com/a/29979349/16568788
-  if (WITH_RUNTIME_LIBRARY)
-    add_subdirectory(cmake/postinstall)
-
-    install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
-    install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
-    install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
-    install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
-  endif()
+  add_subdirectory(cmake/postinstall)
+  
+  install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
+  install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
+  install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
+  install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
 endif()
 
