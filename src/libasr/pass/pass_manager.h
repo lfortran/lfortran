@@ -104,9 +104,9 @@ namespace LCompilers {
                 if (rtlib && passes[i] == "unused_functions") continue;
                 if( std::find(_skip_passes.begin(), _skip_passes.end(), passes[i]) != _skip_passes.end())
                     continue;
-                if (pass_options.verbose) {
-                    std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
-                }
+                // if (pass_options.verbose) {
+                    std::cout << "ASR Pass starts: '" << passes[i] << "'\n";
+                // }
                 _passes_db[passes[i]](al, *asr, pass_options);
             #if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
@@ -114,9 +114,9 @@ namespace LCompilers {
                     throw LCompilersException("Verify failed");
                 };
             #endif
-                if (pass_options.verbose) {
-                    std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
-                }
+                // if (pass_options.verbose) {
+                    std::cout << "ASR Pass ends: '" << passes[i] << "'\n";
+                // }
             }
         }
 

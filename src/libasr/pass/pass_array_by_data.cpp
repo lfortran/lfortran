@@ -383,7 +383,7 @@ class ReplaceSubroutineCallsVisitor : public PassUtils::PassVisitor<ReplaceSubro
                 char* new_subrout_sym_name = ASRUtils::symbol_name(new_subrout_sym);
                 if( current_scope->get_symbol(new_subrout_sym_name) == nullptr ) {
                     new_subrout_sym_ = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, subrout_ext_sym->m_parent_symtab,
+                        ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, current_scope,
                             new_subrout_sym_name, new_subrout_sym, subrout_ext_sym->m_module_name,
                             subrout_ext_sym->m_scope_names, subrout_ext_sym->n_scope_names, new_subrout_sym_name,
                             subrout_ext_sym->m_access));
@@ -391,6 +391,7 @@ class ReplaceSubroutineCallsVisitor : public PassUtils::PassVisitor<ReplaceSubro
                 } else {
                     new_subrout_sym_ = current_scope->get_symbol(new_subrout_sym_name);
                 }
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::ExternalSymbol_t>(*new_subrout_sym_));
             }
             ASR::stmt_t* new_call = ASRUtils::STMT(ASR::make_SubroutineCall_t(al,
                                         x.base.base.loc, new_subrout_sym_, new_subrout_sym_,
@@ -470,7 +471,7 @@ class ReplaceFunctionCalls: public ASR::BaseExprReplacer<ReplaceFunctionCalls> {
             char* new_func_sym_name = ASRUtils::symbol_name(new_func_sym);
             if( current_scope->get_symbol(new_func_sym_name) == nullptr ) {
                 new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_ExternalSymbol_t(al, x->m_name->base.loc, func_ext_sym->m_parent_symtab,
+                    ASR::make_ExternalSymbol_t(al, x->m_name->base.loc, current_scope,
                         new_func_sym_name, new_func_sym, func_ext_sym->m_module_name,
                         func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name,
                         func_ext_sym->m_access));
