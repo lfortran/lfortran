@@ -316,7 +316,7 @@ message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 add_subdirectory(src)
 
 
-if(LFORTRAN_BUILD_TO_WASM)
+if(NOT LFORTRAN_BUILD_TO_WASM)
   if(WIN32)
     set(LFORTRAN_PATH "${CMAKE_BINARY_DIR}/src/bin/lfortran.exe")
   else()
