@@ -262,7 +262,23 @@ filename = "errors/cpp7.f90"
 asr_preprocess = true
 
 [[test]]
-filename = "errors/template_error.f90"
+filename = "errors/template_error_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_04.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_05.f90"
 asr = true
 
 [[test]]
@@ -504,6 +520,12 @@ ast_f90 = true
 filename = "../integration_tests/cond_02.f90"
 asr = true
 pass = "dead_code_removal"
+
+[[test]]
+filename = "../integration_tests/expr_13.f90"
+asr = true
+pass = "flip_sign"
+cumulative = true
 
 [[test]]
 filename = "../integration_tests/doloop_01.f90"
@@ -1841,6 +1863,10 @@ filename = "modules_07.f90"
 asr = true
 
 [[test]]
+filename = "modules_10.f90"
+asr_json = true
+
+[[test]]
 filename = "../integration_tests/modules_27.f90"
 asr = true
 extrafiles = "../integration_tests/modules_27_module1.f90, ../integration_tests/modules_27_module2.f90"
@@ -2580,6 +2606,12 @@ filename = "../integration_tests/derived_types_18.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/derived_types_20.f90"
+asr = true
+pass = "class_constructor"
+extrafiles = "../integration_tests/derived_types_20_module2.f90, ../integration_tests/derived_types_20_module1.f90"
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 
@@ -2910,6 +2942,11 @@ asr = true
 [[test]]
 filename = "data2.f90"
 asr = true
+
+[[test]]
+filename = "special_chars_json.f90"
+ast_json = true
+asr_json = true
 
 [[test]]
 filename = "redeclaration1.f90"

@@ -13,6 +13,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <queue>
 #include <set>
 #include <map>
 
@@ -1409,11 +1410,21 @@ public:
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
-                        ASR::symbol_t *sym_found = current_scope->resolve_symbol(
-                            func_call->m_func);
+                        ASR::symbol_t *sym_found = current_scope->resolve_symbol(func_call->m_func);
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
+                        } else {
+                            if( ASR::is_a<ASR::StructType_t>(
+                                *ASRUtils::symbol_get_past_external(sym_found)) ) {
+                                init_expr = ASRUtils::EXPR(create_DerivedTypeConstructor(
+                                                func_call->base.base.loc,
+                                                func_call->m_args, func_call->n_args,
+                                                func_call->m_keywords, func_call->n_keywords,
+                                                sym_found));
+                            } else {
+                                LCOMPILERS_ASSERT(false);
+                            }
                         }
                     } else {
                         throw SemanticError("Only function call assignment is allowed for now",
@@ -1767,8 +1778,11 @@ public:
 
 
     ASR::asr_t* create_DerivedTypeConstructor(const Location &loc,
-            AST::fnarg_t* m_args, size_t n_args, ASR::symbol_t *v) {
-        Vec<ASR::expr_t*> vals = visit_expr_list(m_args, n_args);
+            AST::fnarg_t* m_args, size_t n_args, AST::keyword_t* kwargs,
+            size_t n_kwargs, ASR::symbol_t *v) {
+        Vec<ASR::call_arg_t> vals;
+        visit_expr_list(m_args, n_args, vals);
+        visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
         ASR::ttype_t* der = ASRUtils::TYPE(
                             ASR::make_Struct_t(al, loc, v,
                                                 nullptr, 0));
@@ -3055,7 +3069,16 @@ public:
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
                                 kind_value, nullptr, 0));
-        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
+        ASR::expr_t* x_value = ASRUtils::expr_value(x_);
+        ASR::expr_t* y_value = ASRUtils::expr_value(y_);
+        ASR::expr_t* cc_expr = nullptr;
+        double x_value_ = 0.0;
+        double y_value_ = 0.0;
+        if (x_value && y_value && ASRUtils::extract_value(x_value, x_value_) && ASRUtils::extract_value(y_value, y_value_)) {
+            cc_expr = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
+                                                                 x_value_, y_value_, type));
+        }
+        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
     }
 
     ASR::asr_t* create_NullPointerConstant(const AST::FuncCallOrArray_t& x) {
@@ -3107,7 +3130,16 @@ public:
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
                                 kind_value, nullptr, 0));
-        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, nullptr);
+        ASR::expr_t* x_value = ASRUtils::expr_value(x_);
+        ASR::expr_t* y_value = ASRUtils::expr_value(y_);
+        ASR::expr_t* cc_expr = nullptr;
+        double x_value_ = 0.0;
+        double y_value_ = 0.0;
+        if (x_value && y_value && ASRUtils::extract_value(x_value, x_value_) && ASRUtils::extract_value(y_value, y_value_)) {
+            cc_expr = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
+                                                                 x_value_, y_value_, type));
+        }
+        return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
     }
 
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
@@ -3774,8 +3806,11 @@ public:
                 tmp = create_ArrayRef(x.base.base.loc, x.m_args, x.n_args, v_expr, v, f2);
                 break;
             }
-            case(ASR::symbolType::StructType):
-                tmp = create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args, v); break;
+            case(ASR::symbolType::StructType): {
+                tmp = create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
+                                                    x.m_keywords, x.n_keywords, v);
+                break;
+            }
             case(ASR::symbolType::ClassProcedure):
                 tmp = create_ClassProcedure(x.base.base.loc, x.m_args, x.n_args, v, v_expr); break;
             default: throw SemanticError("Symbol '" + var_name
@@ -4515,6 +4550,117 @@ public:
                 return ;
             }
         }
+    }
+
+    void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
+        const Location &loc, ASR::symbol_t* fn, diag::Diagnostics& diag) {
+        fn = ASRUtils::symbol_get_past_external(fn);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*fn));
+        std::deque<std::string> constructor_args;
+        std::deque<ASR::symbol_t*> constructor_arg_syms;
+        ASR::StructType_t* fn_struct_type = ASR::down_cast<ASR::StructType_t>(fn);
+        while( fn_struct_type ) {
+            for( int i = (int) fn_struct_type->n_members - 1; i >= 0; i-- ) {
+                constructor_args.push_front(fn_struct_type->m_members[i]);
+                constructor_arg_syms.push_front(
+                    fn_struct_type->m_symtab->get_symbol(
+                        fn_struct_type->m_members[i]));
+            }
+            if( fn_struct_type->m_parent != nullptr ) {
+                ASR::symbol_t* fn_ = ASRUtils::symbol_get_past_external(
+                                        fn_struct_type->m_parent);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*fn_));
+                fn_struct_type = ASR::down_cast<ASR::StructType_t>(fn_);
+            } else {
+                fn_struct_type = nullptr;
+            }
+        }
+
+        int n_ = (int) constructor_args.size() - (int) args.size();
+        for( int i = 0; i < n_; i++ ) {
+            ASR::call_arg_t empty_arg;
+            Location loc;
+            loc.first = 1, loc.last = 1;
+            empty_arg.loc = loc;
+            empty_arg.m_value = nullptr;
+            args.push_back(al, empty_arg);
+        }
+
+        LCOMPILERS_ASSERT(args.size() == constructor_args.size());
+
+        for (size_t i = 0; i < n; i++) {
+            this->visit_expr(*kwargs[i].m_value);
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            std::string name = to_lower(kwargs[i].m_arg);
+            auto search = std::find(constructor_args.begin(),
+                                    constructor_args.end(), name);
+            if (search == constructor_args.end()) {
+                diag.semantic_error_label(
+                    "Keyword argument not found " + name,
+                    {loc},
+                    name + " keyword argument not found.");
+                throw SemanticAbort();
+            }
+
+            size_t idx = std::distance(constructor_args.begin(), search);
+            if (args[idx].m_value != nullptr) {
+                diag.semantic_error_label(
+                    "Keyword argument is already specified.",
+                    {loc},
+                    name + "keyword argument is already specified.");
+                throw SemanticAbort();
+            }
+            args.p[idx].loc = expr->base.loc;
+            args.p[idx].m_value = expr;
+        }
+
+        /*
+
+        The following loop takes the default initial value expression
+        and puts it into the constructor call. The issue with this approach
+        is that one has to replace all the symbols present in the expression
+        with external symbols so that we don't receive out of scope errors
+        in ASR verify pass (with the help of a new visitor ReplaceWithExternalSymbolsInExpression).
+        So for now its commented out and one can deal with the
+        same in the backend itself which appears cleaner to me for now.
+
+        for( size_t i = 0; i < args.size(); i++ ) {
+            if( args[i].m_value == nullptr ) {
+                ASR::symbol_t* arg_sym = constructor_arg_syms[i];
+                LCOMPILERS_ASSERT(arg_sym != nullptr);
+                ASR::expr_t* default_init = nullptr;
+                bool is_default_needed = true;
+                if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
+                    ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                    default_init = arg_var->m_symbolic_value;
+                    if( arg_var->m_storage == ASR::storage_typeType::Allocatable ) {
+                        is_default_needed = false;
+                    }
+                }
+                if( default_init == nullptr && is_default_needed ) {
+                    diag.semantic_error_label(
+                        "Argument was not specified",
+                        {arg_sym->base.loc},
+                        std::to_string(i) +
+                        "-th argument not specified for " + ASRUtils::symbol_name(fn));
+                    throw SemanticAbort();
+                }
+                args.p[i].m_value = default_init;
+                args.p[i].loc = arg_sym->base.loc;
+            }
+        }
+        */
+
+        for (size_t i = 0; i < constructor_arg_syms.size(); i++) {
+            if( args[i].m_value != nullptr ) {
+                ASR::symbol_t* member_sym = constructor_arg_syms[i];
+                ASR::ttype_t* member_type = ASRUtils::symbol_type(member_sym);
+                ASR::ttype_t* arg_type = ASRUtils::expr_type(args[i].m_value);
+                ImplicitCastRules::set_converted_value(al, loc,
+                    &args.p[i].m_value, arg_type, member_type);
+            }
+        }
+
     }
 
     void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,

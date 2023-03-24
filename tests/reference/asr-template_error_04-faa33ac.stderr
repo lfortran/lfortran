@@ -1,0 +1,19 @@
+semantic error: Restriction type mismatch with provided function argument
+  --> tests/errors/template_error_04.f90:34:9
+   |
+34 |         instantiate add_t(real, func_arg_real), only: add_real => add_generic
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+   |
+ 8 |            function F(x, y) result(z)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+11 |            end function
+   | ...^^^^^^^^^^^^^^^^^^^^^ Restriction's parameter x of type real
+   |
+28 |        real function func_arg_real(x, y) result(z)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+32 |    
+   | ...^ Function's parameter x of type integer

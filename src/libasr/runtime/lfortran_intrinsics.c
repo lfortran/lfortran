@@ -1250,6 +1250,49 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
     return (int64_t)fd;
 }
 
+FILE* unit_to_file[100];
+bool is_unit_to_file_init = false;
+
+LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status)
+{
+    if (!is_unit_to_file_init) {
+        for (int32_t i=0; i<100; i++) unit_to_file[i] = NULL;
+        is_unit_to_file_init = true;
+    }
+    if (f_name == NULL) {
+        f_name = "_lfortran_generated_file.txt";
+    }
+
+    // Presently we just consider write append mode.
+    status = "r+";
+    FILE *fd;
+    fd = fopen(f_name, status);
+    if (!fd)
+    {
+        printf("Error in opening the file!\n");
+        perror(f_name);
+        exit(1);
+    }
+    unit_to_file[unit_num] = fd;
+    return (int64_t)fd;
+}
+
+LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        FILE *fp = fdopen(0, "r+");
+        fread(p, sizeof(int32_t), 1, fp);
+        fclose(fp);
+        return;
+    }
+    if (!unit_to_file[unit_num]) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+    fread(p, sizeof(int32_t), 1, unit_to_file[unit_num]);
+}
+
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 {
     char *c = (char *) calloc(n, sizeof(char));
@@ -1266,6 +1309,19 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 LFORTRAN_API void _lpython_close(int64_t fd)
 {
     if (fclose((FILE*)fd) != 0)
+    {
+        printf("Error in closing the file!\n");
+        exit(1);
+    }
+}
+
+LFORTRAN_API void _lfortran_close(int32_t unit_num)
+{
+    if (!unit_to_file[unit_num]) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+    if (fclose(unit_to_file[unit_num]) != 0)
     {
         printf("Error in closing the file!\n");
         exit(1);

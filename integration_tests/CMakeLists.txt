@@ -156,11 +156,13 @@ RUN(NAME expr_08 LABELS gfortran llvm wasm)
 RUN(NAME expr_09 LABELS gfortran llvm wasm)
 RUN(NAME expr_10 LABELS gfortran llvm wasm)
 RUN(NAME expr_12 LABELS gfortran llvm)
+RUN(NAME expr_13 LABELS gfortran llvm)
 
 RUN(NAME data_01 LABELS gfortran llvm)
 RUN(NAME data_02 LABELS gfortran)
 RUN(NAME data_03 LABELS gfortran llvm)
 RUN(NAME data_04 LABELS gfortran llvm)
+RUN(NAME data_05 LABELS gfortran llvmImplicit)
 RUN(NAME minmax_01 LABELS gfortran llvm wasm)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm)
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm)
@@ -539,6 +541,9 @@ RUN(NAME derived_types_16_module LABELS gfortran)
 RUN(NAME derived_types_18 LABELS gfortran)
 RUN(NAME derived_types_19 LABELS gfortran
         EXTRAFILES derived_types_19_module.f90)
+RUN(NAME derived_types_20 LABELS gfortran
+        EXTRAFILES derived_types_20_module2.f90
+                   derived_types_20_module1.f90)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
@@ -605,6 +610,8 @@ RUN(NAME nested_03 LABELS gfortran llvm)
 RUN(NAME nested_04 LABELS gfortran llvm)
 RUN(NAME nested_05 LABELS gfortran llvm)
 RUN(NAME nested_06 LABELS gfortran llvm)
+RUN(NAME nested_07 LABELS gfortran llvm)
+RUN(NAME nested_08 LABELS gfortran llvm)
 
 RUN(NAME nbody LABELS gfortran llvm)
 
@@ -624,6 +631,8 @@ RUN(NAME return_01 LABELS gfortran llvm wasm)
 RUN(NAME return_02 LABELS gfortran llvm) # contains module
 RUN(NAME return_03 LABELS gfortran llvm wasm)
 RUN(NAME return_04 LABELS gfortran llvm wasm)
+
+RUN(NAME file_01 LABELS gfortran llvm)
 
 RUN(NAME class_01 LABELS gfortran)
 RUN(NAME class_02 LABELS gfortran llvm)
@@ -722,3 +731,10 @@ RUN(NAME array_02 LABELS gfortran llvm)
 RUN(NAME do_loop_02 LABELS gfortran llvm)
 
 RUN(NAME block_07 LABELS gfortran llvm)
+
+RUN(NAME complex_11 LABELS gfortran llvmImplicit)
+RUN(NAME complex_12 LABELS gfortran llvm)
+RUN(NAME complex_13 LABELS gfortran llvm)
+RUN(NAME complex_14 LABELS gfortran llvm)
+
+RUN(NAME array_op_01 LABELS gfortran llvm)

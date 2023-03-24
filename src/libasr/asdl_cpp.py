@@ -582,10 +582,10 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("}", 1)
 
     def insert_call_replacer_code(self, name, level, index=""):
-        self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
-        self.emit("    current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level)
-        self.emit("    self().call_replacer();", level)
-        self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
+        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
+        self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level)
+        self.emit("self().call_replacer();", level)
+        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
         self.current_expr_copy_variable_count += 1
 
     def visitField(self, field):
@@ -600,12 +600,14 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                 self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
                 if field.type in products:
                     if field.type == "expr":
-                        self.insert_call_replacer_code(field.name, level, "[i]")
+                        self.insert_call_replacer_code(field.name, level + 1, "[i]")
+                        self.emit("if( x.m_%s[i] )" % (field.name), level)
                     self.emit("    self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level)
                 else:
                     if field.type != "symbol":
                         if field.type == "expr":
-                            self.insert_call_replacer_code(field.name, level, "[i]")
+                            self.insert_call_replacer_code(field.name, level + 1, "[i]")
+                            self.emit("if( x.m_%s[i] )" % (field.name), level + 1)
                         self.emit("    self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level)
                 self.emit("}", level)
             else:
@@ -616,6 +618,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                         level = 3
                         if field.type == "expr":
                             self.insert_call_replacer_code(field.name, level)
+                            self.emit("if( x.m_%s )" % (field.name), level)
                     if field.opt:
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
                         self.emit("}", 2)
@@ -629,6 +632,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                             level = 3
                         if field.type == "expr":
                             self.insert_call_replacer_code(field.name, level)
+                            self.emit("if( x.m_%s )" % (field.name), level)
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
                         if field.opt:
                             self.emit("}", 2)
@@ -1883,12 +1887,12 @@ class JsonVisitorVisitor(ASDLVisitor):
             elif field.type == "string" and not field.seq:
                 if field.opt:
                     self.emit("if (x.m_%s) {" % field.name, 2)
-                    self.emit(    's.append("\\"" + std::string(x.m_%s) + "\\"");' % field.name, 3)
+                    self.emit(    's.append("\\"" + get_escaped_str(x.m_%s) + "\\"");' % field.name, 3)
                     self.emit("} else {", 2)
                     self.emit(    's.append("[]");', 3)
                     self.emit("}", 2)
                 else:
-                    self.emit('s.append("\\"" + std::string(x.m_%s) + "\\"");' % field.name, 2)
+                    self.emit('s.append("\\"" + get_escaped_str(x.m_%s) + "\\"");' % field.name, 2)
             elif field.type == "int" and not field.seq:
                 if field.opt:
                     self.emit("if (x.m_%s) {" % field.name, 2)
@@ -2599,6 +2603,7 @@ HEAD = r"""#ifndef LFORTRAN_%(MOD2)s_H
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_scopes.h>
+#include <libasr/string_utils.h>
 
 
 namespace LCompilers::%(MOD)s {

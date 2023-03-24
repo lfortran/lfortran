@@ -30,6 +30,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     tokens = is_included("tokens")
     ast = is_included("ast")
     ast_indent = is_included("ast_indent")
+    ast_json = is_included("ast_json")
     ast_no_prescan = is_included("ast_no_prescan")
     ast_f90 = is_included("ast_f90")
     ast_cpp = is_included("ast_cpp")
@@ -42,10 +43,12 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
+    asr_json = is_included("asr_json")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
     cpp = is_included("cpp")
     c = is_included("c")
+    is_cumulative_pass = is_included("cumulative")
     julia = is_included("julia")
     wat = is_included("wat")
     obj = is_included("obj")
@@ -59,7 +62,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
 
     if pass_ and (pass_ not in ["do_loops", "global_stmts",
                                 "transform_optional_argument_functions",
-                                "array_op", "select_case"] and
+                                "array_op", "select_case",
+                                "class_constructor"] and
                   pass_ not in optimization_passes):
         raise Exception(f"Unknown pass: {pass_}")
     log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
@@ -98,6 +102,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "ast_indent",
             "lfortran --show-ast --indent --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
+    if ast_json:
+        run_test(
+            filename,
+            "ast_json",
+            "lfortran --show-ast --json {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -175,6 +187,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                     update_reference,
                     extra_args)
 
+                if pass_ is not None:
+                    cmd = "lfortran --pass=" + pass_ + \
+                        " --indent --show-asr --no-color {infile} -o {outfile}"
+                    run_test(filename, "pass_{}".format(pass_), cmd,
+                            filename, update_reference, extra_args)
+
+            pass_ = None
+
     if asr_implicit_interface_and_typing:
         run_test(
             filename,
@@ -236,7 +256,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_indent",
-            "lfortran --indent --show-asr --indent --no-color {infile} -o {outfile}",
+            "lfortran --show-asr --indent --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            extra_args)
+
+    if asr_json:
+        run_test(
+            filename,
+            "asr_json",
+            "lfortran --show-asr --json {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -250,7 +279,10 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference)
 
     if pass_ is not None:
-        cmd = "lfortran --pass=" + pass_ + \
+        cmd = "lfortran "
+        if is_cumulative_pass:
+            cmd += "--cumulative "
+        cmd += "--pass=" + pass_ + \
             " --indent --show-asr --no-color {infile} -o {outfile}"
         run_test(filename, "pass_{}".format(pass_), cmd,
                  filename, update_reference, extra_args)

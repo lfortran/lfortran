@@ -61,26 +61,6 @@
                                                                     Public
                                                                     Required
                                                                     .false.
-                                                                ),
-                                                            cos:
-                                                                (ExternalSymbol
-                                                                    4
-                                                                    cos
-                                                                    6 cos
-                                                                    lfortran_intrinsic_math
-                                                                    []
-                                                                    cos
-                                                                    Private
-                                                                ),
-                                                            cos@scos:
-                                                                (ExternalSymbol
-                                                                    4
-                                                                    cos@scos
-                                                                    6 scos
-                                                                    lfortran_intrinsic_math
-                                                                    []
-                                                                    scos
-                                                                    Private
                                                                 )
                                                         })
                                                     block
@@ -117,18 +97,17 @@
                                                     (=
                                                         (Var 2 d)
                                                         (Cast
-                                                            (FunctionCall
-                                                                4 cos@scos
-                                                                4 cos
-                                                                [((RealBinOp
+                                                            (IntrinsicFunction
+                                                                Cos
+                                                                [(RealBinOp
                                                                     (Var 4 b)
                                                                     Add
                                                                     (Var 4 c)
                                                                     (Real 4 [])
                                                                     ()
-                                                                ))]
+                                                                )]
+                                                                0
                                                                 (Real 4 [])
-                                                                ()
                                                                 ()
                                                             )
                                                             RealToInteger
@@ -238,15 +217,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

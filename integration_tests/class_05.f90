@@ -48,18 +48,10 @@ implicit none
 
     class(point), pointer :: ptr
 
-    ! TODO: Re-enable after fixing class_constructor.cpp
-    type(point2d), target :: p2d ! = point2d( 3, 4 )
-    type(point3d), target :: p3d ! = point3d( 3, 4, 5 )
+    type(point2d), target :: p2d = point2d( 3, 4 )
+    type(point3d), target :: p3d = point3d( 3, 4, 5 )
 
     real :: result
-
-    p2d = point2d( 3.0, 4.0 )
-    ! TODO: Re-enable after fixing class_constructor pass
-    ! p3d = point3d( 3.0, 4.0, 5.0 )
-    p3d%x = 3.0
-    p3d%y = 4.0
-    p3d%z = 5.0
 
     print *, p2d%x, p2d%y
     print *, p3d%x, p3d%y, p3d%z
@@ -73,4 +65,11 @@ implicit none
     result = ptr%radius()
     print *, "3-d radius is ", result
     if( abs(result - 7.07106781) > 1e-8 ) error stop
+
+    p3d%x = 3.0
+    p3d%y = 4.0
+    p3d%z = 0.0
+    result = ptr%radius()
+    print *, "3-d radius is ", result
+    if( abs(result - 5.0) > 1e-8 ) error stop
 end program main

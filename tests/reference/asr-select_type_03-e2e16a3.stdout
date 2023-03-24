@@ -64,7 +64,16 @@
                                     toml_stat
                                     []
                                     Local
-                                    ()
+                                    (StructTypeConstructor
+                                        4 enum_stat
+                                        [(())
+                                        (())]
+                                        (Struct
+                                            4 enum_stat
+                                            []
+                                        )
+                                        ()
+                                    )
                                     ()
                                     Parameter
                                     (Struct

@@ -1,0 +1,123 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "items": [
+            {
+                "node": "Program",
+                "fields": {
+                    "name": "special_chars_json",
+                    "trivia": {
+                        "node": "TriviaNode",
+                        "fields": {
+                            "inside": [
+                                {
+                                    "node": "EndOfLine",
+                                    "fields": {},
+                                    "loc": {
+                                        "first": 26,
+                                        "last": 26,
+                                        "first_filename": "tests/special_chars_json.f90",
+                                        "first_line": 1,
+                                        "first_column": 27,
+                                        "last_filename": "tests/special_chars_json.f90",
+                                        "last_line": 1,
+                                        "last_column": 27
+                                    }
+                                },
+                                {
+                                    "node": "Comment",
+                                    "fields": {
+                                        "comment": "! A \"comment\"."
+                                    },
+                                    "loc": {
+                                        "first": 31,
+                                        "last": 45,
+                                        "first_filename": "tests/special_chars_json.f90",
+                                        "first_line": 2,
+                                        "first_column": 5,
+                                        "last_filename": "tests/special_chars_json.f90",
+                                        "last_line": 2,
+                                        "last_column": 19
+                                    }
+                                }
+                            ],
+                            "after": []
+                        },
+                        "loc": {
+                            "first": 0,
+                            "last": 78,
+                            "first_filename": "tests/special_chars_json.f90",
+                            "first_line": 1,
+                            "first_column": 1,
+                            "last_filename": "tests/special_chars_json.f90",
+                            "last_line": 4,
+                            "last_column": 4
+                        }
+                    },
+                    "use": [],
+                    "implicit": [],
+                    "decl": [],
+                    "body": [
+                        {
+                            "node": "Print",
+                            "fields": {
+                                "label": 0,
+                                "fmt": [],
+                                "values": [
+                                    {
+                                        "node": "String",
+                                        "fields": {
+                                            "s": "A \"\"string\"\"."
+                                        },
+                                        "loc": {
+                                            "first": 59,
+                                            "last": 73,
+                                            "first_filename": "tests/special_chars_json.f90",
+                                            "first_line": 3,
+                                            "first_column": 14,
+                                            "last_filename": "tests/special_chars_json.f90",
+                                            "last_line": 3,
+                                            "last_column": 28
+                                        }
+                                    }
+                                ],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 50,
+                                "last": 73,
+                                "first_filename": "tests/special_chars_json.f90",
+                                "first_line": 3,
+                                "first_column": 5,
+                                "last_filename": "tests/special_chars_json.f90",
+                                "last_line": 3,
+                                "last_column": 28
+                            }
+                        }
+                    ],
+                    "contains": []
+                },
+                "loc": {
+                    "first": 0,
+                    "last": 78,
+                    "first_filename": "tests/special_chars_json.f90",
+                    "first_line": 1,
+                    "first_column": 1,
+                    "last_filename": "tests/special_chars_json.f90",
+                    "last_line": 4,
+                    "last_column": 4
+                }
+            }
+        ]
+    },
+    "loc": {
+        "first": 0,
+        "last": 78,
+        "first_filename": "tests/special_chars_json.f90",
+        "first_line": 1,
+        "first_column": 1,
+        "last_filename": "tests/special_chars_json.f90",
+        "last_line": 4,
+        "last_column": 4
+    }
+}

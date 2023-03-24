@@ -29,8 +29,8 @@ namespace LCompilers::LFortran {
     // Print Json structure
 	std::string pickle_json(AST::ast_t &ast, LocationManager &lm);
     std::string pickle_json(AST::TranslationUnit_t &ast, LocationManager &lm);
-    std::string pickle_json(ASR::asr_t &asr, LocationManager &lm);
-    std::string pickle_json(ASR::TranslationUnit_t &asr, LocationManager &lm);
+    std::string pickle_json(ASR::asr_t &asr, LocationManager &lm, bool show_intrinsic_modules=false);
+    std::string pickle_json(ASR::TranslationUnit_t &asr, LocationManager &lm, bool show_intrinsic_modules=false);
 
 } // namespace LCompilers::LFortran
 

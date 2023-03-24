@@ -192,6 +192,8 @@ public:
         relationship between enclosing and nested functions */
     std::vector<uint64_t> nested_globals; /* For saving the hash of variables
         from a parent scope needed in a nested function */
+    std::map<uint64_t, llvm::Value*> nested_globals_value; /* For saving the
+        value of a variable from a parent scope needed in a nested function */
     std::map<uint64_t, std::vector<llvm::Type*>> nested_func_types; /* For
         saving the hash of a parent function needing to give access to
         variables in a nested function, as well as the variable types */
@@ -2591,6 +2593,20 @@ public:
         current_scope = current_scope_copy;
     }
 
+    void store_nested_globals_value() {
+        for (auto it: nested_globals_value) {
+            auto finder = std::find(nested_globals.begin(),
+                    nested_globals.end(), it.first);
+            if (finder != nested_globals.end() && nested_globals_value.find(it.first) != nested_globals_value.end()) {
+                llvm::Value* ptr = module->getOrInsertGlobal(nested_desc_name,
+                        nested_global_struct);
+                int idx = std::distance(nested_globals.begin(), finder);
+                builder->CreateStore(it.second, llvm_utils->create_gep(ptr, idx));
+            }
+        }
+        nested_globals_value.clear();
+    }
+
     void visit_Program(const ASR::Program_t &x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
@@ -2654,8 +2670,13 @@ public:
 
         declare_vars(x);
         for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
+            ASR::stmt_t* stmt = x.m_body[i];
+            if (stmt->type == ASR::stmtType::SubroutineCall) {
+                store_nested_globals_value();
+            }
+            this->visit_stmt(*stmt);
         }
+        store_nested_globals_value();
         llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
             llvm::APInt(32, 0));
         builder->CreateRet(ret_val2);
@@ -3245,6 +3266,10 @@ public:
                     }
 
                     llvm_symtab[h] = ptr;
+                    auto finder = std::find(nested_globals.begin(), nested_globals.end(), h);
+                    if (finder != nested_globals.end() && !is_array_type && !is_malloc_array_type && !is_list) {
+                        nested_globals_value[h] = ptr;
+                    }
                     fill_array_details_(ptr, m_dims, n_dims,
                         is_malloc_array_type,
                         is_array_type, is_list, v->m_type);
@@ -4820,6 +4845,8 @@ public:
                     nested_global_struct);
             int idx = std::distance(nested_globals.begin(), finder);
             builder->CreateStore(target, llvm_utils->create_gep(ptr, idx));
+            // remove from nested_globals_value
+            nested_globals_value.erase(h);
         }
         if (is_a<ASR::ArrayItem_t>(*x.m_target)) {
             ASR::ArrayItem_t *asr_target0 = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
@@ -4917,12 +4944,13 @@ public:
         builder->SetInsertPoint(block_end);
     }
 
-    inline void visit_expr_wrapper(const ASR::expr_t* x, bool load_ref=false) {
+    inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false) {
         this->visit_expr(*x);
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
-            if( load_ref ) {
+            if( load_ref &&
+                !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) ) {
                 tmp = CreateLoad(tmp);
             }
         }
@@ -5974,7 +6002,34 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        throw CodeGenError("ComplexConstructor with runtime arguments not implemented yet.");
+        this->visit_expr_wrapper(x.m_re, true);
+        llvm::Value *re_val = tmp;
+
+        this->visit_expr_wrapper(x.m_im, true);
+        llvm::Value *im_val = tmp;
+
+        int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+
+        llvm::Value *re2, *im2;
+        llvm::Type *type;
+        switch( a_kind ) {
+            case 4: {
+                re2 = builder->CreateFPTrunc(re_val, llvm::Type::getFloatTy(context));
+                im2 = builder->CreateFPTrunc(im_val, llvm::Type::getFloatTy(context));
+                type = complex_type_4;
+                break;
+            }
+            case 8: {
+                re2 = builder->CreateFPExt(re_val, llvm::Type::getDoubleTy(context));
+                im2 = builder->CreateFPExt(im_val, llvm::Type::getDoubleTy(context));
+                type = complex_type_8;
+                break;
+            }
+            default: {
+                throw CodeGenError("kind type is not supported");
+            }
+        }
+        tmp = complex_from_floats(re2, im2, type);
     }
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
@@ -6527,19 +6582,96 @@ public:
         }
     }
 
+    llvm::Function* get_read_function(ASR::ttype_t *type) {
+        if (ASR::is_a<ASR::Integer_t>(*type)) {
+            std::string runtime_func_name = "_lfortran_read_int32";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt32Ty(context)->getPointerTo(),
+                            llvm::Type::getInt32Ty(context)
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+            }
+            return fn;
+        } else {
+            throw CodeGenError("Read function not implemented");
+        }
+    }
+
     void visit_FileRead(const ASR::FileRead_t &x) {
         if (x.m_fmt != nullptr) {
             diag.codegen_warning_label("format string in read() is not implemented yet and it is currently treated as '*'",
                 {x.m_fmt->base.loc}, "treated as '*'");
         }
-        if (x.m_unit != nullptr) {
-            diag.codegen_error_label("unit in read() is not implemented yet",
-                {x.m_unit->base.loc}, "not implemented");
-            throw CodeGenAbort();
+        llvm::Value *unit_val;
+        if (x.m_unit == nullptr) {
+            // Read from stdin
+            unit_val = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, -1));
+        } else {
+            this->visit_expr_wrapper(x.m_unit, true);
+            unit_val = tmp;
         }
-        diag.codegen_error_label("The intrinsic function read() is not implemented yet in the LLVM backend",
-            {x.base.base.loc}, "not implemented");
-        throw CodeGenAbort();
+        for (size_t i=0; i<x.n_values; i++) {
+            int ptr_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*x.m_values[i]);
+            ptr_loads = ptr_copy;
+            llvm::Function *fn = get_read_function(
+                    ASRUtils::expr_type(x.m_values[i]));
+            builder->CreateCall(fn, {tmp, unit_val});
+        }
+    }
+
+    void visit_FileOpen(const ASR::FileOpen_t &x) {
+        llvm::Value *unit_val = nullptr, *f_name = nullptr;
+        llvm::Value *status = nullptr;
+        this->visit_expr_wrapper(x.m_newunit, true);
+        unit_val = tmp;
+        if (x.m_filename) {
+            this->visit_expr_wrapper(x.m_filename, true);
+            f_name = tmp;
+        } else {
+            f_name = llvm::Constant::getNullValue(character_type);
+        }
+        if (x.m_status) {
+            this->visit_expr_wrapper(x.m_status, true);
+            status = tmp;
+        } else {
+            status = llvm::Constant::getNullValue(character_type);
+        }
+        std::string runtime_func_name = "_lfortran_open";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt64Ty(context), {
+                        llvm::Type::getInt32Ty(context),
+                        character_type, character_type
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {unit_val, f_name, status});
+    }
+
+    void visit_FileClose(const ASR::FileClose_t &x) {
+        llvm::Value *unit_val = nullptr;
+        this->visit_expr_wrapper(x.m_unit, true);
+        unit_val = tmp;
+        std::string runtime_func_name = "_lfortran_close";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context),
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {unit_val});
     }
 
     void visit_Print(const ASR::Print_t &x) {

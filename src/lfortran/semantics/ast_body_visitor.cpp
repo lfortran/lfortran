@@ -717,11 +717,19 @@ public:
         ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sym_arg));
         std::string arg_name = arg->m_name;
         if (restriction->n_args != arg->n_args) {
-            // TODO: use diagnostics showing both the restriction and the argument
-            std::string msg = "The argument " + arg_name;
-                + " has different number of arguments with the restriction "
-                + restriction_name;
-            throw SemanticError(msg, loc);
+            std::string restriction_narg = std::to_string(restriction->n_args);
+            std::string argument_narg = std::to_string(arg->n_args);
+            diag.add(Diagnostic(
+                "Number of arguments mismatch, restriction expects a function with " + restriction_narg
+                    + " parameters, but a function with " + argument_narg + " parameters is provided",
+                    Level::Error, Stage::Semantic, {
+                        Label(arg_name + " has " + argument_narg + " parameters",
+                                {loc, arg->base.base.loc}),
+                        Label(restriction_name + " has " + restriction_narg + " parameters",
+                                {restriction->base.base.loc})
+                    } 
+            ));
+            throw SemanticAbort();
         }
         for (size_t i = 0; i < restriction->n_args; i++) {
             ASR::ttype_t *restriction_parameter = ASRUtils::expr_type(restriction->m_args[i]);
@@ -731,8 +739,23 @@ public:
                     = ASR::down_cast<ASR::TypeParameter_t>(restriction_parameter);
                 if (!ASRUtils::check_equal_type(subs[restriction_tp->m_param],
                                                 arg_parameter)) {
-                    throw SemanticError("Restriction type mismatch with provided "
-                        "type arguments", loc);
+                    std::string rtype = ASRUtils::type_to_str(subs[restriction_tp->m_param]);
+                    std::string rvar = ASRUtils::symbol_name(
+                                        ASR::down_cast<ASR::Var_t>(restriction->m_args[i])->m_v);
+                    std::string atype = ASRUtils::type_to_str(arg_parameter);
+                    std::string avar = ASRUtils::symbol_name(
+                                        ASR::down_cast<ASR::Var_t>(arg->m_args[i])->m_v);
+                    diag.add(Diagnostic(
+                        "Restriction type mismatch with provided function argument",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc}),
+                            Label("Restriction's parameter " + rvar + " of type " + rtype,
+                                    {restriction->m_args[i]->base.loc}),
+                            Label("Function's parameter " + avar + " of type " + atype,
+                                    {arg->m_args[i]->base.loc})
+                        }
+                    ));
+                    throw SemanticAbort();
                 }
             }
         }
@@ -748,8 +771,19 @@ public:
                 ASR::TypeParameter_t *return_tp
                     = ASR::down_cast<ASR::TypeParameter_t>(restriction_return);
                 if (!ASRUtils::check_equal_type(subs[return_tp->m_param], arg_return)) {
-                    throw SemanticError("Restriction type mismatch with provided "
-                        "type arguments", loc);
+                    std::string rtype = ASRUtils::type_to_str(subs[return_tp->m_param]);
+                    std::string atype = ASRUtils::type_to_str(arg_return);
+                    diag.add(Diagnostic(
+                       "Restriction type mismatch with provided function argument",
+                       Level::Error, Stage::Semantic, {
+                            Label("", {loc}),
+                            Label("Restriction's return type " + rtype,
+                                {restriction->m_return_var->base.loc}),
+                            Label("Function's return type " + atype,
+                                {arg->m_return_var->base.loc})
+                       }
+                    ));
+                    throw SemanticAbort();
                 }
             }
         } else {
@@ -1793,7 +1827,7 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
                 ASR::intentType intent = v->m_intent;
                 if (intent == ASR::intentType::In) {
-                    throw SemanticError("Argument `" + std::string(v->m_name) + "` with INTENT(IN) in variable definition context (assignment)", target->base.loc);
+                    throw SemanticError("Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`", target->base.loc);
                 }
             }
         }
