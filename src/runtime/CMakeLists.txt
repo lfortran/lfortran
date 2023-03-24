@@ -15,7 +15,7 @@ endif()
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_Fortran_MODULE_DIRECTORY})
 
-macro(lfrotran_compile_runtime name dir)
+macro(lfortran_compile_runtime name dir)
   add_library(${name} OBJECT ${dir}/${name}.f90)
   target_compile_options(${name} PUBLIC "--backend=cpp")
   set_target_properties(${name} PROPERTIES
@@ -25,50 +25,50 @@ macro(lfrotran_compile_runtime name dir)
   if(ARGN)
     add_dependencies(${name} ${ARGN})
   endif()
-endmacro(lfrotran_compile_runtime)
+endmacro(lfortran_compile_runtime)
 
-lfrotran_compile_runtime(lfortran_intrinsic_builtin builtin)
-lfrotran_compile_runtime(lfortran_intrinsic_kind pure)
-lfrotran_compile_runtime(lfortran_intrinsic_iso_fortran_env pure)
+lfortran_compile_runtime(lfortran_intrinsic_builtin builtin)
+lfortran_compile_runtime(lfortran_intrinsic_kind pure)
+lfortran_compile_runtime(lfortran_intrinsic_iso_fortran_env pure)
 
-lfrotran_compile_runtime(lfortran_intrinsic_optimization builtin)
+lfortran_compile_runtime(lfortran_intrinsic_optimization builtin)
 add_dependencies(lfortran_intrinsic_optimization lfortran_intrinsic_iso_fortran_env)
 
-lfrotran_compile_runtime(lfortran_intrinsic_math2 pure)
+lfortran_compile_runtime(lfortran_intrinsic_math2 pure)
 add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_iso_fortran_env)
 add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_math3)
 add_dependencies(lfortran_intrinsic_math2 lfortran_intrinsic_builtin)
 
-lfrotran_compile_runtime(lfortran_intrinsic_math3 pure)
+lfortran_compile_runtime(lfortran_intrinsic_math3 pure)
 add_dependencies(lfortran_intrinsic_math3 lfortran_intrinsic_iso_fortran_env)
 add_dependencies(lfortran_intrinsic_math3 lfortran_intrinsic_builtin)
 
-lfrotran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
+lfortran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
 add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortran_env)
 
-lfrotran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
+lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
 add_dependencies(lfortran_intrinsic_iso_c_binding lfortran_intrinsic_builtin)
 
-lfrotran_compile_runtime(lfortran_intrinsic_string pure)
+lfortran_compile_runtime(lfortran_intrinsic_string pure)
 add_dependencies(lfortran_intrinsic_string lfortran_intrinsic_builtin)
 add_dependencies(lfortran_intrinsic_string lfortran_intrinsic_iso_fortran_env)
 
-lfrotran_compile_runtime(lfortran_intrinsic_trig pure)
+lfortran_compile_runtime(lfortran_intrinsic_trig pure)
 add_dependencies(lfortran_intrinsic_trig lfortran_intrinsic_iso_fortran_env)
 
-lfrotran_compile_runtime(lfortran_intrinsic_math impure)
+lfortran_compile_runtime(lfortran_intrinsic_math impure)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_c_binding)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_builtin)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_fortran_env)
 add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_math2)
 
-lfrotran_compile_runtime(lfortran_intrinsic_sin impure)
+lfortran_compile_runtime(lfortran_intrinsic_sin impure)
 add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_iso_c_binding)
 add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_builtin)
 add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_iso_fortran_env)
 add_dependencies(lfortran_intrinsic_sin lfortran_intrinsic_math)
 
-lfrotran_compile_runtime(lfortran_intrinsic_bit impure)
+lfortran_compile_runtime(lfortran_intrinsic_bit impure)
 add_dependencies(lfortran_intrinsic_bit lfortran_intrinsic_iso_fortran_env)
 
 # Ideally this should be a target based install, not file based:
