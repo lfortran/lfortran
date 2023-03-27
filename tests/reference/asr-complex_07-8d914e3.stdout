@@ -107,7 +107,11 @@
                                             (Complex 4 [])
                                         )
                                     )
-                                    ()
+                                    (ComplexConstant
+                                        42.000000
+                                        0.000000
+                                        (Complex 4 [])
+                                    )
                                     Save
                                     (Complex 4 [])
                                     Source
@@ -149,7 +153,11 @@
                                             (Complex 4 [])
                                         )
                                     )
-                                    ()
+                                    (ComplexConstant
+                                        3.140000
+                                        0.000000
+                                        (Complex 4 [])
+                                    )
                                     Save
                                     (Complex 4 [])
                                     Source
@@ -189,7 +197,11 @@
                                             (Complex 4 [])
                                         )
                                     )
-                                    ()
+                                    (ComplexConstant
+                                        42.000000
+                                        3.140000
+                                        (Complex 4 [])
+                                    )
                                     Save
                                     (Complex 4 [])
                                     Source

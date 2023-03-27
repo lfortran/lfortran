@@ -17,7 +17,10 @@
                                         "B"
                                         (Character 1 1 () [])
                                     )
-                                    ()
+                                    (StringConstant
+                                        "B"
+                                        (Character 1 1 () [])
+                                    )
                                     Save
                                     (Character 1 1 () [])
                                     Source

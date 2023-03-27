@@ -446,7 +446,10 @@
                                             (Real 4 [])
                                         )
                                     )
-                                    ()
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4 [])
+                                    )
                                     Save
                                     (Real 4 [])
                                     Source

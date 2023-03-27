@@ -67,7 +67,10 @@
                                                         2.000000
                                                         (Real 4 [])
                                                     )
-                                                    ()
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 4 [])
+                                                    )
                                                     Save
                                                     (Real 4 [])
                                                     Source
@@ -213,7 +216,10 @@
                                                         2.000000
                                                         (Real 4 [])
                                                     )
-                                                    ()
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 4 [])
+                                                    )
                                                     Save
                                                     (Real 4 [])
                                                     Source

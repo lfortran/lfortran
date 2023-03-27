@@ -32,7 +32,10 @@
                                         "Some error occured"
                                         (Character 1 18 () [])
                                     )
-                                    ()
+                                    (StringConstant
+                                        "Some error occured"
+                                        (Character 1 18 () [])
+                                    )
                                     Save
                                     (Character 1 20 () [])
                                     Source
@@ -79,7 +82,7 @@
                                     []
                                     Local
                                     (IntegerConstant 1 (Integer 4 []))
-                                    ()
+                                    (IntegerConstant 1 (Integer 4 []))
                                     Save
                                     (Integer 4 [])
                                     Source

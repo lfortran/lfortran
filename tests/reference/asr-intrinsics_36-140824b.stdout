@@ -41,10 +41,16 @@
                                             ()
                                             ()
                                         ) [])
-                                        ()
+                                        (StringConstant
+                                            "    "
+                                            (Character 1 4 () [])
+                                        )
                                         ()
                                     )
-                                    ()
+                                    (StringConstant
+                                        "    "
+                                        (Character 1 4 () [])
+                                    )
                                     Save
                                     (Character 1 25 () [])
                                     Source
@@ -76,10 +82,16 @@
                                             ()
                                             ()
                                         ) [])
-                                        ()
+                                        (StringConstant
+                                            ""
+                                            (Character 1 0 () [])
+                                        )
                                         ()
                                     )
-                                    ()
+                                    (StringConstant
+                                        ""
+                                        (Character 1 0 () [])
+                                    )
                                     Save
                                     (Character 1 25 () [])
                                     Source
@@ -121,10 +133,16 @@
                                             ()
                                             ()
                                         ) [])
-                                        ()
+                                        (StringConstant
+                                            "gfortran"
+                                            (Character 1 8 () [])
+                                        )
                                         ()
                                     )
-                                    ()
+                                    (StringConstant
+                                        "gfortran"
+                                        (Character 1 8 () [])
+                                    )
                                     Save
                                     (Character 1 25 () [])
                                     Source
@@ -156,10 +174,16 @@
                                             ()
                                             ()
                                         ) [])
-                                        ()
+                                        (StringConstant
+                                            "gfortran   "
+                                            (Character 1 11 () [])
+                                        )
                                         ()
                                     )
-                                    ()
+                                    (StringConstant
+                                        "gfortran   "
+                                        (Character 1 11 () [])
+                                    )
                                     Save
                                     (Character 1 25 () [])
                                     Source
@@ -191,10 +215,16 @@
                                             ()
                                             ()
                                         ) [])
-                                        ()
+                                        (StringConstant
+                                            "gfortran   "
+                                            (Character 1 11 () [])
+                                        )
                                         ()
                                     )
-                                    ()
+                                    (StringConstant
+                                        "gfortran   "
+                                        (Character 1 11 () [])
+                                    )
                                     Save
                                     (Character 1 25 () [])
                                     Source
@@ -226,10 +256,16 @@
                                             ()
                                             ()
                                         ) [])
-                                        ()
+                                        (StringConstant
+                                            "g for tran      "
+                                            (Character 1 16 () [])
+                                        )
                                         ()
                                     )
-                                    ()
+                                    (StringConstant
+                                        "g for tran      "
+                                        (Character 1 16 () [])
+                                    )
                                     Save
                                     (Character 1 25 () [])
                                     Source
@@ -261,10 +297,16 @@
                                             ()
                                             ()
                                         ) [])
-                                        ()
+                                        (StringConstant
+                                            "# gfor* t $ ran &      "
+                                            (Character 1 23 () [])
+                                        )
                                         ()
                                     )
-                                    ()
+                                    (StringConstant
+                                        "# gfor* t $ ran &      "
+                                        (Character 1 23 () [])
+                                    )
                                     Save
                                     (Character 1 25 () [])
                                     Source

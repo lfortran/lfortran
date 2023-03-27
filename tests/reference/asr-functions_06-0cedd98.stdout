@@ -47,7 +47,10 @@
                                         "  abc"
                                         (Character 1 5 () [])
                                     )
-                                    ()
+                                    (StringConstant
+                                        "  abc"
+                                        (Character 1 5 () [])
+                                    )
                                     Save
                                     (Character 1 5 () [])
                                     Source

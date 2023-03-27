@@ -118,7 +118,10 @@
                                         1.500000
                                         (Real 4 [])
                                     )
-                                    ()
+                                    (RealConstant
+                                        1.500000
+                                        (Real 4 [])
+                                    )
                                     Save
                                     (Real 4 [])
                                     Source
@@ -136,7 +139,10 @@
                                         2.500000
                                         (Real 4 [])
                                     )
-                                    ()
+                                    (RealConstant
+                                        2.500000
+                                        (Real 4 [])
+                                    )
                                     Save
                                     (Real 4 [])
                                     Source

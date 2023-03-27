@@ -19,6 +19,44 @@
                     (SymbolTable
                         3
                         {
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    f
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 3 y)
+                                        (RealConstant
+                                            3.000000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
                             y:
                                 (Variable
                                     3
@@ -34,7 +72,10 @@
                                             (Real 4 [])
                                         )
                                     )
-                                    ()
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4 [])
+                                    )
                                     Save
                                     (Real 4 [])
                                     Source
@@ -48,14 +89,52 @@
                     .false.
                     .false.
                 ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math),
             test:
                 (Program
                     (SymbolTable
-                        4
+                        5
                         {
+                            abs:
+                                (ExternalSymbol
+                                    5
+                                    abs
+                                    7 abs
+                                    lfortran_intrinsic_math
+                                    []
+                                    abs
+                                    Private
+                                ),
+                            abs@sabs:
+                                (ExternalSymbol
+                                    5
+                                    abs@sabs
+                                    7 sabs
+                                    lfortran_intrinsic_math
+                                    []
+                                    sabs
+                                    Private
+                                ),
+                            f:
+                                (ExternalSymbol
+                                    5
+                                    f
+                                    3 f
+                                    foo2
+                                    []
+                                    f
+                                    Public
+                                ),
                             y:
                                 (ExternalSymbol
-                                    4
+                                    5
                                     y
                                     3 y
                                     foo2
@@ -68,9 +147,85 @@
                     [foo2]
                     [(Print
                         ()
-                        [(Var 4 y)]
+                        [(Var 5 y)]
                         ()
                         ()
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                5 abs@sabs
+                                5 abs
+                                [((RealBinOp
+                                    (Var 5 y)
+                                    Sub
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                ))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        5 f
+                        ()
+                        []
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 5 y)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (FunctionCall
+                                5 abs@sabs
+                                5 abs
+                                [((RealBinOp
+                                    (Var 5 y)
+                                    Sub
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                ))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 )
         })

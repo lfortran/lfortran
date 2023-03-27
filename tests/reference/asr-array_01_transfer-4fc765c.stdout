@@ -30,7 +30,7 @@
                                     []
                                     Local
                                     (IntegerConstant 2 (Integer 4 []))
-                                    ()
+                                    (IntegerConstant 2 (Integer 4 []))
                                     Save
                                     (Integer 4 [])
                                     Source

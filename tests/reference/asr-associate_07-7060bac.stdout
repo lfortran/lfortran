@@ -18,7 +18,11 @@
                                             (Integer 4 [])
                                         )
                                     )
-                                    ()
+                                    (PointerNullConstant
+                                        (Pointer
+                                            (Integer 4 [])
+                                        )
+                                    )
                                     Save
                                     (Pointer
                                         (Integer 4 [])
@@ -42,7 +46,14 @@
                                             ())])
                                         )
                                     )
-                                    ()
+                                    (PointerNullConstant
+                                        (Pointer
+                                            (Real 8 [(()
+                                            ())
+                                            (()
+                                            ())])
+                                        )
+                                    )
                                     Save
                                     (Pointer
                                         (Real 8 [(()
@@ -69,7 +80,14 @@
                                             ())])
                                         )
                                     )
-                                    ()
+                                    (PointerNullConstant
+                                        (Pointer
+                                            (Complex 4 [(()
+                                            ())
+                                            (()
+                                            ())])
+                                        )
+                                    )
                                     Save
                                     (Pointer
                                         (Complex 4 [(()
@@ -89,7 +107,7 @@
                                     []
                                     Local
                                     (IntegerConstant 2 (Integer 4 []))
-                                    ()
+                                    (IntegerConstant 2 (Integer 4 []))
                                     Save
                                     (Integer 4 [])
                                     Source

@@ -96,7 +96,10 @@
                                             (Real 8 [])
                                         )
                                     )
-                                    ()
+                                    (RealConstant
+                                        1.000000
+                                        (Real 8 [])
+                                    )
                                     Save
                                     (Real 8 [])
                                     Source
@@ -122,7 +125,10 @@
                                             (Real 8 [])
                                         )
                                     )
-                                    ()
+                                    (RealConstant
+                                        2.000000
+                                        (Real 8 [])
+                                    )
                                     Save
                                     (Real 8 [])
                                     Source
@@ -160,7 +166,10 @@
                                         4.000000
                                         (Real 4 [])
                                     )
-                                    ()
+                                    (RealConstant
+                                        4.000000
+                                        (Real 4 [])
+                                    )
                                     Save
                                     (Real 4 [])
                                     Source
@@ -186,7 +195,10 @@
                                             (Real 8 [])
                                         )
                                     )
-                                    ()
+                                    (RealConstant
+                                        1.000000
+                                        (Real 8 [])
+                                    )
                                     Save
                                     (Real 8 [])
                                     Source
