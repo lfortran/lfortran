@@ -230,22 +230,20 @@
             [(DerivedType
                 D
                 []
-                (TriviaNode
-                    [(Semicolon)]
-                    []
-                )
-                []
+                ()
+                [(SimpleAttribute
+                    AttrDeferred
+                )]
                 []
                 []
             )
             (DerivedType
                 T
                 []
-                (TriviaNode
-                    [(Semicolon)]
-                    []
-                )
-                []
+                ()
+                [(SimpleAttribute
+                    AttrDeferred
+                )]
                 []
                 []
             )
@@ -253,11 +251,13 @@
                 S
                 []
                 (TriviaNode
-                    [(Semicolon)]
+                    []
                     [(EndOfLine)
                     (EndOfLine)]
                 )
-                []
+                [(SimpleAttribute
+                    AttrDeferred
+                )]
                 []
                 []
             )]

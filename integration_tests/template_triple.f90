@@ -99,7 +99,7 @@ module triple_m
   public :: triple_tmpl
 
   requirement magma_r(T, plus_T)
-    type :: T; end type
+    type, deferred :: T
 
     pure function plus_T(l, r) result(total)
       type(T), intent(in) :: l, r

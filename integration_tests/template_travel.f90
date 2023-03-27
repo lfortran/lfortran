@@ -28,9 +28,9 @@ module travel
     public :: travel_tmpl
 
     requirement operations(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-        type :: D; end type
-        type :: T; end type
-        type :: S; end type
+        type, deferred :: D
+        type, deferred :: T
+        type, deferred :: S
 
         pure function plus_D(l, r) result(total)
             type(D), intent(in) :: l, R

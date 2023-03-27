@@ -43,11 +43,10 @@
             [(DerivedType
                 T
                 []
-                (TriviaNode
-                    [(Semicolon)]
-                    []
-                )
-                []
+                ()
+                [(SimpleAttribute
+                    AttrDeferred
+                )]
                 []
                 []
             )]
