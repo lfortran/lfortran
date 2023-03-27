@@ -866,6 +866,9 @@ public:
             if ( !dim.m_start && !dim.m_length ) {
                 is_compile_time = true;
             }
+            if (m_dim[i].m_end_star) {
+                continue;
+            }
             dims.push_back(al, dim);
         }
     }
