@@ -1943,8 +1943,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () [(()
-                                                    ())])
+                                                    (Character 1 1 () [])
                                                     BindC
                                                     Public
                                                     Required
@@ -1953,8 +1952,7 @@
                                         })
                                     f_string0
                                     (FunctionType
-                                        [(Character 1 1 () [(()
-                                        ())])]
+                                        [(Character 1 1 () [])]
                                         (Integer 4 [])
                                         BindC
                                         Interface

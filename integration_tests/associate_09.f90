@@ -12,13 +12,14 @@ program associate_09
     end subroutine
 
     subroutine check()
-        integer :: i, j, k
+        integer :: i, j, k, l
         i = 10
         j = 120
         k = 429
+        l = 23
         do i=1,3
             associate(s=>i)
-                call add_sources_from_dir(i, "lib_dir", k, &
+                call add_sources_from_dir(l, "lib_dir", k, &
                                 error=j)
             end associate
         end do
