@@ -17,7 +17,10 @@
                                         "BC"
                                         (Character 1 2 () [])
                                     )
-                                    ()
+                                    (StringConstant
+                                        "BC"
+                                        (Character 1 2 () [])
+                                    )
                                     Save
                                     (Character 1 2 () [])
                                     Source

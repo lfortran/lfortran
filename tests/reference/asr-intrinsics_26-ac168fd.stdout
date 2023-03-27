@@ -24,7 +24,7 @@
                                     []
                                     Local
                                     (IntegerConstant 31 (Integer 4 []))
-                                    ()
+                                    (IntegerConstant 31 (Integer 4 []))
                                     Save
                                     (Integer 4 [])
                                     Source

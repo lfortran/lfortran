@@ -295,7 +295,10 @@
                                                         .false.
                                                         (Logical 4 [])
                                                     )
-                                                    ()
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4 [])
+                                                    )
                                                     Save
                                                     (Logical 4 [])
                                                     Source
@@ -343,7 +346,10 @@
                                                         .false.
                                                         (Logical 4 [])
                                                     )
-                                                    ()
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4 [])
+                                                    )
                                                     Save
                                                     (Logical 4 [])
                                                     Source
@@ -792,7 +798,10 @@
                                                         .true.
                                                         (Logical 4 [])
                                                     )
-                                                    ()
+                                                    (LogicalConstant
+                                                        .true.
+                                                        (Logical 4 [])
+                                                    )
                                                     Save
                                                     (Logical 4 [])
                                                     Source

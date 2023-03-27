@@ -13,7 +13,10 @@
                                     factor
                                     []
                                     Local
-                                    ()
+                                    (RealConstant
+                                        100.000000
+                                        (Real 8 [])
+                                    )
                                     (RealConstant
                                         100.000000
                                         (Real 8 [])
@@ -31,7 +34,10 @@
                                     zero
                                     []
                                     Local
-                                    ()
+                                    (RealConstant
+                                        0.000000
+                                        (Real 8 [])
+                                    )
                                     (RealConstant
                                         0.000000
                                         (Real 8 [])

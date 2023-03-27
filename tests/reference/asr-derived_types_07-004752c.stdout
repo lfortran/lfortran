@@ -129,7 +129,10 @@
                                                         .false.
                                                         (Logical 4 [])
                                                     )
-                                                    ()
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4 [])
+                                                    )
                                                     Save
                                                     (Logical 4 [])
                                                     Source
@@ -160,7 +163,7 @@
                                                     []
                                                     Local
                                                     (IntegerConstant 0 (Integer 4 []))
-                                                    ()
+                                                    (IntegerConstant 0 (Integer 4 []))
                                                     Save
                                                     (Integer 4 [])
                                                     Source

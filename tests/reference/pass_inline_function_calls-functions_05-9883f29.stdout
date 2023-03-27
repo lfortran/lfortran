@@ -421,7 +421,10 @@
                                             (Real 4 [])
                                         )
                                     )
-                                    ()
+                                    (RealConstant
+                                        5.000000
+                                        (Real 4 [])
+                                    )
                                     Save
                                     (Real 4 [])
                                     Source
@@ -633,7 +636,7 @@
                                     []
                                     Local
                                     (IntegerConstant 5 (Integer 4 []))
-                                    ()
+                                    (IntegerConstant 5 (Integer 4 []))
                                     Save
                                     (Integer 4 [])
                                     Source

@@ -26,7 +26,14 @@
                                                             )
                                                         )
                                                     )
-                                                    ()
+                                                    (PointerNullConstant
+                                                        (Pointer
+                                                            (Struct
+                                                                2 build_target_t
+                                                                []
+                                                            )
+                                                        )
+                                                    )
                                                     Default
                                                     (Pointer
                                                         (Struct

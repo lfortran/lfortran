@@ -14,7 +14,7 @@
                                     []
                                     Local
                                     (IntegerConstant 2147483647 (Integer 4 []))
-                                    ()
+                                    (IntegerConstant 2147483647 (Integer 4 []))
                                     Save
                                     (Integer 4 [])
                                     Source
@@ -34,7 +34,7 @@
                                         (Integer 8 [])
                                         (IntegerConstant 2147483647 (Integer 8 []))
                                     )
-                                    ()
+                                    (IntegerConstant 2147483647 (Integer 8 []))
                                     Save
                                     (Integer 8 [])
                                     Source

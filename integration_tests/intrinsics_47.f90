@@ -1,7 +1,7 @@
 program intrinsics_47
     implicit none
     logical :: l = all([.true., .true.])
-    logical :: a(3) = [.true., .true., .true.]
+    logical :: a(3)  = [.true., .true., .true.]
     l = all([.true., .false.])
     l = all([.false.])
     l = all([.true.])

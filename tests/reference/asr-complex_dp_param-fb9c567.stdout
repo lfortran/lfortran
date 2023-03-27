@@ -59,7 +59,11 @@
                                             (Complex 4 [])
                                         )
                                     )
-                                    ()
+                                    (ComplexConstant
+                                        1.050000
+                                        1.050000
+                                        (Complex 4 [])
+                                    )
                                     Save
                                     (Complex 4 [])
                                     Source
@@ -89,7 +93,11 @@
                                             (Complex 8 [])
                                         )
                                     )
-                                    ()
+                                    (ComplexConstant
+                                        1.050000
+                                        1.050000
+                                        (Complex 8 [])
+                                    )
                                     Save
                                     (Complex 8 [])
                                     Source
@@ -116,7 +124,11 @@
                                             (Complex 8 [])
                                         )
                                     )
-                                    ()
+                                    (ComplexConstant
+                                        0.000000
+                                        0.000000
+                                        (Complex 8 [])
+                                    )
                                     Save
                                     (Complex 8 [])
                                     Source
