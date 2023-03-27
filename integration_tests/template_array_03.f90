@@ -53,7 +53,7 @@ module template_array_03_m
 
     requirement operations(t, plus_t, zero_t, mult_t)
 
-        type :: t; end type
+        type, deferred :: t
 
         pure function plus_t(l, r) result(result)
             type(t), intent(in) :: l, r

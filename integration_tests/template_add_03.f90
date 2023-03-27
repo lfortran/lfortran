@@ -4,7 +4,7 @@ module template_add_03_m
     public :: add_t
 
     requirement r(t, f)
-        type :: t; end type
+        type, deferred :: t
         function f(x, y) result(z)
             type(t), intent(in) :: x, y, a
             type(t) :: z

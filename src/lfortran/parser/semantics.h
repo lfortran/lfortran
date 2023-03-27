@@ -1973,6 +1973,21 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         VEC_CAST(attr, decl_attribute), attr.size(),  \
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
+#define DERIVED_TYPE2(name, attr, trivia, l) \
+        TYPEPARAMETER0(p.m_a, attr, name, trivia, l)
+
+ast_t* TYPEPARAMETER0(Allocator &al, 
+        const ast_t *attr,
+        const ast_t *id,
+        const ast_t *trivia,
+        Location &l) {
+    Vec<decl_attribute_t*> v;
+    v.reserve(al, 1);
+    v.push_back(al, down_cast<decl_attribute_t>(attr));
+    return make_DerivedType_t(al, l,
+        name2char(id), nullptr, 0, trivia_cast(trivia), v.p, v.size(),
+        nullptr, 0, nullptr, 0);
+}
 
 #define TEMPLATE(name, namelist, decl, contains, l) \
         make_Template_t(p.m_a, l, name2char(name), \

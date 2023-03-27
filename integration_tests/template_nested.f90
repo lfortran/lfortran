@@ -4,7 +4,7 @@ module template_nested_m
     public :: add_t
 
     requirement R(T, F) 
-        type :: T; end type
+        type, deferred :: T
         function F(x, y) result(z)
             type(T), intent(in) :: x, y
             type(T) :: z
