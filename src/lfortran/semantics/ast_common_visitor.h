@@ -1014,6 +1014,7 @@ public:
                         ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = expression_value;
+                        v2->m_symbolic_value = expression_value;
                         Vec<char*> var_deps_vec;
                         var_deps_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
@@ -1178,10 +1179,16 @@ public:
                                             LCOMPILERS_ASSERT(false); // TODO
                                         }
                                     }
+                                    ASR::expr_t* init_expr_value = ASRUtils::expr_value(init_expr);
+                                    if( init_expr && !ASRUtils::is_value_constant(init_expr_value) ) {
+                                        throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
+                                                            " must reduce to a compile time constant.",
+                                            x.m_syms[i].loc);
+                                    }
                                     sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
                                         al, x.m_syms[i].loc, current_scope,
                                         x.m_syms[i].m_name, nullptr, 0, ASR::intentType::Local,
-                                        init_expr, init_expr, ASR::storage_typeType::Default,
+                                        init_expr, init_expr_value, ASR::storage_typeType::Parameter,
                                         init_type, ASR::abiType::Source, ASR::accessType::Public,
                                         ASR::presenceType::Required, false));
                                     current_scope->add_symbol(x.m_syms[i].m_name, sym);
@@ -1405,8 +1412,8 @@ public:
 
                 ASR::expr_t* init_expr = nullptr;
                 ASR::expr_t* value = nullptr;
-                if (s.m_initializer != nullptr
-                        && sym_type->m_type == AST::decl_typeType::TypeType) {
+                if (s.m_initializer != nullptr &&
+                    sym_type->m_type == AST::decl_typeType::TypeType) {
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
@@ -1429,6 +1436,18 @@ public:
                     } else {
                         throw SemanticError("Only function call assignment is allowed for now",
                             x.base.base.loc);
+                    }
+
+                    value = ASRUtils::expr_value(init_expr);
+                    if ( init_expr ) {
+                        if( ASRUtils::is_value_constant(value) ) {
+                        } else if( ASRUtils::is_value_constant(init_expr) ) {
+                            value = nullptr;
+                        } else {
+                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
+                                                " must reduce to a compile time constant.",
+                                x.base.base.loc);
+                        }
                     }
                 } else if (s.m_initializer != nullptr) {
                     this->visit_expr(*s.m_initializer);
@@ -1453,12 +1472,18 @@ public:
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
                     LCOMPILERS_ASSERT(init_expr != nullptr);
-                    if (storage_type == ASR::storage_typeType::Parameter) {
-                        value = ASRUtils::expr_value(init_expr);
-                        if (value == nullptr) {
-                            throw SemanticError("Value of a parameter variable must evaluate to a compile time constant",
+                    value = ASRUtils::expr_value(init_expr);
+                    if ( init_expr ) {
+                        if( ASRUtils::is_value_constant(value) ) {
+                        } else if( ASRUtils::is_value_constant(init_expr) ) {
+                            value = nullptr;
+                        } else {
+                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
+                                                " must reduce to a compile time constant.",
                                 x.base.base.loc);
                         }
+                    }
+                    if (storage_type == ASR::storage_typeType::Parameter) {
                         // TODO: move this into `expr_value` itself:
                         if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
                             // For constant arrays we iterate over each element

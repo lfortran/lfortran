@@ -2276,7 +2276,7 @@ public:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
-        if (x.m_value) {
+        if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
@@ -6131,7 +6131,8 @@ public:
     }
 
     inline void fetch_var(ASR::Variable_t* x) {
-        if (x->m_value) {
+        // Only do for constant variables
+        if (x->m_value && x->m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x->m_value, true);
             return;
         }
