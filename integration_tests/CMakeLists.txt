@@ -260,6 +260,7 @@ RUN(NAME arrays_op_8 LABELS gfortran llvm)
 RUN(NAME arrays_op_9 LABELS gfortran llvm)
 RUN(NAME arrays_op_10 LABELS gfortran llvm)
 RUN(NAME arrays_op_11 LABELS gfortran llvm)
+RUN(NAME arrays_op_13 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_14 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm wasm)
@@ -571,6 +572,7 @@ RUN(NAME associate_04 LABELS gfortran llvm)
 RUN(NAME associate_05 LABELS gfortran llvm)
 RUN(NAME associate_07 LABELS gfortran llvm)
 RUN(NAME associate_08 LABELS gfortran)
+RUN(NAME associate_09 LABELS gfortran llvm)
 
 RUN(NAME real_dp LABELS gfortran llvm wasm)
 RUN(NAME bin_op_real_dp LABELS gfortran llvm)
@@ -603,6 +605,7 @@ RUN(NAME string_14 LABELS gfortran)
 RUN(NAME string_15 LABELS gfortran) # lge, lgt lle, llt
 RUN(NAME string_16 LABELS gfortran) # achar
 RUN(NAME string_19 LABELS gfortran) # achar
+RUN(NAME string_20 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm)
 RUN(NAME nested_02 LABELS gfortran llvm)
