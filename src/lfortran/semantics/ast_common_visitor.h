@@ -1499,7 +1499,11 @@ public:
                             Vec<ASR::expr_t*> body;
                             body.reserve(al, a->n_args);
                             for (size_t i=0; i < a->n_args; i++) {
-                                body.push_back(al, ASRUtils::expr_value(a->m_args[i]));
+                                ASR::expr_t* a_m_args = ASRUtils::expr_value(a->m_args[i]);
+                                if( a_m_args == nullptr ) {
+                                    a_m_args = a->m_args[i];
+                                }
+                                body.push_back(al, a_m_args);
                             }
                             value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al,
                                 a->base.base.loc, body.p, body.size(),
