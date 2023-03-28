@@ -843,7 +843,8 @@ public:
     }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
-        AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time) {
+        AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
+        bool is_char_type=false) {
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
         dims.reserve(al, n_dim);
@@ -865,6 +866,9 @@ public:
             }
             if ( !dim.m_start && !dim.m_length ) {
                 is_compile_time = true;
+            }
+            if (m_dim[i].m_end_star && is_char_type) {
+                continue;
             }
             dims.push_back(al, dim);
         }
@@ -1226,8 +1230,10 @@ public:
                         if (ASR::is_a<ASR::Variable_t>(*get_sym)) {
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
-                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim, is_compile_time);
                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(get_sym);
+                            bool is_char_type = ASR::is_a<ASR::Character_t>(*v->m_type);
+                            process_dims(al, dims, x.m_syms[i].m_dim, x.m_syms[i].n_dim, is_compile_time, is_char_type);
+
                             if (!ASRUtils::ttype_set_dimensions(v->m_type, dims.data(), dims.size())) {
                                 throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
                             }
@@ -1267,6 +1273,7 @@ public:
                 bool value_attr = false;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
+                bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
                 if (assgnd_access.count(sym)) {
                     s_access = assgnd_access[sym];
                 }
@@ -1387,7 +1394,7 @@ public:
                                         x.base.base.loc);
                             }
                             dims_attr_loc = ad->base.base.loc;
-                            process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time);
+                            process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type);
                         } else {
                             throw SemanticError("Attribute type not implemented yet",
                                     x.base.base.loc);
@@ -1405,7 +1412,7 @@ public:
                         );
                         dims.n = 0;
                     }
-                    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time);
+                    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
                 }
                 ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer, dims);
                 current_variable_type_ = type;

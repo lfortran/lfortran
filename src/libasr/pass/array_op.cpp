@@ -181,7 +181,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     }
 
-    void replace_Var(ASR::Var_t* x) {
+    template <typename T>
+    void replace_vars_helper(T* x) {
         if( !(result_var != nullptr && PassUtils::is_array(result_var)) ) {
             return ;
         }
@@ -208,6 +209,14 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         });
         result_var = nullptr;
         use_custom_loop_params = false;
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        replace_vars_helper(x);
+    }
+
+    void replace_Var(ASR::Var_t* x) {
+        replace_vars_helper(x);
     }
 
     template <typename LOOP_BODY>
