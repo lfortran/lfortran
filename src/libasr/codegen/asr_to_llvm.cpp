@@ -4,7 +4,7 @@
 #include <functional>
 #include <string_view>
 #include <utility>
-
+#include <lfortran/pickle.h>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/Analysis/Passes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -3267,8 +3267,14 @@ public:
 
                     llvm_symtab[h] = ptr;
                     auto finder = std::find(nested_globals.begin(), nested_globals.end(), h);
-                    if (finder != nested_globals.end() && !is_array_type && !is_malloc_array_type && !is_list) {
-                        nested_globals_value[h] = ptr;
+                    if (finder != nested_globals.end()) {
+                        if (is_array_type && !is_malloc_array_type && !is_list) {
+                            // Point to the first element of the array
+                            llvm::Value* array_ptr = arr_descr->get_pointer_to_data(ptr);
+                            nested_globals_value[h] = CreateLoad(array_ptr);
+                        } else if (!is_array_type && !is_malloc_array_type && !is_list) {
+                            nested_globals_value[h] = ptr;
+                        }
                     }
                     fill_array_details_(ptr, m_dims, n_dims,
                         is_malloc_array_type,
