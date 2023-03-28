@@ -20,13 +20,13 @@ program nbody
         real(kind=dp) :: x, y, z, u, vx, vy, vz, vu, mass
     end type body
 
-    type(body) :: jupiter = body(&
+    type(body), parameter :: jupiter = body(&
         4.84143144246472090d0, -1.16032004402742839d0, &
         -1.03622044471123109d-01, 0.d0, 1.66007664274403694d-03 * DAYS_PER_YEAR, &
         7.69901118419740425d-03 * DAYS_PER_YEAR, &
         -6.90460016972063023d-05 * DAYS_PER_YEAR, 0.d0,&
         9.54791938424326609d-04 * SOLAR_MASS)
-    type(body) :: saturn = body(&
+    type(body), parameter :: saturn = body(&
         8.34336671824457987d+00, &
         4.12479856412430479d+00, &
         -4.03523417114321381d-01, 0.d0, &
@@ -34,7 +34,7 @@ program nbody
         4.99852801234917238d-03 * DAYS_PER_YEAR, &
         2.30417297573763929d-05 * DAYS_PER_YEAR, 0.d0,&
         2.85885980666130812d-04 * SOLAR_MASS)
-    type(body) :: uranus = body(&
+    type(body), parameter :: uranus = body(&
         1.28943695621391310d+01, &
         -1.51111514016986312d+01, &
         -2.23307578892655734d-01, 0.d0,&
@@ -42,7 +42,7 @@ program nbody
         2.37847173959480950d-03 * DAYS_PER_YEAR, &
         -2.96589568540237556d-05 * DAYS_PER_YEAR, 0.d0,&
         4.36624404335156298d-05 * SOLAR_MASS )
-    type(body) :: neptune = body(&
+    type(body), parameter :: neptune = body(&
         1.53796971148509165d+01, &
         -2.59193146099879641d+01, &
         1.79258772950371181d-01, 0.d0,&
@@ -50,23 +50,19 @@ program nbody
         1.62824170038242295d-03 * DAYS_PER_YEAR, &
         -9.51592254519715870d-05 * DAYS_PER_YEAR, 0.d0,&
         5.15138902046611451d-05 * SOLAR_MASS)
-    type(body) :: sun = body(0.0d0, 0.0d0, 0.0d0, 0.0d0, 0.0d0, &
+    type(body), parameter :: sun = body(0.0d0, 0.0d0, 0.0d0, 0.0d0, 0.0d0, &
         0.0d0, 0.d0, 0.d0, SOLAR_MASS)
 
     integer, parameter :: nb = 5
     integer, parameter :: N = (nb-1)*nb/2
 
-    ! workaround
-    real(kind=dp) :: mass(nb)
+    real(kind=dp), parameter :: mass(nb) = (/ sun%mass, jupiter%mass, saturn%mass, &
+                                   uranus%mass, neptune%mass /)
 
     integer :: num, i
     character(len=8) :: argv
 
     real(kind=dp) :: e, x(3,nb), v(3,nb)
-
-    ! workaround
-    mass = (/ sun%mass, jupiter%mass, saturn%mass, &
-            uranus%mass, neptune%mass /)
 
     x(:,1) = (/ sun%x, sun%y, sun%z /)
     x(:,2) = (/ jupiter%x, jupiter%y, jupiter%z /)
@@ -108,10 +104,7 @@ program nbody
         real(kind=dp), dimension(3) :: p
         integer :: i
 
-        ! workaround
-        p(1) = sum(v(1, :) * mass(:))
-        p(2) = sum(v(2, :) * mass(:))
-        p(3) = sum(v(3, :) * mass(:))
+        p = (/ (sum(v(i,:) * mass(:)), i=1,3) /)
         v(:,k) = -p / SOLAR_MASS
     end subroutine offsetMomentum
 

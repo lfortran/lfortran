@@ -16,6 +16,7 @@
 
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/for_all.h>
+#include <libasr/pass/init_expr.h>
 #include <libasr/pass/implied_do_loops.h>
 #include <libasr/pass/array_op.h>
 #include <libasr/pass/select_case.h>
@@ -85,7 +86,8 @@ namespace LCompilers {
             {"pass_list_expr", &pass_list_expr},
             {"pass_array_by_data", &pass_array_by_data},
             {"subroutine_from_function", &pass_create_subroutine_from_function},
-            {"transform_optional_argument_functions", &pass_transform_optional_argument_functions}
+            {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
+            {"init_expr", &pass_replace_init_expr}
         };
 
         bool is_fast;
@@ -177,6 +179,7 @@ namespace LCompilers {
         PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
                 "global_stmts",
+                "init_expr",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_list_expr",
@@ -198,6 +201,7 @@ namespace LCompilers {
 
             _with_optimization_passes = {
                 "global_stmts",
+                "init_expr",
                 "class_constructor",
                 "implied_do_loops",
                 "pass_array_by_data",
