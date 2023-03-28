@@ -59,9 +59,19 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        ASR::asr_t* block = ASR::make_Block_t(al, x.base.base.loc,
-                                              current_scope, x.m_stmt_name,
-                                              body.p, body.size());
+        ASR::asr_t* block;
+        if (x.m_stmt_name) {
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                                      current_scope, x.m_stmt_name,
+                                      body.p, body.size());
+        } else {
+            // TODO: Understand tests/block1.f90 to know if this is needed, otherwise
+            // it might be possible to allow x.m_stmt_name to be nullptr
+            std::string name = parent_scope->get_unique_name("block");
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                                      current_scope, s2c(al, name),
+                                      body.p, body.size());
+        }
         current_scope = parent_scope;
         // TODO: Understand if the following line is necessary
         //current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
