@@ -1,0 +1,13 @@
+{
+    "basename": "asr-cycle_and_exit3-dcd7bfe",
+    "cmd": "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/cycle_and_exit3.f90",
+    "infile_hash": "05289c231a04f0752effeea6ff1251767ccd54cd98603687066e107b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-cycle_and_exit3-dcd7bfe.stdout",
+    "stdout_hash": "f4860027228f7a7fe6cd9025faa5ebfcf9b12956babe2af2d346d0b5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

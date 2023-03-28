@@ -66,6 +66,7 @@
                         ()
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 10 (Integer 4 []))
@@ -116,6 +117,7 @@
                         ()
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 10 (Integer 4 []))
                         (IntegerConstant 1 (Integer 4 []))
@@ -157,6 +159,7 @@
                         ()
                     )
                     (DoLoop
+                        a
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 10 (Integer 4 []))
@@ -180,7 +183,9 @@
                                 (Logical 4 [])
                                 ()
                             )
-                            [(Exit)]
+                            [(Exit
+                                a
+                            )]
                             []
                         )]
                     )
@@ -203,6 +208,7 @@
                         ()
                     )
                     (DoLoop
+                        b
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 10 (Integer 4 []))
@@ -226,7 +232,9 @@
                                 (Logical 4 [])
                                 ()
                             )
-                            [(Exit)]
+                            [(Exit
+                                b
+                            )]
                             []
                         )]
                     )
@@ -254,6 +262,7 @@
                         ()
                     )
                     (WhileLoop
+                        c
                         (LogicalConstant
                             .true.
                             (Logical 4 [])
@@ -277,7 +286,9 @@
                                 (Logical 4 [])
                                 ()
                             )
-                            [(Exit)]
+                            [(Exit
+                                c
+                            )]
                             []
                         )
                         (=
@@ -311,6 +322,7 @@
                         ()
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 10 (Integer 4 []))

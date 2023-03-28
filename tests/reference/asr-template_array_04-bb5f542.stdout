@@ -225,6 +225,7 @@
                                     [__asr_generic_swap]
                                     [(Var 8 arr)]
                                     [(DoLoop
+                                        ()
                                         ((Var 8 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerBinOp
@@ -372,6 +373,7 @@
                                     [swap]
                                     [(Var 5 arr)]
                                     [(DoLoop
+                                        ()
                                         ((Var 5 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerBinOp

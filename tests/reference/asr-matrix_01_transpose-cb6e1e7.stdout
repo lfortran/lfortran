@@ -89,11 +89,13 @@
                         ()
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 3 (Integer 4 []))
                         ())
                         [(DoLoop
+                            ()
                             ((Var 2 j)
                             (IntegerConstant 1 (Integer 4 []))
                             (IntegerConstant 3 (Integer 4 []))

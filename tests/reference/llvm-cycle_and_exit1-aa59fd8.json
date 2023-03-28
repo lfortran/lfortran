@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-cycle_and_exit1-aa59fd8",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/cycle_and_exit1.f90",
+    "infile_hash": "43c934b9b817590f6f44e2f25f0bca7a8583faedf363b27d347c7381",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-cycle_and_exit1-aa59fd8.stdout",
+    "stdout_hash": "57d6e4f13508fd4f57fee4e1dcee19731727184f29f2ea2b1f7dc133",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

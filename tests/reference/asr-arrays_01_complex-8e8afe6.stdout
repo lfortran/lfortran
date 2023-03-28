@@ -91,6 +91,7 @@
                     arrays_01_complex
                     []
                     [(DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 3 (Integer 4 []))
@@ -199,6 +200,7 @@
                         []
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 11 (Integer 4 []))
                         (IntegerConstant 14 (Integer 4 []))
@@ -333,6 +335,7 @@
                         []
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 3 (Integer 4 []))
@@ -585,11 +588,13 @@
                         []
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 2 (Integer 4 []))
                         ())
                         [(DoLoop
+                            ()
                             ((Var 2 j)
                             (IntegerConstant 1 (Integer 4 []))
                             (IntegerConstant 2 (Integer 4 []))

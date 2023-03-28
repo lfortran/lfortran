@@ -164,7 +164,7 @@ public:
     Allocator &al;
 
     llvm::Value *tmp;
-    llvm::BasicBlock *current_loophead, *proc_return, *block_end_label;
+    llvm::BasicBlock *proc_return;
     std::string mangle_prefix;
     bool prototype_only;
     llvm::StructType *complex_type_4, *complex_type_8;
@@ -220,9 +220,13 @@ public:
         from the nested_vars analysis pass to determine if we need to save or
         reload a local scope (and increment or decrement the stack pointer) */
     const ASR::Function_t *parent_function = nullptr;
-    std::vector<llvm::BasicBlock*> do_loop_end; /* For saving the end of a do
-        loop, so that we can jump to the end of the loop when we are done
-        executing the loop body */
+
+    std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop, 
+        so that we can jump to the head of the loop when we reach a cycle */
+    std::vector<std::string> loop_head_names;
+    std::vector<llvm::BasicBlock*> loop_or_block_end; /* For saving the end of a block, 
+        so that we can jump to the end of the block when we reach an exit */
+    std::vector<std::string> loop_or_block_end_names;
 
     std::unique_ptr<LLVMUtils> llvm_utils;
     std::unique_ptr<LLVMList> list_api;
@@ -337,14 +341,29 @@ public:
     }
 
     template <typename Cond, typename Body>
-    void create_loop(Cond condition, Body loop_body) {
+    void create_loop(char *name, Cond condition, Body loop_body) {
         dict_api_lp->set_iterators();
         dict_api_sc->set_iterators();
-        llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
-        llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
-        llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
-        do_loop_end.push_back(loopend);
-        this->current_loophead = loophead;
+
+        std::string loop_name;
+        if (name) {
+            loop_name = std::string(name);
+        } else {
+            loop_name = "loop";
+        }
+
+        std::string loophead_name = loop_name + ".head";
+        std::string loopbody_name = loop_name + ".body";
+        std::string loopend_name = loop_name + ".end";
+
+        llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, loophead_name);
+        llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, loopbody_name);
+        llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, loopend_name);
+
+        loop_head.push_back(loophead);
+        loop_head_names.push_back(loophead_name);
+        loop_or_block_end.push_back(loopend);
+        loop_or_block_end_names.push_back(loopend_name);
 
         // head
         start_new_block(loophead); {
@@ -359,7 +378,8 @@ public:
         }
 
         // end
-        do_loop_end.pop_back();
+        loop_or_block_end.pop_back();
+        loop_or_block_end_names.pop_back();
         start_new_block(loopend);
         dict_api_lp->reset_iterators();
         dict_api_sc->reset_iterators();
@@ -4904,14 +4924,6 @@ public:
     }
 
     void visit_BlockCall(const ASR::BlockCall_t& x) {
-        /* The current `in_block` implementation has the following limitations:
-         * - Does not work for nested blocks. To fix it there, we should change
-         *   it to an integer and keep incrementing it for each block.
-         * - Combining blocks and loops.
-         * - The label in `exit` is currently ignored, so we only jump to the
-         *   inner most label. Instead we need to jump to the actual label
-         *   provided.
-         */
         if( x.m_label != -1 ) {
             if( llvm_goto_targets.find(x.m_label) == llvm_goto_targets.end() ) {
                 llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -4922,26 +4934,35 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
         declare_vars(*block);
-        std::string block_name = std::string(block->m_name);
-        std::string block_end_name = "block_"+block_name+"_end";
-        llvm::BasicBlock *block_start = llvm::BasicBlock::Create(context, "block_"+block_name+"_start");
-        start_new_block(block_start);
-        llvm::BasicBlock *block_end = llvm::BasicBlock::Create(context, "block_"+block_name+"_end");
-        llvm::Function *fn = block_start->getParent();
-        fn->getBasicBlockList().push_back(block_end);
-        builder->SetInsertPoint(block_start);
-        block_end_label = block_end;
+        std::string block_name;
+        if (block->m_name) {
+            block_name = std::string(block->m_name);
+        } else {
+            block_name = "block";
+        }
+        std::string blockstart_name = block_name + ".start";
+        std::string blockend_name = block_name + ".end";
+        llvm::BasicBlock *blockstart = llvm::BasicBlock::Create(context, blockstart_name);
+        start_new_block(blockstart);
+        llvm::BasicBlock *blockend = llvm::BasicBlock::Create(context, blockend_name);
+        llvm::Function *fn = blockstart->getParent();
+        fn->getBasicBlockList().push_back(blockend);
+        builder->SetInsertPoint(blockstart);
+        loop_or_block_end.push_back(blockend);
+        loop_or_block_end_names.push_back(blockend_name);
         for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*(block->m_body[i]));
         }
+        loop_or_block_end.pop_back();
+        loop_or_block_end_names.pop_back();
         llvm::BasicBlock *last_bb = builder->GetInsertBlock();
         llvm::Instruction *block_terminator = last_bb->getTerminator();
         if (block_terminator == nullptr) {
             // The previous block is not terminated --- terminate it by jumping
-            // to block_end
-            builder->CreateBr(block_end);
+            // to blockend
+            builder->CreateBr(blockend);
         }
-        builder->SetInsertPoint(block_end);
+        builder->SetInsertPoint(blockend);
     }
 
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false) {
@@ -5330,8 +5351,12 @@ public:
         tmp = builder->CreateSelect(cond, then_val, else_val);
     }
 
+    // TODO: Implement visit_DooLoop
+    //void visit_DoLoop(const ASR::DoLoop_t &x) {
+    //}
+
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
-        create_loop([=]() {
+        create_loop(x.m_name, [=]() {
             this->visit_expr_wrapper(x.m_test, true);
             return tmp;
         }, [=]() {
@@ -5341,20 +5366,48 @@ public:
         });
     }
 
-    void visit_ExitBlock(const ASR::ExitBlock_t & /* x */) {
-        builder->CreateBr(block_end_label);
-        llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit_block");
-        start_new_block(bb);
-    }
-
-    void visit_Exit(const ASR::Exit_t & /* x */) {
-        builder->CreateBr(do_loop_end.back());
+    void visit_Exit(const ASR::Exit_t &x) {
+        if (x.m_stmt_name) {
+            std::string stmt_name = std::string(x.m_stmt_name) + ".end";
+            int nested_block_depth = loop_or_block_end_names.size();
+            int i = nested_block_depth - 1;
+            for (; i >= 0; i--) {
+                if (loop_or_block_end_names[i] == stmt_name) {
+                    break;
+                }
+            }
+            if (i >= 0) {
+                builder->CreateBr(loop_or_block_end[i]);
+            } else {
+                throw CodeGenError("Could not find block or loop named " + std::string(x.m_stmt_name) + " in parent scope to exit from.",
+                x.base.base.loc);
+            }
+        } else {
+            builder->CreateBr(loop_or_block_end.back());
+        }
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_exit");
         start_new_block(bb);
     }
 
-    void visit_Cycle(const ASR::Cycle_t & /* x */) {
-        builder->CreateBr(current_loophead);
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        if (x.m_stmt_name) {
+            std::string stmt_name = std::string(x.m_stmt_name) + ".head";
+            int nested_block_depth = loop_head_names.size();
+            int i = nested_block_depth - 1;
+            for (; i >= 0; i--) {
+                if (loop_head_names[i] == stmt_name) {
+                    break;
+                }
+            }
+            if (i >= 0) {
+                builder->CreateBr(loop_head[i]);
+            } else {
+                throw CodeGenError("Could not find loop named " + std::string(x.m_stmt_name) + " in parent scope to cycle to.",
+                x.base.base.loc);
+            }
+        } else {
+            builder->CreateBr(loop_head.back());
+        }
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_cycle");
         start_new_block(bb);
     }

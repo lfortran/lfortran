@@ -1,0 +1,151 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [3 x i8] c"b1\00", align 1
+@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@6 = private unnamed_addr constant [3 x i8] c"b2\00", align 1
+@7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@10 = private unnamed_addr constant [9 x i8] c"error b1\00", align 1
+@11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@14 = private unnamed_addr constant [3 x i8] c"b3\00", align 1
+@15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@17 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@18 = private unnamed_addr constant [3 x i8] c"b4\00", align 1
+@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@20 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@21 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@22 = private unnamed_addr constant [3 x i8] c"b5\00", align 1
+@23 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@24 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@25 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@26 = private unnamed_addr constant [9 x i8] c"error b4\00", align 1
+@27 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@28 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@29 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@30 = private unnamed_addr constant [9 x i8] c"error b3\00", align 1
+@31 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@32 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@33 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@34 = private unnamed_addr constant [3 x i8] c"b6\00", align 1
+@35 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@36 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@37 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@38 = private unnamed_addr constant [3 x i8] c"b7\00", align 1
+@39 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@40 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@41 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@42 = private unnamed_addr constant [5 x i8] c"pass\00", align 1
+@43 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  %i = alloca i32, align 4
+  %pass = alloca i1, align 1
+  store i1 true, i1* %pass, align 1
+  br label %b1.start
+
+b1.start:                                         ; preds = %.entry
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %2 = load i32, i32* %i, align 4
+  %3 = add i32 %2, 1
+  store i32 %3, i32* %i, align 4
+  br label %b2.start
+
+b1.end:                                           ; preds = %b2.end, %b2.start
+  br label %b3.start
+
+b2.start:                                         ; preds = %b1.start
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
+  %4 = load i32, i32* %i, align 4
+  %5 = add i32 %4, 2
+  store i32 %5, i32* %i, align 4
+  br label %b1.end
+
+b2.end:                                           ; preds = %unreachable_after_exit1, %unreachable_after_exit
+  %6 = load i32, i32* %i, align 4
+  %7 = add i32 %6, 5
+  store i32 %7, i32* %i, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  store i1 false, i1* %pass, align 1
+  br label %b1.end
+
+unreachable_after_exit:                           ; No predecessors!
+  %8 = load i32, i32* %i, align 4
+  %9 = add i32 %8, 3
+  store i32 %9, i32* %i, align 4
+  br label %b2.end
+
+unreachable_after_exit1:                          ; No predecessors!
+  %10 = load i32, i32* %i, align 4
+  %11 = add i32 %10, 4
+  store i32 %11, i32* %i, align 4
+  br label %b2.end
+
+b3.start:                                         ; preds = %b1.end
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
+  br label %b4.start
+
+b3.end:                                           ; preds = %b4.end, %b5.start
+  %i3 = alloca i32, align 4
+  br label %b6.start
+
+b4.start:                                         ; preds = %b3.start
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  br label %b5.start
+
+b4.end:                                           ; preds = %b5.end
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))
+  store i1 false, i1* %pass, align 1
+  br label %b3.end
+
+b5.start:                                         ; preds = %b4.start
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @22, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @21, i32 0, i32 0))
+  br label %b3.end
+
+b5.end:                                           ; preds = %unreachable_after_exit2
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @26, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @25, i32 0, i32 0))
+  store i1 false, i1* %pass, align 1
+  br label %b4.end
+
+unreachable_after_exit2:                          ; No predecessors!
+  br label %b5.end
+
+b6.start:                                         ; preds = %b3.end
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @34, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @33, i32 0, i32 0))
+  br label %block.start
+
+b6.end:                                           ; preds = %block.end
+  %12 = load i1, i1* %pass, align 1
+  br i1 %12, label %then, label %else
+
+block.start:                                      ; preds = %b6.start
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @39, i32 0, i32 0), i8* getelementptr inbounds ([3 x i8], [3 x i8]* @38, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @37, i32 0, i32 0))
+  br label %block.end
+
+block.end:                                        ; preds = %block.start
+  br label %b6.end
+
+then:                                             ; preds = %b6.end
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @43, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @42, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @41, i32 0, i32 0))
+  br label %ifcont
+
+else:                                             ; preds = %b6.end
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)
+
+declare void @_lfortran_printf(i8*, ...)

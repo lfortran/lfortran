@@ -1,0 +1,77 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            test_blocks:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            pass:
+                                (Variable
+                                    2
+                                    pass
+                                    []
+                                    Local
+                                    (LogicalConstant
+                                        .true.
+                                        (Logical 4 [])
+                                    )
+                                    (LogicalConstant
+                                        .true.
+                                        (Logical 4 [])
+                                    )
+                                    Save
+                                    (Logical 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    test_blocks
+                    []
+                    [(BlockCall
+                        -1
+                        2 b1
+                    )
+                    (BlockCall
+                        -1
+                        2 b3
+                    )
+                    (BlockCall
+                        -1
+                        2 b6
+                    )
+                    (If
+                        (Var 2 pass)
+                        [(Print
+                            ()
+                            [(StringConstant
+                                "pass"
+                                (Character 1 4 () [])
+                            )]
+                            ()
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

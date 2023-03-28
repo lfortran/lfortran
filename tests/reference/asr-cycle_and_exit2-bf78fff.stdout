@@ -1,0 +1,194 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            test_loops:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            j:
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            k:
+                                (Variable
+                                    2
+                                    k
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    test_loops
+                    []
+                    [(DoLoop
+                        l1
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 5 (Integer 4 []))
+                        ())
+                        [(Print
+                            ()
+                            [(StringConstant
+                                "l1 start"
+                                (Character 1 8 () [])
+                            )]
+                            ()
+                            ()
+                        )
+                        (DoLoop
+                            l2
+                            ((Var 2 j)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4 []))
+                            ())
+                            [(Print
+                                ()
+                                [(StringConstant
+                                    "l2 start"
+                                    (Character 1 8 () [])
+                                )]
+                                ()
+                                ()
+                            )
+                            (DoLoop
+                                l3
+                                ((Var 2 k)
+                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())
+                                [(If
+                                    (IntegerCompare
+                                        (Var 2 k)
+                                        Gt
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        (Logical 4 [])
+                                        ()
+                                    )
+                                    [(Cycle
+                                        l1
+                                    )]
+                                    []
+                                )
+                                (Print
+                                    ()
+                                    [(StringConstant
+                                        "l1"
+                                        (Character 1 2 () [])
+                                    )
+                                    (Var 2 i)
+                                    (StringConstant
+                                        "l2"
+                                        (Character 1 2 () [])
+                                    )
+                                    (Var 2 j)
+                                    (StringConstant
+                                        "l3"
+                                        (Character 1 2 () [])
+                                    )
+                                    (Var 2 k)]
+                                    ()
+                                    ()
+                                )
+                                (If
+                                    (IntegerCompare
+                                        (Var 2 k)
+                                        Gt
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        (Logical 4 [])
+                                        ()
+                                    )
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "error l2"
+                                            (Character 1 8 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    []
+                                )]
+                            )]
+                        )]
+                    )
+                    (If
+                        (LogicalBinOp
+                            (IntegerCompare
+                                (Var 2 j)
+                                Eq
+                                (IntegerConstant 1 (Integer 4 []))
+                                (Logical 4 [])
+                                ()
+                            )
+                            And
+                            (IntegerCompare
+                                (Var 2 k)
+                                Eq
+                                (IntegerConstant 1 (Integer 4 []))
+                                (Logical 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(Print
+                            ()
+                            [(StringConstant
+                                "pass"
+                                (Character 1 4 () [])
+                            )]
+                            ()
+                            ()
+                        )]
+                        [(Print
+                            ()
+                            [(StringConstant
+                                "error"
+                                (Character 1 5 () [])
+                            )
+                            (Var 2 i)
+                            (Var 2 j)
+                            (Var 2 k)]
+                            ()
+                            ()
+                        )]
+                    )]
+                )
+        })
+    []
+)

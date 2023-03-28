@@ -65,6 +65,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (LogicalConstant
                             .true.
                             (Logical 4 [])

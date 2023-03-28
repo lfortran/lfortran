@@ -547,6 +547,7 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 14 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (ArraySize
@@ -697,6 +698,7 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 11 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (ArraySize
@@ -925,6 +927,7 @@
                                     [mysum_integer]
                                     []
                                     [(DoLoop
+                                        ()
                                         ((Var 12 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (ArraySize
