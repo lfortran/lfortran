@@ -97,7 +97,7 @@ class ReplacerNestedVars: public ASR::BaseExprReplacer<ReplacerNestedVars> {
 
 public:
     std::map<ASR::symbol_t*, ASR::symbol_t*> nested_var_to_ext_var;
-    ReplacerNestedVars() : {}
+    ReplacerNestedVars(){}
 
     void replace_Var(ASR::Var_t* x) {
         if (nested_var_to_ext_var.find(x->m_v) != nested_var_to_ext_var.end()) {
@@ -119,7 +119,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
     ReplaceNestedVisitor(Allocator& al_,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
-        replacer(al_), nesting_map(n_map) {}
+        replacer(ReplacerNestedVars()), nesting_map(n_map) {}
 
 
     // void call_replacer() {
