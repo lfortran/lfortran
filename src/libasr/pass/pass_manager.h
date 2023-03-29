@@ -43,6 +43,7 @@
 #include <libasr/pass/pass_list_expr.h>
 #include <libasr/pass/subroutine_from_function.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
+#include <libasr/pass/nested_vars.h>
 #include <libasr/asr_verify.h>
 
 #include <map>
@@ -87,7 +88,8 @@ namespace LCompilers {
             {"pass_array_by_data", &pass_array_by_data},
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
-            {"init_expr", &pass_replace_init_expr}
+            {"init_expr", &pass_replace_init_expr},
+            {"nested_vars", &pass_nested_vars}
         };
 
         bool is_fast;
@@ -196,7 +198,8 @@ namespace LCompilers {
                 "select_case",
                 "inline_function_calls",
                 "unused_functions",
-                "transform_optional_argument_functions"
+                "transform_optional_argument_functions",
+                "nested_vars"
             };
 
             _with_optimization_passes = {

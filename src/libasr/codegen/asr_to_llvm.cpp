@@ -8037,8 +8037,8 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     // Uncomment for debugging the ASR after the transformation
     // std::cout << LFortran::pickle(asr, true, true, true) << std::endl;
 
-    v.nested_func_types = pass_find_nested_vars(asr, context,
-        v.nested_globals, v.nested_call_out, v.nesting_map);
+    // v.nested_func_types = pass_find_nested_vars(asr, context,
+    //     v.nested_globals, v.nested_call_out, v.nesting_map);
     try {
         v.visit_asr((ASR::asr_t&)asr);
     } catch (const CodeGenError &e) {
