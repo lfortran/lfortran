@@ -208,10 +208,9 @@ public:
 
     void visit_BlockCall(const BlockCall_t& x) {
         require(x.m_m != nullptr, "Block call made to inexisting block");
-        // TODO: Understand if the the following line is necessary
-        // require(symtab_in_scope(current_symtab, x.m_m),
-        //     "Block " + std::string(ASRUtils::symbol_name(x.m_m)) +
-        //     " should resolve in current scope.");
+        require(symtab_in_scope(current_symtab, x.m_m),
+            "Block " + std::string(ASRUtils::symbol_name(x.m_m)) +
+            " should resolve in current scope.");
         SymbolTable *parent_symtab = current_symtab;
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
         LCOMPILERS_ASSERT(block); // already checked above, just making sure
