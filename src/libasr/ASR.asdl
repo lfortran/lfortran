@@ -109,7 +109,7 @@ symbol
     | ClassProcedure(symbol_table parent_symtab, identifier name, identifier? self_argument,
         identifier proc_name, symbol proc, abi abi, bool is_deferred)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
-    | Block(symbol_table symtab, identifier? name, stmt* body)
+    | Block(symbol_table symtab, identifier name, stmt* body)
 
 storage_type = Default | Save | Parameter | Allocatable
 access = Public | Private
