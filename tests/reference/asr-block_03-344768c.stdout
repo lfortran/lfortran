@@ -21,6 +21,71 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            loop:
+                                (Block
+                                    (SymbolTable
+                                        4
+                                        {
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    loop
+                                    [(=
+                                        (Var 2 a)
+                                        (IntegerBinOp
+                                            (Var 2 a)
+                                            Add
+                                            (IntegerConstant 5 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (Var 2 a)
+                                            Eq
+                                            (IntegerConstant 15 (Integer 4 []))
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        [(GoTo
+                                            1
+                                            1
+                                        )]
+                                        []
+                                    )
+                                    (=
+                                        (Var 4 b)
+                                        (IntegerBinOp
+                                            (Var 2 a)
+                                            Div
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        1 square
+                                        ()
+                                        [((Var 4 b))]
+                                        ()
+                                    )]
                                 )
                         })
                     block_02

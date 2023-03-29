@@ -5366,10 +5366,6 @@ public:
         });
     }
 
-    // TODO: Implement visit_IntrinsicFunction
-    //void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
-    //}
-
     bool case_insensitive_string_compare(const std::string& str1, const std::string& str2) {
         if (str1.size() != str2.size()) {
             return false;

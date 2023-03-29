@@ -67,6 +67,46 @@
                                     .false.
                                     .false.
                                 ),
+                            main:
+                                (Block
+                                    (SymbolTable
+                                        4
+                                        {
+                                            abs:
+                                                (ExternalSymbol
+                                                    4
+                                                    abs
+                                                    6 abs
+                                                    lfortran_intrinsic_math
+                                                    []
+                                                    abs
+                                                    Private
+                                                ),
+                                            abs@sabs:
+                                                (ExternalSymbol
+                                                    4
+                                                    abs@sabs
+                                                    6 sabs
+                                                    lfortran_intrinsic_math
+                                                    []
+                                                    sabs
+                                                    Private
+                                                )
+                                        })
+                                    main
+                                    [(=
+                                        (Var 2 delta)
+                                        (FunctionCall
+                                            4 abs@sabs
+                                            4 abs
+                                            [((Var 2 ratio))]
+                                            (Real 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                ),
                             ratio:
                                 (Variable
                                     2

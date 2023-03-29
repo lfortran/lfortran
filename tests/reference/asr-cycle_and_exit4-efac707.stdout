@@ -7,6 +7,274 @@
                     (SymbolTable
                         2
                         {
+                            b1:
+                                (Block
+                                    (SymbolTable
+                                        3
+                                        {
+                                            b2:
+                                                (Block
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            
+                                                        })
+                                                    b2
+                                                    [(Print
+                                                        ()
+                                                        [(StringConstant
+                                                            "b2"
+                                                            (Character 1 2 () [])
+                                                        )]
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 2 i)
+                                                        (IntegerBinOp
+                                                            (Var 2 i)
+                                                            Add
+                                                            (IntegerConstant 2 (Integer 4 []))
+                                                            (Integer 4 [])
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Exit
+                                                        b1
+                                                    )
+                                                    (=
+                                                        (Var 2 i)
+                                                        (IntegerBinOp
+                                                            (Var 2 i)
+                                                            Add
+                                                            (IntegerConstant 3 (Integer 4 []))
+                                                            (Integer 4 [])
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Exit
+                                                        b2
+                                                    )
+                                                    (=
+                                                        (Var 2 i)
+                                                        (IntegerBinOp
+                                                            (Var 2 i)
+                                                            Add
+                                                            (IntegerConstant 4 (Integer 4 []))
+                                                            (Integer 4 [])
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                )
+                                        })
+                                    b1
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "b1"
+                                            (Character 1 2 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 2 i)
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Add
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (BlockCall
+                                        -1
+                                        3 b2
+                                    )
+                                    (=
+                                        (Var 2 i)
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Add
+                                            (IntegerConstant 5 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "error b1"
+                                            (Character 1 8 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 2 pass)
+                                        (LogicalConstant
+                                            .false.
+                                            (Logical 4 [])
+                                        )
+                                        ()
+                                    )]
+                                ),
+                            b3:
+                                (Block
+                                    (SymbolTable
+                                        5
+                                        {
+                                            b4:
+                                                (Block
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            b5:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        7
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    b5
+                                                                    [(Print
+                                                                        ()
+                                                                        [(StringConstant
+                                                                            "b5"
+                                                                            (Character 1 2 () [])
+                                                                        )]
+                                                                        ()
+                                                                        ()
+                                                                    )
+                                                                    (Exit
+                                                                        b3
+                                                                    )]
+                                                                )
+                                                        })
+                                                    b4
+                                                    [(Print
+                                                        ()
+                                                        [(StringConstant
+                                                            "b4"
+                                                            (Character 1 2 () [])
+                                                        )]
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (BlockCall
+                                                        -1
+                                                        6 b5
+                                                    )
+                                                    (Print
+                                                        ()
+                                                        [(StringConstant
+                                                            "error b4"
+                                                            (Character 1 8 () [])
+                                                        )]
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 2 pass)
+                                                        (LogicalConstant
+                                                            .false.
+                                                            (Logical 4 [])
+                                                        )
+                                                        ()
+                                                    )]
+                                                )
+                                        })
+                                    b3
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "b3"
+                                            (Character 1 2 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (BlockCall
+                                        -1
+                                        5 b4
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "error b3"
+                                            (Character 1 8 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 2 pass)
+                                        (LogicalConstant
+                                            .false.
+                                            (Logical 4 [])
+                                        )
+                                        ()
+                                    )]
+                                ),
+                            b6:
+                                (Block
+                                    (SymbolTable
+                                        8
+                                        {
+                                            block:
+                                                (Block
+                                                    (SymbolTable
+                                                        9
+                                                        {
+                                                            
+                                                        })
+                                                    block
+                                                    [(Print
+                                                        ()
+                                                        [(StringConstant
+                                                            "b7"
+                                                            (Character 1 2 () [])
+                                                        )]
+                                                        ()
+                                                        ()
+                                                    )]
+                                                ),
+                                            i:
+                                                (Variable
+                                                    8
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    b6
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "b6"
+                                            (Character 1 2 () [])
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (BlockCall
+                                        -1
+                                        8 block
+                                    )]
+                                ),
                             i:
                                 (Variable
                                     2

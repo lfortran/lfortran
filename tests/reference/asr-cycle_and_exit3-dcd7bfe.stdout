@@ -7,6 +7,28 @@
                     (SymbolTable
                         2
                         {
+                            b1:
+                                (Block
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    b1
+                                    [(If
+                                        (IntegerCompare
+                                            (Var 2 i)
+                                            Gt
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        [(Exit
+                                            l1
+                                        )]
+                                        []
+                                    )]
+                                ),
                             i:
                                 (Variable
                                     2
