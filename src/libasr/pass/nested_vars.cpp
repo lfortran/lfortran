@@ -93,6 +93,85 @@ public:
 };
 
 
+class ReplacerNestedVars: public ASR::BaseExprReplacer<ReplacerNestedVars> {
+
+public:
+    std::map<ASR::symbol_t*, ASR::symbol_t*> nested_var_to_ext_var;
+    ReplacerNestedVars() : {}
+
+    void replace_Var(ASR::Var_t* x) {
+        if (nested_var_to_ext_var.find(x->m_v) != nested_var_to_ext_var.end()) {
+            x->m_v = nested_var_to_ext_var[x->m_v];
+        }
+    }
+};
+
+class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<ReplaceNestedVisitor> {
+    private:
+
+    Allocator& al;
+    ReplacerNestedVars replacer;
+
+    public:
+
+    std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> nested_var_to_ext_var;
+
+    ReplaceNestedVisitor(Allocator& al_,
+        std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
+        replacer(al_), nesting_map(n_map) {}
+
+
+    // void call_replacer() {
+    //     replacer.current_expr = current_expr;
+    //     replacer.current_scope = current_scope;
+    //     replacer.replace_expr(*current_expr);
+    // }
+
+
+    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
+
+        // Add the nested vars by creating a new module
+
+        for (auto &it: nesting_map) {
+            // Iterate on each function with nested vars and create a context in
+            // a new module.
+            current_scope = al.make_new<SymbolTable>(current_scope_copy);
+            std::string module_name = "__lcompilers_created__nested_context__" + std::string(
+                                    ASRUtils::symbol_name(it.first));
+            std::map<ASR::symbol_t*, std::string> sym_to_name;
+            module_name = current_scope->get_unique_name(module_name);
+            for (auto &it2: it.second) {
+                std::string new_ext_var = module_name + std::string(ASRUtils::symbol_name(it2));
+                ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(it2)->m_type;
+                new_ext_var = current_scope->get_unique_name(new_ext_var);
+                PassUtils::create_auxiliary_variable(
+                        it2->base.loc, new_ext_var,
+                        al, current_scope, type, ASR::intentType::In);
+                sym_to_name[it2] = new_ext_var;
+            }
+            ASR::asr_t *tmp = ASR::make_Module_t(al, x.base.base.loc,
+                                            /* a_symtab */ current_scope,
+                                            /* a_name */ s2c(al, module_name),
+                                            nullptr,
+                                            0,
+                                            false, false);
+            ASR::symbol_t* mod_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+            current_scope->add_symbol(module_name, mod_sym);
+        }
+
+
+        current_scope = x.m_global_scope;
+        for (auto &a : x.m_global_scope->get_scope()) {
+            this->visit_symbol(*a.second);
+        }
+        current_scope = current_scope_copy;
+    }
+
+
+};
+
 void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {
     NestedVarVisitor v(al);
