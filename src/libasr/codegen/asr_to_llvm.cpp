@@ -5366,13 +5366,25 @@ public:
         });
     }
 
+    bool case_insensitive_string_compare(const std::string& str1, const std::string& str2) {
+        if (str1.size() != str2.size()) {
+            return false;
+        }
+        for (std::string::const_iterator c1 = str1.begin(), c2 = str2.begin(); c1 != str1.end(); ++c1, ++c2) {
+            if (tolower(static_cast<unsigned char>(*c1)) != tolower(static_cast<unsigned char>(*c2))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void visit_Exit(const ASR::Exit_t &x) {
         if (x.m_stmt_name) {
             std::string stmt_name = std::string(x.m_stmt_name) + ".end";
             int nested_block_depth = loop_or_block_end_names.size();
             int i = nested_block_depth - 1;
             for (; i >= 0; i--) {
-                if (loop_or_block_end_names[i] == stmt_name) {
+                if (case_insensitive_string_compare(loop_or_block_end_names[i], stmt_name)) {
                     break;
                 }
             }
@@ -5395,7 +5407,7 @@ public:
             int nested_block_depth = loop_head_names.size();
             int i = nested_block_depth - 1;
             for (; i >= 0; i--) {
-                if (loop_head_names[i] == stmt_name) {
+                if (case_insensitive_string_compare(loop_head_names[i], stmt_name)) {
                     break;
                 }
             }
