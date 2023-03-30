@@ -2283,10 +2283,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             visit_expr(*x.m_args[i].m_value);
         }
 
-        LCOMPILERS_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)fn)) !=
-                        m_func_name_idx_map.end())
-        wasm::emit_call(m_code_section, m_al,
-                        m_func_name_idx_map[get_hash((ASR::asr_t *)fn)]->index);
+        uint64_t hash = get_hash((ASR::asr_t *)fn);
+        if (m_func_name_idx_map.find(hash) != m_func_name_idx_map.end()) {
+            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[hash]->index);
+        } else {
+            if (strcmp(fn->m_name, "c_caimag") == 0) {
+                LCOMPILERS_ASSERT(x.n_args == 1);
+                wasm::emit_set_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f32]);
+                wasm::emit_drop(m_code_section, m_al);
+                wasm::emit_get_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f32]);
+            } else if (strcmp(fn->m_name, "c_zaimag") == 0) {
+                wasm::emit_set_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f64]);
+                wasm::emit_drop(m_code_section, m_al);
+                wasm::emit_get_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f64]);
+            } else {
+                throw CodeGenError("FunctionCall: Function " + std::string(fn->m_name) + " not found");
+            }
+        }
     }
 
     void temp_value_set(ASR::expr_t* expr) {
@@ -2411,10 +2424,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 "the number of parameters");
         }
 
-        LCOMPILERS_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)s)) !=
-                        m_func_name_idx_map.end())
-        wasm::emit_call(m_code_section, m_al,
-                        m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
+        uint64_t hash = get_hash((ASR::asr_t *)s);
+        if (m_func_name_idx_map.find(hash) != m_func_name_idx_map.end()) {
+            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[hash]->index);
+        } else {
+            // if (strcmp(s->m_name, "") == 0) {
+            // } else {
+                throw CodeGenError("SubroutineCall: Function " + std::string(s->m_name) + " not found");
+            // }
+        }
         for (int i = (int)vars_passed_by_refs.size() - 1; i >= 0; i--) {
             ASR::expr_t* return_expr = vars_passed_by_refs[i];
             if (ASR::is_a<ASR::Var_t>(*return_expr)) {
