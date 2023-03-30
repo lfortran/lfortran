@@ -94,14 +94,34 @@ public:
 
 
 class ReplacerNestedVars: public ASR::BaseExprReplacer<ReplacerNestedVars> {
-
+private:
+    Allocator &al;
 public:
-    std::map<ASR::symbol_t*, ASR::symbol_t*> nested_var_to_ext_var;
-    ReplacerNestedVars(){}
+    SymbolTable *current_scope;
+    std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> nested_var_to_ext_var;
+    ReplacerNestedVars(Allocator &_al) : al(_al) {}
 
     void replace_Var(ASR::Var_t* x) {
         if (nested_var_to_ext_var.find(x->m_v) != nested_var_to_ext_var.end()) {
-            x->m_v = nested_var_to_ext_var[x->m_v];
+            std::string m_name = nested_var_to_ext_var[x->m_v].first;
+            ASR::symbol_t *t = nested_var_to_ext_var[x->m_v].second;
+            char *fn_name = ASRUtils::symbol_name(t);
+            std::string sym_name = fn_name;
+            if (current_scope->get_symbol(sym_name) != nullptr) {
+                x->m_v = current_scope->get_symbol(sym_name);
+                return;
+            }
+            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
+                al, t->base.loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ fn_name,
+                t,
+                s2c(al, m_name), nullptr, 0, fn_name,
+                ASR::accessType::Public
+                );
+            ASR::symbol_t *ext_sym = ASR::down_cast<ASR::symbol_t>(fn);
+            current_scope->add_symbol(sym_name, ext_sym);
+            x->m_v = ext_sym;
         }
     }
 };
@@ -115,18 +135,18 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     public:
 
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
-    std::map<ASR::symbol_t*, ASR::symbol_t*> nested_var_to_ext_var;
+    std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> nested_var_to_ext_var;
 
     ReplaceNestedVisitor(Allocator& al_,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
-        replacer(ReplacerNestedVars()), nesting_map(n_map) {}
+        replacer(al_), nesting_map(n_map) {}
 
 
-    // void call_replacer() {
-    //     replacer.current_expr = current_expr;
-    //     replacer.current_scope = current_scope;
-    //     replacer.replace_expr(*current_expr);
-    // }
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.current_scope = current_scope;
+        replacer.replace_expr(*current_expr);
+    }
 
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
@@ -146,10 +166,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 std::string new_ext_var = module_name + std::string(ASRUtils::symbol_name(it2));
                 ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(it2)->m_type;
                 new_ext_var = current_scope->get_unique_name(new_ext_var);
-                PassUtils::create_auxiliary_variable(
+                ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
                         it2->base.loc, new_ext_var,
                         al, current_scope, type, ASR::intentType::In);
-                sym_to_name[it2] = new_ext_var;
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
+                nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
             }
             ASR::asr_t *tmp = ASR::make_Module_t(al, x.base.base.loc,
                                             /* a_symtab */ current_scope,
@@ -160,7 +181,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             ASR::symbol_t* mod_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             current_scope->add_symbol(module_name, mod_sym);
         }
-
+        replacer.nested_var_to_ext_var = nested_var_to_ext_var;
 
         current_scope = x.m_global_scope;
         for (auto &a : x.m_global_scope->get_scope()) {
@@ -176,6 +197,8 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {
     NestedVarVisitor v(al);
     v.visit_TranslationUnit(unit);
+    ReplaceNestedVisitor w(al, v.nesting_map);
+    w.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
     // {
