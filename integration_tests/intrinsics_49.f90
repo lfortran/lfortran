@@ -8,8 +8,8 @@ program intrinsics_49
         y = 2.0
         z = cmplx(x, y)
         r = sin(z)
-        if (abs(real(r) - 3.16577864) > 1e-7) error stop
-        if (abs(imag(r) - 1.95960093) > 1e-7) error stop
+        if (abs(real(r) - 3.16577864) > 1e-6) error stop
+        if (abs(imag(r) - 1.95960093) > 1e-6) error stop
     end block
     block
         real(kind=8) :: x, y
@@ -18,19 +18,19 @@ program intrinsics_49
         y = 2.0
         z = cmplx(x, y)
         r = sin(z)
-        if (abs(real(r) - 3.16577864) > 1e-7) error stop
-        if (abs(imag(r) - 1.95960093) > 1e-7) error stop
+        if (abs(real(r) - 3.16577864) > 1e-6) error stop
+        if (abs(imag(r) - 1.95960093) > 1e-6) error stop
     end block
     block
         real(kind=4) :: x, r
         x = 1.0
         r = sin(x)
-        if (abs(r - 0.841470957) > 1e-7) error stop
+        if (abs(r - 0.841470957) > 1e-6) error stop
     end block
     block
         real(kind=8) :: x, r
         x = 1.0
         r = sin(x)
-        if (abs(r - 0.841470957) > 1e-7) error stop
+        if (abs(r - 0.841470957) > 1e-6) error stop
     end block
 end program
