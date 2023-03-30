@@ -387,6 +387,7 @@
                                     [(Var 4 c)
                                     (Var 4 op_code)]
                                     [(DoLoop
+                                        ()
                                         ((Var 4 i)
                                         (ArrayBound
                                             (Var 4 c)
@@ -404,6 +405,7 @@
                                         )
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 4 j)
                                             (ArrayBound
                                                 (Var 4 c)
@@ -421,6 +423,7 @@
                                             )
                                             ())
                                             [(DoLoop
+                                                ()
                                                 ((Var 4 k)
                                                 (ArrayBound
                                                     (Var 4 c)
@@ -689,16 +692,19 @@
                         ()
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (Var 2 dim1)
                         ())
                         [(DoLoop
+                            ()
                             ((Var 2 j)
                             (IntegerConstant 1 (Integer 4 []))
                             (Var 2 dim2)
                             ())
                             [(DoLoop
+                                ()
                                 ((Var 2 k)
                                 (IntegerConstant 1 (Integer 4 []))
                                 (Var 2 dim3)

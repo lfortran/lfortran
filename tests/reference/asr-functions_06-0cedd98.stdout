@@ -237,6 +237,7 @@
                                     len]
                                     [(Var 4 s)]
                                     [(DoLoop
+                                        ()
                                         ((Var 4 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (FunctionCall
@@ -365,6 +366,7 @@
                                     len]
                                     [(Var 33 s)]
                                     [(DoLoop
+                                        ()
                                         ((Var 33 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (FunctionCall

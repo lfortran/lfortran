@@ -161,16 +161,15 @@ stmt
     | Assign(int label, identifier variable)
     | Assignment(expr target, expr value, stmt? overloaded)
     | Associate(expr target, expr value)
-    | Cycle()
+    | Cycle(identifier? stmt_name)
     -- deallocates if allocated otherwise throws a runtime error
     | ExplicitDeallocate(expr* vars)
     -- deallocates if allocated otherwise does nothing
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head head, stmt* body)
-    | DoLoop(do_loop_head head, stmt* body)
+    | DoLoop(identifier? name, do_loop_head head, stmt* body)
     | ErrorStop(expr? code)
-    | Exit()
-    | ExitBlock()
+    | Exit(identifier? stmt_name)
     | ForAllSingle(do_loop_head head, stmt assign_stmt)
         -- GoTo points to a GoToTarget with the corresponding target_id within
         -- the same procedure. We currently use `int` IDs to link GoTo with
@@ -202,7 +201,7 @@ stmt
     | Assert(expr test, expr? msg)
     | SubroutineCall(symbol name, symbol? original_name, call_arg* args, expr? dt)
     | Where(expr test, stmt* body, stmt* orelse)
-    | WhileLoop(expr test, stmt* body)
+    | WhileLoop(identifier? name, expr test, stmt* body)
     | Nullify(symbol* vars)
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(expr a, expr ele)

@@ -231,6 +231,7 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 3 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (ArraySize

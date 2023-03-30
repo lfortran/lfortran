@@ -209,6 +209,7 @@
                                     [(Var 3 c)
                                     (Var 3 op_code)]
                                     [(DoLoop
+                                        ()
                                         ((Var 3 i)
                                         (ArrayBound
                                             (Var 3 c)
@@ -226,6 +227,7 @@
                                         )
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 3 j)
                                             (ArrayBound
                                                 (Var 3 c)
@@ -243,6 +245,7 @@
                                             )
                                             ())
                                             [(DoLoop
+                                                ()
                                                 ((Var 3 k)
                                                 (ArrayBound
                                                     (Var 3 c)
@@ -546,16 +549,19 @@
                     array_op_5
                     []
                     [(DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 2 (Integer 4 []))
                         ())
                         [(DoLoop
+                            ()
                             ((Var 2 j)
                             (IntegerConstant 1 (Integer 4 []))
                             (IntegerConstant 2 (Integer 4 []))
                             ())
                             [(DoLoop
+                                ()
                                 ((Var 2 k)
                                 (IntegerConstant 1 (Integer 4 []))
                                 (IntegerConstant 1 (Integer 4 []))

@@ -22,7 +22,7 @@
                                     Required
                                     .false.
                                 ),
-                            block:
+                            loop:
                                 (Block
                                     (SymbolTable
                                         4
@@ -43,7 +43,7 @@
                                                     .false.
                                                 )
                                         })
-                                    block
+                                    loop
                                     [(=
                                         (Var 2 a)
                                         (IntegerBinOp
@@ -101,7 +101,7 @@
                     )
                     (BlockCall
                         -1
-                        2 block
+                        2 loop
                     )]
                 ),
             square:

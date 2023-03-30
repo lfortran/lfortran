@@ -32,7 +32,6 @@ public:
     size_t starting_n_body = 0;
     AST::stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
-    std::vector<std::string> block_names;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
@@ -47,9 +46,6 @@ public:
 
     void visit_Block(const AST::Block_t &x) {
         from_block = true;
-        if(x.m_stmt_name) {
-            block_names.push_back(x.m_stmt_name);
-        }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -63,17 +59,25 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        std::string name = parent_scope->get_unique_name("block");
-        ASR::asr_t* block = ASR::make_Block_t(al, x.base.base.loc,
-                                              current_scope, s2c(al, name),
-                                              body.p, body.size());
+        ASR::asr_t* block;
+        std::string name;
+        if (x.m_stmt_name) {
+            name = std::string(x.m_stmt_name);
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                                      current_scope, x.m_stmt_name,
+                                      body.p, body.size());
+        } else {
+            // TODO: Understand tests/block1.f90 to know if this is needed, otherwise
+            // it might be possible to allow x.m_stmt_name to be nullptr
+            name = parent_scope->get_unique_name("block");
+            block = ASR::make_Block_t(al, x.base.base.loc,
+                                      current_scope, s2c(al, name),
+                                      body.p, body.size());
+        }
         current_scope = parent_scope;
         current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(block));
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
                                     ASR::down_cast<ASR::symbol_t>(block));
-        if (x.m_stmt_name) {
-            block_names.pop_back();
-        }
         from_block = false;
     }
 
@@ -2322,7 +2326,7 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, test, body.p,
+        tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size());
     }
 
@@ -2365,14 +2369,14 @@ public:
         head.m_increment = increment;
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
-            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, head, body.p, body.size());
+            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name, head, body.p, body.size());
             do_loop_variables.pop_back();
         } else {
             ASR::ttype_t* cond_type
                 = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
             ASR::expr_t* cond = ASRUtils::EXPR(
                 ASR::make_LogicalConstant_t(al, x.base.base.loc, true, cond_type));
-            tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, cond, body.p, body.size());
+            tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, cond, body.p, body.size());
         }
     }
 
@@ -2466,20 +2470,11 @@ public:
     }
 
     void visit_Exit(const AST::Exit_t &x) {
-        // TODO: add a check here that we are inside a While loop
-        tmp = ASR::make_Exit_t(al, x.base.base.loc);
-        if (x.m_stmt_name) {
-            std::string exit_label = x.m_stmt_name;
-            // Check if it is an exit from block, if so, create an ExitBlock
-            if (block_names.size() > 0 && std::find(block_names.begin(), block_names.end(), exit_label) != block_names.end()) {
-                tmp = ASR::make_ExitBlock_t(al, x.base.base.loc);
-            }
-        }
+        tmp = ASR::make_Exit_t(al, x.base.base.loc, x.m_stmt_name);
     }
 
     void visit_Cycle(const AST::Cycle_t &x) {
-        // TODO: add a check here that we are inside a While loop
-        tmp = ASR::make_Cycle_t(al, x.base.base.loc);
+        tmp = ASR::make_Cycle_t(al, x.base.base.loc, x.m_stmt_name);
     }
 
     void visit_Continue(const AST::Continue_t &/*x*/) {

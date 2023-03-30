@@ -246,6 +246,7 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 4 k)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 256 (Integer 4 []))
@@ -367,11 +368,13 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 4 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 16 (Integer 4 []))
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 4 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 16 (Integer 4 []))
@@ -511,16 +514,19 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 4 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 16 (Integer 4 []))
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 4 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 16 (Integer 4 []))
                                             ())
                                             [(DoLoop
+                                                ()
                                                 ((Var 4 k)
                                                 (IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 16 (Integer 4 []))
@@ -900,6 +906,7 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 3 k)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 256 (Integer 4 []))
@@ -1013,16 +1020,19 @@
                                         )]
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 3 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 16 (Integer 4 []))
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 3 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 16 (Integer 4 []))
                                             ())
                                             [(DoLoop
+                                                ()
                                                 ((Var 3 k)
                                                 (IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 16 (Integer 4 []))
@@ -1123,6 +1133,7 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 3 l)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 4096 (Integer 4 []))
@@ -1412,11 +1423,13 @@
                                     test_nd_to_1d]
                                     []
                                     [(DoLoop
+                                        ()
                                         ((Var 5 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 16 (Integer 4 []))
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 5 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 16 (Integer 4 []))
@@ -1483,6 +1496,7 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 5 l)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 4096 (Integer 4 []))

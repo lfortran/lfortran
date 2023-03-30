@@ -322,6 +322,7 @@
                                     []
                                     [(Var 4 c)]
                                     [(DoLoop
+                                        ()
                                         ((Var 4 i)
                                         (ArrayBound
                                             (Var 4 c)
@@ -339,6 +340,7 @@
                                         )
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 4 j)
                                             (ArrayBound
                                                 (Var 4 c)
@@ -356,6 +358,7 @@
                                             )
                                             ())
                                             [(DoLoop
+                                                ()
                                                 ((Var 4 k)
                                                 (ArrayBound
                                                     (Var 4 c)
@@ -499,16 +502,19 @@
                     array_op_5
                     []
                     [(DoLoop
+                        ()
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4 []))
                         (IntegerConstant 2 (Integer 4 []))
                         ())
                         [(DoLoop
+                            ()
                             ((Var 2 j)
                             (IntegerConstant 1 (Integer 4 []))
                             (IntegerConstant 2 (Integer 4 []))
                             ())
                             [(DoLoop
+                                ()
                                 ((Var 2 k)
                                 (IntegerConstant 1 (Integer 4 []))
                                 (IntegerConstant 2 (Integer 4 []))

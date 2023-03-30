@@ -490,7 +490,7 @@ namespace LCompilers {
                 }
             }
             ASR::stmt_t* doloop = ASRUtils::STMT(ASR::make_DoLoop_t(replacer->al, arr_var->base.base.loc,
-                                                                    head, doloop_body.p, doloop_body.size()));
+                                                                    nullptr, head, doloop_body.p, doloop_body.size()));
             result_vec->push_back(replacer->al, doloop);
         }
 
