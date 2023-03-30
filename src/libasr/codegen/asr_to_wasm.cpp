@@ -3012,7 +3012,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
     pass_unused_functions(al, asr, pass_options);
 
 #ifdef SHOW_ASR
-    std::cout << pickle(asr, true /* use colors */, true /* indent */,
+    std::cout << LCompilers::LFortran::pickle(asr, false /* use colors */, true /* indent */,
                         true /* with_intrinsic_modules */)
               << std::endl;
 #endif
