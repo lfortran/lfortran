@@ -2707,11 +2707,46 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 break;
             }
             case (ASR::cast_kindType::ComplexToComplex): {
-                throw CodeGenError("ComplexToComplex: Complex types are not supported yet.");
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if (arg_kind > 0 && dest_kind > 0 && arg_kind != dest_kind) {
+                    if (arg_kind == 4 && dest_kind == 8) {
+                        wasm::emit_f64_promote_f32(m_code_section, m_al);
+                        wasm::emit_set_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f64]);
+                        wasm::emit_f64_promote_f32(m_code_section, m_al);
+                        wasm::emit_get_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f64]);
+                    } else if (arg_kind == 8 && dest_kind == 4) {
+                        wasm::emit_f32_demote_f64(m_code_section, m_al);
+                        wasm::emit_set_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f32]);
+                        wasm::emit_f32_demote_f64(m_code_section, m_al);
+                        wasm::emit_get_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f32]);
+                    } else {
+                        std::string msg = "ComplexToComplex: Conversion from " +
+                                          std::to_string(arg_kind) + " to " +
+                                          std::to_string(dest_kind) +
+                                          " not implemented yet.";
+                        throw CodeGenError(msg);
+                    }
+                }
                 break;
             }
             case (ASR::cast_kindType::ComplexToReal): {
-                throw CodeGenError("ComplexToReal: Complex types are not supported yet.");
+                wasm::emit_drop(m_code_section, m_al); // drop imag part
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if (arg_kind > 0 && dest_kind > 0 && arg_kind != dest_kind) {
+                    if (arg_kind == 4 && dest_kind == 8) {
+                        wasm::emit_f64_promote_f32(m_code_section, m_al);
+                    } else if (arg_kind == 8 && dest_kind == 4) {
+                        wasm::emit_f32_demote_f64(m_code_section, m_al);
+                    } else {
+                        std::string msg = "ComplexToReal: Conversion from " +
+                                          std::to_string(arg_kind) + " to " +
+                                          std::to_string(dest_kind) +
+                                          " not implemented yet.";
+                        throw CodeGenError(msg);
+                    }
+                }
                 break;
             }
             default:
