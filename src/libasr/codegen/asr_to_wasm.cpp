@@ -981,7 +981,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         /********************* Parameter Types List *********************/
         s->referenced_vars.reserve(m_al, x.n_args);
-        wasm::emit_u32(m_type_section, m_al, x.n_args);
+        uint32_t len_idx_type_section_param_types_list =
+                wasm::emit_len_placeholder(m_type_section, m_al);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
@@ -999,6 +1000,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 s->referenced_vars.push_back(m_al, arg);
             }
         }
+        wasm::fixup_len(m_type_section, m_al,
+                            len_idx_type_section_param_types_list);
 
         /********************* Result Types List *********************/
         if (x.m_return_var) {  // It is a function
