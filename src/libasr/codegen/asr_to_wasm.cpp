@@ -981,7 +981,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         /********************* Parameter Types List *********************/
         s->referenced_vars.reserve(m_al, x.n_args);
-        wasm::emit_u32(m_type_section, m_al, x.n_args);
+        uint32_t len_idx_type_section_param_types_list =
+                wasm::emit_len_placeholder(m_type_section, m_al);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
@@ -999,6 +1000,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 s->referenced_vars.push_back(m_al, arg);
             }
         }
+        wasm::fixup_len(m_type_section, m_al,
+                            len_idx_type_section_param_types_list);
 
         /********************* Result Types List *********************/
         if (x.m_return_var) {  // It is a function
@@ -2181,6 +2184,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+        if (x.m_value) {
+            this->visit_expr(*x.m_value);
+            return;
+        }
+        this->visit_expr(*x.m_re);
+        this->visit_expr(*x.m_im);
+    }
+
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch( a_kind ) {
@@ -2274,10 +2286,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             visit_expr(*x.m_args[i].m_value);
         }
 
-        LCOMPILERS_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)fn)) !=
-                        m_func_name_idx_map.end())
-        wasm::emit_call(m_code_section, m_al,
-                        m_func_name_idx_map[get_hash((ASR::asr_t *)fn)]->index);
+        uint64_t hash = get_hash((ASR::asr_t *)fn);
+        if (m_func_name_idx_map.find(hash) != m_func_name_idx_map.end()) {
+            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[hash]->index);
+        } else {
+            if (strcmp(fn->m_name, "c_caimag") == 0) {
+                LCOMPILERS_ASSERT(x.n_args == 1);
+                wasm::emit_set_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f32]);
+                wasm::emit_drop(m_code_section, m_al);
+                wasm::emit_get_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f32]);
+            } else if (strcmp(fn->m_name, "c_zaimag") == 0) {
+                wasm::emit_set_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f64]);
+                wasm::emit_drop(m_code_section, m_al);
+                wasm::emit_get_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f64]);
+            } else {
+                throw CodeGenError("FunctionCall: Function " + std::string(fn->m_name) + " not found");
+            }
+        }
     }
 
     void temp_value_set(ASR::expr_t* expr) {
@@ -2402,10 +2427,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 "the number of parameters");
         }
 
-        LCOMPILERS_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)s)) !=
-                        m_func_name_idx_map.end())
-        wasm::emit_call(m_code_section, m_al,
-                        m_func_name_idx_map[get_hash((ASR::asr_t *)s)]->index);
+        uint64_t hash = get_hash((ASR::asr_t *)s);
+        if (m_func_name_idx_map.find(hash) != m_func_name_idx_map.end()) {
+            wasm::emit_call(m_code_section, m_al, m_func_name_idx_map[hash]->index);
+        } else {
+            // if (strcmp(s->m_name, "") == 0) {
+            // } else {
+                throw CodeGenError("SubroutineCall: Function " + std::string(s->m_name) + " not found");
+            // }
+        }
         for (int i = (int)vars_passed_by_refs.size() - 1; i >= 0; i--) {
             ASR::expr_t* return_expr = vars_passed_by_refs[i];
             if (ASR::is_a<ASR::Var_t>(*return_expr)) {
@@ -2698,11 +2728,46 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 break;
             }
             case (ASR::cast_kindType::ComplexToComplex): {
-                throw CodeGenError("ComplexToComplex: Complex types are not supported yet.");
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if (arg_kind > 0 && dest_kind > 0 && arg_kind != dest_kind) {
+                    if (arg_kind == 4 && dest_kind == 8) {
+                        wasm::emit_f64_promote_f32(m_code_section, m_al);
+                        wasm::emit_set_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f64]);
+                        wasm::emit_f64_promote_f32(m_code_section, m_al);
+                        wasm::emit_get_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f64]);
+                    } else if (arg_kind == 8 && dest_kind == 4) {
+                        wasm::emit_f32_demote_f64(m_code_section, m_al);
+                        wasm::emit_set_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f32]);
+                        wasm::emit_f32_demote_f64(m_code_section, m_al);
+                        wasm::emit_get_global(m_code_section, m_al, m_global_var_name_idx_map[tmp_reg_f32]);
+                    } else {
+                        std::string msg = "ComplexToComplex: Conversion from " +
+                                          std::to_string(arg_kind) + " to " +
+                                          std::to_string(dest_kind) +
+                                          " not implemented yet.";
+                        throw CodeGenError(msg);
+                    }
+                }
                 break;
             }
             case (ASR::cast_kindType::ComplexToReal): {
-                throw CodeGenError("ComplexToReal: Complex types are not supported yet.");
+                wasm::emit_drop(m_code_section, m_al); // drop imag part
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if (arg_kind > 0 && dest_kind > 0 && arg_kind != dest_kind) {
+                    if (arg_kind == 4 && dest_kind == 8) {
+                        wasm::emit_f64_promote_f32(m_code_section, m_al);
+                    } else if (arg_kind == 8 && dest_kind == 4) {
+                        wasm::emit_f32_demote_f64(m_code_section, m_al);
+                    } else {
+                        std::string msg = "ComplexToReal: Conversion from " +
+                                          std::to_string(arg_kind) + " to " +
+                                          std::to_string(dest_kind) +
+                                          " not implemented yet.";
+                        throw CodeGenError(msg);
+                    }
+                }
                 break;
             }
             default:
@@ -3012,7 +3077,7 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
     pass_unused_functions(al, asr, pass_options);
 
 #ifdef SHOW_ASR
-    std::cout << pickle(asr, true /* use colors */, true /* indent */,
+    std::cout << LCompilers::LFortran::pickle(asr, false /* use colors */, true /* indent */,
                         true /* with_intrinsic_modules */)
               << std::endl;
 #endif
