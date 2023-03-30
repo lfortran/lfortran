@@ -3096,10 +3096,9 @@ public:
             return (ASR::asr_t*) x_;
         }
         int64_t kind_value = handle_kind(kind);
+        ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al,
+                                x.base.base.loc, kind_value, nullptr, 0));
         if( y_ == nullptr ) {
-            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al,
-                                        x.base.base.loc, kind_value,
-                                        nullptr, 0));
             y_ = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
                                                          0.0, real_type));
         }
@@ -3114,6 +3113,11 @@ public:
             cc_expr = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
                                                                  x_value_, y_value_, type));
         }
+        // Cast x_ or y_ as necessary
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &x_,
+                                            ASRUtils::expr_type(x_), real_type);
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &y_,
+                                            ASRUtils::expr_type(y_), real_type);
         return ASR::make_ComplexConstructor_t(al, x.base.base.loc, x_, y_, type, cc_expr);
     }
 
