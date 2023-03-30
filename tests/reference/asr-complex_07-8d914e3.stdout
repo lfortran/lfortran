@@ -95,7 +95,15 @@
                                     [real_part]
                                     Local
                                     (ComplexConstructor
-                                        (Var 2 real_part)
+                                        (Cast
+                                            (Var 2 real_part)
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                42.000000
+                                                (Real 4 [])
+                                            )
+                                        )
                                         (RealConstant
                                             0.000000
                                             (Real 4 [])
@@ -188,7 +196,15 @@
                                     img_part]
                                     Local
                                     (ComplexConstructor
-                                        (Var 2 real_part)
+                                        (Cast
+                                            (Var 2 real_part)
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                42.000000
+                                                (Real 4 [])
+                                            )
+                                        )
                                         (Var 2 img_part)
                                         (Complex 4 [])
                                         (ComplexConstant
