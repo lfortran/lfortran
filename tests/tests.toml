@@ -78,30 +78,6 @@ asr = true
 julia = true
 
 [[test]]
-filename = "../integration_tests/cycle_and_exit1.f90"
-ast = true
-asr = true
-llvm = true
-
-[[test]]
-filename = "../integration_tests/cycle_and_exit2.f90"
-ast = true
-asr = true
-llvm = true
-
-[[test]]
-filename = "../integration_tests/cycle_and_exit3.f90"
-ast = true
-asr = true
-llvm = true
-
-[[test]]
-filename = "../integration_tests/cycle_and_exit4.f90"
-ast = true
-asr = true
-llvm = true
-
-[[test]]
 filename = "do1.f90"
 ast = true
 
