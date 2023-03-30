@@ -287,7 +287,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_Constant(x);
     }
 
-
     void replace_RealConstant(ASR::RealConstant_t* x) {
         replace_Constant(x);
     }
@@ -534,7 +533,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             const Location& loc = x->base.base.loc;
             if (result_var) {
                 int n_dims = PassUtils::get_rank(result_var);
-                if (n_dims!=0) {
+                if (n_dims != 0) {
                     Vec<ASR::expr_t*> idx_vars, loop_vars;
                     std::vector<int> loop_var_indices;
                     Vec<ASR::stmt_t*> doloop_body;
