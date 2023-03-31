@@ -12,6 +12,30 @@
     (global $2 (mut i64) (i64.const 0))
     (global $3 (mut f32) (f32.const 0.000000))
     (global $4 (mut f64) (f64.const 0.000000))
+    (global $5 (mut i32) (i32.const 4))
+    (global $6 (mut i32) (i32.const 1))
+    (global $7 (mut i32) (i32.const 8))
+    (global $8 (mut i32) (i32.const 4))
+    (global $9 (mut i32) (i32.const 4))
+    (global $10 (mut i32) (i32.const 4))
+    (global $11 (mut i32) (i32.const 8))
+    (global $12 (mut i32) (i32.const 208))
+    (global $13 (mut i32) (i32.const 0))
+    (global $14 (mut i32) (i32.const 8))
+    (global $15 (mut i32) (i32.const 0))
+    (global $16 (mut i32) (i32.const 0))
+    (global $17 (mut i32) (i32.const 5))
+    (global $18 (mut i32) (i32.const 2))
+    (global $19 (mut i32) (i32.const 4))
+    (global $20 (mut i32) (i32.const 8))
+    (global $21 (mut i32) (i32.const 1))
+    (global $22 (mut i32) (i32.const 0))
+    (global $23 (mut i32) (i32.const 0))
+    (global $24 (mut i32) (i32.const 6))
+    (global $25 (mut i32) (i32.const -1))
+    (global $26 (mut i32) (i32.const 4))
+    (global $27 (mut i32) (i32.const 8))
+    (global $28 (mut i32) (i32.const 0))
     (func $2 (type 2) (param f32) (result f32)
         (local f32)
         local.get 0
@@ -46,7 +70,7 @@
         f32.lt
         if
             i32.const 1
-            i32.const 208
+            i32.const 216
             i32.const 1
             i32.const 0
             call 1
@@ -72,7 +96,7 @@
         f32.lt
         if
             i32.const 1
-            i32.const 208
+            i32.const 216
             i32.const 1
             i32.const 0
             call 1
@@ -314,6 +338,8 @@
     (data (;31;) (i32.const 192) "8   ")
     (data (;32;) (i32.const 196) "\cc\00\00\00\01\00\00\00")
     (data (;33;) (i32.const 204) "9   ")
-    (data (;34;) (i32.const 208) "\d8\00\00\00\0b\00\00\00")
-    (data (;35;) (i32.const 216) "ERROR STOP\0a ")
+    (data (;34;) (i32.const 208) "\d8\00\00\00\00\00\00\00")
+    (data (;35;) (i32.const 216) "")
+    (data (;36;) (i32.const 216) "\e0\00\00\00\0b\00\00\00")
+    (data (;37;) (i32.const 224) "ERROR STOP\0a ")
 )

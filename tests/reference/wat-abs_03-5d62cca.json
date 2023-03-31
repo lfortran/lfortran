@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "wat-abs_03-5d62cca.stdout",
-    "stdout_hash": "7b646b1bdd854ea43374323c56dc4e1abcff94796762fda2cd255784",
-    "stderr": null,
-    "stderr_hash": null,
+    "stdout_hash": "e6de4fd5a9fba881ec15f8f7afe15b5beaa07691d286b5cc6b1928f4",
+    "stderr": "wat-abs_03-5d62cca.stderr",
+    "stderr_hash": "c8854baefba8575b6d5ca705ae7092df6a70db1188ecd8f6b57b4c17",
     "returncode": 0
 }
