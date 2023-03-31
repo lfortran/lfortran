@@ -237,7 +237,7 @@ jobs:
         shell: bash -x -l {0}
         run: |
             git clone https://github.com/Pranavchiku/modern_minpack.git
-            cd ../modern_minpack
+            cd modern_minpack
             git checkout main
             git checkout cc1d79bbc92a562acefc8022834e747a6d32d112
             $(pwd)/../../src/bin/lfortran ./src/minpack.f90 -c
