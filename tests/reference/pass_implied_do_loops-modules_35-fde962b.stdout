@@ -1,0 +1,213 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            m_cli2_21:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            get_args_fixed_length_a_array:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            len:
+                                                (ExternalSymbol
+                                                    3
+                                                    len
+                                                    6 len
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    len
+                                                    Private
+                                                ),
+                                            place:
+                                                (Variable
+                                                    3
+                                                    place
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            strings:
+                                                (Variable
+                                                    3
+                                                    strings
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -1 () [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            strings_a:
+                                                (Variable
+                                                    3
+                                                    strings_a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [(()
+                                                    ())])
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    get_args_fixed_length_a_array
+                                    (FunctionType
+                                        [(Character 1 -1 () [(()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [len]
+                                    [(Var 3 strings)]
+                                    [(If
+                                        (IntegerCompare
+                                            (Var 3 place)
+                                            Gt
+                                            (IntegerConstant 0 (Integer 4 []))
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        [(If
+                                            (IntegerCompare
+                                                (FunctionCall
+                                                    3 len
+                                                    ()
+                                                    [((Var 3 strings_a))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                )
+                                                LtE
+                                                (FunctionCall
+                                                    3 len
+                                                    ()
+                                                    [((Var 3 strings))]
+                                                    (Integer 4 [])
+                                                    ()
+                                                    ()
+                                                )
+                                                (Logical 4 [])
+                                                ()
+                                            )
+                                            [(=
+                                                (Var 3 strings)
+                                                (Var 3 strings_a)
+                                                ()
+                                            )]
+                                            []
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (Var 3 place)
+                                            Gt
+                                            (IntegerConstant 0 (Integer 4 []))
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        []
+                                        []
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 3 strings_a)]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    m_cli2_21
+                    [lfortran_intrinsic_builtin]
+                    .false.
+                    .false.
+                ),
+            modules_35:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            get_args_fixed_length_a_array:
+                                (ExternalSymbol
+                                    4
+                                    get_args_fixed_length_a_array
+                                    2 get_args_fixed_length_a_array
+                                    m_cli2_21
+                                    []
+                                    get_args_fixed_length_a_array
+                                    Public
+                                ),
+                            string:
+                                (Variable
+                                    4
+                                    string
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Character 1 5 () [(()
+                                    ())])
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    modules_35
+                    [m_cli2_21]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "executing modules_35"
+                            (Character 1 20 () [])
+                        )]
+                        ()
+                        ()
+                    )
+                    (SubroutineCall
+                        4 get_args_fixed_length_a_array
+                        ()
+                        [((Var 4 string))]
+                        ()
+                    )
+                    (ImplicitDeallocate
+                        [(Var 4 string)]
+                    )]
+                )
+        })
+    []
+)

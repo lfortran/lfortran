@@ -2616,6 +2616,11 @@ pass = "class_constructor"
 extrafiles = "../integration_tests/derived_types_20_module2.f90, ../integration_tests/derived_types_20_module1.f90"
 
 [[test]]
+filename = "../integration_tests/modules_35.f90"
+asr = true
+pass = "implied_do_loops"
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 
