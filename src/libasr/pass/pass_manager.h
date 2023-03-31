@@ -16,14 +16,13 @@
 
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/for_all.h>
-#include <libasr/pass/init_expr.h>
 #include <libasr/pass/implied_do_loops.h>
 #include <libasr/pass/array_op.h>
 #include <libasr/pass/select_case.h>
 #include <libasr/pass/global_stmts.h>
 #include <libasr/pass/param_to_const.h>
 #include <libasr/pass/print_arr.h>
-#include <libasr/pass/print_list.h>
+#include <libasr/pass/print_list_tuple.h>
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
@@ -36,6 +35,7 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/for_all.h>
+#include <libasr/pass/init_expr.h>
 #include <libasr/pass/select_case.h>
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
@@ -69,7 +69,7 @@ namespace LCompilers {
             {"intrinsic_function", &pass_replace_intrinsic_function},
             {"arr_slice", &pass_replace_arr_slice},
             {"print_arr", &pass_replace_print_arr},
-            {"print_list", &pass_replace_print_list},
+            {"print_list_tuple", &pass_replace_print_list_tuple},
             {"class_constructor", &pass_replace_class_constructor},
             {"unused_functions", &pass_unused_functions},
             {"flip_sign", &pass_replace_flip_sign},
@@ -189,7 +189,7 @@ namespace LCompilers {
                 "intrinsic_function",
                 "pass_array_by_data",
                 "print_arr",
-                "print_list",
+                "print_list_tuple",
                 "array_dim_intrinsics_update",
                 "do_loops",
                 "forall",
@@ -210,7 +210,7 @@ namespace LCompilers {
                 "array_op",
                 "intrinsic_function",
                 "print_arr",
-                "print_list",
+                "print_list_tuple",
                 "loop_vectorise",
                 "loop_unroll",
                 "array_dim_intrinsics_update",

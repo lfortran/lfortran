@@ -17,6 +17,11 @@
 #include <map>
 #include <utility>
 
+#define CHECK_FAST_C(compiler_options, x)                         \
+        if (compiler_options.fast && x.m_value != nullptr) {    \
+            visit_expr(*x.m_value);                             \
+            return;                                             \
+        }                                                       \
 
 namespace LCompilers {
 
@@ -30,9 +35,9 @@ public:
 
     int counter;
 
-    ASRToCVisitor(diag::Diagnostics &diag, Platform &platform,
+    ASRToCVisitor(diag::Diagnostics &diag, CompilerOptions &co,
                   int64_t default_lower_bound)
-         : BaseCCPPVisitor(diag, platform, false, false, true, default_lower_bound),
+         : BaseCCPPVisitor(diag, co.platform, co, false, false, true, default_lower_bound),
            array_types_decls(std::string("\nstruct dimension_descriptor\n"
                                          "{\n    int32_t lower_bound, length;\n};\n")),
            c_utils_functions{std::make_unique<CUtils::CUtilFunctions>()},
@@ -394,12 +399,13 @@ public:
             } else if (ASRUtils::is_character(*v_m_type)) {
                 ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(v_m_type);
                 bool is_fixed_size = true;
-                std::string dims = convert_dims_c(t->n_dims, t->m_dims, v_m_type, is_fixed_size);
+                dims = convert_dims_c(t->n_dims, t->m_dims, v_m_type, is_fixed_size);
                 sub = format_type_c(dims, "char *", v.m_name, use_ref, dummy);
-                if( v.m_intent == ASRUtils::intent_local &&
+                if(v.m_intent == ASRUtils::intent_local &&
                     !(ASR::is_a<ASR::symbol_t>(*v.m_parent_symtab->asr_owner) &&
                       ASR::is_a<ASR::StructType_t>(
-                        *ASR::down_cast<ASR::symbol_t>(v.m_parent_symtab->asr_owner))) ) {
+                        *ASR::down_cast<ASR::symbol_t>(v.m_parent_symtab->asr_owner))) &&
+                    !(dims.size() == 0 && v.m_symbolic_value)) {
                     sub += " = NULL";
                     return sub;
                 }
@@ -497,6 +503,11 @@ public:
                 ASR::Tuple_t* t = ASR::down_cast<ASR::Tuple_t>(v_m_type);
                 std::string tuple_type_c = c_ds_api->get_tuple_type(t);
                 sub = format_type_c("", tuple_type_c, v.m_name,
+                                    false, false);
+            } else if (ASR::is_a<ASR::Dict_t>(*v_m_type)) {
+                ASR::Dict_t* t = ASR::down_cast<ASR::Dict_t>(v_m_type);
+                std::string dict_type_c = c_ds_api->get_dict_type(t);
+                sub = format_type_c("", dict_type_c, v.m_name,
                                     false, false);
             } else if (ASR::is_a<ASR::CPtr_t>(*v_m_type)) {
                 sub = format_type_c("", "void*", v.m_name, false, false);
@@ -726,6 +737,54 @@ R"(
               ds_funcs_defined + util_funcs_defined;
     }
 
+    void visit_Module(const ASR::Module_t &x) {
+        std::string unit_src = "";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                std::string unit_src_tmp;
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                unit_src_tmp = convert_variable_decl(*v);
+                unit_src += unit_src_tmp;
+                if(unit_src_tmp.size() > 0 &&
+                        (!ASR::is_a<ASR::Const_t>(*v->m_type) ||
+                        v->m_intent == ASRUtils::intent_return_var )) {
+                    unit_src += ";\n";
+                }
+            }
+        }
+        std::map<std::string, std::vector<std::string>> struct_dep_graph;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::StructType_t>(*item.second) ||
+                    ASR::is_a<ASR::EnumType_t>(*item.second) ||
+                    ASR::is_a<ASR::UnionType_t>(*item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_dep_graph[item.first] = struct_deps_vec;
+            }
+        }
+
+        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
+        for (auto &item : struct_deps) {
+            ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
+            visit_symbol(*struct_sym);
+        }
+
+        // Topologically sort all module functions
+        // and then define them in the right order
+        std::vector<std::string> func_order = ASRUtils::determine_function_definition_order(x.m_symtab);
+        for (auto &item : func_order) {
+            ASR::symbol_t* sym = x.m_symtab->get_symbol(item);
+            ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(sym);
+            visit_Function(*s);
+            unit_src += src;
+        }
+        src = unit_src;
+    }
+
     void visit_Program(const ASR::Program_t &x) {
         // Topologically sort all program functions
         // and then define them in the right order
@@ -917,15 +976,18 @@ R"(
     }
 
     void visit_EnumStaticMember(const ASR::EnumStaticMember_t& x) {
+        CHECK_FAST_C(compiler_options, x)
         ASR::Variable_t* enum_var = ASR::down_cast<ASR::Variable_t>(x.m_m);
         src = std::string(enum_var->m_name);
     }
 
     void visit_EnumValue(const ASR::EnumValue_t& x) {
+        CHECK_FAST_C(compiler_options, x)
         visit_expr(*x.m_v);
     }
 
     void visit_EnumName(const ASR::EnumName_t& x) {
+        CHECK_FAST_C(compiler_options, x)
         int64_t min_value = INT64_MAX;
         ASR::Enum_t* enum_t = ASR::down_cast<ASR::Enum_t>(x.m_enum_type);
         ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(enum_t->m_enum_type);
@@ -963,7 +1025,7 @@ R"(
     void visit_Assert(const ASR::Assert_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent;
-        tmp_src.clear();
+        bracket_open++;
         if (x.m_msg) {
             out += "ASSERT_MSG(";
             visit_expr(*x.m_test);
@@ -975,12 +1037,8 @@ R"(
             visit_expr(*x.m_test);
             out += src + ");\n";
         }
-        src = "";
-        if (!tmp_src.empty()) {
-            for (auto &s: tmp_src) src += s;
-        }
-        src += out;
-        tmp_src.clear();
+        bracket_open--;
+        src = check_tmp_buffer() + out;
     }
 
     void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
@@ -1016,6 +1074,7 @@ R"(
     void visit_Print(const ASR::Print_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string tmp_gen = indent + "printf(\"", out = "";
+        bracket_open++;
         std::vector<std::string> v;
         std::string separator;
         if (x.m_separator) {
@@ -1040,11 +1099,6 @@ R"(
                 }
                 tmp_gen += ");\n";
                 out += tmp_gen;
-                if (ASR::is_a<ASR::ListConstant_t>(*x.m_values[i]) ||
-                        ASR::is_a<ASR::TupleConstant_t>(*x.m_values[i])) {
-                    out += src;
-                    src = const_var_names[get_hash((ASR::asr_t*)x.m_values[i])];
-                }
                 tmp_gen = indent + "printf(\"";
                 v.clear();
                 std::string p_func = c_ds_api->get_print_func(value_type);
@@ -1076,11 +1130,13 @@ R"(
             }
         }
         tmp_gen += ");\n";
+        bracket_open--;
         out += tmp_gen;
-        src = out;
+        src = this->check_tmp_buffer() + out;
     }
 
     void visit_ArraySize(const ASR::ArraySize_t& x) {
+        CHECK_FAST_C(compiler_options, x)
         visit_expr(*x.m_v);
         std::string var_name = src;
         std::string args = "";
@@ -1098,6 +1154,7 @@ R"(
     }
 
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
+        CHECK_FAST_C(compiler_options, x)
         visit_expr(*x.m_array);
         std::string array = src;
         visit_expr(*x.m_shape);
@@ -1120,6 +1177,7 @@ R"(
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+        CHECK_FAST_C(compiler_options, x)
         visit_expr(*x.m_v);
         std::string var_name = src;
         std::string args = "";
@@ -1157,6 +1215,7 @@ R"(
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        CHECK_FAST_C(compiler_options, x)
         this->visit_expr(*x.m_v);
         std::string array = src;
         std::string out = array;
@@ -1207,15 +1266,16 @@ R"(
     }
 
     void visit_StringItem(const ASR::StringItem_t& x) {
+        CHECK_FAST_C(compiler_options, x)
         this->visit_expr(*x.m_idx);
         std::string idx = std::move(src);
         this->visit_expr(*x.m_arg);
         std::string str = std::move(src);
-        src = "(char *)memcpy((char *)calloc(2U, sizeof(char)), "
-                + str + " + " + idx + " - 1, 1U)";
+        src = "_lfortran_str_item(" + str + ", " + idx + ")";
     }
 
     void visit_StringLen(const ASR::StringLen_t &x) {
+        CHECK_FAST_C(compiler_options, x)
         this->visit_expr(*x.m_arg);
         src = "strlen(" + src + ")";
     }
@@ -1231,7 +1291,7 @@ R"(
 };
 
 Result<std::string> asr_to_c(Allocator &al, ASR::TranslationUnit_t &asr,
-    diag::Diagnostics &diagnostics, Platform &platform,
+    diag::Diagnostics &diagnostics, CompilerOptions &co,
     int64_t default_lower_bound)
 {
 
@@ -1241,7 +1301,7 @@ Result<std::string> asr_to_c(Allocator &al, ASR::TranslationUnit_t &asr,
     pass_replace_array_op(al, asr, pass_options);
     pass_unused_functions(al, asr, pass_options);
     pass_replace_class_constructor(al, asr, pass_options);
-    ASRToCVisitor v(diagnostics, platform, default_lower_bound);
+    ASRToCVisitor v(diagnostics, co, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {

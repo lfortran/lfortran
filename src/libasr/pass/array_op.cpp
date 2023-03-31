@@ -169,6 +169,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 head.m_end = PassUtils::get_bound(result_var, 1, "ubound", al);
                 head.m_increment = nullptr;
             }
+            head.loc = head.m_v->base.loc;
             doloop_body.reserve(al, 1);
             if( doloop == nullptr ) {
                 loop_body();

@@ -135,4 +135,169 @@ std::string SymbolTable::get_unique_name(const std::string &name) {
     return unique_name;
 }
 
+void SymbolTable::move_symbols_from_global_scope(Allocator &al,
+        SymbolTable *module_scope, Vec<char *> &syms,
+        Vec<char *> &mod_dependencies, Vec<char *> &func_dependencies,
+        Vec<ASR::stmt_t*> &var_init) {
+    // TODO: This isn't scalable. We have write a visitor in asdl_cpp.py
+    syms.reserve(al, 4);
+    mod_dependencies.reserve(al, 4);
+    func_dependencies.reserve(al, 4);
+    var_init.reserve(al, 4);
+    for (auto &a : scope) {
+        switch (a.second->type) {
+            case (ASR::symbolType::Module): {
+                // Pass
+                break;
+            } case (ASR::symbolType::Function) : {
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(a.second);
+                for (size_t i = 0; i < fn->n_dependencies; i++ ) {
+                    ASR::symbol_t *s = fn->m_symtab->get_symbol(
+                        fn->m_dependencies[i]);
+                    if (s == nullptr) {
+                        std::string block_name = "block";
+                        ASR::symbol_t *block_s = fn->m_symtab->get_symbol(block_name);
+                        int32_t j = 1;
+                        while(block_s != nullptr) {
+                            while(block_s != nullptr) {
+                                ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(block_s);
+                                s = b->m_symtab->get_symbol(fn->m_dependencies[i]);
+                                if (s == nullptr) {
+                                    block_s = b->m_symtab->get_symbol("block");
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (s == nullptr) {
+                                block_s = fn->m_symtab->get_symbol(block_name +
+                                    std::to_string(j));
+                                j++;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    if (s == nullptr) {
+                        s = fn->m_symtab->parent->get_symbol(fn->m_dependencies[i]);
+                    }
+                    if (s != nullptr && ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+                        char *es_name = ASR::down_cast<
+                            ASR::ExternalSymbol_t>(s)->m_module_name;
+                        if (!present(mod_dependencies, es_name)) {
+                            mod_dependencies.push_back(al, es_name);
+                        }
+                    }
+                }
+                fn->m_symtab->parent = module_scope;
+                module_scope->add_symbol(a.first, (ASR::symbol_t *) fn);
+                syms.push_back(al, s2c(al, a.first));
+                break;
+            } case (ASR::symbolType::GenericProcedure) : {
+                ASR::GenericProcedure_t *es = ASR::down_cast<ASR::GenericProcedure_t>(a.second);
+                es->m_parent_symtab = module_scope;
+                module_scope->add_symbol(a.first, (ASR::symbol_t *) es);
+                syms.push_back(al, s2c(al, a.first));
+                break;
+            } case (ASR::symbolType::ExternalSymbol) : {
+                ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(a.second);
+                if (!present(mod_dependencies, es->m_module_name)) {
+                    mod_dependencies.push_back(al, es->m_module_name);
+                }
+                es->m_parent_symtab = module_scope;
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(a.second);
+                LCOMPILERS_ASSERT(s);
+                if (ASR::is_a<ASR::Variable_t>(*s)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                    if (v->m_symbolic_value && !ASR::is_a<ASR::Const_t>(*v->m_type)
+                            && ASR::is_a<ASR::List_t>(*v->m_type)) {
+                        ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(
+                            al, v->base.base.loc, (ASR::symbol_t *) es));
+                        ASR::expr_t *value = v->m_symbolic_value;
+                        v->m_symbolic_value = nullptr;
+                        v->m_value = nullptr;
+                        if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+                            ASR::FunctionCall_t *call =
+                                ASR::down_cast<ASR::FunctionCall_t>(value);
+                            ASR::Module_t *m = ASRUtils::get_sym_module(s);
+                            ASR::symbol_t *func = m->m_symtab->get_symbol(
+                                ASRUtils::symbol_name(call->m_name));
+                            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(func);
+                            std::string func_name = std::string(m->m_name) +
+                                "@" + f->m_name;
+                            ASR::symbol_t *es_func;
+                            if (!module_scope->get_symbol(func_name)) {
+                                es_func = ASR::down_cast<ASR::symbol_t>(
+                                    ASR::make_ExternalSymbol_t(al, f->base.base.loc,
+                                    module_scope, s2c(al, func_name), func, m->m_name,
+                                    nullptr, 0, s2c(al, f->m_name), ASR::accessType::Public));
+                                module_scope->add_symbol(func_name, es_func);
+                                if (!present(func_dependencies, s2c(al, func_name))) {
+                                    func_dependencies.push_back(al, s2c(al,func_name));
+                                }
+                            } else {
+                                es_func = module_scope->get_symbol(func_name);
+                            }
+                            value = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
+                                call->base.base.loc, es_func, call->m_original_name,
+                                call->m_args, call->n_args, call->m_type,
+                                call->m_value, call->m_dt));
+                        }
+                        ASR::asr_t* assign = ASR::make_Assignment_t(al,
+                            v->base.base.loc, target, value, nullptr);
+                        var_init.push_back(al, ASRUtils::STMT(assign));
+                    }
+                }
+                module_scope->add_symbol(a.first, (ASR::symbol_t *) es);
+                syms.push_back(al, s2c(al, a.first));
+                break;
+            } case (ASR::symbolType::StructType) : {
+                ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(a.second);
+                st->m_symtab->parent = module_scope;
+                module_scope->add_symbol(a.first, (ASR::symbol_t *) st);
+                syms.push_back(al, s2c(al, a.first));
+                break;
+            } case (ASR::symbolType::EnumType) : {
+                ASR::EnumType_t *et = ASR::down_cast<ASR::EnumType_t>(a.second);
+                et->m_symtab->parent = module_scope;
+                module_scope->add_symbol(a.first, (ASR::symbol_t *) et);
+                syms.push_back(al, s2c(al, a.first));
+                break;
+            } case (ASR::symbolType::UnionType) : {
+                ASR::UnionType_t *ut = ASR::down_cast<ASR::UnionType_t>(a.second);
+                ut->m_symtab->parent = module_scope;
+                module_scope->add_symbol(a.first, (ASR::symbol_t *) ut);
+                syms.push_back(al, s2c(al, a.first));
+                break;
+            } case (ASR::symbolType::Variable) : {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(a.second);
+                v->m_parent_symtab = module_scope;
+                // Make the Assignment statement only for the data-types (List,
+                // Dict, ...), that cannot be handled in the LLVM global scope
+                if (v->m_symbolic_value && !ASR::is_a<ASR::Const_t>(*v->m_type)
+                        && ASR::is_a<ASR::List_t>(*v->m_type)) {
+                    ASR::expr_t* v_expr = ASRUtils::EXPR(ASR::make_Var_t(
+                        al, v->base.base.loc, (ASR::symbol_t *) v));
+                    ASR::asr_t* assign = ASR::make_Assignment_t(al,
+                        v->base.base.loc, v_expr, v->m_symbolic_value, nullptr);
+                    var_init.push_back(al, ASRUtils::STMT(assign));
+                    v->m_symbolic_value = nullptr;
+                    v->m_value = nullptr;
+                    Vec<char*> v_dependencies;
+                    v_dependencies.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(al,
+                        v_dependencies, v->m_type);
+                    v->m_dependencies = v_dependencies.p;
+                    v->n_dependencies = v_dependencies.size();
+                }
+                module_scope->add_symbol(a.first, (ASR::symbol_t *) v);
+                syms.push_back(al, s2c(al, a.first));
+                break;
+            } default : {
+                throw LCompilersException("Moving the symbol:`" + a.first +
+                    "` from global scope is not implemented yet");
+            }
+        }
+    }
+}
+
 } // namespace LCompilers
