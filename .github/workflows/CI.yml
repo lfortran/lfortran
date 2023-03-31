@@ -240,10 +240,10 @@ jobs:
             cd modern_minpack
             git checkout main
             git checkout cc1d79bbc92a562acefc8022834e747a6d32d112
-            $(pwd)/../../src/bin/lfortran ./src/minpack.f90 -c
-            $(pwd)/../../src/bin/lfortran ./examples/example_hybrd.f90
-            $(pwd)/../../src/bin/lfortran ./examples/example_hybrd1.f90
-            $(pwd)/../../src/bin/lfortran ./examples/example_lmdif1.f90
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90
 
   fpm:
     name: Check fpm Compilation
