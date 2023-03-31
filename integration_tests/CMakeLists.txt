@@ -432,6 +432,7 @@ RUN(NAME modules_33 LABELS gfortran EXTRAFILES
 RUN(NAME modules_34 LABELS gfortran EXTRAFILES
         modules_34_module1a.f90 modules_34_module1.f90
         modules_34_module2.f90 modules_34_module3.f90)
+RUN(NAME modules_35 LABELS gfortran)
 RUN(NAME modules_38 LABELS gfortran)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
