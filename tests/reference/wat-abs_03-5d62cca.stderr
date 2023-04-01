@@ -1,0 +1,11 @@
+warning: Unsupported variable type: c_ptr
+ --> tests/../integration_tests/abs_03.f90:1:1
+  |
+1 | program abs_03
+  | ^ Only integer, floats, logical and complex supported currently
+
+warning: Declare Global: Type c_ptr not yet supported
+ --> tests/../integration_tests/abs_03.f90:1:1
+  |
+1 | program abs_03
+  | ^ 
