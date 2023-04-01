@@ -530,25 +530,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         ASR::expr_t* operand = x->m_arg;
         int rank_operand = PassUtils::get_rank(operand);
         if( rank_operand == 0 ) {
-            const Location& loc = x->base.base.loc;
-            if (result_var) {
-                int n_dims = PassUtils::get_rank(result_var);
-                if (n_dims != 0) {
-                    Vec<ASR::expr_t*> idx_vars, loop_vars;
-                    std::vector<int> loop_var_indices;
-                    Vec<ASR::stmt_t*> doloop_body;
-                    create_do_loop(loc, n_dims, idx_vars,
-                        loop_vars, loop_var_indices, doloop_body,
-                        [=, &idx_vars, &doloop_body] () {
-                        ASR::expr_t* ref = ASRUtils::EXPR((ASR::asr_t*)x);
-                        ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
-                        ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, res, ref, nullptr));
-                        doloop_body.push_back(al, assign);
-                    });
-                    result_var = nullptr;
-                    use_custom_loop_params = false;
-                }
-            }
             return ;
         }
 

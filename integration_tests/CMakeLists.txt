@@ -749,5 +749,5 @@ RUN(NAME complex_13 LABELS gfortran llvm wasm)
 RUN(NAME complex_14 LABELS gfortran llvm wasm)
 
 RUN(NAME array_op_01 LABELS gfortran llvm)
-RUN(NAME array_op_02 LABELS gfortran llvm)
-RUN(NAME array_op_03 LABELS gfortran llvm)
+# RUN(NAME array_op_02 LABELS gfortran llvm)
+# RUN(NAME array_op_03 LABELS gfortran llvm)
