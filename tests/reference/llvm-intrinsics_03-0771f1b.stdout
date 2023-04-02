@@ -8,6 +8,36 @@ source_filename = "LFortran"
 @3 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 @4 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
+define float @_lcompilers_abs(float* %x) {
+.entry:
+  %_lcompilers_abs = alloca float, align 4
+  %0 = load float, float* %x, align 4
+  %1 = call float @_lfortran_sabs(float %0)
+  store float %1, float* %_lcompilers_abs, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  %2 = load float, float* %_lcompilers_abs, align 4
+  ret float %2
+}
+
+declare float @_lfortran_sabs(float)
+
+define double @_lcompilers_abs1(double* %x) {
+.entry:
+  %_lcompilers_abs1 = alloca double, align 8
+  %0 = load double, double* %x, align 8
+  %1 = call double @_lfortran_dabs(double %0)
+  store double %1, double* %_lcompilers_abs1, align 8
+  br label %return
+
+return:                                           ; preds = %.entry
+  %2 = load double, double* %_lcompilers_abs1, align 8
+  ret double %2
+}
+
+declare double @_lfortran_dabs(double)
+
 define float @_lcompilers_cos(float* %x) {
 .entry:
   %_lcompilers_cos = alloca float, align 4
@@ -40,32 +70,6 @@ declare double @_lfortran_dcos(double)
 
 declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
 
-define double @__module_lfortran_intrinsic_math_dabs(double* %x) {
-.entry:
-  %r = alloca double, align 8
-  %0 = load double, double* %x, align 8
-  %1 = fcmp uge double %0, 0.000000e+00
-  br i1 %1, label %then, label %else
-
-then:                                             ; preds = %.entry
-  %2 = load double, double* %x, align 8
-  store double %2, double* %r, align 8
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  %3 = load double, double* %x, align 8
-  %4 = fsub double 0.000000e+00, %3
-  store double %4, double* %r, align 8
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  br label %return
-
-return:                                           ; preds = %ifcont
-  %5 = load double, double* %r, align 8
-  ret double %5
-}
-
 define double @__module_lfortran_intrinsic_math_dcos(double* %x) {
 .entry:
   %r = alloca double, align 8
@@ -77,32 +81,6 @@ define double @__module_lfortran_intrinsic_math_dcos(double* %x) {
 return:                                           ; preds = %.entry
   %2 = load double, double* %r, align 8
   ret double %2
-}
-
-define float @__module_lfortran_intrinsic_math_sabs(float* %x) {
-.entry:
-  %r = alloca float, align 4
-  %0 = load float, float* %x, align 4
-  %1 = fcmp uge float %0, 0.000000e+00
-  br i1 %1, label %then, label %else
-
-then:                                             ; preds = %.entry
-  %2 = load float, float* %x, align 4
-  store float %2, float* %r, align 4
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  %3 = load float, float* %x, align 4
-  %4 = fsub float 0.000000e+00, %3
-  store float %4, float* %r, align 4
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  br label %return
-
-return:                                           ; preds = %ifcont
-  %5 = load float, float* %r, align 4
-  ret float %5
 }
 
 define double @__module_lfortran_intrinsic_math2_dabs(double* %x) {
@@ -149,7 +127,7 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = load float, float* %x, align 4
   %3 = fadd float %2, 0x3FEFE8D5A0000000
   store float %3, float* %call_arg_value, align 4
-  %4 = call float @__module_lfortran_intrinsic_math_sabs(float* %call_arg_value)
+  %4 = call float @_lcompilers_abs(float* %call_arg_value)
   %5 = fcmp ugt float %4, 0x3E7AD7F2A0000000
   br i1 %5, label %then, label %else
 
@@ -165,7 +143,7 @@ ifcont:                                           ; preds = %else, %then
   %6 = call double @_lcompilers_cos1(double* %a)
   %7 = fadd double %6, 0x3FDF606EEB1A3FC7
   store double %7, double* %call_arg_value1, align 8
-  %8 = call double @__module_lfortran_intrinsic_math_dabs(double* %call_arg_value1)
+  %8 = call double @_lcompilers_abs1(double* %call_arg_value1)
   %9 = fcmp ugt double %8, 0x3E7AD7F29ABCAF48
   br i1 %9, label %then2, label %else3
 
@@ -189,7 +167,7 @@ ifcont4:                                          ; preds = %else3, %then2
   %16 = call float @_lcompilers_cos(float* %call_arg_value6)
   %17 = fsub float %16, 0x3FE6ECC720000000
   store float %17, float* %call_arg_value7, align 4
-  %18 = call float @__module_lfortran_intrinsic_math_sabs(float* %call_arg_value7)
+  %18 = call float @_lcompilers_abs(float* %call_arg_value7)
   %19 = fcmp ugt float %18, 0x3E7AD7F2A0000000
   br i1 %19, label %then8, label %else9
 

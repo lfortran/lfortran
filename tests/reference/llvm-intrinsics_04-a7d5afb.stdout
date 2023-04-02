@@ -14,33 +14,22 @@ source_filename = "LFortran"
 @7 = private unnamed_addr constant [12 x i8] c"(%lf,%lf)%s\00", align 1
 @8 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
-declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
-
-define double @__module_lfortran_intrinsic_math_dabs(double* %x) {
+define double @_lcompilers_abs(double* %x) {
 .entry:
-  %r = alloca double, align 8
+  %_lcompilers_abs = alloca double, align 8
   %0 = load double, double* %x, align 8
-  %1 = fcmp uge double %0, 0.000000e+00
-  br i1 %1, label %then, label %else
-
-then:                                             ; preds = %.entry
-  %2 = load double, double* %x, align 8
-  store double %2, double* %r, align 8
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  %3 = load double, double* %x, align 8
-  %4 = fsub double 0.000000e+00, %3
-  store double %4, double* %r, align 8
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
+  %1 = call double @_lfortran_dabs(double %0)
+  store double %1, double* %_lcompilers_abs, align 8
   br label %return
 
-return:                                           ; preds = %ifcont
-  %5 = load double, double* %r, align 8
-  ret double %5
+return:                                           ; preds = %.entry
+  %2 = load double, double* %_lcompilers_abs, align 8
+  ret double %2
 }
+
+declare double @_lfortran_dabs(double)
+
+declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
 
 define double @__module_lfortran_intrinsic_math_dtan(double* %x) {
 .entry:
@@ -87,7 +76,7 @@ define i32 @main(i32 %0, i8** %1) {
   %4 = load double, double* %x, align 8
   %5 = fsub double %4, 0x402C33ED50B88778
   store double %5, double* %call_arg_value, align 8
-  %6 = call double @__module_lfortran_intrinsic_math_dabs(double* %call_arg_value)
+  %6 = call double @_lcompilers_abs(double* %call_arg_value)
   %7 = fcmp ugt double %6, 1.000000e-10
   br i1 %7, label %then, label %else
 
@@ -126,7 +115,7 @@ ifcont:                                           ; preds = %else, %then
   %23 = load double, double* %22, align 8
   %24 = fsub double %23, 0x3F30E5C06C0C177D
   store double %24, double* %call_arg_value1, align 8
-  %25 = call double @__module_lfortran_intrinsic_math_dabs(double* %call_arg_value1)
+  %25 = call double @_lcompilers_abs(double* %call_arg_value1)
   %26 = fcmp ugt double %25, 1.000000e-10
   br i1 %26, label %then2, label %else3
 

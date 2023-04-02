@@ -2,14 +2,6 @@
     (SymbolTable
         1
         {
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             template_nested:
                 (Program
                     (SymbolTable
@@ -716,26 +708,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            abs:
-                                                (ExternalSymbol
-                                                    8
-                                                    abs
-                                                    13 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@sabs:
-                                                (ExternalSymbol
-                                                    8
-                                                    abs@sabs
-                                                    13 sabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sabs
-                                                    Private
-                                                ),
                                             b:
                                                 (Variable
                                                     8
@@ -798,8 +770,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@sabs
-                                    add_real]
+                                    [add_real]
                                     []
                                     [(=
                                         (Var 8 x)
@@ -837,10 +808,9 @@
                                     )
                                     (If
                                         (RealCompare
-                                            (FunctionCall
-                                                8 abs@sabs
-                                                8 abs
-                                                [((RealBinOp
+                                            (IntrinsicFunction
+                                                Abs
+                                                [(RealBinOp
                                                     (FunctionCall
                                                         2 add_real
                                                         ()
@@ -857,9 +827,9 @@
                                                     )
                                                     (Real 4 [])
                                                     ()
-                                                ))]
+                                                )]
+                                                0
                                                 (Real 4 [])
-                                                ()
                                                 ()
                                             )
                                             Gt
@@ -882,8 +852,7 @@
                                 )
                         })
                     template_nested_m
-                    [lfortran_intrinsic_math
-                    template_nested_m]
+                    [template_nested_m]
                     .false.
                     .false.
                 )

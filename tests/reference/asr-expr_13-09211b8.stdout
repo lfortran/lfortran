@@ -22,26 +22,6 @@
                                     Required
                                     .false.
                                 ),
-                            abs:
-                                (ExternalSymbol
-                                    2
-                                    abs
-                                    101 abs
-                                    lfortran_intrinsic_math
-                                    []
-                                    abs
-                                    Private
-                                ),
-                            abs@sabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@sabs
-                                    101 sabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    sabs
-                                    Private
-                                ),
                             ap:
                                 (Variable
                                     2
@@ -287,10 +267,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@sabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (Var 2 x)
                                     Sub
                                     (RealUnaryMinus
@@ -306,9 +285,9 @@
                                     )
                                     (Real 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -363,10 +342,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@sabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (Var 2 x)
                                     Sub
                                     (RealConstant
@@ -375,9 +353,9 @@
                                     )
                                     (Real 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -577,14 +555,10 @@
                         )]
                     )]
                 ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             lfortran_intrinsic_math2:
                 (IntrinsicModule lfortran_intrinsic_math2),
             lfortran_intrinsic_math3:

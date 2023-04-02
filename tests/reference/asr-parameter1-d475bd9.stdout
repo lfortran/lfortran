@@ -7,26 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            abs:
-                                (ExternalSymbol
-                                    2
-                                    abs
-                                    101 abs
-                                    lfortran_intrinsic_math
-                                    []
-                                    abs
-                                    Private
-                                ),
-                            abs@dabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@dabs
-                                    101 dabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    dabs
-                                    Private
-                                ),
                             max:
                                 (ExternalSymbol
                                     2
@@ -139,36 +119,32 @@
                         []
                         .false.
                     )
-                    [abs@dabs
-                    max@dmax_3args]
+                    [max@dmax_3args]
                     []
                     [(=
                         (Var 2 s)
                         (FunctionCall
                             2 max@dmax_3args
                             2 max
-                            [((FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((Var 2 three))]
+                            [((IntrinsicFunction
+                                Abs
+                                [(Var 2 three)]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             ))
-                            ((FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((Var 2 two))]
+                            ((IntrinsicFunction
+                                Abs
+                                [(Var 2 two)]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             ))
-                            ((FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((Var 2 p66))]
+                            ((IntrinsicFunction
+                                Abs
+                                [(Var 2 p66)]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             ))]
                             (Real 8 [])
@@ -182,14 +158,10 @@
                     .false.
                     .false.
                 ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             lfortran_intrinsic_math2:
                 (IntrinsicModule lfortran_intrinsic_math2),
             lfortran_intrinsic_math3:
