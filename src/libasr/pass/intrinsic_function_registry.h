@@ -39,32 +39,44 @@ enum class IntrinsicFunctions : int64_t {
     Cos,
     Gamma,
     LogGamma,
+    Abs,
     // ...
 };
 
 namespace UnaryIntrinsicFunction {
 
-#define create_variable(var_sym, name, intent, abi, value_attr, symtab) \
-    ASR::symbol_t *var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t( \
-        al, loc, symtab, s2c(al, name), nullptr, 0, intent, nullptr, nullptr, \
-        ASR::storage_typeType::Default, arg_type, abi, ASR::Public, \
-        ASR::presenceType::Required, value_attr)); \
+#define create_variable(var_sym, name, intent, abi, value_attr, symtab, type)   \
+    ASR::symbol_t *var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(\
+        al, loc, symtab, s2c(al, name), nullptr, 0, intent, nullptr, nullptr,   \
+        ASR::storage_typeType::Default, type, abi, ASR::Public,                 \
+        ASR::presenceType::Required, value_attr));                              \
     symtab->add_symbol(s2c(al, name), var_sym);
 
 #define make_Function_t(name, symtab, dep, args, body, return_var, abi, deftype, bindc_name) \
-    ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(al, loc, \
-    symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n, \
-    ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)), ASR::abiType::abi, \
-    ASR::accessType::Public, ASR::deftypeType::deftype, bindc_name, false, \
+    ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(al, loc,      \
+    symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n,        \
+    ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)), ASR::abiType::abi,    \
+    ASR::accessType::Public, ASR::deftypeType::deftype, bindc_name, false,      \
     false, false, false, false, nullptr, 0, nullptr, 0, false, false, false));
 
 static inline ASR::expr_t* instantiate_functions(Allocator &al,
         const Location &loc, SymbolTable *global_scope, std::string new_name,
         ASR::ttype_t *arg_type, Vec<ASR::call_arg_t>& new_args,
         ASR::expr_t *value) {
+    ASR::ttype_t *return_type = arg_type;
     std::string c_func_name;
     switch (arg_type->type) {
+        case ASR::ttypeType::Integer : {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+                c_func_name = "_lfortran_i" + new_name;
+            } else {
+                c_func_name = "_lfortran_l" + new_name;
+            }
+            break;
+        }
         case ASR::ttypeType::Complex : {
+            return_type = TYPE(ASR::make_Real_t(al, arg_type->base.loc,
+                ASRUtils::extract_kind_from_ttype_t(arg_type), nullptr, 0));
             if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
                 c_func_name = "_lfortran_c" + new_name;
             } else {
@@ -88,8 +100,8 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         while (global_scope->get_symbol(new_func_name) != nullptr) {
             ASR::symbol_t *s = global_scope->get_symbol(new_func_name);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
-            if (ASRUtils::types_equal(ASRUtils::expr_type(f->m_return_var),
-                    arg_type)) {
+            if (ASRUtils::types_equal(ASRUtils::expr_type(f->m_return_var), return_type)
+             && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]), arg_type)) {
                 return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, s,
                     s, new_args.p, new_args.size(), arg_type, value, nullptr));
             } else {
@@ -105,12 +117,12 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     {
         args.reserve(al, 1);
         create_variable(arg, "x", ASR::intentType::In, ASR::abiType::Source,
-            false, fn_symtab);
+            false, fn_symtab, arg_type);
         args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
     }
 
     create_variable(return_var, new_name, ASRUtils::intent_return_var,
-        ASR::abiType::Source, false, fn_symtab);
+        ASR::abiType::Source, false, fn_symtab, return_type);
 
     Vec<ASR::stmt_t*> body;
     body.reserve(al, 1);
@@ -124,12 +136,12 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         {
             args_1.reserve(al, 1);
             create_variable(arg, "x", ASR::intentType::In, ASR::abiType::BindC,
-                true, fn_symtab_1);
+                true, fn_symtab_1, arg_type);
             args_1.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
         }
 
         create_variable(return_var_1, c_func_name, ASRUtils::intent_return_var,
-            ASR::abiType::BindC, false, fn_symtab_1);
+            ASR::abiType::BindC, false, fn_symtab_1, return_type);
 
         Vec<char *> dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -154,7 +166,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         body, return_var, Source, Implementation, nullptr);
     global_scope->add_symbol(new_name, new_symbol);
     return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, new_symbol,
-        new_symbol, new_args.p, new_args.size(), arg_type, value, nullptr));
+        new_symbol, new_args.p, new_args.size(), return_type, value, nullptr));
 }
 
 static inline ASR::asr_t* create_UnaryFunction(Allocator& al, const Location& loc,
@@ -269,6 +281,64 @@ namespace X {                                                                   
 create_trig(Sin, sin, sin)
 create_trig(Cos, cos, cos)
 
+namespace Abs {
+
+    static ASR::expr_t *eval_Abs(Allocator &al, const Location &loc,
+            Vec<ASR::expr_t*> &args) {
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        ASR::expr_t* arg = args[0];
+        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
+        if (ASRUtils::is_real(*t)) {
+            double rv = ASR::down_cast<ASR::RealConstant_t>(arg)->m_r;
+            double val = std::abs(rv);
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+                al, loc, val, t));
+        } else if (ASRUtils::is_integer(*t)) {
+            int64_t rv = ASR::down_cast<ASR::IntegerConstant_t>(arg)->m_n;
+            int64_t val = std::abs(rv);
+            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(
+                al, loc, val, t));
+        } else if (ASRUtils::is_complex(*t)) {
+            double re = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_re;
+            double im = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_im;
+            std::complex<double> x(re, im);
+            double result = std::abs(x);
+            ASR::ttype_t *real_type = TYPE(ASR::make_Real_t(al, t->base.loc,
+                ASRUtils::extract_kind_from_ttype_t(t), nullptr, 0));
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+                al, loc, result, real_type));
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::asr_t* create_Abs(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic abs function accepts exactly 1 argument", loc);
+        }
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_integer(*type) && !ASRUtils::is_real(*type)
+                && !ASRUtils::is_complex(*type)) {
+            err("Argument of the abs function must be Integer, Real or Complex",
+                args[0]->base.loc);
+        }
+        if (is_complex(*type)) {
+            type = TYPE(ASR::make_Real_t(al, type->base.loc,
+                ASRUtils::extract_kind_from_ttype_t(type), nullptr, 0));
+        }
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Abs), 0, type);
+    }
+
+    static inline ASR::expr_t* instantiate_Abs (instantiate_UnaryFunctionArgs) {
+        instantiate_UnaryFunctionBody(abs)
+    }
+
+} // namespace Abs
+
+
 namespace IntrinsicFunctionRegistry {
 
     static const std::map<int64_t, impl_function>& intrinsic_function_by_id_db = {
@@ -278,7 +348,9 @@ namespace IntrinsicFunctionRegistry {
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sin),
             &Sin::instantiate_Sin},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos),
-            &Cos::instantiate_Cos}
+            &Cos::instantiate_Cos},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Abs),
+            &Abs::instantiate_Abs}
     };
 
     static const std::map<std::string,
@@ -286,7 +358,8 @@ namespace IntrinsicFunctionRegistry {
                     eval_intrinsic_function>>& intrinsic_function_by_name_db = {
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_log_gamma}},
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
-                {"cos", {&Cos::create_Cos, &Cos::eval_Cos}}
+                {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
+                {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -318,6 +391,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Cos)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
+        INTRINSIC_NAME_CASE(Abs)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }

@@ -695,6 +695,8 @@ TRIG2(sqrt, dsqrt)
     static ASR::expr_t *eval_abs(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args
             ) {
+        // Will we use this function even after `abs` being
+        // registered in IntrinsicFunction?
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (args.size() != 1) {
             throw SemanticError("Intrinsic abs function accepts exactly 1 argument", loc);

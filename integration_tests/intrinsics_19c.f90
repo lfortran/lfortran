@@ -20,12 +20,23 @@ complex(dp), parameter :: &
     d4 = sqrt((0.5_dp,0.5_dp))
 
 complex :: x
+real :: x1 = -1
 complex(dp) :: y
 
 x = (0.5,0.5)
 y = (0.5_dp,0.5_dp)
 
-print *, abs((0.5,0.5)), abs((0.5_dp,0.5_dp)), s1, d1, abs(x), abs(y)
+if (abs(-1) /= 1) error stop
+if (abs(int(x1)) /= 1) error stop
+if (abs(-1) /= 1) error stop
+if (abs(x1) /= 1.0) error stop
+if (abs(-1.0) /= 1) error stop
+if (abs(abs((0.5, 0.5)) - 0.707106769) > 1e-7) error stop
+if (abs(abs(x) - 0.707106769) > 1e-7) error stop
+if (abs(abs(-x) - 0.707106769) > 1e-7) error stop
+if (abs(abs((0.5_dp, 0.5_dp)) - 0.70710678118654757) > 1e-15) error stop
+if (abs(abs(y) - 0.70710678118654757) > 1e-15) error stop
+if (abs(abs(-y) - 0.70710678118654757) > 1e-15) error stop
 print *, exp((0.5,0.5)), exp((0.5_dp,0.5_dp)), s2, d2, exp(x), exp(y)
 print *, log((0.5,0.5)), log((0.5_dp,0.5_dp)), s3, d3, log(x), log(y)
 print *, sqrt((0.5,0.5)), sqrt((0.5_dp,0.5_dp)), s4, d4, sqrt(x), sqrt(y)
