@@ -207,7 +207,15 @@
                         })
                     modules_35
                     [m_cli2_21]
-                    [(Print
+                    [(Allocate
+                        [((Var 4 string)
+                        [((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4 [])))])]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Print
                         ()
                         [(StringConstant
                             "executing modules_35"

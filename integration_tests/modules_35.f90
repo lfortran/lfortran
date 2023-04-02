@@ -25,6 +25,7 @@ end module M_CLI2_21
 program modules_35
     use M_CLI2_21
     character(len=5), allocatable :: string(:)
+    allocate(string(2))
 
     print *, "executing modules_35"
     call get_args_fixed_length_a_array(string)
