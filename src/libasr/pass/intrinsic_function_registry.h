@@ -75,8 +75,10 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             break;
         }
         case ASR::ttypeType::Complex : {
-            return_type = TYPE(ASR::make_Real_t(al, arg_type->base.loc,
-                ASRUtils::extract_kind_from_ttype_t(arg_type), nullptr, 0));
+            if (new_name == "abs") {
+                return_type = TYPE(ASR::make_Real_t(al, arg_type->base.loc,
+                    ASRUtils::extract_kind_from_ttype_t(arg_type), nullptr, 0));
+            }
             if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
                 c_func_name = "_lfortran_c" + new_name;
             } else {
