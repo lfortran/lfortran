@@ -2,11 +2,11 @@
     "basename": "pass_implied_do_loops-modules_35-fde962b",
     "cmd": "lfortran --pass=implied_do_loops --indent --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/modules_35.f90",
-    "infile_hash": "4e1cb1787da1e45d4e7989a3563caded0c685cfb805b4c3bfbea009b",
+    "infile_hash": "ac2ec2104388f2a3f3b39603c341b1ca3a2f5de691e8bf3c9687275f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "pass_implied_do_loops-modules_35-fde962b.stdout",
-    "stdout_hash": "0341b10cdae730a1b7df7516cbea16624ba18096cae09d049dad2839",
+    "stdout_hash": "069261ca0d2363c2fa58adc759a7f98fd0967995c1f51ae83164043a",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
