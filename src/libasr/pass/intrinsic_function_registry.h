@@ -40,6 +40,7 @@ enum class IntrinsicFunctions : int64_t {
     Gamma,
     LogGamma,
     Abs,
+    Dim
     // ...
 };
 
@@ -474,6 +475,30 @@ namespace Abs {
 
 } // namespace Abs
 
+namespace Dim {
+
+    static ASR::expr_t *eval_Dim(Allocator &al, const Location &loc,
+            Vec<ASR::expr_t*> &args) {
+        //TODO
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Dim(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        //TODO
+        return nullptr;
+    }
+
+    static inline ASR::expr_t* instantiate_Dim(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, ASR::expr_t* compile_time_value) {
+        //TODO
+        return nullptr;
+
+    }
+
+} // namespace Dim
 
 namespace IntrinsicFunctionRegistry {
 
@@ -486,7 +511,9 @@ namespace IntrinsicFunctionRegistry {
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos),
             &Cos::instantiate_Cos},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Abs),
-            &Abs::instantiate_Abs}
+            &Abs::instantiate_Abs},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Dim),
+            &Dim::instantiate_Dim}
     };
 
     static const std::map<std::string,
@@ -496,6 +523,7 @@ namespace IntrinsicFunctionRegistry {
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
                 {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
+                {"dim", {&Dim::create_Dim, &Dim::eval_Dim}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -528,6 +556,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Abs)
+        INTRINSIC_NAME_CASE(Dim)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
