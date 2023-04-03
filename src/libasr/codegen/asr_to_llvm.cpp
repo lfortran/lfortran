@@ -221,10 +221,10 @@ public:
         reload a local scope (and increment or decrement the stack pointer) */
     const ASR::Function_t *parent_function = nullptr;
 
-    std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop, 
+    std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop,
         so that we can jump to the head of the loop when we reach a cycle */
     std::vector<std::string> loop_head_names;
-    std::vector<llvm::BasicBlock*> loop_or_block_end; /* For saving the end of a block, 
+    std::vector<llvm::BasicBlock*> loop_or_block_end; /* For saving the end of a block,
         so that we can jump to the end of the block when we reach an exit */
     std::vector<std::string> loop_or_block_end_names;
 
