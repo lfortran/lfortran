@@ -18,16 +18,27 @@ define double @_lcompilers_abs(double* %x) {
 .entry:
   %_lcompilers_abs = alloca double, align 8
   %0 = load double, double* %x, align 8
-  %1 = call double @_lfortran_dabs(double %0)
-  store double %1, double* %_lcompilers_abs, align 8
+  %1 = fcmp uge double %0, 0.000000e+00
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %2 = load double, double* %x, align 8
+  store double %2, double* %_lcompilers_abs, align 8
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %3 = load double, double* %x, align 8
+  %4 = fsub double 0.000000e+00, %3
+  store double %4, double* %_lcompilers_abs, align 8
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   br label %return
 
-return:                                           ; preds = %.entry
-  %2 = load double, double* %_lcompilers_abs, align 8
-  ret double %2
+return:                                           ; preds = %ifcont
+  %5 = load double, double* %_lcompilers_abs, align 8
+  ret double %5
 }
-
-declare double @_lfortran_dabs(double)
 
 declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
 

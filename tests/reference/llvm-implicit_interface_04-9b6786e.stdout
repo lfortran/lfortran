@@ -17,16 +17,27 @@ define float @_lcompilers_abs(float* %x) {
 .entry:
   %_lcompilers_abs = alloca float, align 4
   %0 = load float, float* %x, align 4
-  %1 = call float @_lfortran_sabs(float %0)
-  store float %1, float* %_lcompilers_abs, align 4
+  %1 = fcmp uge float %0, 0.000000e+00
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %2 = load float, float* %x, align 4
+  store float %2, float* %_lcompilers_abs, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %3 = load float, float* %x, align 4
+  %4 = fsub float 0.000000e+00, %3
+  store float %4, float* %_lcompilers_abs, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   br label %return
 
-return:                                           ; preds = %.entry
-  %2 = load float, float* %_lcompilers_abs, align 4
-  ret float %2
+return:                                           ; preds = %ifcont
+  %5 = load float, float* %_lcompilers_abs, align 4
+  ret float %5
 }
-
-declare float @_lfortran_sabs(float)
 
 define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
 .entry:
