@@ -158,8 +158,22 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, arg->base.base.loc,
                                     new_symtab, s2c(al, item.first), arg->m_external, arg->m_module_name,
                                     arg->m_scope_names, arg->n_scope_names, arg->m_original_name, arg->m_access));
+                } else if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                    ASR::Function_t* arg = ASR::down_cast<ASR::Function_t>(item.second);
+                    std::vector<size_t> arg_indices;
+                    SymbolTable* parent_scope = current_scope;
+                    current_scope = new_symtab;
+                    ASR::symbol_t* sym = insert_new_procedure(arg, arg_indices);
+                    current_scope = parent_scope;
+                    if( sym != nullptr ) {
+                        ASR::Function_t* new_arg_func = ASR::down_cast<ASR::Function_t>(sym);
+                        edit_new_procedure(new_arg_func, arg_indices);
+                        new_arg = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*) new_arg_func);
+                    }
                 }
-                new_symtab->add_symbol(item.first, new_arg);
+                if( !ASR::is_a<ASR::Function_t>(*item.second) ) {
+                    new_symtab->add_symbol(item.first, new_arg);
+                }
             }
             Vec<ASR::expr_t*> new_args;
             std::string suffix = "";
@@ -167,8 +181,16 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             ASR::expr_t* return_var = nullptr;
             for( size_t i = 0; i < x->n_args + 1; i++ ) {
                 ASR::Variable_t* arg = nullptr;
+                ASR::Function_t* arg_func = nullptr;
                 if( i < x->n_args ) {
-                    arg = ASRUtils::EXPR2VAR(x->m_args[i]);
+                    if (ASR::is_a<ASR::Var_t>(*(x->m_args[i]))) {
+                        ASR::Var_t* x_arg = ASR::down_cast<ASR::Var_t>(x->m_args[i]);
+                        if (ASR::is_a<ASR::Function_t>(*(x_arg->m_v))) {
+                            arg_func = ASR::down_cast<ASR::Function_t>(x_arg->m_v);
+                        } else {
+                            arg = ASRUtils::EXPR2VAR(x->m_args[i]);
+                        }
+                    }
                 } else if( x->m_return_var ) {
                     arg = ASRUtils::EXPR2VAR(x->m_return_var);
                 } else {
@@ -176,11 +198,22 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
                 if( std::find(indices.begin(), indices.end(), i) !=
                     indices.end() ) {
-                    suffix += "_" + std::string(arg->m_name);
+                    if( arg_func ) {
+                        suffix += "_" + std::string(arg_func->m_name);
+                    } else {
+                        suffix += "_" + std::string(arg->m_name);
+                    }
                 }
-                ASR::expr_t* new_arg = ASRUtils::EXPR(ASR::make_Var_t(al,
+                ASR::expr_t* new_arg;
+                if (arg_func) {
+                    new_arg = ASRUtils::EXPR(ASR::make_Var_t(al,
+                                        arg_func->base.base.loc, new_symtab->get_symbol(
+                                                        std::string(arg_func->m_name))));
+                } else {
+                    new_arg = ASRUtils::EXPR(ASR::make_Var_t(al,
                                         arg->base.base.loc, new_symtab->get_symbol(
                                                         std::string(arg->m_name))));
+                }
                 if( i < x->n_args ) {
                     new_args.push_back(al, new_arg);
                 } else {
