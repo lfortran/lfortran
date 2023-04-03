@@ -47,26 +47,6 @@
                                     int
                                     Public
                                 ),
-                            abs:
-                                (ExternalSymbol
-                                    5
-                                    abs
-                                    7 abs
-                                    lfortran_intrinsic_math
-                                    []
-                                    abs
-                                    Private
-                                ),
-                            abs@sabs:
-                                (ExternalSymbol
-                                    5
-                                    abs@sabs
-                                    7 sabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    sabs
-                                    Private
-                                ),
                             fpm_run_settings:
                                 (ExternalSymbol
                                     5
@@ -144,10 +124,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                5 abs@sabs
-                                5 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (StructInstanceMember
                                         (Var 5 settings)
                                         5 1_fpm_run_settings_float
@@ -161,9 +140,9 @@
                                     )
                                     (Real 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -348,15 +327,7 @@
                     []
                     .false.
                     .false.
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

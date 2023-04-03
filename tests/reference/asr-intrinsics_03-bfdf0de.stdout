@@ -22,36 +22,6 @@
                                     Required
                                     .false.
                                 ),
-                            abs:
-                                (ExternalSymbol
-                                    2
-                                    abs
-                                    6 abs
-                                    lfortran_intrinsic_math
-                                    []
-                                    abs
-                                    Private
-                                ),
-                            abs@dabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@dabs
-                                    6 dabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    dabs
-                                    Private
-                                ),
-                            abs@sabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@sabs
-                                    6 sabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    sabs
-                                    Private
-                                ),
                             dabs:
                                 (ExternalSymbol
                                     2
@@ -157,10 +127,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@sabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (Var 2 x)
                                     Add
                                     (RealConstant
@@ -169,9 +138,9 @@
                                     )
                                     (Real 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -189,10 +158,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (IntrinsicFunction
                                         Cos
                                         [(Var 2 a)]
@@ -215,9 +183,9 @@
                                     )
                                     (Real 8 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -243,10 +211,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@sabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (IntrinsicFunction
                                         Cos
                                         [(RealBinOp
@@ -302,9 +269,9 @@
                                     )
                                     (Real 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt

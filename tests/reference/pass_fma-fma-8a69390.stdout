@@ -7,36 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            abs:
-                                (ExternalSymbol
-                                    2
-                                    abs
-                                    4 abs
-                                    lfortran_intrinsic_math
-                                    []
-                                    abs
-                                    Private
-                                ),
-                            abs@dabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@dabs
-                                    4 dabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    dabs
-                                    Private
-                                ),
-                            abs@sabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@sabs
-                                    4 sabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    sabs
-                                    Private
-                                ),
                             fma@IntrinsicOptimization@fmar32:
                                 (ExternalSymbol
                                     2
@@ -280,10 +250,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@sabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (Var 2 x)
                                     Sub
                                     (RealConstant
@@ -292,9 +261,9 @@
                                     )
                                     (Real 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -312,10 +281,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (Var 2 z)
                                     Sub
                                     (Cast
@@ -332,9 +300,9 @@
                                     )
                                     (Real 8 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             )
                             Gt

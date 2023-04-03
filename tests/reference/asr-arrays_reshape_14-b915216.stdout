@@ -30,26 +30,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            abs:
-                                                (ExternalSymbol
-                                                    4
-                                                    abs
-                                                    7 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@dabs:
-                                                (ExternalSymbol
-                                                    4
-                                                    abs@dabs
-                                                    7 dabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dabs
-                                                    Private
-                                                ),
                                             b:
                                                 (Variable
                                                     4
@@ -227,7 +207,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs]
+                                    []
                                     [(Var 4 d)]
                                     [(=
                                         (Var 4 eps)
@@ -381,10 +361,9 @@
                                             ())
                                             [(If
                                                 (RealCompare
-                                                    (FunctionCall
-                                                        4 abs@dabs
-                                                        4 abs
-                                                        [((RealBinOp
+                                                    (IntrinsicFunction
+                                                        Abs
+                                                        [(RealBinOp
                                                             (RealBinOp
                                                                 (RealBinOp
                                                                     (ArrayItem
@@ -446,9 +425,9 @@
                                                             )
                                                             (Real 8 [])
                                                             ()
-                                                        ))]
+                                                        )]
+                                                        0
                                                         (Real 8 [])
-                                                        ()
                                                         ()
                                                     )
                                                     Gt
@@ -533,10 +512,9 @@
                                                 ())
                                                 [(If
                                                     (RealCompare
-                                                        (FunctionCall
-                                                            4 abs@dabs
-                                                            4 abs
-                                                            [((RealBinOp
+                                                        (IntrinsicFunction
+                                                            Abs
+                                                            [(RealBinOp
                                                                 (RealBinOp
                                                                     (RealBinOp
                                                                         (RealBinOp
@@ -618,9 +596,9 @@
                                                                 )
                                                                 (Real 8 [])
                                                                 ()
-                                                            ))]
+                                                            )]
+                                                            0
                                                             (Real 8 [])
-                                                            ()
                                                             ()
                                                         )
                                                         Gt
@@ -663,26 +641,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            abs:
-                                                (ExternalSymbol
-                                                    3
-                                                    abs
-                                                    7 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@dabs:
-                                                (ExternalSymbol
-                                                    3
-                                                    abs@dabs
-                                                    7 dabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dabs
-                                                    Private
                                                 ),
                                             b:
                                                 (Variable
@@ -863,7 +821,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs]
+                                    []
                                     [(Var 3 a)]
                                     [(=
                                         (Var 3 eps)
@@ -953,10 +911,9 @@
                                         )
                                         (If
                                             (RealCompare
-                                                (FunctionCall
-                                                    3 abs@dabs
-                                                    3 abs
-                                                    [((RealBinOp
+                                                (IntrinsicFunction
+                                                    Abs
+                                                    [(RealBinOp
                                                         (RealBinOp
                                                             (RealBinOp
                                                                 (ArrayItem
@@ -1003,9 +960,9 @@
                                                         )
                                                         (Real 8 [])
                                                         ()
-                                                    ))]
+                                                    )]
+                                                    0
                                                     (Real 8 [])
-                                                    ()
                                                     ()
                                                 )
                                                 Gt
@@ -1221,10 +1178,9 @@
                                         )
                                         (If
                                             (RealCompare
-                                                (FunctionCall
-                                                    3 abs@dabs
-                                                    3 abs
-                                                    [((RealBinOp
+                                                (IntrinsicFunction
+                                                    Abs
+                                                    [(RealBinOp
                                                         (RealBinOp
                                                             (RealBinOp
                                                                 (RealBinOp
@@ -1282,9 +1238,9 @@
                                                         )
                                                         (Real 8 [])
                                                         ()
-                                                    ))]
+                                                    )]
+                                                    0
                                                     (Real 8 [])
-                                                    ()
                                                     ()
                                                 )
                                                 Gt
@@ -1647,15 +1603,7 @@
                         []
                         ()
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

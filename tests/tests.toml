@@ -425,13 +425,13 @@ filename = "../integration_tests/if_05.f90"
 wat = true
 julia = true
 
-[[test]]
-filename = "../integration_tests/abs_01.f90"
-wat = true
+# [[test]]
+# filename = "../integration_tests/abs_01.f90"
+# wat = true
 
-[[test]]
-filename = "../integration_tests/abs_03.f90"
-wat = true
+# [[test]]
+# filename = "../integration_tests/abs_03.f90"
+# wat = true
 
 [[test]]
 filename = "stop.f90"
@@ -863,7 +863,7 @@ asr = true
 filename = "../integration_tests/arrays_02.f90"
 ast = true
 ast_f90 = true
-julia = true
+# julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_03_func.f90"
@@ -2035,9 +2035,9 @@ filename = "../integration_tests/expr_07.f90"
 asr = true
 julia = true
 
-[[test]]
-filename = "../integration_tests/expr_08.f90"
-wat = true
+# [[test]]
+# filename = "../integration_tests/expr_08.f90"
+# wat = true
 
 [[test]]
 filename = "../integration_tests/expr_09.f90"

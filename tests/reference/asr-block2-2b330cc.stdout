@@ -72,36 +72,16 @@
                                     (SymbolTable
                                         4
                                         {
-                                            abs:
-                                                (ExternalSymbol
-                                                    4
-                                                    abs
-                                                    6 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@sabs:
-                                                (ExternalSymbol
-                                                    4
-                                                    abs@sabs
-                                                    6 sabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sabs
-                                                    Private
-                                                )
+                                            
                                         })
                                     main
                                     [(=
                                         (Var 2 delta)
-                                        (FunctionCall
-                                            4 abs@sabs
-                                            4 abs
-                                            [((Var 2 ratio))]
+                                        (IntrinsicFunction
+                                            Abs
+                                            [(Var 2 ratio)]
+                                            0
                                             (Real 4 [])
-                                            ()
                                             ()
                                         )
                                         ()
@@ -139,7 +119,7 @@
                         []
                         .false.
                     )
-                    [abs@sabs]
+                    []
                     []
                     [(BlockCall
                         -1
@@ -149,15 +129,7 @@
                     Public
                     .false.
                     .false.
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )
