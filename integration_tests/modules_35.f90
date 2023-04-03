@@ -5,8 +5,12 @@ contains
 subroutine get_args_fixed_length_a_array(strings)
 character(len=*), allocatable :: strings(:)
 character(len=:), allocatable :: strings_a(:)
-
 integer :: place
+
+! TODO: AST to ASR doesn't respect character(5)
+! which it should. Fix needed here.
+allocate(character(5) :: strings_a(2))
+
 if(place > 0) then
     if (len(strings_a) <= len(strings))then
         strings = strings_a
