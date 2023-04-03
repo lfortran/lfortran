@@ -123,8 +123,8 @@ struct IntrinsicProcedures {
             {"zlog", {m_math, &eval_zlog, true}},
             {"erf", {m_math, &eval_erf, true}},
             {"erfc", {m_math, &eval_erfc, true}},
-            {"abs", {m_math, &eval_abs, true}},
-            {"iabs", {m_math, &eval_abs, true}},
+            {"abs", {m_math, &not_implemented, true}},  // Implemented using
+            {"iabs", {m_math, &not_implemented, true}}, // IntrinsicFunction
             {"sqrt", {m_math, &eval_sqrt, true}},
             {"dsqrt", {m_math, &eval_dsqrt, true}},
             {"datan", {m_math, &eval_datan, true}},
@@ -690,36 +690,6 @@ TRIG2(sqrt, dsqrt)
         return eval_2args_ri(al, loc, args,
             &IntrinsicProcedures::lfortran_max,
             &IntrinsicProcedures::lfortran_max_i);
-    }
-
-    static ASR::expr_t *eval_abs(Allocator &al, const Location &loc,
-            Vec<ASR::expr_t*> &args
-            ) {
-        // Will we use this function even after `abs` being
-        // registered in IntrinsicFunction?
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        if (args.size() != 1) {
-            throw SemanticError("Intrinsic abs function accepts exactly 1 argument", loc);
-        }
-        ASR::expr_t* trig_arg = args[0];
-        ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
-        if (ASR::is_a<ASR::Real_t>(*t)) {
-            double rv = ASR::down_cast<ASR::RealConstant_t>(trig_arg)->m_r;
-            double val = std::abs(rv);
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t));
-        } else if (ASR::is_a<ASR::Integer_t>(*t)) {
-            int64_t rv = ASR::down_cast<ASR::IntegerConstant_t>(trig_arg)->m_n;
-            int64_t val = std::abs(rv);
-            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, t));
-        } else if (ASR::is_a<ASR::Complex_t>(*t)) {
-            double re = ASR::down_cast<ASR::ComplexConstant_t>(trig_arg)->m_re;
-            double im = ASR::down_cast<ASR::ComplexConstant_t>(trig_arg)->m_im;
-            std::complex<double> x(re, im);
-            double result = std::abs(x);
-            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, t));
-        } else {
-            throw SemanticError("Argument of the abs function must be Integer, Real or Complex", loc);
-        }
     }
 
     static ASR::expr_t *eval_dabs(Allocator &al, const Location &loc,
