@@ -15,12 +15,12 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
-class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunctionFromSubroutine> {
+class CreateSubroutineFromFunction: public PassUtils::PassVisitor<CreateSubroutineFromFunction> {
 
     public:
         std::map<std::string, ASR::symbol_t*> replaced_vec;
 
-        CreateFunctionFromSubroutine(Allocator &al_) :
+        CreateSubroutineFromFunction(Allocator &al_) :
         PassVisitor(al_, nullptr)
         {
             pass_result.reserve(al, 1);
@@ -189,9 +189,9 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
 class UpdateExternalSymbols : public ASR::BaseWalkVisitor<UpdateExternalSymbols>
 {
 private:
-    CreateFunctionFromSubroutine &v;
+    CreateSubroutineFromFunction &v;
 public:
-    UpdateExternalSymbols(CreateFunctionFromSubroutine &v_) : v(v_) { }
+    UpdateExternalSymbols(CreateSubroutineFromFunction &v_) : v(v_) { }
 
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         ASR::ExternalSymbol_t &xx = const_cast<ASR::ExternalSymbol_t&>(x);
@@ -266,7 +266,7 @@ class ReplaceFunctionCallWithSubroutineCall: public PassUtils::PassVisitor<Repla
 
 void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
                                           const LCompilers::PassOptions& /*pass_options*/) {
-    CreateFunctionFromSubroutine v(al);
+    CreateSubroutineFromFunction v(al);
     v.visit_TranslationUnit(unit);
     UpdateExternalSymbols e(v);
     e.visit_TranslationUnit(unit);
