@@ -631,37 +631,6 @@ LFORTRAN_API double _lfortran_dfmod(double x, double y)
     return fmod(x, y);
 }
 
-// abs -----------------------------------------------------------------------
-
-LFORTRAN_API int _lfortran_iabs(int x)
-{
-    return abs(x);
-}
-
-LFORTRAN_API long int _lfortran_labs(long int x)
-{
-    return labs(x);
-}
-
-LFORTRAN_API float _lfortran_sabs(float x)
-{
-    return fabs(x);
-}
-
-LFORTRAN_API double _lfortran_dabs(double x)
-{
-    return fabs(x);
-}
-
-LFORTRAN_API float _lfortran_cabs(float_complex_t x)
-{
-    return cabsf(x);
-}
-
-LFORTRAN_API double _lfortran_zabs(double_complex_t x)
-{
-    return cabs(x);
-}
 // atanh -----------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_satanh(float x)
