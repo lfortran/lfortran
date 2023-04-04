@@ -180,6 +180,7 @@ namespace LCompilers {
 
         PassManager(): is_fast{false}, apply_default_passes{false} {
             _passes = {
+                "nested_vars",
                 "global_stmts",
                 "init_expr",
                 "class_constructor",
@@ -198,8 +199,7 @@ namespace LCompilers {
                 "select_case",
                 "inline_function_calls",
                 "unused_functions",
-                "transform_optional_argument_functions",
-                "nested_vars"
+                "transform_optional_argument_functions"
             };
 
             _with_optimization_passes = {

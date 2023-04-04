@@ -5,7 +5,6 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/pass_utils.h>
-#include <llvm/IR/Verifier.h>
 #include <unordered_map>
 
 namespace LCompilers {
@@ -175,7 +174,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 new_ext_var = current_scope->get_unique_name(new_ext_var);
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
                         it2->base.loc, new_ext_var,
-                        al, current_scope, type, ASR::intentType::In);
+                        al, current_scope, type, ASR::intentType::Local);
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
             }
