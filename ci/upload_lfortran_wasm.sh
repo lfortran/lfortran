@@ -8,7 +8,7 @@ deploy_repo_push="git@github.com:lfortran/wasm_builds.git"
 
 git_hash=$(git rev-parse --short "$GITHUB_SHA")
 git_ref=${GITHUB_REF}
-dest_dir="dev"
+dest_dir="release"
 
 lfortran_version=$(<version)
 
