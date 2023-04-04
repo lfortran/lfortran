@@ -13,6 +13,7 @@
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/array_op.h>
 #include <libasr/pass/subroutine_from_function.h>
+#include <libasr/pass/intrinsic_function.h>
 
 #include <map>
 #include <utility>
@@ -1241,6 +1242,7 @@ Result<std::string> asr_to_c(Allocator &al, ASR::TranslationUnit_t &asr,
     pass_replace_array_op(al, asr, pass_options);
     pass_unused_functions(al, asr, pass_options);
     pass_replace_class_constructor(al, asr, pass_options);
+    pass_replace_intrinsic_function(al, asr, pass_options);
     ASRToCVisitor v(diagnostics, platform, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);
