@@ -2658,6 +2658,14 @@ class SymbolDuplicator {
         for( size_t i = 0; i < function->n_args; i++ ) {
             node_duplicator.success = true;
             ASR::expr_t* new_arg = node_duplicator.duplicate_expr(function->m_args[i]);
+            if (ASR::is_a<ASR::Var_t>(*new_arg)) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(new_arg);
+                if (ASR::is_a<ASR::Variable_t>(*(var->m_v))) {
+                    ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                    ASR::symbol_t* arg_symbol = function_symtab->get_symbol(variable->m_name);
+                    new_arg = ASRUtils::EXPR(make_Var_t(al, var->base.base.loc, arg_symbol));
+                }
+            }
             if( !node_duplicator.success ) {
                 return nullptr;
             }
@@ -2666,6 +2674,14 @@ class SymbolDuplicator {
 
         node_duplicator.success = true;
         ASR::expr_t* new_return_var = node_duplicator.duplicate_expr(function->m_return_var);
+        if (ASR::is_a<ASR::Var_t>(*new_return_var)) {
+            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(new_return_var);
+            if (ASR::is_a<ASR::Variable_t>(*(var->m_v))) {
+                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                ASR::symbol_t* arg_symbol = function_symtab->get_symbol(variable->m_name);
+                new_return_var = ASRUtils::EXPR(make_Var_t(al, var->base.base.loc, arg_symbol));
+            }
+        }
         if( !node_duplicator.success ) {
             return nullptr;
         }
