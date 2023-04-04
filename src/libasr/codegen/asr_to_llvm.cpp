@@ -2305,7 +2305,7 @@ public:
         // (global variable declared/initialized in this translation unit), or
         // external (global variable not declared/initialized in this
         // translation unit, just referenced).
-        LCOMPILERS_ASSERT(x.m_intent == intent_local
+        LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
             || x.m_abi == ASR::abiType::Interactive);
         bool external = (x.m_abi != ASR::abiType::Source);
         llvm::Constant* init_value = nullptr;
