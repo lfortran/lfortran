@@ -1,7 +1,6 @@
-#include <cassert>
 
-#include <libasr/alloc.h>
-#include <libasr/containers.h>
+#include <libasr/assert.h>
+#include <libasr/codegen/wasm_utils.h>
 
 namespace LCompilers {
 
@@ -127,7 +126,7 @@ void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
     num.reserve(al, 4);
     emit_leb128_u32(num, al, section_size);
     std::vector<uint8_t> num_4b = {0x80, 0x80, 0x80, 0x00};
-    assert(num.size() <= 4);
+    LCOMPILERS_ASSERT(num.size() <= 4);
     for (uint32_t i = 0; i < num.size(); i++) {
         num_4b[i] |= num[i];
     }
