@@ -2621,6 +2621,22 @@ asr = true
 pass = "implied_do_loops"
 
 [[test]]
+filename = "../integration_tests/modules_37.f90"
+asr = true
+pass = "pass_array_by_data,transform_optional_argument_functions"
+
+[[test]]
+filename = "../integration_tests/modules_39.f90"
+asr = true
+pass = "pass_array_by_data,transform_optional_argument_functions"
+extrafiles = "../integration_tests/modules_39_module.f90"
+
+[[test]]
+filename = "../integration_tests/modules_40.f90"
+asr = true
+pass = "pass_array_by_data,transform_optional_argument_functions"
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 
