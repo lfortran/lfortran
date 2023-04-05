@@ -89,15 +89,19 @@ set(WITH_WHEREAMI yes
 set(WITH_ZLIB yes
     CACHE BOOL "Compile with ZLIB Library")
 
+set(WITH_LCOMPILERS_FAST_ALLOC yes
+    CACHE BOOL "Compile with fast allocator")
+
 # Build to wasm
-set(LFORTRAN_BUILD_TO_WASM no 
+set(LFORTRAN_BUILD_TO_WASM no
     CACHE BOOL "Compile LFortran To WASM")
-    
+
 if (LFORTRAN_BUILD_TO_WASM)
     set(HAVE_BUILD_TO_WASM yes)
     SET(WITH_WHEREAMI no)
     SET(WITH_ZLIB no)
     SET(WITH_RUNTIME_LIBRARY no)
+    SET(WITH_LCOMPILERS_FAST_ALLOC no)
     add_definitions("-DHAVE_BUILD_TO_WASM=1")
 endif()
 
@@ -111,6 +115,10 @@ if (WITH_ZLIB)
     # Find ZLIB with our custom finder before including LLVM since the finder for LLVM
     # might search for ZLIB again and find the shared libraries instead of the static ones
     find_package(StaticZLIB REQUIRED)
+endif()
+
+if (WITH_LCOMPILERS_FAST_ALLOC)
+    add_definitions("-DLCOMPILERS_FAST_ALLOC=1")
 endif()
 
 
@@ -160,7 +168,7 @@ if (WITH_LLVM)
         list(APPEND LFORTRAN_LLVM_COMPONENTS webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo)
         add_definitions("-DHAVE_TARGET_WASM=1")
     endif()
-    
+
     llvm_map_components_to_libnames(llvm_libs ${LFORTRAN_LLVM_COMPONENTS})
     unset(LFORTRAN_LLVM_COMPONENTS)
 
@@ -347,16 +355,15 @@ if (WITH_RUNTIME_LIBRARY)
     ALL
     COMMAND "${CMAKE_COMMAND}" --build  "${CMAKE_BINARY_DIR}/src/runtime"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
-  
+
   add_dependencies(build_runtime configure_runtime)
-  
+
   # This is called after lfortran has been installed
   # For more info https://stackoverflow.com/a/29979349/16568788
   add_subdirectory(cmake/postinstall)
-  
+
   install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
   install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
   install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
   install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
 endif()
-

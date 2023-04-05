@@ -3,7 +3,7 @@
 set -ex
 
 cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_BUILD_TYPE=Release \
     -DWITH_LLVM=yes \
     -DLFORTRAN_BUILD_ALL=yes \
     -DWITH_STACKTRACE=no \
@@ -17,8 +17,9 @@ cp src/runtime/*.mod src/bin/asset_dir
 git clean -dfx -e src/bin/asset_dir
 
 emcmake cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" \
+    -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -fexceptions" \
     -DWITH_LLVM=no \
     -DLFORTRAN_BUILD_ALL=yes \
     -DLFORTRAN_BUILD_TO_WASM=yes \
