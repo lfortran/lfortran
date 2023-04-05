@@ -63,16 +63,20 @@ public:
     void visit_Program(const ASR::Program_t &x) {
         ASR::symbol_t *cur_func_sym_copy = cur_func_sym;
         cur_func_sym = (ASR::symbol_t*)(&x);
+        SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         visit_procedure(x);
+        current_scope = current_scope_copy;
         cur_func_sym = cur_func_sym_copy;
     }
 
     void visit_Function(const ASR::Function_t &x) {
         ASR::symbol_t *cur_func_sym_copy = cur_func_sym;
         cur_func_sym = (ASR::symbol_t*)(&x);
+        SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         visit_procedure(x);
+        current_scope = current_scope_copy;
         cur_func_sym = cur_func_sym_copy;
     }
 
@@ -84,7 +88,9 @@ public:
             // If the variable is not defined in the current scope, it is a
             // "needed global" since we need to be able to access it from the
             // nested procedure.
-            if (current_scope && current_scope->get_symbol(v->m_name) == nullptr) {
+            if ( current_scope &&
+                 v->m_parent_symtab->get_counter() != current_scope->get_counter() &&
+                 v->m_storage != ASR::storage_typeType::Parameter ) {
                 nesting_map[par_func_sym].insert(x.m_v);
             }
         }
@@ -367,16 +373,6 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     z.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
-    // {
-
-    //     for (auto &it: v.nesting_map) {
-    //         std::cout<<"func name " << ASRUtils::symbol_name(it.first) << '\n';
-    //         for (auto &it2: it.second) {
-    //             std::cout<<ASRUtils::symbol_name(it2)<<' ';
-    //         }
-    //         std::cout<<'\n';
-    //     }
-    // }
 }
 
 
