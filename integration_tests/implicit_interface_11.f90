@@ -8,9 +8,9 @@ end
 
 program main
     use implicit_interface_11_module
-    real :: i
+    integer :: i
     i = f()
-    if (abs(i - 1) > 1e-6) error stop
+    if (i /= 1) error stop
     print *, i
 
 end program main
