@@ -1271,6 +1271,10 @@ filename = "../integration_tests/associate_07.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/associate_08.f90"
+asr = true
+
+[[test]]
 filename = "write1.f90"
 ast = true
 ast_f90 = true
