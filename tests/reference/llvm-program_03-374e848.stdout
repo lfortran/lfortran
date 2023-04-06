@@ -60,6 +60,8 @@ loop.body:                                        ; preds = %loop.head
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  %9 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %9, i32* %z, align 4
   ret i32 0
 }
 

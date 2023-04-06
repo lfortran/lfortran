@@ -259,10 +259,50 @@ public:
         pass_result.reserve(al, 1);
     }
 
+    void transform_stmts_assign_nested(ASR::stmt_t **&m_body, size_t &n_body,
+                                        std::vector<ASR::stmt_t*> &assigns) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, n_body);
+        if (pass_result.size() > 0) {
+            asr_changed = true;
+            for (size_t j=0; j < pass_result.size(); j++) {
+                body.push_back(al, pass_result[j]);
+            }
+            pass_result.n = 0;
+        }
+        for (size_t i=0; i<n_body; i++) {
+            // Not necessary after we check it after each visit_stmt in every
+            // visitor method:
+            pass_result.n = 0;
+            retain_original_stmt = false;
+            remove_original_stmt = false;
+            visit_stmt(*m_body[i]);
+            if (pass_result.size() > 0) {
+                asr_changed = true;
+                for (size_t j=0; j < pass_result.size(); j++) {
+                    body.push_back(al, pass_result[j]);
+                }
+                if( retain_original_stmt ) {
+                    body.push_back(al, m_body[i]);
+                    retain_original_stmt = false;
+                }
+                pass_result.n = 0;
+            } else if(!remove_original_stmt) {
+                body.push_back(al, m_body[i]);
+            }
+        }
+        for (auto &stm: assigns) {
+            body.push_back(al, stm);
+        }
+        m_body = body.p;
+        n_body = body.size();
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = xx.m_symtab;
+        std::vector<ASR::stmt_t*> assgins_at_end;
 
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::Var_t>(*x.m_args[i])) {
@@ -289,10 +329,13 @@ public:
                     ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
                         target, x.m_args[i], nullptr));
                     pass_result.push_back(al, assignment);
+                    assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
+                        x.m_args[i], target, nullptr));
+                    assgins_at_end.push_back(assignment);
                 }
             }
         }
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts_assign_nested(xx.m_body, xx.n_body, assgins_at_end);
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -315,6 +358,7 @@ public:
         ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
         SymbolTable* current_scope_copy = current_scope;
         current_scope = xx.m_symtab;
+        std::vector<ASR::stmt_t*> assgins_at_end;
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (nested_var_to_ext_var.find(item.second) != nested_var_to_ext_var.end()) {
@@ -340,10 +384,13 @@ public:
                 ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
                     target, val, nullptr));
                 pass_result.push_back(al, assignment);
+                assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
+                    val, target, nullptr));
+                assgins_at_end.push_back(assignment);
             }
         }
 
-        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts_assign_nested(xx.m_body, xx.n_body, assgins_at_end);
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
