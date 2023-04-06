@@ -617,9 +617,48 @@ public:
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
-            size_t n, const Location &loc) {
+            size_t n, const Location &loc, std::string &return_var_name) {
         AST::AttrType_t* r = nullptr;
         bool found = false;
+        if (n == 0 && compiler_options.implicit_interface && compiler_options.implicit_typing) {
+            ASR::ttype_t* t = implicit_dictionary[return_var_name];
+            AST::decl_typeType ttype;
+            switch( t->type ) {
+                case ASR::ttypeType::Integer: {
+                    ttype = AST::decl_typeType::TypeInteger;
+                    break;
+                }
+                case ASR::ttypeType::Real: {
+                    // check if it is a double precision
+                    int a_kind = ASR::down_cast<ASR::Real_t>(t)->m_kind;
+                    if (a_kind == 8) {
+                        ttype = AST::decl_typeType::TypeDoublePrecision;
+                        break;
+                    } else {
+                        ttype = AST::decl_typeType::TypeReal;
+                        break;
+                    }
+                }
+                case ASR::ttypeType::Complex: {
+                    ttype = AST::decl_typeType::TypeComplex;
+                    break;
+                }
+                case ASR::ttypeType::Logical: {
+                    ttype = AST::decl_typeType::TypeLogical;
+                    break;
+                }
+                case ASR::ttypeType::Character: {
+                    ttype = AST::decl_typeType::TypeCharacter;
+                    break;
+                }
+                default: {
+                    throw SemanticError("Implicit return type not supported yet", loc);
+                }
+            }
+            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, AST::symbolType::None);
+            AST::decl_attribute_t* r_attr = AST::down_cast<AST::decl_attribute_t>(r_ast);
+            r = AST::down_cast<AST::AttrType_t>(r_attr);
+        }
         for (size_t i=0; i<n; i++) {
             if (AST::is_a<AST::AttrType_t>(*attributes[i])) {
                 if (found) {
@@ -716,7 +755,7 @@ public:
         //     integer :: f
         ASR::asr_t *return_var;
         AST::AttrType_t *return_type = find_return_type(x.m_attributes,
-            x.n_attributes, x.base.base.loc);
+            x.n_attributes, x.base.base.loc, return_var_name);
         if (current_scope->get_symbol(return_var_name) == nullptr) {
             // The variable is not defined among local variables, extract the
             // type from "integer function f()" and add the variable.
