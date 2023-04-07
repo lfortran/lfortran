@@ -47,26 +47,6 @@
                                     sasinh
                                     Private
                                 ),
-                            atan:
-                                (ExternalSymbol
-                                    2
-                                    atan
-                                    13 atan
-                                    lfortran_intrinsic_math
-                                    []
-                                    atan
-                                    Private
-                                ),
-                            atan@satan:
-                                (ExternalSymbol
-                                    2
-                                    atan@satan
-                                    13 satan
-                                    lfortran_intrinsic_math
-                                    []
-                                    satan
-                                    Private
-                                ),
                             atanh:
                                 (ExternalSymbol
                                     2
@@ -198,19 +178,18 @@
                     )
                     (=
                         (Var 2 x)
-                        (FunctionCall
-                            2 atan@satan
-                            2 atan
-                            [((RealConstant
+                        (IntrinsicFunction
+                            Atan
+                            [(RealConstant
                                 1.557408
                                 (Real 4 [])
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
                             (RealConstant
                                 1.000000
                                 (Real 4 [])
                             )
-                            ()
                         )
                         ()
                     )

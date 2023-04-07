@@ -48,12 +48,18 @@ if (abs(asin(0.5) - 0.523598790) > 1e-7) error stop
 if (abs(asin(x) - 0.523598790) > 1e-7) error stop
 if (abs(asin(0.5) - 0.52359877559829893) > 1e-15) error stop
 if (abs(asin(y) - 0.52359877559829882) > 1e-7) error stop
+
 print *, acos(0.5), acos(0.5_dp), s5, d5, acos(x), acos(y)
 if (abs(acos(0.5) - 1.04719758) > 1e-7) error stop
 if (abs(acos(x) - 1.04719758) > 1e-7) error stop
 if (abs(acos(0.5) - 1.0471975511965979) > 1e-15) error stop
 if (abs(acos(y) - 1.0471975511965979) > 1e-7) error stop
+
 print *, atan(0.5), atan(0.5_dp), s6, d6, atan(x), atan(y)
+if (abs(atan(0.5) - 0.463647604) > 1e-7) error stop
+if (abs(atan(x) - 0.463647604) > 1e-7) error stop
+if (abs(atan(0.5) - 0.46364760900080609) > 1e-15) error stop
+if (abs(atan(y) - 0.46364760900080609) > 1e-7) error stop
 
 print *, sinh(0.5), sinh(0.5_dp), s7, d7, sinh(x), sinh(y)
 print *, cosh(0.5), cosh(0.5_dp), s8, d8, cosh(x), cosh(y)

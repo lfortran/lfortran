@@ -40,6 +40,7 @@ enum class IntrinsicFunctions : int64_t {
     Tan,
     Asin,
     Acos,
+    Atan,
     Gamma,
     LogGamma,
     Abs,
@@ -267,6 +268,7 @@ create_trig(Cos, cos, cos)
 create_trig(Tan, tan, tan)
 create_trig(Asin, asin, asin)
 create_trig(Acos, acos, acos)
+create_trig(Atan, atan, atan)
 
 namespace Abs {
 
@@ -473,6 +475,8 @@ namespace IntrinsicFunctionRegistry {
             &Asin::instantiate_Asin},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Acos),
             &Acos::instantiate_Acos},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Atan),
+            &Atan::instantiate_Atan},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Abs),
             &Abs::instantiate_Abs}
     };
@@ -486,6 +490,7 @@ namespace IntrinsicFunctionRegistry {
                 {"tan", {&Tan::create_Tan, &Tan::eval_Tan}},
                 {"asin", {&Asin::create_Asin, &Asin::eval_Asin}},
                 {"acos", {&Acos::create_Acos, &Acos::eval_Acos}},
+                {"atan", {&Atan::create_Atan, &Atan::eval_Atan}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
     };
 
@@ -519,6 +524,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Tan)
         INTRINSIC_NAME_CASE(Asin)
         INTRINSIC_NAME_CASE(Acos)
+        INTRINSIC_NAME_CASE(Atan)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Abs)
