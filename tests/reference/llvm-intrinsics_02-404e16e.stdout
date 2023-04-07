@@ -10,83 +10,83 @@ source_filename = "LFortran"
 @6 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 @7 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
-define double @_lcompilers_abs(double* %x) {
+define float @_lcompilers_abs_f32(float* %x) {
 .entry:
-  %_lcompilers_abs = alloca double, align 8
-  %0 = load double, double* %x, align 8
-  %1 = fcmp uge double %0, 0.000000e+00
-  br i1 %1, label %then, label %else
-
-then:                                             ; preds = %.entry
-  %2 = load double, double* %x, align 8
-  store double %2, double* %_lcompilers_abs, align 8
-  br label %ifcont
-
-else:                                             ; preds = %.entry
-  %3 = load double, double* %x, align 8
-  %4 = fsub double 0.000000e+00, %3
-  store double %4, double* %_lcompilers_abs, align 8
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  br label %return
-
-return:                                           ; preds = %ifcont
-  %5 = load double, double* %_lcompilers_abs, align 8
-  ret double %5
-}
-
-define float @_lcompilers_abs1(float* %x) {
-.entry:
-  %_lcompilers_abs1 = alloca float, align 4
+  %_lcompilers_abs_f32 = alloca float, align 4
   %0 = load float, float* %x, align 4
   %1 = fcmp uge float %0, 0.000000e+00
   br i1 %1, label %then, label %else
 
 then:                                             ; preds = %.entry
   %2 = load float, float* %x, align 4
-  store float %2, float* %_lcompilers_abs1, align 4
+  store float %2, float* %_lcompilers_abs_f32, align 4
   br label %ifcont
 
 else:                                             ; preds = %.entry
   %3 = load float, float* %x, align 4
   %4 = fsub float 0.000000e+00, %3
-  store float %4, float* %_lcompilers_abs1, align 4
+  store float %4, float* %_lcompilers_abs_f32, align 4
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
   br label %return
 
 return:                                           ; preds = %ifcont
-  %5 = load float, float* %_lcompilers_abs1, align 4
+  %5 = load float, float* %_lcompilers_abs_f32, align 4
   ret float %5
 }
 
-define float @_lcompilers_sin(float* %x) {
+define double @_lcompilers_abs_f64(double* %x) {
 .entry:
-  %_lcompilers_sin = alloca float, align 4
+  %_lcompilers_abs_f64 = alloca double, align 8
+  %0 = load double, double* %x, align 8
+  %1 = fcmp uge double %0, 0.000000e+00
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %2 = load double, double* %x, align 8
+  store double %2, double* %_lcompilers_abs_f64, align 8
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %3 = load double, double* %x, align 8
+  %4 = fsub double 0.000000e+00, %3
+  store double %4, double* %_lcompilers_abs_f64, align 8
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  %5 = load double, double* %_lcompilers_abs_f64, align 8
+  ret double %5
+}
+
+define float @_lcompilers_sin_f32(float* %x) {
+.entry:
+  %_lcompilers_sin_f32 = alloca float, align 4
   %0 = load float, float* %x, align 4
   %1 = call float @_lfortran_ssin(float %0)
-  store float %1, float* %_lcompilers_sin, align 4
+  store float %1, float* %_lcompilers_sin_f32, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load float, float* %_lcompilers_sin, align 4
+  %2 = load float, float* %_lcompilers_sin_f32, align 4
   ret float %2
 }
 
 declare float @_lfortran_ssin(float)
 
-define double @_lcompilers_sin1(double* %x) {
+define double @_lcompilers_sin_f64(double* %x) {
 .entry:
-  %_lcompilers_sin1 = alloca double, align 8
+  %_lcompilers_sin_f64 = alloca double, align 8
   %0 = load double, double* %x, align 8
   %1 = call double @_lfortran_dsin(double %0)
-  store double %1, double* %_lcompilers_sin1, align 8
+  store double %1, double* %_lcompilers_sin_f64, align 8
   br label %return
 
 return:                                           ; preds = %.entry
-  %2 = load double, double* %_lcompilers_sin1, align 8
+  %2 = load double, double* %_lcompilers_sin_f64, align 8
   ret double %2
 }
 
@@ -120,7 +120,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %7 = call float @_lcompilers_sin(float* %x)
+  %7 = call float @_lcompilers_sin_f32(float* %x)
   %8 = fcmp une float %7, 0x3FEAE238A0000000
   br i1 %8, label %then1, label %else2
 
@@ -136,7 +136,7 @@ ifcont3:                                          ; preds = %else2, %then1
   %9 = load double, double* %y, align 8
   %10 = fsub double %9, 0x3FEFEB7A9FAE5B9E
   store double %10, double* %call_arg_value, align 8
-  %11 = call double @_lcompilers_abs(double* %call_arg_value)
+  %11 = call double @_lcompilers_abs_f64(double* %call_arg_value)
   %12 = fcmp ugt double %11, 0x3E7AD7F29ABCAF48
   br i1 %12, label %then4, label %else5
 
@@ -160,19 +160,19 @@ else8:                                            ; preds = %ifcont6
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
-  %13 = call double @_lcompilers_sin1(double* %y)
+  %13 = call double @_lcompilers_sin_f64(double* %y)
   %14 = load float, float* %x, align 4
-  %15 = call float @_lcompilers_sin(float* %x)
+  %15 = call float @_lcompilers_sin_f32(float* %x)
   %16 = fadd float %14, %15
   store float %16, float* %call_arg_value10, align 4
-  %17 = call float @_lcompilers_sin(float* %call_arg_value10)
+  %17 = call float @_lcompilers_sin_f32(float* %call_arg_value10)
   %18 = fpext float %17 to double
   %19 = fadd double %13, %18
   store double %19, double* %call_arg_value11, align 8
-  %20 = call double @_lcompilers_sin1(double* %call_arg_value11)
+  %20 = call double @_lcompilers_sin_f64(double* %call_arg_value11)
   %21 = fsub double %20, 0x3FEF20DD85ACA7BE
   store double %21, double* %call_arg_value12, align 8
-  %22 = call double @_lcompilers_abs(double* %call_arg_value12)
+  %22 = call double @_lcompilers_abs_f64(double* %call_arg_value12)
   %23 = fcmp ugt double %22, 0x3E7AD7F29ABCAF48
   br i1 %23, label %then13, label %else14
 
