@@ -748,6 +748,7 @@ RUN(NAME array_section_01 LABELS gfortran llvm)
 
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm)
+RUN(NAME pass_array_by_data_03 LABELS gfortran llvm)
 
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
