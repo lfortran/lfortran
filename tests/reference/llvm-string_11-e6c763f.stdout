@@ -89,13 +89,13 @@ loop.body6:                                       ; preds = %ifcont5
   store i32 %18, i32* %pos, align 4
   %19 = load i32, i32* %pos, align 4
   %20 = load i8*, i8** %string_, align 8
-  %21 = call i8* @_lfortran_str_copy(i8* %20, i32 %19, i32 %19)
+  %21 = call i8* @_lfortran_str_item(i8* %20, i32 %19)
   %22 = alloca i8*, align 8
   store i8* %21, i8** %22, align 8
   %23 = load i8*, i8** %22, align 8
   %24 = load i32, i32* %j, align 4
   %25 = load i8*, i8** %substring_, align 8
-  %26 = call i8* @_lfortran_str_copy(i8* %25, i32 %24, i32 %24)
+  %26 = call i8* @_lfortran_str_item(i8* %25, i32 %24)
   %27 = alloca i8*, align 8
   store i8* %26, i8** %27, align 8
   %28 = load i8*, i8** %27, align 8
@@ -152,7 +152,7 @@ return:                                           ; preds = %loop.end13
 
 declare i32 @_lfortran_str_len(i8**)
 
-declare i8* @_lfortran_str_copy(i8*, i32, i32)
+declare i8* @_lfortran_str_item(i8*, i32)
 
 declare i1 @_lpython_str_compare_noteq(i8**, i8**)
 

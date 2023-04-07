@@ -610,7 +610,8 @@ public:
                 + "') + scope_names not found in a module '"
                 + asr_owner_name + "'");
             require(s == x.m_external,
-                "ExternalSymbol::m_name + scope_names found but not equal to m_external");
+                std::string("ExternalSymbol::m_name + scope_names found but not equal to m_external, ") +
+                "original_name " + std::string(x.m_original_name) + ".");
         }
     }
 

@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
     float cp =   1.00000000000000000e+00;
     static float d =   2.00000000000000000e+00;
     float dp =   2.00000000000000000e+00;
-    char * grade_fixed = NULL;
+    char * grade_fixed = "B";
     int32_t marks;
     int32_t marks_fixed = 94;
     if (grade_fixed == "A") {

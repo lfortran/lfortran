@@ -33,6 +33,7 @@ set(SRC
     pass/for_all.cpp
     pass/global_stmts.cpp
     pass/global_stmts_program.cpp
+    pass/global_symbols.cpp
     pass/select_case.cpp
     pass/init_expr.cpp
     pass/implied_do_loops.cpp
@@ -42,7 +43,7 @@ set(SRC
     pass/class_constructor.cpp
     pass/arr_slice.cpp
     pass/print_arr.cpp
-    pass/print_list.cpp
+    pass/print_list_tuple.cpp
     pass/pass_utils.cpp
     pass/unused_functions.cpp
     pass/flip_sign.cpp

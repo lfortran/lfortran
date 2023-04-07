@@ -23,7 +23,7 @@
 #include <libasr/pass/global_stmts.h>
 #include <libasr/pass/param_to_const.h>
 #include <libasr/pass/print_arr.h>
-#include <libasr/pass/print_list.h>
+#include <libasr/pass/print_list_tuple.h>
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
@@ -36,6 +36,7 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/for_all.h>
+#include <libasr/pass/init_expr.h>
 #include <libasr/pass/select_case.h>
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
@@ -61,7 +62,7 @@ namespace LCompilers {
         std::vector<std::string> _passes;
         std::vector<std::string> _with_optimization_passes;
         std::vector<std::string> _user_defined_passes;
-        std::vector<std::string> _skip_passes;
+        std::vector<std::string> _skip_passes, _c_skip_passes;
         std::map<std::string, pass_function> _passes_db = {
             {"do_loops", &pass_replace_do_loops},
             {"global_stmts", &pass_wrap_global_stmts_into_function},
@@ -70,7 +71,7 @@ namespace LCompilers {
             {"intrinsic_function", &pass_replace_intrinsic_function},
             {"arr_slice", &pass_replace_arr_slice},
             {"print_arr", &pass_replace_print_arr},
-            {"print_list", &pass_replace_print_list},
+            {"print_list_tuple", &pass_replace_print_list_tuple},
             {"class_constructor", &pass_replace_class_constructor},
             {"unused_functions", &pass_unused_functions},
             {"flip_sign", &pass_replace_flip_sign},
@@ -94,6 +95,7 @@ namespace LCompilers {
 
         bool is_fast;
         bool apply_default_passes;
+        bool c_skip_pass; // This will contain the passes that are to be skipped in C
 
         void _apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
@@ -132,6 +134,9 @@ namespace LCompilers {
 
                 if (rtlib && passes[i] == "unused_functions") continue;
                 if( std::find(_skip_passes.begin(), _skip_passes.end(), passes[i]) != _skip_passes.end())
+                    continue;
+                if (c_skip_pass && std::find(_c_skip_passes.begin(),
+                        _c_skip_passes.end(), passes[i]) != _c_skip_passes.end())
                     continue;
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
@@ -178,7 +183,8 @@ namespace LCompilers {
             }
         }
 
-        PassManager(): is_fast{false}, apply_default_passes{false} {
+        PassManager(): is_fast{false}, apply_default_passes{false},
+            c_skip_pass{false} {
             _passes = {
                 "nested_vars",
                 "global_stmts",
@@ -192,7 +198,7 @@ namespace LCompilers {
                 "intrinsic_function",
                 "pass_array_by_data",
                 "print_arr",
-                "print_list",
+                "print_list_tuple",
                 "array_dim_intrinsics_update",
                 "do_loops",
                 "forall",
@@ -213,7 +219,7 @@ namespace LCompilers {
                 "array_op",
                 "intrinsic_function",
                 "print_arr",
-                "print_list",
+                "print_list_tuple",
                 "loop_vectorise",
                 "loop_unroll",
                 "array_dim_intrinsics_update",
@@ -230,6 +236,14 @@ namespace LCompilers {
                 "inline_function_calls"
             };
 
+            // These are re-write passes which are already handled
+            // appropriately in C backend.
+            _c_skip_passes = {
+                "pass_list_expr",
+                "print_list_tuple",
+                "do_loops",
+                "inline_function_calls"
+            };
             _user_defined_passes.clear();
         }
 
@@ -266,8 +280,9 @@ namespace LCompilers {
             is_fast = false;
         }
 
-        void use_default_passes() {
+        void use_default_passes(bool _c_skip_pass=false) {
             apply_default_passes = true;
+            c_skip_pass = _c_skip_pass;
         }
 
         void do_not_use_default_passes() {

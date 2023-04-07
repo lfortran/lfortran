@@ -37,7 +37,7 @@ struct dimension_descriptor
 // Implementations
 int main(int argc, char* argv[])
 {
-    char * grade = NULL;
+    static char * grade = "B";
     if (grade == "A") {
         printf("%s\n", "Excellent!");
     }

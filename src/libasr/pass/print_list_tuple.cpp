@@ -4,22 +4,21 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
-#include <libasr/pass/print_list.h>
+#include <libasr/pass/print_list_tuple.h>
 
 namespace LCompilers {
 
 /*
 This ASR pass replaces print list or print tuple with print every value,
 comma_space, brackets and newline. The function
-`pass_replace_print_list` transforms the ASR tree in-place.
+`pass_replace_print_list_tuple` transforms the ASR tree in-place.
 
 Converts:
 
     print(a, b, l, sep="pqr", end="xyz") # l is a list (but not a & b)
 
 to:
-
-    print(a, b, sep="pqr")
+    print(a, b, sep="pqr", end="")
     print("[", end="")
     for i in range(len(l)):
         print(l[i], end="")
@@ -54,23 +53,24 @@ Converts:
 
 to:
     print("(", end="")
-    for i in range(3):
-        print(a[i], end="")
-        if i < len(a) - 1:
-            print(", ", end="")
+    print(a[0], sep="", end="")
+    print(", ", sep="", end="")
+    print("'", a[1], "'", sep="", end="")
+    print(", ", sep="", end="")
+    print(a[2], sep="", end="")
     print(")", sep="pqr", end="xyz")
 
 It also works the same way for nested lists/tuples using recursion.
 */
 
-class PrintListVisitor
-    : public PassUtils::PassVisitor<PrintListVisitor> {
+class PrintListTupleVisitor
+    : public PassUtils::PassVisitor<PrintListTupleVisitor> {
    private:
     std::string rl_path;
 
    public:
    Vec<ASR::stmt_t*> print_pass_result_tmp;
-    PrintListVisitor(Allocator &al, const std::string &rl_path_)
+    PrintListTupleVisitor(Allocator &al, const std::string &rl_path_)
         : PassVisitor(al, nullptr), rl_path(rl_path_) {
         pass_result.reserve(al, 1);
         print_pass_result_tmp.reserve(al, 1);
@@ -300,26 +300,45 @@ class PrintListVisitor
 
     void visit_Print(const ASR::Print_t &x) {
         std::vector<ASR::expr_t*> print_tmp;
+        ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_Character_t(
+        al, x.base.base.loc, 1, 1, nullptr, nullptr, 0));
+        ASR::expr_t *space = ASRUtils::EXPR(ASR::make_StringConstant_t(
+        al, x.base.base.loc, s2c(al, " "), str_type_len_1));
         for (size_t i=0; i<x.n_values; i++) {
             if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_values[i])) ||
                 ASR::is_a<ASR::Tuple_t>(*ASRUtils::expr_type(x.m_values[i]))) {
                 if (!print_tmp.empty()) {
                     Vec<ASR::expr_t*> tmp_vec;
+                    ASR::stmt_t *print_stmt;
                     tmp_vec.reserve(al, print_tmp.size());
                     for (auto &e: print_tmp) {
                         tmp_vec.push_back(al, e);
                     }
-                    ASR::stmt_t *print_stmt = ASRUtils::STMT(
-                        ASR::make_Print_t(al, x.base.base.loc, nullptr, tmp_vec.p, tmp_vec.size(),
-                                    x.m_separator, nullptr));
+                    if (x.m_separator) {
+                        print_stmt = ASRUtils::STMT(ASR::make_Print_t(al,
+                            x.base.base.loc, nullptr, tmp_vec.p, tmp_vec.size(),
+                            x.m_separator, x.m_separator));
+                    } else {
+                        print_stmt = ASRUtils::STMT(ASR::make_Print_t(al,
+                            x.base.base.loc, nullptr, tmp_vec.p, tmp_vec.size(),
+                            x.m_separator, space));
+                    }
                     print_tmp.clear();
                     pass_result.push_back(al, print_stmt);
-
                 }
-                if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_values[i])))
-                    print_list_helper(x.m_values[i], x.m_separator, nullptr, x.base.base.loc);
-                else
-                    print_tuple_helper(x.m_values[i], x.m_separator, nullptr, x.base.base.loc);
+                if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_values[i]))){
+                    if (i == x.n_values - 1) {
+                        print_list_helper(x.m_values[i], x.m_separator, x.m_end, x.base.base.loc);
+                    } else {
+                        print_list_helper(x.m_values[i], x.m_separator, (x.m_separator ? x.m_separator : space), x.base.base.loc);
+                    }
+                } else {
+                    if (i == x.n_values - 1) {
+                        print_tuple_helper(x.m_values[i], x.m_separator, x.m_end, x.base.base.loc);
+                    } else {
+                        print_tuple_helper(x.m_values[i], x.m_separator, (x.m_separator ? x.m_separator : space), x.base.base.loc);
+                    }
+                }
                 for (size_t j=0; j<print_pass_result_tmp.n; j++)
                     pass_result.push_back(al, print_pass_result_tmp[j]);
                 print_pass_result_tmp.n = 0;
@@ -342,11 +361,11 @@ class PrintListVisitor
     }
 };
 
-void pass_replace_print_list(
+void pass_replace_print_list_tuple(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions &pass_options) {
     std::string rl_path = pass_options.runtime_library_dir;
-    PrintListVisitor v(al, rl_path);
+    PrintListTupleVisitor v(al, rl_path);
     v.visit_TranslationUnit(unit);
 }
 
