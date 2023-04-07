@@ -37,6 +37,7 @@ typedef ASR::asr_t* (*create_intrinsic_function)(
 enum class IntrinsicFunctions : int64_t {
     Sin,
     Cos,
+    Tan,
     Gamma,
     LogGamma,
     Abs,
@@ -261,6 +262,7 @@ namespace X {                                                                   
 
 create_trig(Sin, sin, sin)
 create_trig(Cos, cos, cos)
+create_trig(Tan, tan, tan)
 
 namespace Abs {
 
@@ -461,6 +463,8 @@ namespace IntrinsicFunctionRegistry {
             &Sin::instantiate_Sin},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Cos),
             &Cos::instantiate_Cos},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Tan),
+            &Tan::instantiate_Tan},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Abs),
             &Abs::instantiate_Abs}
     };
@@ -471,6 +475,7 @@ namespace IntrinsicFunctionRegistry {
                 {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_log_gamma}},
                 {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
                 {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
+                {"tan", {&Tan::create_Tan, &Tan::eval_Tan}},
                 {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
     };
 
@@ -501,6 +506,7 @@ inline std::string get_intrinsic_name(int x) {
     switch (x) {
         INTRINSIC_NAME_CASE(Sin)
         INTRINSIC_NAME_CASE(Cos)
+        INTRINSIC_NAME_CASE(Tan)
         INTRINSIC_NAME_CASE(Gamma)
         INTRINSIC_NAME_CASE(LogGamma)
         INTRINSIC_NAME_CASE(Abs)

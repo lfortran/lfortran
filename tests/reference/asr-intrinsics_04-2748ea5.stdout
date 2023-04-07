@@ -21,41 +21,21 @@
                                 (ExternalSymbol
                                     2
                                     real
-                                    202 real
+                                    6 real
                                     lfortran_intrinsic_builtin
                                     []
                                     real
                                     Private
                                 ),
-                            tan:
+                            sp:
                                 (ExternalSymbol
                                     2
-                                    tan
-                                    6 tan
-                                    lfortran_intrinsic_math
+                                    sp
+                                    4 real32
+                                    lfortran_intrinsic_iso_fortran_env
                                     []
-                                    tan
-                                    Private
-                                ),
-                            tan@dtan:
-                                (ExternalSymbol
-                                    2
-                                    tan@dtan
-                                    6 dtan
-                                    lfortran_intrinsic_math
-                                    []
-                                    dtan
-                                    Private
-                                ),
-                            tan@ztan:
-                                (ExternalSymbol
-                                    2
-                                    tan@ztan
-                                    6 ztan
-                                    lfortran_intrinsic_math
-                                    []
-                                    ztan
-                                    Private
+                                    real32
+                                    Public
                                 ),
                             x:
                                 (Variable
@@ -100,12 +80,11 @@
                     )
                     (=
                         (Var 2 x)
-                        (FunctionCall
-                            2 tan@dtan
-                            2 tan
-                            [((Var 2 x))]
+                        (IntrinsicFunction
+                            Tan
+                            [(Var 2 x)]
+                            0
                             (Real 8 [])
-                            ()
                             ()
                         )
                         ()
@@ -147,6 +126,136 @@
                         )]
                         []
                     )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (IntrinsicFunction
+                                        Tan
+                                        [(RealConstant
+                                            1.500000
+                                            (Real 4 [])
+                                        )]
+                                        0
+                                        (Real 4 [])
+                                        (RealConstant
+                                            14.101420
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        14.101420
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    (RealConstant
+                                        -0.000000
+                                        (Real 4 [])
+                                    )
+                                )]
+                                0
+                                (Real 4 [])
+                                (RealConstant
+                                    0.000000
+                                    (Real 4 [])
+                                )
+                            )
+                            Gt
+                            (RealConstant
+                                0.000001
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (IntrinsicFunction
+                                        Tan
+                                        [(RealBinOp
+                                            (IntrinsicFunction
+                                                Tan
+                                                [(RealConstant
+                                                    1.500000
+                                                    (Real 4 [])
+                                                )]
+                                                0
+                                                (Real 4 [])
+                                                (RealConstant
+                                                    14.101420
+                                                    (Real 4 [])
+                                                )
+                                            )
+                                            Add
+                                            (Cast
+                                                (IntrinsicFunction
+                                                    Tan
+                                                    [(RealBinOp
+                                                        (Var 2 x)
+                                                        Add
+                                                        (IntrinsicFunction
+                                                            Tan
+                                                            [(Var 2 x)]
+                                                            0
+                                                            (Real 8 [])
+                                                            ()
+                                                        )
+                                                        (Real 8 [])
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Real 8 [])
+                                                    ()
+                                                )
+                                                RealToReal
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            (Real 4 [])
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        2.254825
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (=
                         (Var 2 z)
                         (ComplexConstructor
@@ -169,12 +278,11 @@
                     )
                     (=
                         (Var 2 z)
-                        (FunctionCall
-                            2 tan@ztan
-                            2 tan
-                            [((Var 2 z))]
+                        (IntrinsicFunction
+                            Tan
+                            [(Var 2 z)]
+                            0
                             (Complex 8 [])
-                            ()
                             ()
                         )
                         ()
@@ -220,16 +328,93 @@
                             ()
                         )]
                         []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (Cast
+                                        (IntrinsicFunction
+                                            Tan
+                                            [(ComplexConstructor
+                                                (RealConstant
+                                                    1.500000
+                                                    (Real 4 [])
+                                                )
+                                                (RealConstant
+                                                    3.500000
+                                                    (Real 4 [])
+                                                )
+                                                (Complex 4 [])
+                                                (ComplexConstant
+                                                    1.500000
+                                                    3.500000
+                                                    (Complex 4 [])
+                                                )
+                                            )]
+                                            0
+                                            (Complex 4 [])
+                                            (ComplexConstant
+                                                0.000258
+                                                1.001807
+                                                (Complex 4 [])
+                                            )
+                                        )
+                                        ComplexToReal
+                                        (Real 4 [])
+                                        (RealConstant
+                                            0.000258
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        0.000258
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4 [])
+                                    )
+                                )]
+                                0
+                                (Real 4 [])
+                                (RealConstant
+                                    0.000000
+                                    (Real 4 [])
+                                )
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 8 [])
+                                )
+                                RealToReal
+                                (Real 4 [])
+                                (RealConstant
+                                    0.000000
+                                    (Real 4 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             iso_fortran_env:
                 (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                (IntrinsicModule lfortran_intrinsic_builtin)
         })
     []
 )
