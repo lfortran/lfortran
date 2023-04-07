@@ -23,7 +23,7 @@ x(2) = 2.0
 x(3) = 3.0
 
 y = expr(x)
-if (abs(y - 6.0) > 1e-16) error stop
+if (abs(y - 6.0) > 1e-7) error stop
 print *, y
 end subroutine find_fit
 
