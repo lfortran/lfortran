@@ -7,26 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            acos:
-                                (ExternalSymbol
-                                    2
-                                    acos
-                                    13 acos
-                                    lfortran_intrinsic_math
-                                    []
-                                    acos
-                                    Private
-                                ),
-                            acos@sacos:
-                                (ExternalSymbol
-                                    2
-                                    acos@sacos
-                                    13 sacos
-                                    lfortran_intrinsic_math
-                                    []
-                                    sacos
-                                    Private
-                                ),
                             acosh:
                                 (ExternalSymbol
                                     2
@@ -195,19 +175,18 @@
                     )
                     (=
                         (Var 2 x)
-                        (FunctionCall
-                            2 acos@sacos
-                            2 acos
-                            [((RealConstant
+                        (IntrinsicFunction
+                            Acos
+                            [(RealConstant
                                 0.540302
                                 (Real 4 [])
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
                             (RealConstant
                                 1.000000
                                 (Real 4 [])
                             )
-                            ()
                         )
                         ()
                     )

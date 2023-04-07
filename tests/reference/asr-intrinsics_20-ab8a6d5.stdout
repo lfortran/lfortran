@@ -7,36 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            acos:
-                                (ExternalSymbol
-                                    2
-                                    acos
-                                    13 acos
-                                    lfortran_intrinsic_math
-                                    []
-                                    acos
-                                    Private
-                                ),
-                            acos@dacos:
-                                (ExternalSymbol
-                                    2
-                                    acos@dacos
-                                    13 dacos
-                                    lfortran_intrinsic_math
-                                    []
-                                    dacos
-                                    Private
-                                ),
-                            acos@sacos:
-                                (ExternalSymbol
-                                    2
-                                    acos@sacos
-                                    13 sacos
-                                    lfortran_intrinsic_math
-                                    []
-                                    sacos
-                                    Private
-                                ),
                             dp:
                                 (Variable
                                     2
@@ -78,10 +48,9 @@
                                     pi
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 acos@sacos
-                                        2 acos
-                                        [((RealUnaryMinus
+                                    (IntrinsicFunction
+                                        Acos
+                                        [(RealUnaryMinus
                                             (RealConstant
                                                 1.000000
                                                 (Real 4 [])
@@ -91,13 +60,13 @@
                                                 -1.000000
                                                 (Real 4 [])
                                             )
-                                        ))]
+                                        )]
+                                        0
                                         (Real 4 [])
                                         (RealConstant
                                             3.141593
                                             (Real 4 [])
                                         )
-                                        ()
                                     )
                                     (RealConstant
                                         3.141593
@@ -116,10 +85,9 @@
                                     pi_dp
                                     []
                                     Local
-                                    (FunctionCall
-                                        2 acos@dacos
-                                        2 acos
-                                        [((RealUnaryMinus
+                                    (IntrinsicFunction
+                                        Acos
+                                        [(RealUnaryMinus
                                             (RealConstant
                                                 1.000000
                                                 (Real 8 [])
@@ -129,13 +97,13 @@
                                                 -1.000000
                                                 (Real 8 [])
                                             )
-                                        ))]
+                                        )]
+                                        0
                                         (Real 8 [])
                                         (RealConstant
                                             3.141593
                                             (Real 8 [])
                                         )
-                                        ()
                                     )
                                     (RealConstant
                                         3.141593
@@ -233,8 +201,7 @@
                                 )
                         })
                     intrinsics_20
-                    [lfortran_intrinsic_kind
-                    lfortran_intrinsic_math]
+                    [lfortran_intrinsic_kind]
                     [(Print
                         ()
                         [(Var 2 pi)]
@@ -474,16 +441,8 @@
                         ()
                     )]
                 ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             lfortran_intrinsic_kind:
-                (IntrinsicModule lfortran_intrinsic_kind),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                (IntrinsicModule lfortran_intrinsic_kind)
         })
     []
 )
