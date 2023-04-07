@@ -2322,7 +2322,7 @@ public:
         // (global variable declared/initialized in this translation unit), or
         // external (global variable not declared/initialized in this
         // translation unit, just referenced).
-        LCOMPILERS_ASSERT(x.m_intent == intent_local
+        LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
             || x.m_abi == ASR::abiType::Interactive);
         bool external = (x.m_abi != ASR::abiType::Source);
         llvm::Constant* init_value = nullptr;
@@ -8080,8 +8080,8 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     // Uncomment for debugging the ASR after the transformation
     // std::cout << LFortran::pickle(asr, false, false, false) << std::endl;
 
-    v.nested_func_types = pass_find_nested_vars(asr, context,
-        v.nested_globals, v.nested_call_out, v.nesting_map);
+    // v.nested_func_types = pass_find_nested_vars(asr, context,
+    //     v.nested_globals, v.nested_call_out, v.nesting_map);
     try {
         v.visit_asr((ASR::asr_t&)asr);
     } catch (const CodeGenError &e) {
