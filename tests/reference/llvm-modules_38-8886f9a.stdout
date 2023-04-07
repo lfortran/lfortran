@@ -1,6 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+%0 = type { [25 x i8], i32 }
 %compiler_t_polymorphic = type { i64, %compiler_t* }
 %compiler_t = type { i32, i8*, i8*, i8*, i1, i1 }
 %array = type { %string_t*, i32, %dimension_descriptor*, i1, i32 }
@@ -8,6 +9,7 @@ source_filename = "LFortran"
 %dimension_descriptor = type { i32, i32, i32 }
 %__vtab_compiler_t = type { i64 }
 
+@"1_nameless_enum" = global [3 x %0] [%0 { [11 x i8] c"id_unknown\00", i32 0 }, %0 { [25 x i8] c"id_intel_classic_windows\00", i32 1 }, %0 { [22 x i8] c"id_intel_llvm_windows\00", i32 2 }]
 @0 = private unnamed_addr constant [4 x i8] c"   \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
