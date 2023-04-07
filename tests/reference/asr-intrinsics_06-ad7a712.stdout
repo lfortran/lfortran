@@ -47,26 +47,6 @@
                                     sacosh
                                     Private
                                 ),
-                            asin:
-                                (ExternalSymbol
-                                    2
-                                    asin
-                                    13 asin
-                                    lfortran_intrinsic_math
-                                    []
-                                    asin
-                                    Private
-                                ),
-                            asin@sasin:
-                                (ExternalSymbol
-                                    2
-                                    asin@sasin
-                                    13 sasin
-                                    lfortran_intrinsic_math
-                                    []
-                                    sasin
-                                    Private
-                                ),
                             asinh:
                                 (ExternalSymbol
                                     2
@@ -192,19 +172,18 @@
                     [lfortran_intrinsic_kind]
                     [(=
                         (Var 2 x)
-                        (FunctionCall
-                            2 asin@sasin
-                            2 asin
-                            [((RealConstant
+                        (IntrinsicFunction
+                            Asin
+                            [(RealConstant
                                 0.841471
                                 (Real 4 [])
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
                             (RealConstant
                                 1.000000
                                 (Real 4 [])
                             )
-                            ()
                         )
                         ()
                     )

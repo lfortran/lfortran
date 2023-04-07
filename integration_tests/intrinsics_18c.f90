@@ -44,6 +44,8 @@ print *, cos((0.5,0.5)), cos((0.5_dp,0.5_dp)), s2, d2, cos(x), cos(y)
 print *, tan((0.5,0.5)), tan((0.5_dp,0.5_dp)), s3, d3, tan(x), tan(y)
 
 print *, asin((0.5,0.5)), asin((0.5_dp,0.5_dp)), s4, d4, asin(x), asin(y)
+if (abs(real(asin((0.5, 0.5))) - 0.452278435) > 1e-7) error stop
+if (abs(real(asin(x)) - 0.452278435) > 1e-7) error stop
 print *, acos((0.5,0.5)), acos((0.5_dp,0.5_dp)), s5, d5, acos(x), acos(y)
 print *, atan((0.5,0.5)), atan((0.5_dp,0.5_dp)), s6, d6, atan(x), atan(y)
 
