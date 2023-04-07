@@ -653,6 +653,17 @@ LFORTRAN_API double_complex_t _lfortran_zatanh(double_complex_t x)
     return catanh(x);
 }
 
+// phase --------------------------------------------------------------------
+
+LFORTRAN_API float _lfortran_cphase(float_complex_t x)
+{
+    return atan2f(cimagf(x), crealf(x));
+}
+
+LFORTRAN_API double _lfortran_zphase(double_complex_t x)
+{
+    return atan2(cimag(x), creal(x));
+}
 
 // strcat  --------------------------------------------------------------------
 
@@ -847,6 +858,22 @@ LFORTRAN_API char* _lfortran_strrepeat_c(char* s, int32_t n)
     }
     dest_char[cntr] = trmn;
     return dest_char;
+}
+
+// idx starts from 1
+LFORTRAN_API char* _lfortran_str_item(char* s, int32_t idx) {
+
+    int s_len = strlen(s);
+    int original_idx = idx - 1;
+    if (idx < 1) idx += s_len;
+    if (idx < 1 || idx >= s_len + 1) {
+        printf("String index: %d is out of Bounds\n", original_idx);
+        exit(1);
+    }
+    char* res = (char*)malloc(2);
+    res[0] = s[idx-1];
+    res[1] = '\0';
+    return res;
 }
 
 // idx1 and idx2 both start from 1
@@ -1357,8 +1384,8 @@ LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]) {
     argc = argc_1;
 }
 
-LFORTRAN_API void _lpython_get_argc(int32_t *res) {
-    *res = argc;
+LFORTRAN_API int32_t _lpython_get_argc() {
+    return argc;
 }
 
 LFORTRAN_API char *_lpython_get_argv(int32_t index) {
