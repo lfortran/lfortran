@@ -1131,6 +1131,21 @@ public:
         return builder->CreateCall(fn, {str});
     }
 
+    llvm::Value* lfortran_str_item(llvm::Value* str, llvm::Value* idx1)
+    {
+        std::string runtime_func_name = "_lfortran_str_item";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    character_type, {
+                        character_type, llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        return builder->CreateCall(fn, {str, idx1});
+    }
+
     llvm::Value* lfortran_str_copy(llvm::Value* str, llvm::Value* idx1, llvm::Value* idx2)
     {
         std::string runtime_func_name = "_lfortran_str_copy";
@@ -2041,7 +2056,7 @@ public:
                 std::vector<llvm::Value*> idx_vec = {idx};
                 p = CreateGEP(str, idx_vec);
             } else {
-                p = lfortran_str_copy(str, idx, idx);
+                p = lfortran_str_item(str, idx);
             }
             // TODO: Currently the string starts at the right location, but goes to the end of the original string.
             // We have to allocate a new string, copy it and add null termination.
@@ -2125,7 +2140,9 @@ public:
         // llvm::Value *p = CreateGEP(str, idx_vec);
         // TODO: Currently the string starts at the right location, but goes to the end of the original string.
         // We have to allocate a new string, copy it and add null termination.
-        llvm::Value *p = lfortran_str_copy(str, idx1, idx2);
+        llvm::Value *step = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+        llvm::Value *present = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+        llvm::Value *p = lfortran_str_slice(str, idx1, idx2, step, present, present);
 
         tmp = builder->CreateAlloca(character_type, nullptr);
         builder->CreateStore(p, tmp);
@@ -2438,6 +2455,22 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
+        } else if (x.m_type->type == ASR::ttypeType::List) {
+            llvm::StructType* list_type = static_cast<llvm::StructType*>(
+                get_type_from_ttype_t_util(x.m_type));
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, list_type);
+            module->getNamedGlobal(x.m_name)->setInitializer(
+                llvm::ConstantStruct::get(list_type,
+                llvm::Constant::getNullValue(list_type)));
+            llvm_symtab[h] = ptr;
+        } else if(x.m_type->type == ASR::ttypeType::Dict) {
+            llvm::StructType* dict_type = static_cast<llvm::StructType*>(
+                get_type_from_ttype_t_util(x.m_type));
+            llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name, dict_type);
+            module->getNamedGlobal(x.m_name)->setInitializer(
+                llvm::ConstantStruct::get(dict_type,
+                llvm::Constant::getNullValue(dict_type)));
+            llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::TypeParameter) {
             // Ignore type variables
         } else {
@@ -2596,14 +2629,16 @@ public:
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                         item.second);
                 visit_Variable(*v);
-            }
-            if (is_a<ASR::Function_t>(*item.second)) {
+            } else if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
                 if (ASRUtils::get_FunctionType(v)->n_type_params == 0) {
                     instantiate_function(*v);
                     declare_needed_global_types(*v);
                 }
+            } else if (is_a<ASR::EnumType_t>(*item.second)) {
+                ASR::EnumType_t *et = down_cast<ASR::EnumType_t>(item.second);
+                visit_EnumType(*et);
             }
         }
         finish_module_init_function_prototype(x);
@@ -5594,7 +5629,7 @@ public:
         llvm::Value *idx = tmp;
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *str = tmp;
-        tmp = lfortran_str_copy(str, idx, idx);
+        tmp = lfortran_str_item(str, idx);
     }
 
     void visit_StringSection(const ASR::StringSection_t& x) {
@@ -6144,7 +6179,8 @@ public:
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
-        tmp = builder->CreateGlobalStringPtr(x.m_s);
+        std::string s = unescape_string(al, x.m_s);
+        tmp = builder->CreateGlobalStringPtr(s);
     }
 
     inline void fetch_ptr(ASR::Variable_t* x) {
@@ -6230,8 +6266,9 @@ public:
                 break;
             }
             case ASR::ttypeType::Struct: {
-                ASR::Struct_t* der = (ASR::Struct_t*)(&(x->m_type->base));
-                ASR::StructType_t* der_type = (ASR::StructType_t*)(&(der->m_derived_type->base));
+                ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(x->m_type);
+                ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(
+                    ASRUtils::symbol_get_past_external(der->m_derived_type));
                 der_type_name = std::string(der_type->m_name);
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
@@ -6251,9 +6288,15 @@ public:
                 break;
             }
             case ASR::ttypeType::Class: {
-                ASR::Class_t* der = (ASR::Class_t*)(&(x->m_type->base));
-                ASR::ClassType_t* der_type = (ASR::ClassType_t*)(&(der->m_class_type->base));
-                der_type_name = std::string(der_type->m_name);
+                ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(x->m_type);
+                ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_class_type);
+                if( ASR::is_a<ASR::ClassType_t>(*der_sym) ) {
+                    ASR::ClassType_t* der_type = ASR::down_cast<ASR::ClassType_t>(der_sym);
+                    der_type_name = std::string(der_type->m_name);
+                } else if( ASR::is_a<ASR::StructType_t>(*der_sym) ) {
+                    ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(der_sym);
+                    der_type_name = std::string(der_type->m_name);
+                }
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                     tmp = llvm_symtab[h];
@@ -8035,7 +8078,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
 
     // Uncomment for debugging the ASR after the transformation
-    // std::cout << LFortran::pickle(asr, true, true, true) << std::endl;
+    // std::cout << LFortran::pickle(asr, false, false, false) << std::endl;
 
     v.nested_func_types = pass_find_nested_vars(asr, context,
         v.nested_globals, v.nested_call_out, v.nesting_map);
