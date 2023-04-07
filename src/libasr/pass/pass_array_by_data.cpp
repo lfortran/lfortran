@@ -281,6 +281,34 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
         }
 
+        void visit_InterfaceFunctions( const ASR::Function_t& x ) {
+            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+            current_scope = xx.m_symtab;
+            for( auto& item: xx.m_symtab->get_scope() ) {
+                if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                    ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
+                    std::vector<size_t> arg_indices;
+                    if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
+                        ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
+                        if( sym != nullptr ) {
+                            ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
+                            edit_new_procedure(new_subrout, arg_indices);
+
+                            // update args of parent function
+                            for( size_t i = 0; i < xx.n_args; i++ ) {
+                                if (ASR::is_a<ASR::Var_t>(*xx.m_args[i])) {
+                                    ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(xx.m_args[i]);
+                                    if (ASR::is_a<ASR::Function_t>(*(var->m_v))) {
+                                        ASR::down_cast<ASR::Var_t>(xx.m_args[i])->m_v = sym; 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         template <typename T>
         void visit_SymbolContainingFunctions(const T& x) {
             T& xx = const_cast<T&>(x);
@@ -295,6 +323,16 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                             ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
                             edit_new_procedure(new_subrout, arg_indices);
                         }
+                    }
+                }
+            }
+            // Again iterate over all functions in scope, and check for nested functions
+            for( auto& item: xx.m_symtab->get_scope() ) {
+                if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                    ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
+                    std::vector<size_t> arg_indices;
+                    if( !ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
+                        visit_InterfaceFunctions(*subrout);
                     }
                 }
             }
@@ -345,6 +383,56 @@ class ReplaceSubroutineCallsVisitor : public PassUtils::PassVisitor<ReplaceSubro
             bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*subrout_sym);
             subrout_sym = ASRUtils::symbol_get_past_external(subrout_sym);
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
+                bool args_updated = false;
+                // check if arguments of this subroutine call are updated
+                Vec<ASR::call_arg_t> new_args;
+                new_args.reserve(al, x.n_args);
+                for ( size_t i = 0; i < x.n_args; i++ ) {
+                    ASR::call_arg_t arg = x.m_args[i];
+                    ASR::expr_t* expr = arg.m_value;
+                    if (expr) {
+                        if (ASR::is_a<ASR::Var_t>(*expr)) {
+                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
+                            ASR::symbol_t* sym = var->m_v;
+                            if ( v.proc2newproc.find(sym) != v.proc2newproc.end() ) {
+                                ASR::symbol_t* new_var_sym = v.proc2newproc[sym].first;
+                                ASR::expr_t* new_var = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_var_sym));
+                                ASR::call_arg_t new_arg;
+                                new_arg.m_value = new_var;
+                                new_arg.loc = arg.loc;
+                                new_args.push_back(al, new_arg);
+                                args_updated = true;
+                            } else {
+                                new_args.push_back(al, arg);
+                            }
+                        } else {
+                            new_args.push_back(al, arg);
+                        }
+                    }
+                }
+                ASR::symbol_t* new_subrout_sym_ = subrout_sym;
+                if( is_external ) {
+                    ASR::ExternalSymbol_t* subrout_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+                    // TODO: Use SymbolTable::get_unique_name to avoid potential
+                    // clashes with user defined functions
+                    char* new_subrout_sym_name = ASRUtils::symbol_name(subrout_sym);
+                    if( current_scope->get_symbol(new_subrout_sym_name) == nullptr ) {
+                        new_subrout_sym_ = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, subrout_ext_sym->m_parent_symtab,
+                                new_subrout_sym_name, subrout_sym, subrout_ext_sym->m_module_name,
+                                subrout_ext_sym->m_scope_names, subrout_ext_sym->n_scope_names, new_subrout_sym_name,
+                                subrout_ext_sym->m_access));
+                        current_scope->add_symbol(new_subrout_sym_name, new_subrout_sym_);
+                    } else {
+                        new_subrout_sym_ = current_scope->get_symbol(new_subrout_sym_name);
+                    }
+                }
+                if (args_updated) {
+                    ASR::stmt_t* new_call = ASRUtils::STMT(ASR::make_SubroutineCall_t(al,
+                                                x.base.base.loc, new_subrout_sym_, new_subrout_sym_,
+                                                new_args.p, new_args.size(), x.m_dt));
+                    pass_result.push_back(al, new_call);
+                }
                 return ;
             }
 
