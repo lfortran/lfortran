@@ -26,19 +26,27 @@ define void @__module_nested_05_a_b() {
 .entry:
   %x = alloca i32, align 4
   %y = alloca float, align 4
-  store i32 6, i32* @__lcompilers_created__nested_context__b_x, align 4
-  store float 5.500000e+00, float* @__lcompilers_created__nested_context__b_y, align 4
-  %0 = load i32, i32* @__lcompilers_created__nested_context__b_x, align 4
+  store i32 6, i32* %x, align 4
+  store float 5.500000e+00, float* %y, align 4
+  %0 = load i32, i32* %x, align 4
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i32 %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
-  %1 = load float, float* @__lcompilers_created__nested_context__b_y, align 4
+  %1 = load float, float* %y, align 4
   %2 = fpext float %1 to double
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @11, i32 0, i32 0), double %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  %3 = load i32, i32* %x, align 4
+  store i32 %3, i32* @__lcompilers_created__nested_context__b_x, align 4
+  %4 = load float, float* %y, align 4
+  store float %4, float* @__lcompilers_created__nested_context__b_y, align 4
   call void @__module_nested_05_a_c()
-  %3 = load i32, i32* @__lcompilers_created__nested_context__b_x, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i32 %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
-  %4 = load float, float* @__lcompilers_created__nested_context__b_y, align 4
-  %5 = fpext float %4 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @17, i32 0, i32 0), double %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
+  %5 = load i32, i32* @__lcompilers_created__nested_context__b_x, align 4
+  store i32 %5, i32* %x, align 4
+  %6 = load float, float* @__lcompilers_created__nested_context__b_y, align 4
+  store float %6, float* %y, align 4
+  %7 = load i32, i32* %x, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i32 %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
+  %8 = load float, float* %y, align 4
+  %9 = fpext float %8 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @17, i32 0, i32 0), double %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry

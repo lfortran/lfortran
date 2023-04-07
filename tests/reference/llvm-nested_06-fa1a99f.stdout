@@ -15,9 +15,9 @@ source_filename = "LFortran"
 
 define void @__module_nested_06_a_b(float* %x) {
 .entry:
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
   %0 = load float, float* %x, align 4
   store float %0, float* @__lcompilers_created__nested_context__b_x, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
   call void @__module_nested_06_a_c()
   %1 = load float, float* @__lcompilers_created__nested_context__b_x, align 4
   store float %1, float* %x, align 4

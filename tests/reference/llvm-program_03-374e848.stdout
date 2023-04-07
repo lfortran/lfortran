@@ -41,27 +41,31 @@ define i32 @main(i32 %0, i8** %1) {
   %z = alloca i32, align 4
   %2 = load i32, i32* %z, align 4
   store i32 %2, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
-  store i32 0, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 0, i32* %z, align 4
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %3 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  %3 = load i32, i32* %z, align 4
   %4 = add i32 %3, 1
   %5 = icmp sle i32 %4, 10
   br i1 %5, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %6 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  %6 = load i32, i32* %z, align 4
   %7 = add i32 %6, 1
-  store i32 %7, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %7, i32* %z, align 4
+  %8 = load i32, i32* %z, align 4
+  store i32 %8, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
   store i32 1, i32* %call_arg_value, align 4
-  %8 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %9 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %10 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %10, i32* %z, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %9 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
-  store i32 %9, i32* %z, align 4
+  %11 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %11, i32* %z, align 4
   ret i32 0
 }
 
