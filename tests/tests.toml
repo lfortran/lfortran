@@ -3036,3 +3036,7 @@ asr = true
 [[test]]
 filename = "errors/intent1.f90"
 asr = true
+
+[[test]]
+filename = "errors/do_zero_increment.f90"
+asr = true
