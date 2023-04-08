@@ -2656,6 +2656,11 @@ public:
 
     void visit_Template(const AST::Template_t &x){
         is_template = true;
+        // TODO: should namelist be replaced with args?
+        for (size_t i=0; i<x.n_namelist; i++) {
+            char *arg=x.m_namelist[i];
+            current_template_args.push_back(to_lower(arg));
+        }
         for (size_t i=0; i<x.n_decl; i++) {
             if (AST::is_a<AST::Requires_t>(*x.m_decl[i])) {
                 this->visit_unit_decl2(*x.m_decl[i]);
@@ -2677,6 +2682,7 @@ public:
         template_arg_map[to_lower(x.m_name)] = current_template_arg_map;
         template_asr_map[to_lower(x.m_name)] = current_template_asr_map;
         called_requirement.clear();
+        current_template_args.clear();
     }
 };
 

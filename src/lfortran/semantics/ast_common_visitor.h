@@ -698,6 +698,9 @@ public:
     std::map<std::string, std::map<int, std::string>> template_arg_map;
     std::vector<ASR::symbol_t*> rt_vec;
 
+    // new fields for generics
+    std::vector<std::string> current_template_args;
+
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
     Vec<char*> data_member_names;
