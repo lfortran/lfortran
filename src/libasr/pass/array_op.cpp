@@ -219,6 +219,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_vars_helper(x);
     }
 
+    void replace_ArrayItem(ASR::ArrayItem_t* x) {
+        replace_vars_helper(x);
+    }
+
     template <typename LOOP_BODY>
     void create_do_loop(const Location& loc, int result_rank,
         Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& loop_vars,
