@@ -2803,7 +2803,7 @@ class SymbolDuplicator {
 
         node_duplicator.success = true;
         ASR::expr_t* new_return_var = node_duplicator.duplicate_expr(function->m_return_var);
-        if (ASR::is_a<ASR::Var_t>(*new_return_var)) {
+        if (new_return_var && ASR::is_a<ASR::Var_t>(*new_return_var)) {
             ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(new_return_var);
             if (ASR::is_a<ASR::Variable_t>(*(var->m_v))) {
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
