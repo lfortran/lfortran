@@ -2350,6 +2350,13 @@ public:
         if (x.m_increment) {
             visit_expr(*x.m_increment);
             increment = ASRUtils::EXPR(tmp);
+            // Check that the increment is not zero
+            if (increment->type == ASR::exprType::IntegerConstant) {
+                ASR::IntegerConstant_t* inc = ASR::down_cast<ASR::IntegerConstant_t>(increment);
+                if (inc->m_n == 0) {
+                    throw SemanticError("Step expression (Increment) in DO loop cannot be zero", increment->base.loc);
+                }
+            } 
         } else {
             increment = nullptr;
         }
