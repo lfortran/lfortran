@@ -66,16 +66,7 @@
                                     (SymbolTable
                                         7
                                         {
-                                            filewrite_filedata:
-                                                (ExternalSymbol
-                                                    7
-                                                    filewrite_filedata
-                                                    4 filewrite_filedata
-                                                    modules_39_module_fpm_filesystem_39
-                                                    []
-                                                    filewrite_filedata
-                                                    Public
-                                                )
+                                            
                                         })
                                     build_model
                                     (FunctionType
@@ -97,8 +88,8 @@
                                     join_path]
                                     []
                                     [(SubroutineCall
-                                        7 filewrite_filedata
-                                        7 filewrite_filedata
+                                        2 filewrite_filedata
+                                        2 filewrite_filedata
                                         [((FunctionCall
                                             2 join_path
                                             ()
@@ -155,6 +146,16 @@
                                     modules_39_module_fpm_filesystem_39
                                     []
                                     filewrite
+                                    Public
+                                ),
+                            filewrite_filedata:
+                                (ExternalSymbol
+                                    2
+                                    filewrite_filedata
+                                    4 filewrite_filedata
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    filewrite_filedata
                                     Public
                                 ),
                             join_path:
