@@ -13,7 +13,84 @@ using ASR::down_cast;
 
 /*
 
-TODO: add docs
+This pass captures the global variables that are used by the
+nested functions. This is handled in the following way:
+
+Consider,
+
+subroutine A()
+    variables declared: x, y, w, k, t
+
+    subroutine B(l)
+        variables declared: p, l
+        x += y
+        w += l
+        p += k
+    end
+
+    call_subroutine B(k)
+end
+
+Then using this pass, we first capture the variables that are used by
+nesdted functions. In our example, they are x, y and w from function A.
+Then we create a __lcompilers_created__nested_context__A which contains all those
+variables with same types but different names, say, global_context_module_for_A_x,
+global_context_module_for_A_y, global_context_module_for_A_w, and
+global_context_module_for_A_k.
+
+This pass will then transform the above code to:
+
+module __lcompilers_created__nested_context__A
+    variables declared: global_context_module_for_A_x,
+                        global_context_module_for_A_y,
+                        global_context_module_for_A_w,
+                        global_context_module_for_A_k
+end
+
+subroutine A()
+    use __lcompilers_created__nested_context__A
+    variables declared: x, y, w, k, t
+
+    subroutine B(l)
+        variables declared: p, l
+        global_context_module_for_A_x += global_context_module_for_A_y
+        global_context_module_for_A_w += l
+        p += global_context_module_for_A_k
+    end
+
+    global_context_module_for_A_x = x
+    global_context_module_for_A_y = y
+    global_context_module_for_A_w = w
+    global_context_module_for_A_k = k
+
+    call_subroutine B(global_context_module_for_A_k)
+
+    x = global_context_module_for_A_x
+    y = global_context_module_for_A_y
+    w = global_context_module_for_A_w
+    k = global_context_module_for_A_k
+end
+
+This assignment and re-assignment to the variables is done only before and
+after a function call. The same applies when a global variable from a program
+is used by a nested function.
+
+Note: We do change any variables inside the parent function A ** except **
+the captured variables inside the function call arguments. The reason is to
+preserve the assignments in case of intent out. This highlighted in the line
+where we change to `call_subroutine B(global_context_module_for_A_k)`.
+
+
+This Pass is designed using three classes:
+1. NestedVarVisitor - This captures the variables for each function that
+                      are used by nested functions and creates a map of
+                      function_syms -> {variables_syms}.
+
+2. ReplaceNestedVisitor - This class replaces all the variables inside the
+                          nested functions with external module variables.
+
+3. AssignNestedVars - This class add assignments stmts before and after
+                      each function call stmts in the parent function.
 
 */
 
