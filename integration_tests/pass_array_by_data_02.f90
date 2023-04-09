@@ -11,8 +11,8 @@ contains
 subroutine find_fit(data_x, expr)
 real, intent(in) :: data_x(:)
 interface
-    function expr() result(y)
-        real :: y
+    function expr() result(z)
+        real :: z
     end function expr
 end interface
 end subroutine find_fit
