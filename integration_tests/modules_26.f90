@@ -1,14 +1,18 @@
 module modern_minpack
     implicit none
 contains
-    subroutine fdjac1(fcn)
+    ! ASR::FunctionType of fdjac1 will contain
+    ! n1 which is present in scope of fcn1
+    ! Instead ASR::FunctionType of fdjac1
+    ! should contain FunctionParam(fcn1, 2)
+    subroutine fdjac1(fcn1)
         implicit none
-        interface 
-            subroutine fcn(n, x)
+        interface
+            subroutine fcn1(n1, x)
                 implicit none
-                integer, intent(in) :: n
-                real, intent(in) :: x(n)
-            end subroutine fcn
+                integer, intent(in) :: n1
+                real, intent(in) :: x(n1)
+            end subroutine fcn1
         end interface
 
     end subroutine
@@ -38,7 +42,7 @@ implicit none
 call fdjac1(fcn)
 call fdjac2(fcn2, 1)
 
-contains 
+contains
 subroutine fcn(n, x)
     implicit none
     integer, intent(in) :: n
