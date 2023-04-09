@@ -1692,7 +1692,6 @@ llvm = true
 [[test]]
 filename = "../integration_tests/intrinsics_04.f90"
 asr = true
-llvm = true
 
 # hyperbolics
 [[test]]
