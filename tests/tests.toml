@@ -1674,6 +1674,7 @@ llvm = true
 [[test]]
 filename = "../integration_tests/intrinsics_02.f90"
 asr = true
+cpp = true
 llvm = true
 
 # sin
