@@ -23,5 +23,47 @@ struct dimension_descriptor
     int32_t lower_bound, length;
 };
 // Forward declarations
+int32_t a();
+float b();
+bool c();
+int32_t d();
+float e();
+bool f();
 
 // Implementations
+int32_t a()
+{
+    int32_t a;
+    return a;
+}
+
+float b()
+{
+    float b;
+    return b;
+}
+
+bool c()
+{
+    bool c;
+    return c;
+}
+
+int32_t d()
+{
+    int32_t r;
+    return r;
+}
+
+float e()
+{
+    float r;
+    return r;
+}
+
+bool f()
+{
+    bool r;
+    return r;
+}
+
