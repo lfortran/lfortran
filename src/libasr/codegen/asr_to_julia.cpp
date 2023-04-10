@@ -1876,15 +1876,29 @@ public:
         src = out;
     }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
-        if(x.m_value) {
-            visit_expr(*x.m_value);
-            return;
+    #define SET_INTRINSIC_NAME(X, func_name)                             \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : { \
+            out += func_name; break;                                     \
         }
+
+    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
         std::string out;
-        out = to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
         LCOMPILERS_ASSERT(x.n_args == 1);
         visit_expr(*x.m_args[0]);
+        switch (x.m_intrinsic_id) {
+            SET_INTRINSIC_NAME(Sin, "sin");
+            SET_INTRINSIC_NAME(Cos, "cos");
+            SET_INTRINSIC_NAME(Tan, "tan");
+            SET_INTRINSIC_NAME(Asin, "asin");
+            SET_INTRINSIC_NAME(Acos, "acos");
+            SET_INTRINSIC_NAME(Atan, "atan");
+            SET_INTRINSIC_NAME(Abs, "abs");
+            default : {
+                throw LCompilersException("IntrinsicFunction: `"
+                    + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
+                    + "` is not implemented");
+            }
+        }
         out += "(" + src + ")";
         src = out;
     }
