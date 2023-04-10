@@ -1,0 +1,13 @@
+{
+    "basename": "wat-expr_08-74f99b7",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/expr_08.f90",
+    "infile_hash": "f460199051316c12de52e28e19545464f7a017f68a9a9db6a590a328",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-expr_08-74f99b7.stdout",
+    "stdout_hash": "b57c7b7783b172f90032efa68c950943496d2f6076111c464fb23705",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
