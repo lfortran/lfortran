@@ -184,6 +184,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_rt_func_used_idx = std::vector<int>(NO_OF_RT_FUNCS, -1);
     }
 
+    ~ASRToWASMVisitor() {
+        for (auto fn:m_func_name_idx_map) {
+            delete fn.second;
+        }
+    }
+
     void get_wasm(Vec<uint8_t> &code) {
         code.reserve(m_al, 8U /* preamble size */ +
                                8U /* (section id + section size) */ *
