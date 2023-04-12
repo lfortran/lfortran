@@ -8,6 +8,7 @@ source_filename = "LFortran"
 @0 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 @1 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 @2 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+@3 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
 
 define void @check_real(%array** %r) {
 .entry:
@@ -109,6 +110,120 @@ loop.body2:                                       ; preds = %loop.head1
 
 then:                                             ; preds = %loop.body2
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont
+
+else:                                             ; preds = %loop.body2
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %loop.head1
+
+loop.end:                                         ; preds = %loop.head1
+  br label %loop.head
+
+loop.end3:                                        ; preds = %loop.head
+  br label %return
+
+return:                                           ; preds = %loop.end3
+  ret void
+}
+
+define void @check_real_without_pointer(%array* %r) {
+.entry:
+  %u = alloca i32, align 4
+  %v = alloca i32, align 4
+  %0 = getelementptr %array, %array* %r, i32 0, i32 2
+  %1 = load %dimension_descriptor*, %dimension_descriptor** %0, align 8
+  %2 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1, i32 0
+  %3 = getelementptr %dimension_descriptor, %dimension_descriptor* %2, i32 0, i32 1
+  %4 = load i32, i32* %3, align 4
+  %5 = sub i32 %4, 1
+  store i32 %5, i32* %u, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %loop.end, %.entry
+  %6 = load i32, i32* %u, align 4
+  %7 = add i32 %6, 1
+  %8 = getelementptr %array, %array* %r, i32 0, i32 2
+  %9 = load %dimension_descriptor*, %dimension_descriptor** %8, align 8
+  %10 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %9, i32 0
+  %11 = getelementptr %dimension_descriptor, %dimension_descriptor* %10, i32 0, i32 1
+  %12 = load i32, i32* %11, align 4
+  %13 = getelementptr %dimension_descriptor, %dimension_descriptor* %10, i32 0, i32 2
+  %14 = load i32, i32* %13, align 4
+  %15 = add i32 %14, %12
+  %16 = sub i32 %15, 1
+  %17 = icmp sle i32 %7, %16
+  br i1 %17, label %loop.body, label %loop.end3
+
+loop.body:                                        ; preds = %loop.head
+  %18 = load i32, i32* %u, align 4
+  %19 = add i32 %18, 1
+  store i32 %19, i32* %u, align 4
+  %20 = getelementptr %array, %array* %r, i32 0, i32 2
+  %21 = load %dimension_descriptor*, %dimension_descriptor** %20, align 8
+  %22 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %21, i32 1
+  %23 = getelementptr %dimension_descriptor, %dimension_descriptor* %22, i32 0, i32 1
+  %24 = load i32, i32* %23, align 4
+  %25 = sub i32 %24, 1
+  store i32 %25, i32* %v, align 4
+  br label %loop.head1
+
+loop.head1:                                       ; preds = %ifcont, %loop.body
+  %26 = load i32, i32* %v, align 4
+  %27 = add i32 %26, 1
+  %28 = getelementptr %array, %array* %r, i32 0, i32 2
+  %29 = load %dimension_descriptor*, %dimension_descriptor** %28, align 8
+  %30 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %29, i32 1
+  %31 = getelementptr %dimension_descriptor, %dimension_descriptor* %30, i32 0, i32 1
+  %32 = load i32, i32* %31, align 4
+  %33 = getelementptr %dimension_descriptor, %dimension_descriptor* %30, i32 0, i32 2
+  %34 = load i32, i32* %33, align 4
+  %35 = add i32 %34, %32
+  %36 = sub i32 %35, 1
+  %37 = icmp sle i32 %27, %36
+  br i1 %37, label %loop.body2, label %loop.end
+
+loop.body2:                                       ; preds = %loop.head1
+  %38 = load i32, i32* %v, align 4
+  %39 = add i32 %38, 1
+  store i32 %39, i32* %v, align 4
+  %40 = load i32, i32* %u, align 4
+  %41 = load i32, i32* %v, align 4
+  %42 = getelementptr %array, %array* %r, i32 0, i32 2
+  %43 = load %dimension_descriptor*, %dimension_descriptor** %42, align 8
+  %44 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %43, i32 0
+  %45 = getelementptr %dimension_descriptor, %dimension_descriptor* %44, i32 0, i32 1
+  %46 = load i32, i32* %45, align 4
+  %47 = sub i32 %40, %46
+  %48 = mul i32 1, %47
+  %49 = add i32 0, %48
+  %50 = getelementptr %dimension_descriptor, %dimension_descriptor* %44, i32 0, i32 2
+  %51 = load i32, i32* %50, align 4
+  %52 = mul i32 1, %51
+  %53 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %43, i32 1
+  %54 = getelementptr %dimension_descriptor, %dimension_descriptor* %53, i32 0, i32 1
+  %55 = load i32, i32* %54, align 4
+  %56 = sub i32 %41, %55
+  %57 = mul i32 %52, %56
+  %58 = add i32 %49, %57
+  %59 = getelementptr %dimension_descriptor, %dimension_descriptor* %53, i32 0, i32 2
+  %60 = load i32, i32* %59, align 4
+  %61 = mul i32 %52, %60
+  %62 = getelementptr %array, %array* %r, i32 0, i32 0
+  %63 = load float*, float** %62, align 8
+  %64 = getelementptr inbounds float, float* %63, i32 %58
+  %65 = load float, float* %64, align 4
+  %66 = load i32, i32* %u, align 4
+  %67 = load i32, i32* %v, align 4
+  %68 = mul i32 %66, %67
+  %69 = sitofp i32 %68 to float
+  %70 = fcmp une float %65, %69
+  br i1 %70, label %then, label %else
+
+then:                                             ; preds = %loop.body2
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
@@ -291,7 +406,7 @@ ifcont:                                           ; preds = %else, %then
   br i1 %113, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont3
 
@@ -318,7 +433,7 @@ ifcont3:                                          ; preds = %else2, %then1
   br i1 %129, label %then4, label %else5
 
 then4:                                            ; preds = %ifcont3
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @3, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont6
 
@@ -423,6 +538,8 @@ loop.end:                                         ; preds = %loop.head7
 
 loop.end9:                                        ; preds = %loop.head
   call void @check_real(%array** %r)
+  %203 = load %array*, %array** %r, align 8
+  call void @check_real_without_pointer(%array* %203)
   ret i32 0
 }
 
