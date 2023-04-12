@@ -420,7 +420,6 @@
                                         .false.
                                     )
                                     [f_string_cptr_n
-                                    c_strlen
                                     c_strlen]
                                     [(Var 6 cptr)]
                                     [(=

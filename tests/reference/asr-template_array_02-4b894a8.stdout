@@ -523,8 +523,8 @@
                                         []
                                         .false.
                                     )
-                                    [add_integer
-                                    zero_integer]
+                                    [zero_integer
+                                    add_integer]
                                     [(Var 14 a)]
                                     [(=
                                         (Var 14 r)
@@ -668,8 +668,8 @@
                                         []
                                         .false.
                                     )
-                                    [plus_t
-                                    zero_t]
+                                    [zero_t
+                                    plus_t]
                                     [(Var 11 a)]
                                     [(=
                                         (Var 11 r)

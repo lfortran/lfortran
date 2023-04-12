@@ -11,10 +11,7 @@
                                 (Variable
                                     2
                                     a
-                                    [j
-                                    j
-                                    j
-                                    j]
+                                    [j]
                                     Local
                                     (ArrayConstant
                                         [(ImpliedDoLoop

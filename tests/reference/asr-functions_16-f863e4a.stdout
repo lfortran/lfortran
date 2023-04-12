@@ -434,9 +434,9 @@
                                         []
                                         .false.
                                     )
-                                    [less
-                                    quicksort
-                                    swap]
+                                    [swap
+                                    less
+                                    quicksort]
                                     [(Var 6 list)
                                     (Var 6 idx)
                                     (Var 6 low)

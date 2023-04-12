@@ -142,7 +142,6 @@
                                                     3
                                                     strout
                                                     [length
-                                                    line
                                                     line]
                                                     ReturnVar
                                                     ()
@@ -241,13 +240,12 @@
                                         []
                                         .false.
                                     )
-                                    [len
-                                    len_trim
-                                    max@imax
+                                    [len_trim
                                     trim
                                     len
-                                    len_repeati32
+                                    max@imax
                                     present
+                                    len_repeati32
                                     repeat@repeati32]
                                     [(Var 3 line)
                                     (Var 3 length)
@@ -541,12 +539,12 @@
                                         []
                                         .false.
                                     )
-                                    [atleast
-                                    imax
-                                    len
-                                    len_trim
+                                    [len
                                     max@imax
-                                    trim]
+                                    len_trim
+                                    trim
+                                    imax
+                                    atleast]
                                     [(Var 4 header)
                                     (Var 4 stop)]
                                     [(FileWrite

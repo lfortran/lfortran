@@ -92,8 +92,7 @@
                                         []
                                         .false.
                                     )
-                                    [solution
-                                    solution]
+                                    [solution]
                                     []
                                     [(SubroutineCall
                                         2 solution

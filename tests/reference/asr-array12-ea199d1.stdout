@@ -130,8 +130,8 @@
                                         []
                                         .false.
                                     )
-                                    [c_associated
-                                    getcwd]
+                                    [getcwd
+                                    c_associated]
                                     [(Var 38 path)]
                                     [(Allocate
                                         [((Var 38 cpath)

@@ -262,8 +262,8 @@
                                         []
                                         .false.
                                     )
-                                    [1_to_string
-                                    allocated
+                                    [allocated
+                                    1_to_string
                                     time_to_string]
                                     [(Var 8 lhs)
                                     (Var 8 rhs)]

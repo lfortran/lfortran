@@ -973,9 +973,9 @@
                                         []
                                         .false.
                                     )
-                                    [add_integer
+                                    [zero_integer
                                     mult_integer
-                                    zero_integer]
+                                    add_integer]
                                     [(Var 17 i)
                                     (Var 17 j)
                                     (Var 17 k)
@@ -1312,9 +1312,9 @@
                                         []
                                         .false.
                                     )
-                                    [mult_t
-                                    plus_t
-                                    zero_t]
+                                    [zero_t
+                                    mult_t
+                                    plus_t]
                                     [(Var 14 i)
                                     (Var 14 j)
                                     (Var 14 k)

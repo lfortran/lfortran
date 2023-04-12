@@ -320,7 +320,6 @@
                                         .false.
                                     )
                                     [allocated
-                                    allocated
                                     1_destroy]
                                     [(Var 6 self)]
                                     [(If
@@ -521,7 +520,6 @@
                         })
                     tomlf_type_array
                     [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
                     tomlf_type_value
                     tomlf_structure
                     tomlf_structure_base]

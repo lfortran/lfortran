@@ -367,9 +367,9 @@
                         []
                         .false.
                     )
-                    [alnorm
-                    dgetrf
-                    exp@dexp]
+                    [exp@dexp
+                    alnorm
+                    dgetrf]
                     []
                     [(=
                         (Var 2 zero)
