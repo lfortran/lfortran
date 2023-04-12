@@ -59,13 +59,16 @@ class CodeGenError {
 static uint64_t get_hash(ASR::asr_t *node) { return (uint64_t)node; }
 
 struct SymbolFuncInfo {
-    bool needs_declaration = true;
-    bool intrinsic_function = false;
-    uint32_t index = 0;
-    uint32_t no_of_params = 0;
-    ASR::Variable_t *return_var = nullptr;
+    bool needs_declaration;
+    bool intrinsic_function;
+    uint32_t index;
+    uint32_t no_of_params;
+    ASR::Variable_t *return_var;
     Vec<ASR::Variable_t *> referenced_vars;
 };
+
+static_assert(std::is_standard_layout<SymbolFuncInfo>::value);
+static_assert(std::is_trivial<SymbolFuncInfo>::value);
 
 enum RT_FUNCS {
     print_i64 = 0,
@@ -109,7 +112,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     Allocator &m_al;
     diag::Diagnostics &diag;
 
-    SymbolFuncInfo *cur_sym_info;
+    SymbolFuncInfo cur_sym_info;
     bool is_prototype_only;
     bool is_local_vars_only;
     ASR::Function_t* main_func;
@@ -124,7 +127,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     std::map<uint64_t, uint32_t> m_var_idx_map;
     std::map<uint64_t, uint32_t> m_global_var_idx_map;
-    std::map<uint64_t, SymbolFuncInfo *> m_func_name_idx_map;
+    std::map<uint64_t, SymbolFuncInfo> m_func_name_idx_map;
     std::map<std::string, uint32_t> m_string_to_iov_loc_map;
 
     std::vector<uint32_t> m_compiler_globals;
@@ -149,12 +152,6 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_rt_func_used_idx = std::vector<int>(NO_OF_RT_FUNCS, -1);
     }
 
-    ~ASRToWASMVisitor() {
-        for (auto fn:m_func_name_idx_map) {
-            delete fn.second;
-        }
-    }
-
     void import_function(IMPORT_FUNC fn,
             std::vector<wasm::var_type> param_types,
             std::vector<wasm::var_type> result_types) {
@@ -171,7 +168,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         emit_function_prototype(*fn);
         m_wa.emit_import_fn("js", fn->m_name,
-            m_func_name_idx_map[get_hash((ASR::asr_t*) fn)]->index);
+            m_func_name_idx_map[get_hash((ASR::asr_t*) fn)].index);
     }
 
     void emit_imports(SymbolTable *global_scope) {
@@ -857,7 +854,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 ASR::Variable_t *v =
                     ASR::down_cast<ASR::Variable_t>(item.second);
                 if (isLocalVar(v)) {
-                    m_var_idx_map[get_hash((ASR::asr_t *)v)] = cur_sym_info->no_of_params + local_vars.size();
+                    m_var_idx_map[get_hash((ASR::asr_t *)v)] = cur_sym_info.no_of_params + local_vars.size();
                     get_var_type(v, local_vars);
                 }
             }
@@ -944,26 +941,31 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void emit_function_prototype(const ASR::Function_t &x) {
-        SymbolFuncInfo *s = new SymbolFuncInfo;
+        SymbolFuncInfo s;
+        s.needs_declaration = true;
+        s.intrinsic_function = false;
+        s.index = 0;
+        s.no_of_params = 0;
+        s.return_var = nullptr;
 
         std::vector<wasm::var_type> params, results;
 
-        s->referenced_vars.reserve(m_al, x.n_args);
+        s.referenced_vars.reserve(m_al, x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
             LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
 
             get_var_type(arg, params);
-            m_var_idx_map[get_hash((ASR::asr_t *)arg)] = s->no_of_params++;
+            m_var_idx_map[get_hash((ASR::asr_t *)arg)] = s.no_of_params++;
 
             if (isRefVar(arg)) {
-                s->referenced_vars.push_back(m_al, arg);
+                s.referenced_vars.push_back(m_al, arg);
             }
         }
 
         if (x.m_return_var) {  // It is a function
-            s->return_var = ASRUtils::EXPR2VAR(x.m_return_var);
-            get_var_type(s->return_var, results);
+            s.return_var = ASRUtils::EXPR2VAR(x.m_return_var);
+            get_var_type(s.return_var, results);
         } else {  // It is a subroutine
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
@@ -973,7 +975,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             }
         }
 
-        s->index = m_wa.emit_func_type(params, results);
+        s.index = m_wa.emit_func_type(params, results);
         m_func_name_idx_map[get_hash((ASR::asr_t *)&x)] = s;
     }
 
@@ -1002,7 +1004,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             is_local_vars_only = false;
         }
 
-        m_wa.emit_func_body(cur_sym_info->index, x.m_name, local_vars, [&](){
+        m_wa.emit_func_body(cur_sym_info.index, x.m_name, local_vars, [&](){
             initialize_local_vars(x.m_symtab);
             for (size_t i = 0; i < x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
@@ -1959,10 +1961,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void handle_return() {
-        if (cur_sym_info->return_var) {
-            emit_var_get(cur_sym_info->return_var);
+        if (cur_sym_info.return_var) {
+            emit_var_get(cur_sym_info.return_var);
         } else {
-            for (auto return_var : cur_sym_info->referenced_vars) {
+            for (auto return_var : cur_sym_info.referenced_vars) {
                 emit_var_get(return_var);
             }
         }
@@ -2125,7 +2127,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         uint64_t hash = get_hash((ASR::asr_t *)fn);
         if (m_func_name_idx_map.find(hash) != m_func_name_idx_map.end()) {
-            m_wa.emit_call(m_func_name_idx_map[hash]->index);
+            m_wa.emit_call(m_func_name_idx_map[hash].index);
         } else {
             if (strcmp(fn->m_name, "c_caimag") == 0) {
                 LCOMPILERS_ASSERT(x.n_args == 1);
@@ -2264,7 +2266,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
         uint64_t hash = get_hash((ASR::asr_t *)s);
         if (m_func_name_idx_map.find(hash) != m_func_name_idx_map.end()) {
-            m_wa.emit_call(m_func_name_idx_map[hash]->index);
+            m_wa.emit_call(m_func_name_idx_map[hash].index);
         } else {
             throw CodeGenError("SubroutineCall: Function " + std::string(s->m_name) + " not found");
         }
