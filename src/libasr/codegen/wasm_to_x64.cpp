@@ -70,7 +70,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         switch (func_idx) {
             case 0: {  // proc_exit
             /*
-                TODO: This way increases the number of intructions.
+                TODO: This way increases the number of instructions.
                 There is a possibility that we can wrap these statements
                 with some add label and then just jump/call to that label
             */
@@ -81,7 +81,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             }
             case 1: {  // fd_write
             /*
-                TODO: This way increases the number of intructions.
+                TODO: This way increases the number of instructions.
                 There is a possibility that we can wrap these statements
                 with some add label and then just jump/call to that label
             */
@@ -212,7 +212,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
 
     void visit_GlobalGet(uint32_t globalidx) {
         std::string loc = "global_" + std::to_string(globalidx);
-        std::string var_type = var_type_to_string[globals[globalidx].type];
+        std::string var_type = vt2s(globals[globalidx].type);
 
         X64Reg base = X64Reg::rbx;
         m_a.asm_mov_r64_label(X64Reg::rbx, loc);
@@ -235,7 +235,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         }
 
         std::string loc = "global_" + std::to_string(globalidx);
-        std::string var_type = var_type_to_string[globals[globalidx].type];
+        std::string var_type = vt2s(globals[globalidx].type);
 
         X64Reg base = X64Reg::rbx;
         m_a.asm_mov_r64_label(X64Reg::rbx, loc);
@@ -257,7 +257,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         auto cur_func_param_type = func_types[type_indices[cur_func_idx]];
         int no_of_params = (int)cur_func_param_type.param_types.size();
         if ((int)localidx < no_of_params) {
-            std::string var_type = var_type_to_string[cur_func_param_type.param_types[localidx]];
+            std::string var_type = vt2s(cur_func_param_type.param_types[localidx]);
             if (var_type == "i32" || var_type == "i64") {
                 m_a.asm_mov_r64_m64(X64Reg::rax, &base, nullptr, 1, 8 * (2 + no_of_params - (int)localidx - 1));
                 m_a.asm_push_r64(X64Reg::rax);
@@ -271,7 +271,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             }
         } else {
             localidx -= no_of_params;
-            std::string var_type = var_type_to_string[codes[cur_func_idx].locals[localidx].type];
+            std::string var_type = vt2s(codes[cur_func_idx].locals[localidx].type);
             if (var_type == "i32" || var_type == "i64") {
                 m_a.asm_mov_r64_m64(X64Reg::rax, &base, nullptr, 1, -8 * (1 + (int)localidx));
                 m_a.asm_push_r64(X64Reg::rax);
@@ -291,7 +291,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         auto cur_func_param_type = func_types[type_indices[cur_func_idx]];
         int no_of_params = (int)cur_func_param_type.param_types.size();
         if ((int)localidx < no_of_params) {
-            std::string var_type = var_type_to_string[cur_func_param_type.param_types[localidx]];
+            std::string var_type = vt2s(cur_func_param_type.param_types[localidx]);
             if (var_type == "i32" || var_type == "i64") {
                 m_a.asm_pop_r64(X64Reg::rax);
                 m_a.asm_mov_m64_r64(&base, nullptr, 1, 8 * (2 + no_of_params - (int)localidx - 1), X64Reg::rax);
@@ -305,7 +305,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             }
         } else {
             localidx -= no_of_params;
-            std::string var_type = var_type_to_string[codes[cur_func_idx].locals[localidx].type];
+            std::string var_type = vt2s(codes[cur_func_idx].locals[localidx].type);
             if (var_type == "i32" || var_type == "i64") {
                 m_a.asm_pop_r64(X64Reg::rax);
                 m_a.asm_mov_m64_r64(&base, nullptr, 1, -8 * (1 + (int)localidx), X64Reg::rax);
