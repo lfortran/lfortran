@@ -1971,8 +1971,9 @@ public:
         bool is_argument = false;
         llvm::Value* array = nullptr;
         bool is_data_only = false;
+        ASR::Variable_t *v = nullptr;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
-            ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_v);
+            v = ASRUtils::EXPR2VAR(x.m_v);
             if( ASR::is_a<ASR::Struct_t>(*ASRUtils::get_contained_type(v->m_type)) ) {
                 ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::get_contained_type(v->m_type));
@@ -2056,7 +2057,9 @@ public:
             bool is_polymorphic = current_select_type_block_type != nullptr;
             tmp = arr_descr->get_single_element(array, indices, x.n_args,
                                                 is_data_only,
-                                                ASRUtils::is_fixed_size_array(m_dims, n_dims) && is_bindc_array,
+                                                ASRUtils::is_fixed_size_array(m_dims, n_dims)
+                                                && (is_bindc_array ||
+                                                (v && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(&(v->base))) ) ),
                                                 llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
         }
     }
@@ -6749,12 +6752,20 @@ public:
                     if (llvm_symtab.find(h) != llvm_symtab.end()) {
                         tmp = llvm_symtab[h];
                         bool is_data_only_array = false;
+                        bool is_pointer_to_non_pointer = false;
+                        if( orig_arg &&
+                            !ASR::is_a<ASR::Pointer_t>(*orig_arg->m_type) &&
+                             ASR::is_a<ASR::Pointer_t>(*arg->m_type) ) {
+                            tmp = LLVM::CreateLoad(*builder, tmp);
+                            is_pointer_to_non_pointer = true;
+                        }
                         ASR::dimension_t* dims_arg = nullptr;
                         size_t n_arg = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims_arg);
                         if( ASRUtils::is_arg_dummy(arg->m_intent) &&
                             !ASRUtils::is_dimension_empty(dims_arg, n_arg) ) {
                             is_data_only_array = true;
                         }
+
                         if( x_abi == ASR::abiType::Source &&
                             arr_descr->is_array(arg->m_type) &&
                             !is_data_only_array ) {
@@ -6865,6 +6876,14 @@ public:
                                     builder->CreateStore(tmp, target);
                                     tmp = target;
                                 }
+                            }
+                        } else if( ASRUtils::get_asr_owner(&(arg->base)) &&
+                                   ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(&(arg->base))) &&
+                                   ASRUtils::is_array(arg->m_type) ) {
+                            if( is_pointer_to_non_pointer && orig_arg &&
+                                ASRUtils::is_data_only_array(orig_arg->m_type, orig_arg->m_abi) ) {
+                                tmp = arr_descr->get_pointer_to_data(tmp);
+                                tmp = LLVM::CreateLoad(*builder, tmp);
                             }
                         }
                     } else {

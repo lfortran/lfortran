@@ -261,9 +261,24 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                             ASRUtils::symbol_get_past_external(it2));
                 new_ext_var = current_scope->get_unique_name(new_ext_var);
+                ASR::ttype_t* var_type = var->m_type;
+                if( ASRUtils::is_array(var_type) ) {
+                    Vec<ASR::dimension_t> dims;
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(var_type);
+                    dims.reserve(al, n_dims);
+                    for( size_t i = 0; i < n_dims; i++ ) {
+                        ASR::dimension_t dim;
+                        dim.loc = var_type->base.loc;
+                        dim.m_start = nullptr;
+                        dim.m_length = nullptr;
+                        dims.push_back(al, dim);
+                    }
+                    var_type = ASRUtils::duplicate_type(al, var_type, &dims);
+                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
+                }
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
                         it2->base.loc, new_ext_var,
-                        al, current_scope, var->m_type, ASR::intentType::Unspecified);
+                        al, current_scope, var_type, ASR::intentType::Unspecified);
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
             }
@@ -429,12 +444,18 @@ public:
                         }
                         ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
                         ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym));
-                        ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
-                            target, val, nullptr));
-                        body.push_back(al, assignment);
-                        assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
-                           val, target, nullptr));
-                        assigns_at_end.push_back(assignment);
+                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) ) {
+                            ASR::stmt_t *associate = ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc,
+                                                        target, val));
+                            body.push_back(al, associate);
+                        } else {
+                            ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
+                                                        target, val, nullptr));
+                            body.push_back(al, assignment);
+                            assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, t->base.loc,
+                                            val, target, nullptr));
+                            assigns_at_end.push_back(assignment);
+                        }
                     }
                 }
             }
