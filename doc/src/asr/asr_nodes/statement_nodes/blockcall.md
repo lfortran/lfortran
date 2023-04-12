@@ -12,8 +12,8 @@ BlockCall(int label, symbol m)
 
 ### Arguments
 
-`lable` contains integer value of the label.
-`m` contains symbol passed to block call.
+`label` contains integer value of a label.
+`m` points to the Block symbol to call.
 
 ### Return values
 
@@ -21,8 +21,11 @@ None.
 
 ## Description
 
-**BlockCall** signifies the block symbol call. Find more information on
-[block](../symbol_nodes/symbol.md).
+**BlockCall** signifies the block symbol call. The Block represents a
+scoped collection of statements and its own symbol table. The Block itself is
+part of a symbol table, and the BlockCall node is used to call it.
+
+Find more information on [block](../symbol_nodes/symbol.md).
 
 ## Types
 
