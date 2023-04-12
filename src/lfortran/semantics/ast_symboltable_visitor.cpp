@@ -128,9 +128,8 @@ public:
 
     template <typename T>
     void fix_type_info(T* x) {
-        current_module_dependencies.n = 0;
-        current_module_dependencies.reserve(al, 1);
-        std::map<ASR::asr_t*, std::set<std::string>> node2deps;
+        current_module_dependencies.clear(al);
+        std::map<ASR::asr_t*, SetChar> node2deps;
         for( TypeMissingData* data: type_info ) {
             if( data->sym_type == -1 ) {
                 continue;
@@ -139,12 +138,11 @@ public:
             if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
                 SymbolTable* current_scope_copy = current_scope;
                 current_scope = data->scope;
-                current_function_dependencies.clear();
+                current_function_dependencies.clear(al);
                 visit_expr(*data->expr);
-                if( !current_function_dependencies.empty() ) {
-                    for( auto& itr: current_function_dependencies ) {
-                        node2deps[current_scope->asr_owner].insert(itr);
-                    }
+                for( size_t i = 0; i < current_function_dependencies.size(); i++ ) {
+                    char* itr = current_function_dependencies[i];
+                    node2deps[current_scope->asr_owner].push_back(al, itr);
                 }
                 expr = ASRUtils::EXPR(tmp);
                 current_scope = current_scope_copy;
@@ -168,7 +166,7 @@ public:
             ASR::symbol_t* sym = data->scope->get_symbol(data->sym_name);
             if( sym && ASR::is_a<ASR::Variable_t>(*sym) ) {
                 ASR::Variable_t* sym_variable = ASR::down_cast<ASR::Variable_t>(sym);
-                Vec<char*> variable_dependencies_vec;
+                SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, sym_variable->m_type,
                     sym_variable->m_symbolic_value, sym_variable->m_value);
@@ -181,14 +179,13 @@ public:
             if( ASR::is_a<ASR::symbol_t>(*itr.first) ) {
                 ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(itr.first);
                 if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
-                    Vec<char*> func_deps;
+                    SetChar func_deps;
                     ASR::Function_t* asr_owner_func = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     func_deps.from_pointer_n_copy(al, asr_owner_func->m_dependencies,
                                                   asr_owner_func->n_dependencies);
-                    for( auto dep: itr.second ) {
-                        if( !present(func_deps.p, func_deps.size(), dep) ) {
-                            func_deps.push_back(al, s2c(al, dep));
-                        }
+                    for( size_t i = 0; i < itr.second.size(); i++ ) {
+                        char* dep = itr.second[i];
+                        func_deps.push_back(al, dep);
                     }
                     asr_owner_func->m_dependencies = func_deps.p;
                     asr_owner_func->n_dependencies = func_deps.size();
@@ -196,12 +193,10 @@ public:
             }
         }
 
-        Vec<char*> x_deps_vec;
+        SetChar x_deps_vec;
         x_deps_vec.from_pointer_n_copy(al, x->m_dependencies, x->n_dependencies);
         for( size_t i = 0; i < current_module_dependencies.size(); i++ ) {
-            if( !present(x_deps_vec, current_module_dependencies[i]) ) {
-                x_deps_vec.push_back(al, current_module_dependencies[i]);
-            }
+            x_deps_vec.push_back(al, current_module_dependencies[i]);
         }
         x->m_dependencies = x_deps_vec.p;
         x->n_dependencies = x_deps_vec.size();
@@ -457,8 +452,8 @@ public:
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
-        std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
-        current_function_dependencies.clear();
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -574,7 +569,7 @@ public:
             }
         }
 
-        Vec<char*> func_deps;
+        SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
@@ -674,8 +669,8 @@ public:
 
     void visit_Function(const AST::Function_t &x) {
         in_Subroutine = true;
-        std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
-        current_function_dependencies.clear();
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -850,7 +845,7 @@ public:
                     throw SemanticError("Return type not supported",
                             x.base.base.loc);
             }
-            Vec<char*> variable_dependencies_vec;
+            SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             // Add it as a local variable:
@@ -870,7 +865,7 @@ public:
             return_var = (ASR::asr_t*) current_scope->get_symbol(return_var_name);
             ASR::Variable_t* return_variable = ASR::down_cast2<ASR::Variable_t>(return_var);
             return_variable->m_intent = ASRUtils::intent_return_var;
-            Vec<char*> variable_dependencies_vec;
+            SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_variable->m_type,
                                                     return_variable->m_symbolic_value, return_variable->m_value);
@@ -936,7 +931,7 @@ public:
             }
         }
 
-        Vec<char*> func_deps;
+        SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
@@ -1032,7 +1027,7 @@ public:
             current_requirement_type_parameters.push_back(
                 ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
-        Vec<char*> struct_dependencies;
+        SetChar struct_dependencies;
         struct_dependencies.reserve(al, 1);
         for( auto& item: current_scope->get_scope() ) {
             // ExternalSymbol means that current module/program
@@ -1831,9 +1826,8 @@ public:
         std::string msym = to_lower(x.m_module);
         Str msym_c; msym_c.from_str_view(msym);
         char *msym_cc = msym_c.c_str(al);
-        if (!present(current_module_dependencies, msym_cc)) {
-            current_module_dependencies.push_back(al, msym_cc);
-        }
+        current_module_dependencies.push_back(al, msym_cc);
+
         ASR::symbol_t *t = current_scope->parent->resolve_symbol(msym);
         if (!t) {
             LCompilers::PassOptions pass_options;

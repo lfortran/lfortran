@@ -112,7 +112,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     Vec<ASR::stmt_t*> body;
     body.reserve(al, 1);
 
-    Vec<char *> dep;
+    SetChar dep;
     dep.reserve(al, 1);
 
     {
@@ -128,7 +128,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         create_variable(return_var_1, c_func_name, ASRUtils::intent_return_var,
             ASR::abiType::BindC, false, fn_symtab_1, arg_type);
 
-        Vec<char *> dep_1; dep_1.reserve(al, 1);
+        SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
             body_1, return_var_1, BindC, Interface, s2c(al, c_func_name));
@@ -350,7 +350,7 @@ namespace Abs {
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
-        Vec<char *> dep;
+        SetChar dep;
         dep.reserve(al, 1);
 
         if (is_integer(*arg_types[0]) || is_real(*arg_types[0])) {
@@ -411,7 +411,7 @@ namespace Abs {
                 create_variable(return_var_1, c_func_name, ASRUtils::intent_return_var,
                     ASR::abiType::BindC, false, fn_symtab_1, real_type);
 
-                Vec<char *> dep_1; dep_1.reserve(al, 1);
+                SetChar dep_1; dep_1.reserve(al, 1);
                 Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
                 ASR::symbol_t *s = make_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
                     body_1, return_var_1, BindC, Interface, s2c(al, c_func_name));

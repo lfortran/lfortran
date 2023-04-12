@@ -97,8 +97,8 @@ public:
                                    ASR::expr_t *&left, ASR::expr_t *&right,
                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
                                    SymbolTable* curr_scope,
-                                   std::set<std::string>& current_function_dependencies,
-                                   Vec<char*>& current_module_dependencies) {
+                                   SetChar& current_function_dependencies,
+                                   SetChar& current_module_dependencies) {
     ASR::cmpopType asr_op;
     switch (x.m_op) {
         case (AST::cmpopType::Eq): {
@@ -570,14 +570,14 @@ public:
 static ASR::asr_t* comptime_intrinsic_real(ASR::expr_t *A,
         ASR::expr_t * kind,
         Allocator &al, const Location &loc,
-        std::set<std::string>& current_function_dependencies) {
+        SetChar& current_function_dependencies) {
     int kind_int = 4;
     if (kind) {
         ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
         if (kind_value) {
             if (ASR::is_a<ASR::IntegerConstant_t>(*kind_value)) {
                 kind_int = ASR::down_cast<ASR::IntegerConstant_t>(kind_value)->m_n;
-                current_function_dependencies.erase("kind");
+                current_function_dependencies.erase(s2c(al, "kind"));
             } else {
                 throw SemanticError("kind argument to real(a, kind) is not a constant integer", loc);
             }
@@ -658,7 +658,7 @@ public:
     CompilerOptions &compiler_options;
     SymbolTable *current_scope;
     ASR::Module_t *current_module = nullptr;
-    Vec<char *> current_module_dependencies;
+    SetChar current_module_dependencies;
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
@@ -701,7 +701,7 @@ public:
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
     Vec<char*> data_member_names;
-    std::set<std::string> current_function_dependencies;
+    SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
 
     int32_t enum_init_val;
@@ -740,7 +740,7 @@ public:
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
                 4, nullptr, 0));
         }
-        Vec<char*> variable_dependencies_vec;
+        SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
@@ -756,7 +756,7 @@ public:
     ASR::symbol_t* declare_implicit_variable2(const Location &loc,
             const std::string &var_name, ASR::intentType intent,
             ASR::ttype_t *type) {
-        Vec<char*> variable_dependencies_vec;
+        SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
@@ -979,7 +979,7 @@ public:
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = ASRUtils::EXPR(tmp);
                         v2->m_symbolic_value = ASRUtils::EXPR(tmp);
-                        Vec<char*> var_deps_vec;
+                        SetChar var_deps_vec;
                         var_deps_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
                             v2->m_symbolic_value, v2->m_value);
@@ -1030,7 +1030,7 @@ public:
                         ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                         v2->m_value = expression_value;
                         v2->m_symbolic_value = expression_value;
-                        Vec<char*> var_deps_vec;
+                        SetChar var_deps_vec;
                         var_deps_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
                             v2->m_symbolic_value, v2->m_value);
@@ -1248,7 +1248,7 @@ public:
                             if (!ASRUtils::ttype_set_dimensions(v->m_type, dims.data(), dims.size())) {
                                 throw SemanticError("Cannot set dimension for variable of non-numerical type", x.base.base.loc);
                             }
-                            Vec<char*> variable_dependencies_vec;
+                            SetChar variable_dependencies_vec;
                             variable_dependencies_vec.reserve(al, 1);
                             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, v->m_type, v->m_symbolic_value, v->m_value);
                             v->m_dependencies = variable_dependencies_vec.p;
@@ -1569,7 +1569,7 @@ public:
                 }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
-                        Vec<char*> variable_dependencies_vec;
+                        SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
                         ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
@@ -2307,7 +2307,7 @@ public:
                 }
             }
         }
-        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
+        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         return ASR::make_FunctionCall_t(al, loc,
             final_sym, v, args.p, args.size(), return_type,
@@ -2363,7 +2363,7 @@ public:
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
         }
-        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
+        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         return ASR::make_FunctionCall_t(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
@@ -2401,7 +2401,7 @@ public:
                 type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
                 type = handle_return_type(type, loc, args, func);
             }
-            current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
+            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
             return ASR::make_FunctionCall_t(al, loc,
                 final_sym, v, args.p, args.size(), type,
@@ -2448,13 +2448,13 @@ public:
                 type = handle_return_type(type, loc, args, func);
             }
             if (cp_s != nullptr) {
-                current_function_dependencies.insert(std::string(ASRUtils::symbol_name(cp_s)));
+                current_function_dependencies.push_back(al, ASRUtils::symbol_name(cp_s));
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
                 return ASR::make_FunctionCall_t(al, loc,
                     cp_s, v, args.p, args.size(), type,
                     nullptr, nullptr);
             } else {
-                current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
+                current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
                 ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
                 return ASR::make_FunctionCall_t(al, loc,
                     final_sym, v, args.p, args.size(), type,
@@ -2488,18 +2488,15 @@ public:
                     value = intrinsic_procedures.comptime_eval(f->m_name, al, loc, args);
                     char *mod = ASR::down_cast<ASR::ExternalSymbol_t>(
                         current_scope->resolve_symbol(f->m_name))->m_module_name;
-                    if (!present(current_module_dependencies, mod)) {
-                        current_module_dependencies.push_back(al, mod);
-                    }
+                    current_module_dependencies.push_back(al, mod);
                 }
             }
         }
-        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
+
+        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
         ASR::Module_t* v_module = ASRUtils::get_sym_module0(f2);
         if( v_module ) {
-            if( !present(current_module_dependencies, v_module->m_name) ) {
-                current_module_dependencies.push_back(al, v_module->m_name);
-            }
+            current_module_dependencies.push_back(al, v_module->m_name);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         return ASR::make_FunctionCall_t(al, loc, v, nullptr,
@@ -2510,7 +2507,7 @@ public:
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
         ASR::ttype_t *return_type = func->m_return_var_type;
-        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(v)));
+        current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
         return ASR::make_FunctionCall_t(al, loc, v, nullptr,
             args.p, args.size(), return_type, nullptr, nullptr);
     }
@@ -3295,13 +3292,11 @@ public:
             ASR::Module_t* function_module = ASRUtils::get_sym_module(ASRUtils::symbol_get_past_external(function));
             if( function_module ) {
                 char* module_name = function_module->m_name;
-                if (!present(current_module_dependencies, module_name)) {
-                    current_module_dependencies.push_back(al, module_name);
-                }
+                current_module_dependencies.push_back(al, module_name);
             }
         }
 
-        current_function_dependencies.insert(function_name);
+        current_function_dependencies.push_back(al, s2c(al, function_name));
         ASRUtils::insert_module_dependency(function, al, current_module_dependencies);
         return ASR::make_FunctionCall_t(al, x.base.base.loc, function, nullptr, func_args.p,
             func_args.size(), type, nullptr, nullptr);
@@ -3504,7 +3499,7 @@ public:
                     dims.push_back(al, dim);
                     ASRUtils::ttype_set_dimensions(var_type, dims.p, dims.size());
                 }
-                Vec<char*> variable_dependencies_vec;
+                SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type);
                 v = ASR::down_cast<ASR::symbol_t>(
@@ -3524,7 +3519,7 @@ public:
         ASR::expr_t *to_return = nullptr;
         if (add_return) {
             std::string return_var_name = sym_name + "_return_var_name";
-            Vec<char*> variable_dependencies_vec;
+            SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
             ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
@@ -3922,20 +3917,16 @@ public:
         if (current_module) {
             // We are in body visitor
             // Add the module `m` to current module dependencies
-            Vec<char*> vec;
+            SetChar vec;
             vec.from_pointer_n_copy(al, current_module->m_dependencies,
                         current_module->n_dependencies);
-            if (!present(vec, m->m_name)) {
-                vec.push_back(al, m->m_name);
-                current_module->m_dependencies = vec.p;
-                current_module->n_dependencies = vec.size();
-            }
+            vec.push_back(al, m->m_name);
+            current_module->m_dependencies = vec.p;
+            current_module->n_dependencies = vec.size();
         } else {
             // We are in the symtab visitor or body visitor (the
             // current_module_dependencies is not used in body visitor)
-            if (!present(current_module_dependencies, m->m_name)) {
-                current_module_dependencies.push_back(al, m->m_name);
-            }
+            current_module_dependencies.push_back(al, m->m_name);
         }
         return v;
     }
@@ -4256,7 +4247,7 @@ public:
                         } else {
                             return_type = ASRUtils::expr_type(func->m_return_var);
                         }
-                        current_function_dependencies.insert(matched_func_name);
+                        current_function_dependencies.push_back(al, s2c(al, matched_func_name));
                         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                         tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
                             a_name, sym, a_args.p, 2, return_type,
