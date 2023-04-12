@@ -24,4 +24,20 @@ struct dimension_descriptor
 };
 // Forward declarations
 
+template <typename T0>
+void sum_reduce(T0* a, float &s);
+
 // Implementations
+
+template <typename T0>
+void sum_reduce(T0* a, float &s)
+{
+    int32_t i;
+    int32_t n;
+    n = a->data->extent(0);
+    s = (float)(0);
+    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i) {
+        s = s + a->data->operator[](i - a->dims[0].lower_bound);
+    });
+}
+

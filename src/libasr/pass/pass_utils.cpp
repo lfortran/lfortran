@@ -235,7 +235,7 @@ namespace LCompilers {
     ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
                             ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope) {
         ASR::expr_t* idx_var = nullptr;
-        std::string str_name = "~" + std::to_string(counter) + suffix;
+        std::string str_name = "__libasr__created__var__" + std::to_string(counter) + suffix;
         char* idx_var_name = s2c(al, str_name);
 
         if( current_scope->get_symbol(std::string(idx_var_name)) == nullptr ) {
@@ -270,7 +270,7 @@ namespace LCompilers {
 
         void create_vars(Vec<ASR::expr_t*>& vars, int n_vars, const Location& loc,
                          Allocator& al, SymbolTable*& current_scope, std::string suffix,
-                         ASR::intentType intent) {
+                         ASR::intentType intent, ASR::presenceType presence) {
             vars.reserve(al, n_vars);
             for (int i = 1; i <= n_vars; i++) {
                 std::string idx_var_name = "__" + std::to_string(i) + suffix;
@@ -293,7 +293,7 @@ namespace LCompilers {
                     ASR::asr_t* idx_sym = ASR::make_Variable_t(al, loc, current_scope, var_name, nullptr, 0,
                                                             intent, nullptr, nullptr, ASR::storage_typeType::Default,
                                                             int32_type, ASR::abiType::Source, ASR::accessType::Public,
-                                                            ASR::presenceType::Required, false);
+                                                            presence, false);
                     current_scope->add_symbol(idx_var_name, ASR::down_cast<ASR::symbol_t>(idx_sym));
                     var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));
                 } else {
@@ -693,7 +693,7 @@ namespace LCompilers {
                                         target, value, nullptr));
             loop_body.push_back(al, copy_stmt);
             ASR::stmt_t* fallback_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, do_loop_head.loc,
-                                            do_loop_head, loop_body.p, loop_body.size()));
+                                            nullptr, do_loop_head, loop_body.p, loop_body.size()));
             Vec<ASR::stmt_t*> fallback_while_loop = replace_doloop(al, *ASR::down_cast<ASR::DoLoop_t>(fallback_loop),
                                                                   (int) ASR::cmpopType::Lt);
             for( size_t i = 0; i < fallback_while_loop.size(); i++ ) {
@@ -884,8 +884,8 @@ namespace LCompilers {
             for (size_t i=0; i<loop.n_body; i++) {
                 body.push_back(al, loop.m_body[i]);
             }
-            ASR::stmt_t *stmt2 = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, cond,
-                body.p, body.size()));
+            ASR::stmt_t *stmt2 = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc,
+                loop.m_name, cond, body.p, body.size()));
             Vec<ASR::stmt_t*> result;
             result.reserve(al, 2);
             if( stmt1 ) {

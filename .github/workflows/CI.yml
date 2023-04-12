@@ -93,6 +93,13 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
+      - name : Remove existing node
+        shell: bash -l {0}
+        run : |
+            which node
+            node -v
+            sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
+
       - name: Install Emscripten from Git
         shell: bash -l {0}
         run: |
@@ -102,13 +109,15 @@ jobs:
             git clone https://github.com/emscripten-core/emsdk.git
             cd emsdk
 
-            # Download and install the latest SDK tools.
-            ./emsdk install latest
+            ./emsdk install 3.1.35
 
-            # Make the "latest" SDK "active" for the current user. (writes .emscripten file)
-            ./emsdk activate latest
+            ./emsdk activate 3.1.35
 
-      - name: Show Emscripten Info
+            ./emsdk install node-14.18.2-64bit
+
+            ./emsdk activate node-14.18.2-64bit
+
+      - name: Show Emscripten and Node Info
         shell: bash -l {0}
         run: |
             set -ex
@@ -116,6 +125,8 @@ jobs:
             source $HOME/ext/emsdk/emsdk_env.sh
             emcc -v
             em++ -v
+            which node
+            node -v
 
       - name: Build to WASM
         shell: bash -l {0}
@@ -129,6 +140,8 @@ jobs:
         run: |
             set -ex
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
+            which node
+            node -v
             node src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
@@ -233,6 +246,18 @@ jobs:
             examples/example_lmdif1
             examples/example_primes
             ctest
+      - name: Test Modern Minpack
+        shell: bash -x -l {0}
+        run: |
+            git clone https://github.com/certik/modern_minpack.git
+            cd modern_minpack
+            git checkout main
+            git checkout 7405875c5d47f7340f827c246fa3a361cf1e98cc
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90
+            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
+            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90
+            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90
 
   fpm:
     name: Check fpm Compilation

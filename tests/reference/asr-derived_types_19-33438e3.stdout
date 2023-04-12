@@ -107,7 +107,6 @@
                                         .false.
                                     )
                                     [not_ok
-                                    not_ok
                                     default_class]
                                     []
                                     [(If

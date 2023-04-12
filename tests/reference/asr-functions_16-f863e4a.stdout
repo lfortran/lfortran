@@ -434,9 +434,9 @@
                                         []
                                         .false.
                                     )
-                                    [less
-                                    quicksort
-                                    swap]
+                                    [swap
+                                    less
+                                    quicksort]
                                     [(Var 6 list)
                                     (Var 6 idx)
                                     (Var 6 low)
@@ -491,6 +491,7 @@
                                             ()
                                         )
                                         (DoLoop
+                                            ()
                                             ((Var 6 i)
                                             (IntegerBinOp
                                                 (Var 6 low)
@@ -948,6 +949,7 @@
                                         )]
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 5 i)
                                         (Var 5 low)
                                         (Var 5 high)

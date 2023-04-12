@@ -46,40 +46,62 @@
             ()
             None
             ())]
-            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (Comment
+                    "! TODO: Fix this test case"
+                )]
+            )
         )]
         [(Block
             0
             ()
-            [(Use
-                []
-                mod
-                [(UseSymbol
-                    example
-                    ()
-                )]
-                .true.
-                ()
-            )]
-            [(Import
-                []
-                ImportNone
-                (TriviaNode
-                    []
-                    [(EndOfLine)
-                    (Comment
-                        "!import, only: B"
-                    )]
-                )
-            )]
+            []
+            []
             []
             [(=
                 0
                 B
                 10
                 ()
+            )
+            (Print
+                0
+                ()
+                [B]
+                ()
+            )
+            (If
+                0
+                ()
+                (== B 10)
+                [(Print
+                    0
+                    ()
+                    [(String
+                        "pass"
+                    )]
+                    ()
+                )]
+                []
+                ()
+                ()
+                ()
             )]
-            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (Comment
+                    "!     use mod, only: example"
+                )
+                (Comment
+                    "!     import, none"
+                )
+                (Comment
+                    "!     !import, only: B"
+                )]
+            )
             ()
         )]
         []

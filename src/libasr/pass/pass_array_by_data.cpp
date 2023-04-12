@@ -8,6 +8,37 @@
 
 #include <vector>
 #include <utility>
+#include <deque>
+
+/*
+This ASR to ASR pass can be called whenever you want to avoid
+using descriptors for passing arrays to functions/subroutines
+in the backend. By default, it is currently being used by all
+the backends (via pass manager). Backends like WASM which
+do not support array descriptors always need this pass
+to be called.
+
+The possibility to avoid descriptors and pass array by data
+to functions/subroutines is determined by ASRUtils::is_pass_array_by_data_possible
+defined in asr_utils.h.
+
+Advantages and dis-advantages of this pass are as follows,
+
+Advantages:
+
+* Avoiding array descriptors and just using simple data points leads to
+easier handling in the backend.
+
+* A lot of indirection to access dimensional information is also avoided
+because it is already provided via extra variable arguments.
+
+Dis-advantages:
+
+* Requires access to all the code, as function interfaces have to be modified. Hence, not always possible.
+
+* The arrays become contiguous, which most of the time is fine, but sometimes you might lose performance.
+
+*/
 
 
 namespace LCompilers {
@@ -35,83 +66,15 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
     private:
 
         ASRUtils::ExprStmtDuplicator node_duplicator;
-        SymbolTable* current_proc_scope;
-        bool is_editing_procedure;
 
     public:
 
         std::map< ASR::symbol_t*, std::pair<ASR::symbol_t*, std::vector<size_t>> > proc2newproc;
+        std::set<ASR::symbol_t*> newprocs;
 
         PassArrayByDataProcedureVisitor(Allocator& al_) : PassVisitor(al_, nullptr),
-        node_duplicator(al_), current_proc_scope(nullptr), is_editing_procedure(false)
+        node_duplicator(al_)
         {}
-
-        void visit_Var(const ASR::Var_t& x) {
-            if( !is_editing_procedure ) {
-                return ;
-            }
-            ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
-            ASR::symbol_t* x_sym = xx.m_v;
-            SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);
-            if( x_sym_symtab->get_counter() != current_proc_scope->get_counter() &&
-                !ASRUtils::is_parent(x_sym_symtab, current_proc_scope) ) {
-                // xx.m_v points to the function/procedure present inside
-                // original function's symtab. Make it point to the symbol in
-                // new function's symtab.
-                std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-                xx.m_v = current_proc_scope->resolve_symbol(x_sym_name);
-                LCOMPILERS_ASSERT(xx.m_v != nullptr);
-            }
-        }
-
-        void visit_alloc_arg(const ASR::alloc_arg_t& x) {
-            PassVisitor::visit_alloc_arg(x);
-            if( !is_editing_procedure ) {
-                return ;
-            }
-            ASR::alloc_arg_t& xx = const_cast<ASR::alloc_arg_t&>(x);
-            ASR::symbol_t* x_sym = nullptr;
-            ASR::expr_t* tmp_expr = xx.m_a;
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                x_sym = tmp_var->m_v;
-            } else {
-                throw LCompilersException(
-                    "Cannot deallocate variables in expression " +
-                    std::to_string(tmp_expr->type));
-            }
-
-            SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);
-            if( x_sym_symtab->get_counter() != current_proc_scope->get_counter() &&
-                !ASRUtils::is_parent(x_sym_symtab, current_proc_scope) ) {
-                // xx.m_a points to the function/procedure present inside
-                // original function's symtab. Make it point to the symbol in
-                // new function's symtab.
-                std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-                ASR::symbol_t* x_sym_new = current_proc_scope->resolve_symbol(x_sym_name);
-                xx.m_a = ASRUtils::EXPR(ASR::make_Var_t(al, x_sym_new->base.loc, x_sym_new));
-                LCOMPILERS_ASSERT(xx.m_a != nullptr);
-            }
-        }
-
-        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-            PassVisitor::visit_FunctionCall(x);
-            if( !is_editing_procedure ) {
-                return ;
-            }
-            ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-            ASR::symbol_t* x_sym = xx.m_name;
-            SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);
-            if( x_sym_symtab->get_counter() != current_proc_scope->get_counter() &&
-                !ASRUtils::is_parent(x_sym_symtab, current_proc_scope) ) {
-                // xx.m_name points to the function/procedure present inside
-                // original function's symtab. Make it point to the symbol in
-                // new function's symtab.
-                std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));
-                xx.m_name = current_proc_scope->resolve_symbol(x_sym_name);
-                LCOMPILERS_ASSERT(xx.m_name != nullptr);
-            }
-        }
 
         ASR::symbol_t* insert_new_procedure(ASR::Function_t* x, std::vector<size_t>& indices) {
             Vec<ASR::stmt_t*> new_body;
@@ -129,37 +92,9 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
             node_duplicator.allow_procedure_calls = true;
             SymbolTable* new_symtab = al.make_new<SymbolTable>(current_scope);
+            ASRUtils::SymbolDuplicator symbol_duplicator(al);
             for( auto& item: x->m_symtab->get_scope() ) {
-                ASR::symbol_t* new_arg = nullptr;
-                if( ASR::is_a<ASR::Variable_t>(*item.second) ) {
-                    ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(item.second);
-                    node_duplicator.success = true;
-                    ASR::expr_t* m_symbolic_value = node_duplicator.duplicate_expr(arg->m_symbolic_value);
-                    if( !node_duplicator.success ) {
-                        return nullptr;
-                    }
-                    node_duplicator.success = true;
-                    ASR::expr_t* m_value = node_duplicator.duplicate_expr(arg->m_value);
-                    if( !node_duplicator.success ) {
-                        return nullptr;
-                    }
-                    node_duplicator.success = true;
-                    ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(arg->m_type);
-                    if( !node_duplicator.success ) {
-                        return nullptr;
-                    }
-                    new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al,
-                                                arg->base.base.loc, new_symtab, s2c(al, item.first),
-                                                nullptr, 0, arg->m_intent, m_symbolic_value, m_value,
-                                                arg->m_storage, m_type, arg->m_abi, arg->m_access,
-                                                arg->m_presence, arg->m_value_attr));
-                } else if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
-                    ASR::ExternalSymbol_t* arg = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
-                    new_arg = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, arg->base.base.loc,
-                                    new_symtab, s2c(al, item.first), arg->m_external, arg->m_module_name,
-                                    arg->m_scope_names, arg->n_scope_names, arg->m_original_name, arg->m_access));
-                }
-                new_symtab->add_symbol(item.first, new_arg);
+                symbol_duplicator.duplicate_symbol(item.second, new_symtab);
             }
             Vec<ASR::expr_t*> new_args;
             std::string suffix = "";
@@ -167,8 +102,16 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             ASR::expr_t* return_var = nullptr;
             for( size_t i = 0; i < x->n_args + 1; i++ ) {
                 ASR::Variable_t* arg = nullptr;
+                ASR::Function_t* arg_func = nullptr;
                 if( i < x->n_args ) {
-                    arg = ASRUtils::EXPR2VAR(x->m_args[i]);
+                    if (ASR::is_a<ASR::Var_t>(*(x->m_args[i]))) {
+                        ASR::Var_t* x_arg = ASR::down_cast<ASR::Var_t>(x->m_args[i]);
+                        if (ASR::is_a<ASR::Function_t>(*(x_arg->m_v))) {
+                            arg_func = ASR::down_cast<ASR::Function_t>(x_arg->m_v);
+                        } else {
+                            arg = ASRUtils::EXPR2VAR(x->m_args[i]);
+                        }
+                    }
                 } else if( x->m_return_var ) {
                     arg = ASRUtils::EXPR2VAR(x->m_return_var);
                 } else {
@@ -176,11 +119,22 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
                 if( std::find(indices.begin(), indices.end(), i) !=
                     indices.end() ) {
-                    suffix += "_" + std::string(arg->m_name);
+                    if( arg_func ) {
+                        suffix += "_" + std::string(arg_func->m_name);
+                    } else {
+                        suffix += "_" + std::string(arg->m_name);
+                    }
                 }
-                ASR::expr_t* new_arg = ASRUtils::EXPR(ASR::make_Var_t(al,
+                ASR::expr_t* new_arg;
+                if (arg_func) {
+                    new_arg = ASRUtils::EXPR(ASR::make_Var_t(al,
+                                        arg_func->base.base.loc, new_symtab->get_symbol(
+                                                        std::string(arg_func->m_name))));
+                } else {
+                    new_arg = ASRUtils::EXPR(ASR::make_Var_t(al,
                                         arg->base.base.loc, new_symtab->get_symbol(
                                                         std::string(arg->m_name))));
+                }
                 if( i < x->n_args ) {
                     new_args.push_back(al, new_arg);
                 } else {
@@ -206,10 +160,11 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }
             current_scope->add_symbol(new_name, new_symbol);
             proc2newproc[(ASR::symbol_t*) x] = std::make_pair(new_symbol, indices);
+            newprocs.insert(new_symbol);
             return new_symbol;
         }
 
-        void edit_new_procedure(ASR::Function_t* x, std::vector<size_t>& indices) {
+        void edit_new_procedure_args(ASR::Function_t* x, std::vector<size_t>& indices) {
             Vec<ASR::expr_t*> new_args;
             new_args.reserve(al, x->n_args);
             for( size_t i = 0; i < x->n_args; i++ ) {
@@ -222,7 +177,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     Vec<ASR::expr_t*> dim_variables;
                     std::string arg_name = std::string(arg->m_name);
                     PassUtils::create_vars(dim_variables, 2 * n_dims, arg->base.base.loc, al,
-                                           x->m_symtab, arg_name, ASR::intentType::In);
+                                            x->m_symtab, arg_name, ASR::intentType::In, arg->m_presence);
                     Vec<ASR::dimension_t> new_dims;
                     new_dims.reserve(al, n_dims);
                     for( int j = 0, k = 0; j < n_dims; j++ ) {
@@ -243,19 +198,6 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
             x->m_args = new_args.p;
             x->n_args = new_args.size();
-
-            is_editing_procedure = true;
-            current_proc_scope = x->m_symtab;
-            for( auto& itr: x->m_symtab->get_scope() ) {
-                if( ASR::is_a<ASR::Variable_t>(*itr.second) ) {
-                    PassVisitor::visit_ttype(*ASR::down_cast<ASR::Variable_t>(itr.second)->m_type);
-                }
-            }
-            for( size_t i = 0; i < x->n_body; i++ ) {
-                visit_stmt(*x->m_body[i]);
-            }
-            is_editing_procedure = false;
-            current_proc_scope = nullptr;
         }
 
         void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
@@ -275,7 +217,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         }
 
         template <typename T>
-        void visit_SymbolContainingFunctions(const T& x) {
+        bool visit_SymbolContainingFunctions(const T& x,
+            std::deque<ASR::Function_t*>& pass_array_by_data_functions) {
             T& xx = const_cast<T&>(x);
             current_scope = xx.m_symtab;
             for( auto& item: xx.m_symtab->get_scope() ) {
@@ -286,15 +229,25 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                         ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
                         if( sym != nullptr ) {
                             ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
-                            edit_new_procedure(new_subrout, arg_indices);
+                            edit_new_procedure_args(new_subrout, arg_indices);
+                            pass_array_by_data_functions.push_back(new_subrout);
                         }
                     }
                 }
             }
+            return pass_array_by_data_functions.size() > 0;
         }
 
+        #define bfs_visit_SymbolContainingFunctions() std::deque<ASR::Function_t*> pass_array_by_data_functions;    \
+            visit_SymbolContainingFunctions(x, pass_array_by_data_functions);    \
+            while( pass_array_by_data_functions.size() > 0 ) {    \
+                ASR::Function_t* function = pass_array_by_data_functions.front();    \
+                pass_array_by_data_functions.pop_front();    \
+                visit_SymbolContainingFunctions(*function, pass_array_by_data_functions);    \
+            }    \
+
         void visit_Program(const ASR::Program_t& x) {
-            visit_SymbolContainingFunctions(x);
+            bfs_visit_SymbolContainingFunctions()
         }
 
         void visit_Module(const ASR::Module_t& x) {
@@ -303,52 +256,158 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 return ;
             }
 
-            visit_SymbolContainingFunctions(x);
+            bfs_visit_SymbolContainingFunctions()
         }
 };
 
-/*
-    The following visitor replaces subroutine calls with arrays as arguments
-    to subroutine calls having dimensional information passed as arguments. See example below,
+class EditProcedureVisitor: public ASR::ASRPassBaseWalkVisitor<EditProcedureVisitor> {
 
-        call f(array1, array2)
+    public:
+
+    PassArrayByDataProcedureVisitor& v;
+
+    EditProcedureVisitor(PassArrayByDataProcedureVisitor& v_):
+    v(v_) {}
+
+    void visit_Function(const ASR::Function_t &x) {
+        ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        for (auto &a : x.m_symtab->get_scope()) {
+            this->visit_symbol(*a.second);
+        }
+
+        // See integration_tests/modules_26.f90
+        // for the reason of commenting out
+        // the following line
+        // visit_ttype(*x.m_function_signature);
+
+        for (size_t i=0; i<x.n_args; i++) {
+            visit_expr(*x.m_args[i]);
+        }
+        transform_stmts(xx.m_body, xx.n_body);
+        if (x.m_return_var)
+            visit_expr(*x.m_return_var);
+        current_scope = current_scope_copy;
+    }
+
+    #define edit_symbol(attr) ASR::symbol_t* x_sym = xx.m_##attr;    \
+        SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);    \
+        if( x_sym_symtab->get_counter() != current_scope->get_counter() &&    \
+            !ASRUtils::is_parent(x_sym_symtab, current_scope) ) {    \
+            std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));    \
+            xx.m_##attr = current_scope->resolve_symbol(x_sym_name);    \
+            LCOMPILERS_ASSERT(xx.m_##attr != nullptr);    \
+        }    \
+
+    void visit_Var(const ASR::Var_t& x) {
+        ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
+        ASR::symbol_t* x_sym_ = xx.m_v;
+        if ( v.proc2newproc.find(x_sym_) != v.proc2newproc.end() ) {
+            xx.m_v = v.proc2newproc[x_sym_].first;
+            return ;
+        }
+
+        edit_symbol(v)
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t& x) {
+        ASR::BlockCall_t& xx = const_cast<ASR::BlockCall_t&>(x);
+        edit_symbol(m)
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
+        edit_symbol(name)
+        ASR::ASRPassBaseWalkVisitor<EditProcedureVisitor>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
+        edit_symbol(name)
+        ASR::ASRPassBaseWalkVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
+    }
+
+};
+
+/*
+    The following visitor replaces procedure calls with arrays as arguments
+    to procedure calls having dimensional information passed as arguments. See example below,
+
+        call f1(array1, array2)
+        sum = f(array) + g(array)
 
     gets converted to,
 
-        call f_array1_array2(array1, m1, n1, array2, m2, n2)
+        call f1_array1_array2(array1, m1, n1, array2, m2, n2)
+        sum = f_array(array, m, n) + g_array(array, m, n)
 
     As can be seen dimensional information, m1, n1 is passed along
     with array1 and similarly m2, n2 is passed along with array2.
  */
-class ReplaceSubroutineCallsVisitor : public PassUtils::PassVisitor<ReplaceSubroutineCallsVisitor>
+class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>
 {
     private:
 
+        Allocator& al;
         PassArrayByDataProcedureVisitor& v;
 
     public:
 
-        ReplaceSubroutineCallsVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_): PassVisitor(al_, nullptr),
-        v(v_) {
-            pass_result.reserve(al, 1);
-        }
+        EditProcedureCallsVisitor(Allocator& al_,
+            PassArrayByDataProcedureVisitor& v_):
+        al(al_), v(v_) {}
 
-        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        template <typename T>
+        void visit_Call(const T& x) {
             ASR::symbol_t* subrout_sym = x.m_name;
             bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*subrout_sym);
             subrout_sym = ASRUtils::symbol_get_past_external(subrout_sym);
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
+                bool args_updated = false;
+                Vec<ASR::call_arg_t> new_args;
+                new_args.reserve(al, x.n_args);
+                for ( size_t i = 0; i < x.n_args; i++ ) {
+                    ASR::call_arg_t arg = x.m_args[i];
+                    ASR::expr_t* expr = arg.m_value;
+                    bool use_original_arg = true;
+                    if (expr) {
+                        if (ASR::is_a<ASR::Var_t>(*expr)) {
+                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
+                            ASR::symbol_t* sym = var->m_v;
+                            if ( v.proc2newproc.find(sym) != v.proc2newproc.end() ) {
+                                ASR::symbol_t* new_var_sym = v.proc2newproc[sym].first;
+                                ASR::expr_t* new_var = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_var_sym));
+                                ASR::call_arg_t new_arg;
+                                new_arg.m_value = new_var;
+                                new_arg.loc = arg.loc;
+                                new_args.push_back(al, new_arg);
+                                args_updated = true;
+                                use_original_arg = false;
+                            }
+                        }
+                    }
+                    if( use_original_arg ) {
+                        new_args.push_back(al, arg);
+                    }
+                }
+                if (args_updated) {
+                    T&xx = const_cast<T&>(x);
+                    xx.m_args = new_args.p;
+                    xx.n_args = new_args.size();
+                }
                 return ;
             }
 
-            ASR::symbol_t* new_subrout_sym = v.proc2newproc[subrout_sym].first;
+            ASR::symbol_t* new_func_sym = v.proc2newproc[subrout_sym].first;
             std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
 
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, x.n_args);
             for( size_t i = 0; i < x.n_args; i++ ) {
                 new_args.push_back(al, x.m_args[i]);
-                if( std::find(indices.begin(), indices.end(), i) == indices.end() ) {
+                if( std::find(indices.begin(), indices.end(), i) == indices.end() ||
+                    x.m_args[i].m_value == nullptr ) {
                     continue ;
                 }
 
@@ -363,137 +422,63 @@ class ReplaceSubroutineCallsVisitor : public PassUtils::PassVisitor<ReplaceSubro
                 }
             }
 
-            ASR::symbol_t* new_subrout_sym_ = new_subrout_sym;
-            if( is_external ) {
-                ASR::ExternalSymbol_t* subrout_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-                // TODO: Use SymbolTable::get_unique_name to avoid potential
-                // clashes with user defined functions
-                char* new_subrout_sym_name = ASRUtils::symbol_name(new_subrout_sym);
-                if( current_scope->get_symbol(new_subrout_sym_name) == nullptr ) {
-                    new_subrout_sym_ = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, subrout_ext_sym->m_parent_symtab,
-                            new_subrout_sym_name, new_subrout_sym, subrout_ext_sym->m_module_name,
-                            subrout_ext_sym->m_scope_names, subrout_ext_sym->n_scope_names, new_subrout_sym_name,
-                            subrout_ext_sym->m_access));
-                    current_scope->add_symbol(new_subrout_sym_name, new_subrout_sym_);
-                } else {
-                    new_subrout_sym_ = current_scope->get_symbol(new_subrout_sym_name);
+            {
+                ASR::Function_t* new_func_ = ASR::down_cast<ASR::Function_t>(new_func_sym);
+                size_t min_args = 0, max_args = 0;
+                for( size_t i = 0; i < new_func_->n_args; i++ ) {
+                    ASR::Var_t* arg = ASR::down_cast<ASR::Var_t>(new_func_->m_args[i]);
+                    if( ASR::is_a<ASR::Variable_t>(*arg->m_v) &&
+                        ASR::down_cast<ASR::Variable_t>(arg->m_v)->m_presence
+                            == ASR::presenceType::Optional ) {
+                        max_args += 1;
+                    } else {
+                        min_args += 1;
+                        max_args += 1;
+                    }
+                }
+                if( !(min_args <= new_args.size() &&
+                    new_args.size() <= max_args) ) {
+                    throw LCompilersException("Number of arguments in the new "
+                                            "function call doesn't satisfy "
+                                            "min_args <= new_args.size() <= max_args, " +
+                                            std::to_string(min_args) + " <= " +
+                                            std::to_string(new_args.size()) + " <= " +
+                                            std::to_string(max_args));
                 }
             }
-            ASR::stmt_t* new_call = ASRUtils::STMT(ASR::make_SubroutineCall_t(al,
-                                        x.base.base.loc, new_subrout_sym_, new_subrout_sym_,
-                                        new_args.p, new_args.size(), x.m_dt));
-            pass_result.push_back(al, new_call);
-        }
-};
-
-
-/*
-
-The following replacer replaces all the function call expressions with arrays
-as arguments to function call expressions having dimensional information of
-array arguments passed along. See example below,
-
-    sum = f(array) + g(array)
-
-gets converted to,
-
-    sum = f_array(array, m, n) + g_array(array, m, n)
-
-*/
-class ReplaceFunctionCalls: public ASR::BaseExprReplacer<ReplaceFunctionCalls> {
-
-    private:
-
-    Allocator& al;
-    PassArrayByDataProcedureVisitor& v;
-
-    public:
-
-    SymbolTable* current_scope;
-
-    ReplaceFunctionCalls(Allocator& al_, PassArrayByDataProcedureVisitor& v_) : al(al_), v(v_)
-    {}
-
-    void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        ASR::symbol_t* subrout_sym = x->m_name;
-        bool is_external = ASR::is_a<ASR::ExternalSymbol_t>(*subrout_sym);
-        subrout_sym = ASRUtils::symbol_get_past_external(subrout_sym);
-        if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
-            return ;
-        }
-
-        ASR::symbol_t* new_func_sym = v.proc2newproc[subrout_sym].first;
-        std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
-
-        Vec<ASR::call_arg_t> new_args;
-        new_args.reserve(al, x->n_args);
-        for( size_t i = 0; i < x->n_args; i++ ) {
-            new_args.push_back(al, x->m_args[i]);
-            if( std::find(indices.begin(), indices.end(), i) == indices.end() ) {
-                continue ;
+            ASR::symbol_t* new_func_sym_ = new_func_sym;
+            if( is_external ) {
+                ASR::ExternalSymbol_t* func_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+                // TODO: Use SymbolTable::get_unique_name to avoid potential
+                // clashes with user defined functions
+                char* new_func_sym_name = ASRUtils::symbol_name(new_func_sym);
+                if( current_scope->get_symbol(new_func_sym_name) == nullptr ) {
+                    new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, func_ext_sym->m_parent_symtab,
+                            new_func_sym_name, new_func_sym, func_ext_sym->m_module_name,
+                            func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name,
+                            func_ext_sym->m_access));
+                    func_ext_sym->m_parent_symtab->add_symbol(new_func_sym_name, new_func_sym_);
+                } else {
+                    new_func_sym_ = current_scope->resolve_symbol(new_func_sym_name);
+                }
             }
-
-            Vec<ASR::expr_t*> dim_vars;
-            dim_vars.reserve(al, 2);
-            ASRUtils::get_dimensions(x->m_args[i].m_value, dim_vars, al);
-            for( size_t j = 0; j < dim_vars.size(); j++ ) {
-                ASR::call_arg_t dim_var;
-                dim_var.loc = dim_vars[j]->base.loc;
-                dim_var.m_value = dim_vars[j];
-                new_args.push_back(al, dim_var);
-            }
+            T& xx = const_cast<T&>(x);
+            xx.m_name = new_func_sym_;
+            xx.m_original_name = new_func_sym_;
+            xx.m_args = new_args.p;
+            xx.n_args = new_args.size();
         }
 
-        LCOMPILERS_ASSERT(new_args.size() == ASR::down_cast<ASR::Function_t>(new_func_sym)->n_args);
-        ASR::symbol_t* new_func_sym_ = new_func_sym;
-        if( is_external ) {
-            ASR::ExternalSymbol_t* func_ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(x->m_name);
-            // TODO: Use SymbolTable::get_unique_name to avoid potential
-            // clashes with user defined functions
-            char* new_func_sym_name = ASRUtils::symbol_name(new_func_sym);
-            if( current_scope->get_symbol(new_func_sym_name) == nullptr ) {
-                new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_ExternalSymbol_t(al, x->m_name->base.loc, func_ext_sym->m_parent_symtab,
-                        new_func_sym_name, new_func_sym, func_ext_sym->m_module_name,
-                        func_ext_sym->m_scope_names, func_ext_sym->n_scope_names, new_func_sym_name,
-                        func_ext_sym->m_access));
-                current_scope->add_symbol(new_func_sym_name, new_func_sym_);
-            } else {
-                new_func_sym_ = current_scope->get_symbol(new_func_sym_name);
-            }
-        }
-        ASR::expr_t* new_call = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
-                                    x->base.base.loc, new_func_sym_, new_func_sym_,
-                                    new_args.p, new_args.size(), x->m_type, nullptr,
-                                    x->m_dt));
-        *current_expr = new_call;
-    }
-
-};
-
-/*
-The following visitor calls the above replacer i.e., ReplaceFunctionCalls
-on expressions present in ASR so that FunctionCall get replaced everywhere
-and we don't end up with false positives.
-*/
-class ReplaceFunctionCallsVisitor : public ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallsVisitor>
-{
-    private:
-
-        ReplaceFunctionCalls replacer;
-
-    public:
-
-        ReplaceFunctionCallsVisitor(Allocator& al_,
-            PassArrayByDataProcedureVisitor& v_) : replacer(al_, v_) {}
-
-        void call_replacer() {
-            replacer.current_expr = current_expr;
-            replacer.current_scope = current_scope;
-            replacer.replace_expr(*current_expr);
+        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            visit_Call(x);
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_SubroutineCall(x);
         }
 
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            visit_Call(x);
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_FunctionCall(x);
+        }
 };
 
 /*
@@ -515,8 +500,31 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_):
             PassVisitor(al_, nullptr), v(v_) {}
 
+        // Shouldn't be done because allocatable arrays when
+        // assigned to array constants work fine in gfortran
+        // and hence we will need calling the original function
+        // and not the new one. WASM backend should be supporting
+        // such cases for the following to be removed.
         void visit_Program(const ASR::Program_t& x) {
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
+            current_scope = xx.m_symtab;
+
+            std::vector<std::string> to_be_erased;
+
+            for( auto& item: current_scope->get_scope() ) {
+                if( v.proc2newproc.find(item.second) != v.proc2newproc.end() ) {
+                    LCOMPILERS_ASSERT(item.first == ASRUtils::symbol_name(item.second))
+                    to_be_erased.push_back(item.first);
+                }
+            }
+
+            for (auto &item: to_be_erased) {
+                current_scope->erase_symbol(item);
+            }
+        }
+
+        void visit_Function(const ASR::Function_t& x) {
+            ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
             current_scope = xx.m_symtab;
 
             std::vector<std::string> to_be_erased;
@@ -539,11 +547,11 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& /*pass_options*/) {
     PassArrayByDataProcedureVisitor v(al);
     v.visit_TranslationUnit(unit);
-    ReplaceSubroutineCallsVisitor u(al, v);
+    EditProcedureVisitor e(v);
+    e.visit_TranslationUnit(unit);
+    EditProcedureCallsVisitor u(al, v);
     u.visit_TranslationUnit(unit);
-    ReplaceFunctionCallsVisitor w(al, v);
-    w.visit_TranslationUnit(unit);
-    RemoveArrayByDescriptorProceduresVisitor x(al,v);
+    RemoveArrayByDescriptorProceduresVisitor x(al, v);
     x.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor y(al);
     y.visit_TranslationUnit(unit);

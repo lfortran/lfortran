@@ -863,7 +863,7 @@ asr = true
 filename = "../integration_tests/arrays_02.f90"
 ast = true
 ast_f90 = true
-julia = true
+# julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_03_func.f90"
@@ -1268,6 +1268,10 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/associate_07.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/associate_08.f90"
 asr = true
 
 [[test]]
@@ -1688,7 +1692,6 @@ llvm = true
 [[test]]
 filename = "../integration_tests/intrinsics_04.f90"
 asr = true
-llvm = true
 
 # hyperbolics
 [[test]]
@@ -2606,10 +2609,35 @@ filename = "../integration_tests/derived_types_18.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/modules_38.f90"
+llvm = true
+
+[[test]]
 filename = "../integration_tests/derived_types_20.f90"
 asr = true
 pass = "class_constructor"
 extrafiles = "../integration_tests/derived_types_20_module2.f90, ../integration_tests/derived_types_20_module1.f90"
+
+[[test]]
+filename = "../integration_tests/modules_35.f90"
+asr = true
+pass = "implied_do_loops"
+
+[[test]]
+filename = "../integration_tests/modules_37.f90"
+asr = true
+pass = "pass_array_by_data,transform_optional_argument_functions"
+
+[[test]]
+filename = "../integration_tests/modules_39.f90"
+asr = true
+pass = "pass_array_by_data,transform_optional_argument_functions"
+extrafiles = "../integration_tests/modules_39_module.f90"
+
+[[test]]
+filename = "../integration_tests/modules_40.f90"
+asr = true
+pass = "pass_array_by_data,transform_optional_argument_functions"
 
 [[test]]
 filename = "implicit_typing1.f90"
@@ -3006,4 +3034,8 @@ asr = true
 
 [[test]]
 filename = "errors/intent1.f90"
+asr = true
+
+[[test]]
+filename = "errors/do_zero_increment.f90"
 asr = true

@@ -1227,7 +1227,7 @@ public:
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t& x)
     {
-        const ASR::DoLoop_t do_loop = ASR::DoLoop_t{ x.base, x.m_head, x.m_body, x.n_body };
+        const ASR::DoLoop_t do_loop = ASR::DoLoop_t{ x.base, nullptr, x.m_head, x.m_body, x.n_body };
         visit_DoLoop(do_loop, true);
     }
 
@@ -1440,16 +1440,8 @@ public:
     {
         src = "\"";
         std::string s = x.m_s;
-        for (size_t idx = 0; idx < s.size(); idx++) {
-            if (s[idx] == '\n') {
-                src += "\\n";
-            } else if (s[idx] == '\\') {
-                src += "\\\\";
-            } else if (s[idx] == '\"') {
-                src += "\\\"";
-            } else {
-                src += s[idx];
-            }
+        for (size_t idx=0; idx < s.size(); idx++) {
+            src += s[idx];
         }
         src += "\"";
         last_expr_precedence = julia_prec::Base;

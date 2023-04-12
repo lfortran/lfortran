@@ -17,11 +17,14 @@ source_filename = "LFortran"
 @10 = private unnamed_addr constant [9 x i8] c"Here is \00", align 1
 @11 = private unnamed_addr constant [17 x i8] c"%s%s%s%s%s%s%s%s\00", align 1
 @12 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@13 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @14 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @15 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"\08\00", align 1
 @17 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+@18 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@19 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@20 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -304,6 +307,7 @@ loop.body:                                        ; preds = %loop.head
 
 loop.end:                                         ; preds = %loop.head
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
   %233 = getelementptr %array, %array* %greetings, i32 0, i32 3
   %234 = load i1, i1* %233, align 1
   br i1 %234, label %then, label %else

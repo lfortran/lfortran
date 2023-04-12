@@ -37,7 +37,7 @@ if (WITH_JSON)
         ast_to_json.cpp
     )
 endif()
-add_library(lfortran_lib ${SRC})
+add_library(lfortran_lib STATIC ${SRC})
 target_link_libraries(lfortran_lib asr lfortran_runtime_static)
 
 if (WITH_ZLIB)

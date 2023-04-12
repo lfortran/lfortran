@@ -30,6 +30,7 @@ Old Link: https://www.systutorials.com/go/intel-x86-64-reference-manual/
 #include <sstream>
 #include <fstream>
 #include <map>
+#include <cmath>
 
 #include <libasr/alloc.h>
 #include <libasr/containers.h>
@@ -40,13 +41,11 @@ Old Link: https://www.systutorials.com/go/intel-x86-64-reference-manual/
 #ifdef LFORTRAN_ASM_PRINT
 #    define EMIT(s) emit("    ", s)
 #    define EMIT_LABEL(s) emit("", s)
-#    define EMIT_VAR(a, b) emit("\n", a + " equ " + i2s(b) + "\n")
-#    define EMIT_VAR_SIZE(a) emit("\n", a + " equ $ - $$\n") // $ is current addr, $$ is start addr
+#    define EMIT_VAR(a, b, c) emit("    ", a + " equ " + c + " - " + b)
 #else
 #    define EMIT(s)
 #    define EMIT_LABEL(s)
 #    define EMIT_VAR(a, b)
-#    define EMIT_VAR_SIZE(a)
 #endif
 
 namespace LCompilers {
@@ -465,6 +464,15 @@ public:
         return m_code;
     }
 
+    void align_by_byte(uint64_t alignment) {
+        uint64_t code_size = m_code.size() ;
+        uint64_t padding_size = (alignment * ceil(code_size / (double)alignment)) - code_size;
+        for (size_t i = 0; i < padding_size; i++) {
+            m_code.push_back(m_al, 0);
+        }
+        EMIT("\n\talign " + std::to_string(alignment) + ", db 0");
+    }
+
     void define_symbol(const std::string &name, uint32_t value) {
         if (m_symbols.find(name) == m_symbols.end()) {
             Symbol s;
@@ -548,22 +556,17 @@ public:
         EMIT_LABEL(label + ":");
     }
 
-    void add_var_size(const std::string &var) {
-        uint64_t val = pos() - origin();
+    void add_var64(const std::string &var, const std::string &start, const std::string &end) {
         // TODO: Support 64-bit or 8 byte parameter val in define_symbol()
+        uint64_t val = get_defined_symbol(end).value - get_defined_symbol(start).value;
         define_symbol(var, val);
-        EMIT_VAR_SIZE(var);
+        EMIT_VAR(var, start, end);
     }
 
-    void add_var64(const std::string &var, uint64_t val) {
-        // TODO: Support 64-bit or 8 byte parameter val in define_symbol()
+    void add_var(const std::string &var, const std::string &start, const std::string &end) {
+        uint32_t val = get_defined_symbol(end).value - get_defined_symbol(start).value;
         define_symbol(var, val);
-        EMIT_VAR(var, val);
-    }
-
-    void add_var(const std::string &var, uint32_t val) {
-        define_symbol(var, val);
-        EMIT_VAR(var, val);
+        EMIT_VAR(var, start, end);
     }
 
     uint32_t pos() {
@@ -1491,6 +1494,17 @@ public:
         modrm_sib_disp(m_code, m_al, r32, &s32, nullptr, 1, 0, false);
         EMIT("comisd " + r2s(r64) + ", " + r2s(s64));
     }
+
+    // SQRTSD—Compute Square Root of Scalar Double Precision Floating-Point Value
+    void asm_sqrtsd_r64_r64(X64FReg r64, X64FReg s64) {
+        X86Reg r32 = X86Reg(r64 & 7), s32 = X86Reg(s64 & 7);
+        m_code.push_back(m_al, rex(1, r64 >> 3, 0, s64 >> 3));
+        m_code.push_back(m_al, 0xf2);
+        m_code.push_back(m_al, 0x0f);
+        m_code.push_back(m_al, 0x51);
+        modrm_sib_disp(m_code, m_al, r32, &s32, nullptr, 1, 0, false);
+        EMIT("sqrtsd " + r2s(r64) + ", " + r2s(s64));
+    }
 };
 
 
@@ -1512,6 +1526,10 @@ void emit_exit2(X86Assembler &a, const std::string &name);
 
 void emit_data_string(X86Assembler &a, const std::string &label,
     const std::string &s);
+void emit_i32_const(X86Assembler &a, const std::string &label,
+    const int32_t z);
+void emit_i64_const(X86Assembler &a, const std::string &label,
+    const int64_t z);
 void emit_float_const(X86Assembler &a, const std::string &label,
     const float z);
 void emit_double_const(X86Assembler &a, const std::string &label,
@@ -1524,7 +1542,7 @@ void emit_print_float(X86Assembler &a, const std::string &name);
 // Generate an ELF 64 bit header and footer
 // With these two functions, one only must generate a `_start` assembly
 // function to have a working binary on Linux.
-void emit_elf64_header(X86Assembler &a, uint32_t p_flags=5);
+void emit_elf64_header(X86Assembler &a);
 void emit_elf64_footer(X86Assembler &a);
 
 void emit_exit_64(X86Assembler &a, std::string label, int exit_code);

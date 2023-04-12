@@ -1,12 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%closuretest_nstd_types = type { i32* }
-%closuretest_vals = type { i32 }
-
-@closuretest_nstd_strct = global %closuretest_nstd_types zeroinitializer
-@closuretest_nstd_strct_stack = global [1000 x %closuretest_vals] zeroinitializer
-@sp_closuretest = global i32 0
+@__lcompilers_created__nested_context__closuretest_z = global i32 0
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
@@ -15,15 +10,14 @@ define i32 @add_z(i32* %x) {
 .entry:
   %y = alloca i32, align 4
   %0 = load i32, i32* %x, align 4
-  %1 = load i32*, i32** getelementptr inbounds (%closuretest_nstd_types, %closuretest_nstd_types* @closuretest_nstd_strct, i32 0, i32 0), align 8
-  %2 = load i32, i32* %1, align 4
-  %3 = add i32 %0, %2
-  store i32 %3, i32* %y, align 4
+  %1 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  %2 = add i32 %0, %1
+  store i32 %2, i32* %y, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  %4 = load i32, i32* %y, align 4
-  ret i32 %4
+  %3 = load i32, i32* %y, align 4
+  ret i32 %3
 }
 
 define i32 @apply(i32 (i32*)* %fun, i32* %x) {
@@ -45,27 +39,33 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value = alloca i32, align 4
   call void @_lpython_set_argv(i32 %0, i8** %1)
   %z = alloca i32, align 4
+  %2 = load i32, i32* %z, align 4
+  store i32 %2, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
   store i32 0, i32* %z, align 4
-  store i32* %z, i32** getelementptr inbounds (%closuretest_nstd_types, %closuretest_nstd_types* @closuretest_nstd_strct, i32 0, i32 0), align 8
   br label %loop.head
 
 loop.head:                                        ; preds = %loop.body, %.entry
-  %2 = load i32, i32* %z, align 4
-  %3 = add i32 %2, 1
-  %4 = icmp sle i32 %3, 10
-  br i1 %4, label %loop.body, label %loop.end
+  %3 = load i32, i32* %z, align 4
+  %4 = add i32 %3, 1
+  %5 = icmp sle i32 %4, 10
+  br i1 %5, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %5 = load i32, i32* %z, align 4
-  %6 = add i32 %5, 1
-  store i32 %6, i32* %z, align 4
-  store i32* %z, i32** getelementptr inbounds (%closuretest_nstd_types, %closuretest_nstd_types* @closuretest_nstd_strct, i32 0, i32 0), align 8
+  %6 = load i32, i32* %z, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, i32* %z, align 4
+  %8 = load i32, i32* %z, align 4
+  store i32 %8, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
   store i32 1, i32* %call_arg_value, align 4
-  %7 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %9 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %10 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %10, i32* %z, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  %11 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %11, i32* %z, align 4
   ret i32 0
 }
 

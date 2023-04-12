@@ -1339,8 +1339,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::binopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
                     Allocator &al, const Location& loc,
-                    std::set<std::string>& current_function_dependencies,
-                    Vec<char*>& current_module_dependencies,
+                    SetChar& current_function_dependencies,
+                    SetChar& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err);
 
 bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
@@ -1350,8 +1350,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::cmpopType op, std::string& intrinsic_op_name,
                     SymbolTable* curr_scope, ASR::asr_t*& asr,
                     Allocator &al, const Location& loc,
-                    std::set<std::string>& current_function_dependencies,
-                    Vec<char*>& current_module_dependencies,
+                    SetChar& current_function_dependencies,
+                    SetChar& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err);
 
 bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
@@ -1360,8 +1360,8 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
-                               std::set<std::string>& current_function_dependencies,
-                               Vec<char*>& /*current_module_dependencies*/,
+                               SetChar& current_function_dependencies,
+                               SetChar& /*current_module_dependencies*/,
                                const std::function<void (const std::string &, const Location &)> err);
 
 void set_intrinsic(ASR::symbol_t* sym);
@@ -1568,7 +1568,7 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
             break;
         }
         default:
-            throw LCompilersException("Not implemented.");
+            throw LCompilersException("Not implemented " + std::to_string(x->type) + ".");
     }
     return n_dims;
 }
@@ -1875,8 +1875,9 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc) {
                     kind_variable->m_parent_symtab->asr_owner);
                 is_parent_enum = ASR::is_a<ASR::EnumType_t>(*s);
             }
-            if( kind_variable->m_storage == ASR::storage_typeType::Parameter
-                    || is_parent_enum) {
+            if( is_parent_enum ) {
+                a_kind = ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
+            } else if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
                     LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
                     a_kind = ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
@@ -1977,7 +1978,100 @@ inline bool is_derived_type_similar(ASR::StructType_t* a, ASR::StructType_t* b) 
         std::string(b->m_name) == "~abstract_type");
 }
 
-inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b) {
+// TODO: Scaled up implementation for all exprTypes
+// One way is to do it in asdl_cpp.py
+inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
+    if( x->type != y->type ) {
+        return false;
+    }
+
+    switch( x->type ) {
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t* intbinop_x = ASR::down_cast<ASR::IntegerBinOp_t>(x);
+            ASR::IntegerBinOp_t* intbinop_y = ASR::down_cast<ASR::IntegerBinOp_t>(y);
+            if( intbinop_x->m_op != intbinop_y->m_op ) {
+                return false;
+            }
+            bool left_left = expr_equal(intbinop_x->m_left, intbinop_y->m_left);
+            bool left_right = expr_equal(intbinop_x->m_left, intbinop_y->m_right);
+            bool right_left = expr_equal(intbinop_x->m_right, intbinop_y->m_left);
+            bool right_right = expr_equal(intbinop_x->m_right, intbinop_y->m_right);
+            switch( intbinop_x->m_op ) {
+                case ASR::binopType::Add:
+                case ASR::binopType::Mul:
+                case ASR::binopType::BitAnd:
+                case ASR::binopType::BitOr:
+                case ASR::binopType::BitXor: {
+                    return (left_left && right_right) || (left_right && right_left);
+                }
+                case ASR::binopType::Sub:
+                case ASR::binopType::Div:
+                case ASR::binopType::Pow:
+                case ASR::binopType::BitLShift:
+                case ASR::binopType::BitRShift: {
+                    return (left_left && right_right);
+                }
+            }
+            break;
+        }
+        case ASR::exprType::Var: {
+            ASR::Var_t* var_x = ASR::down_cast<ASR::Var_t>(x);
+            ASR::Var_t* var_y = ASR::down_cast<ASR::Var_t>(y);
+            return var_x->m_v == var_y->m_v;
+        }
+        default: {
+            // Let it pass for now.
+            return true;
+        }
+    }
+
+    // Let it pass for now.
+    return true;
+}
+
+inline bool dimension_expr_equal(ASR::expr_t* dim_a, ASR::expr_t* dim_b) {
+    if( !(dim_a && dim_b) ) {
+        return true;
+    }
+    ASR::expr_t* dim_a_fallback = nullptr;
+    ASR::expr_t* dim_b_fallback = nullptr;
+    if( ASR::is_a<ASR::Var_t>(*dim_a) &&
+        ASR::is_a<ASR::Variable_t>(
+            *ASR::down_cast<ASR::Var_t>(dim_a)->m_v) ) {
+        dim_a_fallback = ASRUtils::EXPR2VAR(dim_a)->m_symbolic_value;
+    }
+    if( ASR::is_a<ASR::Var_t>(*dim_b) &&
+        ASR::is_a<ASR::Variable_t>(
+            *ASR::down_cast<ASR::Var_t>(dim_b)->m_v) ) {
+        dim_b_fallback = ASRUtils::EXPR2VAR(dim_b)->m_symbolic_value;
+    }
+    if( !ASRUtils::expr_equal(dim_a, dim_b) &&
+        !(dim_a_fallback && ASRUtils::expr_equal(dim_a_fallback, dim_b)) &&
+        !(dim_b_fallback && ASRUtils::expr_equal(dim_a, dim_b_fallback)) ) {
+        return false;
+    }
+    return true;
+}
+
+inline bool dimensions_equal(ASR::dimension_t* dims_a, size_t n_dims_a,
+    ASR::dimension_t* dims_b, size_t n_dims_b) {
+    if( n_dims_a != n_dims_b ) {
+        return false;
+    }
+
+    for( size_t i = 0; i < n_dims_a; i++ ) {
+        ASR::dimension_t dim_a = dims_a[i];
+        ASR::dimension_t dim_b = dims_b[i];
+        if( !dimension_expr_equal(dim_a.m_length, dim_b.m_length) ||
+            !dimension_expr_equal(dim_a.m_start, dim_b.m_start) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
+    bool check_for_dimensions=false) {
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
     // directly. From stdlib_string len(pattern) error
@@ -1991,7 +2085,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b) {
                 ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(a);
                 ASR::Integer_t *b2 = ASR::down_cast<ASR::Integer_t>(b);
                 if (a2->m_kind == b2->m_kind) {
-                    return true;
+                    if( check_for_dimensions ) {
+                        return ASRUtils::dimensions_equal(
+                                a2->m_dims, a2->n_dims,
+                                b2->m_dims, b2->n_dims);
+                    } else {
+                        return true;
+                    }
                 } else {
                     return false;
                 }
@@ -2004,7 +2104,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b) {
                 ASR::Real_t *a2 = ASR::down_cast<ASR::Real_t>(a);
                 ASR::Real_t *b2 = ASR::down_cast<ASR::Real_t>(b);
                 if (a2->m_kind == b2->m_kind) {
-                    return true;
+                    if( check_for_dimensions ) {
+                        return ASRUtils::dimensions_equal(
+                                a2->m_dims, a2->n_dims,
+                                b2->m_dims, b2->n_dims);
+                    } else {
+                        return true;
+                    }
                 } else {
                     return false;
                 }
@@ -2014,7 +2120,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b) {
                 ASR::Complex_t *a2 = ASR::down_cast<ASR::Complex_t>(a);
                 ASR::Complex_t *b2 = ASR::down_cast<ASR::Complex_t>(b);
                 if (a2->m_kind == b2->m_kind) {
-                    return true;
+                    if( check_for_dimensions ) {
+                        return ASRUtils::dimensions_equal(
+                                a2->m_dims, a2->n_dims,
+                                b2->m_dims, b2->n_dims);
+                    } else {
+                        return true;
+                    }
                 } else {
                     return false;
                 }
@@ -2024,7 +2136,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b) {
                 ASR::Logical_t *a2 = ASR::down_cast<ASR::Logical_t>(a);
                 ASR::Logical_t *b2 = ASR::down_cast<ASR::Logical_t>(b);
                 if (a2->m_kind == b2->m_kind) {
-                    return true;
+                    if( check_for_dimensions ) {
+                        return ASRUtils::dimensions_equal(
+                                a2->m_dims, a2->n_dims,
+                                b2->m_dims, b2->n_dims);
+                    } else {
+                        return true;
+                    }
                 } else {
                     return false;
                 }
@@ -2034,7 +2152,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b) {
                 ASR::Character_t *a2 = ASR::down_cast<ASR::Character_t>(a);
                 ASR::Character_t *b2 = ASR::down_cast<ASR::Character_t>(b);
                 if (a2->m_kind == b2->m_kind) {
-                    return true;
+                    if( check_for_dimensions ) {
+                        return ASRUtils::dimensions_equal(
+                                a2->m_dims, a2->n_dims,
+                                b2->m_dims, b2->n_dims);
+                    } else {
+                        return true;
+                    }
                 } else {
                     return false;
                 }
@@ -2227,7 +2351,7 @@ static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
 }
 
 static inline void insert_module_dependency(ASR::symbol_t* a,
-    Allocator& al, Vec<char*>& module_dependencies) {
+    Allocator& al, SetChar& module_dependencies) {
     if( ASR::is_a<ASR::ExternalSymbol_t>(*a) ) {
         ASR::ExternalSymbol_t* a_ext = ASR::down_cast<ASR::ExternalSymbol_t>(a);
         ASR::symbol_t* a_sym_module = ASRUtils::get_asr_owner(a_ext->m_external);
@@ -2235,8 +2359,7 @@ static inline void insert_module_dependency(ASR::symbol_t* a,
             while( a_sym_module && !ASR::is_a<ASR::Module_t>(*a_sym_module) ) {
                 a_sym_module = ASRUtils::get_asr_owner(a_sym_module);
             }
-            if( a_sym_module && !LCompilers::present(module_dependencies,
-                ASRUtils::symbol_name(a_sym_module)) ) {
+            if( a_sym_module ) {
                 module_dependencies.push_back(al, ASRUtils::symbol_name(a_sym_module));
             }
         }
@@ -2370,13 +2493,13 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
     Vec<ASR::call_arg_t>& orig_args;
 
-    std::set<std::string>& current_function_dependencies;
+    SetChar& current_function_dependencies;
 
     public:
 
     ReplaceArgVisitor(Allocator& al_, SymbolTable* current_scope_,
                       ASR::Function_t* orig_func_, Vec<ASR::call_arg_t>& orig_args_,
-                      std::set<std::string>& current_function_dependencies_) :
+                      SetChar& current_function_dependencies_) :
         al(al_), current_scope(current_scope_), orig_func(orig_func_),
         orig_args(orig_args_), current_function_dependencies(current_function_dependencies_)
     {}
@@ -2448,7 +2571,7 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             default:
                 break;
         }
-        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(new_es)));
+        current_function_dependencies.push_back(al, ASRUtils::symbol_name(new_es));
         x->m_name = new_es;
     }
 
@@ -2478,11 +2601,273 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
 };
 
+inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
+    SymbolTable* m_symtab, char* m_name, char** m_dependencies, size_t n_dependencies,
+    ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
+    ASR::expr_t* m_return_var, ASR::abiType m_abi, ASR::accessType m_access,
+    ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
+    bool m_module, bool m_inline, bool m_static, ASR::ttype_t** m_type_params,
+    size_t n_type_params, ASR::symbol_t** m_restrictions, size_t n_restrictions,
+    bool m_is_restriction, bool m_deterministic, bool m_side_effect_free) {
+    Vec<ASR::ttype_t*> arg_types;
+    arg_types.reserve(al, n_args);
+    for( size_t i = 0; i < n_args; i++ ) {
+        arg_types.push_back(al, ASRUtils::expr_type(a_args[i]));
+    }
+    ASR::ttype_t* return_var_type = nullptr;
+    if( m_return_var ) {
+        return_var_type = ASRUtils::expr_type(m_return_var);
+    }
+    ASR::ttype_t* func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
+        al, loc, arg_types.p, arg_types.size(), return_var_type, m_abi,
+        m_deftype, m_bindc_name, m_elemental, m_pure, m_module, m_inline,
+        m_static, m_type_params, n_type_params, m_restrictions, n_restrictions,
+        m_is_restriction));
+    return ASR::make_Function_t(
+        al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
+        a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
+        m_side_effect_free);
+}
+
 class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 {
     public:
 
     ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
+
+};
+
+class SymbolDuplicator {
+
+    private:
+
+    Allocator& al;
+
+    public:
+
+    SymbolDuplicator(Allocator& al_):
+    al(al_) {
+
+    }
+
+    void duplicate_SymbolTable(SymbolTable* symbol_table,
+        SymbolTable* destination_symtab) {
+        for( auto& item: symbol_table->get_scope() ) {
+            duplicate_symbol(item.second, destination_symtab);
+        }
+    }
+
+    void duplicate_symbol(ASR::symbol_t* symbol,
+        SymbolTable* destination_symtab) {
+        ASR::symbol_t* new_symbol = nullptr;
+        std::string new_symbol_name = "";
+        switch( symbol->type ) {
+            case ASR::symbolType::Variable: {
+                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                new_symbol = duplicate_Variable(variable, destination_symtab);
+                new_symbol_name = variable->m_name;
+                break;
+            }
+            case ASR::symbolType::ExternalSymbol: {
+                ASR::ExternalSymbol_t* external_symbol = ASR::down_cast<ASR::ExternalSymbol_t>(symbol);
+                new_symbol = duplicate_ExternalSymbol(external_symbol, destination_symtab);
+                new_symbol_name = external_symbol->m_name;
+                break;
+            }
+            case ASR::symbolType::AssociateBlock: {
+                ASR::AssociateBlock_t* associate_block = ASR::down_cast<ASR::AssociateBlock_t>(symbol);
+                new_symbol = duplicate_AssociateBlock(associate_block, destination_symtab);
+                new_symbol_name = associate_block->m_name;
+                break;
+            }
+            case ASR::symbolType::Function: {
+                ASR::Function_t* function = ASR::down_cast<ASR::Function_t>(symbol);
+                new_symbol = duplicate_Function(function, destination_symtab);
+                new_symbol_name = function->m_name;
+                break;
+            }
+            case ASR::symbolType::Block: {
+                ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(symbol);
+                new_symbol = duplicate_Block(block, destination_symtab);
+                new_symbol_name = block->m_name;
+                break;
+            }
+            default: {
+                throw LCompilersException("Duplicating ASR::symbolType::" +
+                        std::to_string(symbol->type) + " is not supported yet.");
+            }
+        }
+        if( new_symbol ) {
+            destination_symtab->add_symbol(new_symbol_name, new_symbol);
+        }
+    }
+
+    ASR::symbol_t* duplicate_Variable(ASR::Variable_t* variable,
+        SymbolTable* destination_symtab) {
+        ExprStmtDuplicator node_duplicator(al);
+        node_duplicator.success = true;
+        ASR::expr_t* m_symbolic_value = node_duplicator.duplicate_expr(variable->m_symbolic_value);
+        if( !node_duplicator.success ) {
+            return nullptr;
+        }
+        node_duplicator.success = true;
+        ASR::expr_t* m_value = node_duplicator.duplicate_expr(variable->m_value);
+        if( !node_duplicator.success ) {
+            return nullptr;
+        }
+        node_duplicator.success = true;
+        ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(variable->m_type);
+        if( !node_duplicator.success ) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Variable_t(al, variable->base.base.loc, destination_symtab,
+                variable->m_name, variable->m_dependencies, variable->n_dependencies,
+                variable->m_intent, m_symbolic_value, m_value, variable->m_storage,
+                m_type, variable->m_abi, variable->m_access, variable->m_presence,
+                variable->m_value_attr));
+    }
+
+    ASR::symbol_t* duplicate_ExternalSymbol(ASR::ExternalSymbol_t* external_symbol,
+        SymbolTable* destination_symtab) {
+            return ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, external_symbol->base.base.loc, destination_symtab,
+                external_symbol->m_name, external_symbol->m_external,
+                external_symbol->m_module_name, external_symbol->m_scope_names,
+                external_symbol->n_scope_names, external_symbol->m_original_name,
+                external_symbol->m_access));
+    }
+
+    ASR::symbol_t* duplicate_AssociateBlock(ASR::AssociateBlock_t* associate_block,
+        SymbolTable* destination_symtab) {
+        SymbolTable* associate_block_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(associate_block->m_symtab, associate_block_symtab);
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, associate_block->n_body);
+        ASRUtils::ExprStmtDuplicator node_duplicator(al);
+        node_duplicator.allow_procedure_calls = true;
+        node_duplicator.allow_reshape = false;
+        for( size_t i = 0; i < associate_block->n_body; i++ ) {
+            node_duplicator.success = true;
+            ASR::stmt_t* new_stmt = node_duplicator.duplicate_stmt(associate_block->m_body[i]);
+            if( !node_duplicator.success ) {
+                return nullptr;
+            }
+            new_body.push_back(al, new_stmt);
+        }
+
+        // node_duplicator_.allow_procedure_calls = true;
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_AssociateBlock_t(al,
+                        associate_block->base.base.loc, associate_block_symtab,
+                        associate_block->m_name, new_body.p, new_body.size()));
+    }
+
+    ASR::symbol_t* duplicate_Function(ASR::Function_t* function,
+        SymbolTable* destination_symtab) {
+        SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(function->m_symtab, function_symtab);
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, function->n_body);
+        ASRUtils::ExprStmtDuplicator node_duplicator(al);
+        node_duplicator.allow_procedure_calls = true;
+        node_duplicator.allow_reshape = false;
+        for( size_t i = 0; i < function->n_body; i++ ) {
+            node_duplicator.success = true;
+            ASR::stmt_t* new_stmt = node_duplicator.duplicate_stmt(function->m_body[i]);
+            if( !node_duplicator.success ) {
+                return nullptr;
+            }
+            new_body.push_back(al, new_stmt);
+        }
+
+        Vec<ASR::expr_t*> new_args;
+        new_args.reserve(al, function->n_args);
+        for( size_t i = 0; i < function->n_args; i++ ) {
+            node_duplicator.success = true;
+            ASR::expr_t* new_arg = node_duplicator.duplicate_expr(function->m_args[i]);
+            if (ASR::is_a<ASR::Var_t>(*new_arg)) {
+                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(new_arg);
+                if (ASR::is_a<ASR::Variable_t>(*(var->m_v))) {
+                    ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                    ASR::symbol_t* arg_symbol = function_symtab->get_symbol(variable->m_name);
+                    new_arg = ASRUtils::EXPR(make_Var_t(al, var->base.base.loc, arg_symbol));
+                }
+            }
+            if( !node_duplicator.success ) {
+                return nullptr;
+            }
+            new_args.push_back(al, new_arg);
+        }
+
+        ASR::expr_t* new_return_var = function->m_return_var;
+        if( new_return_var ) {
+            node_duplicator.success = true;
+            new_return_var = node_duplicator.duplicate_expr(function->m_return_var);
+            if( !node_duplicator.success ) {
+                return nullptr;
+            }
+        }
+
+        ASR::FunctionType_t* function_type = ASRUtils::get_FunctionType(function);
+
+        Vec<ASR::ttype_t*> new_ttypes;
+        new_ttypes.reserve(al, function_type->n_type_params);
+        for( size_t i = 0; i < function_type->n_type_params; i++ ) {
+            node_duplicator.success = true;
+            ASR::ttype_t* new_ttype = node_duplicator.duplicate_ttype(function_type->m_type_params[i]);
+            if( !node_duplicator.success ) {
+                return nullptr;
+            }
+            new_ttypes.push_back(al, new_ttype);
+        }
+
+        Vec<ASR::symbol_t*> new_restrictions;
+        new_restrictions.reserve(al, function_type->n_restrictions);
+        for( size_t i = 0; i < function_type->n_restrictions; i++ ) {
+            std::string restriction_name = ASRUtils::symbol_name(function_type->m_restrictions[i]);
+            ASR::symbol_t* new_restriction = function_symtab->resolve_symbol(restriction_name);
+            if( !new_restriction ) {
+                throw LCompilersException("Symbol " + restriction_name + " not found.");
+            }
+            new_restrictions.push_back(al, new_restriction);
+        }
+
+        return ASR::down_cast<ASR::symbol_t>(make_Function_t_util(al,
+            function->base.base.loc, function_symtab, function->m_name,
+            function->m_dependencies, function->n_dependencies, new_args.p,
+            new_args.size(), new_body.p, new_body.size(), new_return_var,
+            function_type->m_abi, function->m_access, function_type->m_deftype,
+            function_type->m_bindc_name, function_type->m_elemental, function_type->m_pure,
+            function_type->m_module, function_type->m_inline, function_type->m_static,
+            new_ttypes.p, new_ttypes.size(), new_restrictions.p, new_restrictions.size(),
+            function_type->m_is_restriction, function->m_deterministic,
+            function->m_side_effect_free));
+    }
+
+    ASR::symbol_t* duplicate_Block(ASR::Block_t* block_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* block_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(block_t->m_symtab, block_symtab);
+
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, block_t->n_body);
+        ASRUtils::ExprStmtDuplicator node_duplicator(al);
+        node_duplicator.allow_procedure_calls = true;
+        node_duplicator.allow_reshape = false;
+        for( size_t i = 0; i < block_t->n_body; i++ ) {
+            node_duplicator.success = true;
+            ASR::stmt_t* new_stmt = node_duplicator.duplicate_stmt(block_t->m_body[i]);
+            if( !node_duplicator.success ) {
+                return nullptr;
+            }
+            new_body.push_back(al, new_stmt);
+        }
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al,
+                block_t->base.base.loc, block_symtab, block_t->m_name,
+                new_body.p, new_body.size()));
+    }
 
 };
 
@@ -2693,6 +3078,9 @@ static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::exp
 }
 
 static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vector<size_t>& v) {
+    // BindC interfaces already pass array by data pointer so we don't need to track
+    // them and use extra variables for their dimensional information. Only those functions
+    // need to be tracked which by default pass arrays by using descriptors.
     if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
         ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
         return false;
@@ -2709,48 +3097,29 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
             continue;
         }
         typei = ASRUtils::expr_type(x->m_args[i]);
-        if( ASR::is_a<ASR::Class_t>(*typei) ) {
+        if( ASR::is_a<ASR::Class_t>(*typei) ||
+            ASR::is_a<ASR::FunctionType_t>(*typei) ) {
             continue ;
         }
         int n_dims = ASRUtils::extract_dimensions_from_ttype(typei, dims);
         ASR::Variable_t* argi = ASRUtils::EXPR2VAR(x->m_args[i]);
+        if( ASR::is_a<ASR::Pointer_t>(*argi->m_type) ) {
+            return false;
+        }
+
+        // The following if check determines whether the i-th argument
+        // can be called by just passing the data pointer and
+        // dimensional information spearately via extra arguments.
         if( ASRUtils::is_dimension_empty(dims, n_dims) &&
             (argi->m_intent == ASRUtils::intent_in ||
              argi->m_intent == ASRUtils::intent_out ||
              argi->m_intent == ASRUtils::intent_inout) &&
-            argi->m_storage != ASR::storage_typeType::Allocatable) {
+            argi->m_storage != ASR::storage_typeType::Allocatable &&
+            !ASR::is_a<ASR::Struct_t>(*argi->m_type)) {
             v.push_back(i);
         }
     }
     return v.size() > 0;
-}
-
-inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
-    SymbolTable* m_symtab, char* m_name, char** m_dependencies, size_t n_dependencies,
-    ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
-    ASR::expr_t* m_return_var, ASR::abiType m_abi, ASR::accessType m_access,
-    ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
-    bool m_module, bool m_inline, bool m_static, ASR::ttype_t** m_type_params,
-    size_t n_type_params, ASR::symbol_t** m_restrictions, size_t n_restrictions,
-    bool m_is_restriction, bool m_deterministic, bool m_side_effect_free) {
-    Vec<ASR::ttype_t*> arg_types;
-    arg_types.reserve(al, n_args);
-    for( size_t i = 0; i < n_args; i++ ) {
-        arg_types.push_back(al, ASRUtils::expr_type(a_args[i]));
-    }
-    ASR::ttype_t* return_var_type = nullptr;
-    if( m_return_var ) {
-        return_var_type = ASRUtils::expr_type(m_return_var);
-    }
-    ASR::ttype_t* func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-        al, loc, arg_types.p, arg_types.size(), return_var_type, m_abi,
-        m_deftype, m_bindc_name, m_elemental, m_pure, m_module, m_inline,
-        m_static, m_type_params, n_type_params, m_restrictions, n_restrictions,
-        m_is_restriction));
-    return ASR::make_Function_t(
-        al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
-        a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
-         m_side_effect_free);
 }
 
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
@@ -2866,11 +3235,11 @@ class CollectIdentifiersFromASRExpression: public ASR::BaseWalkVisitor<CollectId
     private:
 
         Allocator& al;
-        Vec<char*>& identifiers;
+        SetChar& identifiers;
 
     public:
 
-        CollectIdentifiersFromASRExpression(Allocator& al_, Vec<char*>& identifiers_) :
+        CollectIdentifiersFromASRExpression(Allocator& al_, SetChar& identifiers_) :
         al(al_), identifiers(identifiers_)
         {}
 
@@ -2879,7 +3248,7 @@ class CollectIdentifiersFromASRExpression: public ASR::BaseWalkVisitor<CollectId
         }
 };
 
-static inline void collect_variable_dependencies(Allocator& al, Vec<char*>& deps_vec,
+static inline void collect_variable_dependencies(Allocator& al, SetChar& deps_vec,
     ASR::ttype_t* type=nullptr, ASR::expr_t* init_expr=nullptr,
     ASR::expr_t* value=nullptr) {
     ASRUtils::CollectIdentifiersFromASRExpression collector(al, deps_vec);

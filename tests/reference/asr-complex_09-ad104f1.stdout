@@ -79,7 +79,12 @@
                     [(=
                         (Var 2 z1)
                         (ComplexConstructor
-                            (Var 2 i)
+                            (Cast
+                                (Var 2 i)
+                                IntegerToReal
+                                (Real 4 [])
+                                ()
+                            )
                             (Var 2 x)
                             (Complex 4 [])
                             ()
@@ -90,7 +95,12 @@
                         ()
                         [(Var 2 z1)
                         (ComplexConstructor
-                            (Var 2 x)
+                            (Cast
+                                (Var 2 x)
+                                RealToReal
+                                (Real 8 [])
+                                ()
+                            )
                             (RealConstant
                                 0.000000
                                 (Real 8 [])

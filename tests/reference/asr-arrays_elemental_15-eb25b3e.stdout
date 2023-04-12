@@ -98,11 +98,13 @@
                                     [verify2d]
                                     []
                                     [(DoLoop
+                                        ()
                                         ((Var 7 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 256 (Integer 4 []))
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 7 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 64 (Integer 4 []))
@@ -330,6 +332,7 @@
                                     verifynd]
                                     []
                                     [(DoLoop
+                                        ()
                                         ((Var 6 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 256 (Integer 4 []))
@@ -381,16 +384,19 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 6 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 256 (Integer 4 []))
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 6 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 64 (Integer 4 []))
                                             ())
                                             [(DoLoop
+                                                ()
                                                 ((Var 6 k)
                                                 (IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 16 (Integer 4 []))
@@ -499,26 +505,6 @@
                                     (SymbolTable
                                         8
                                         {
-                                            abs:
-                                                (ExternalSymbol
-                                                    8
-                                                    abs
-                                                    10 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@dabs:
-                                                (ExternalSymbol
-                                                    8
-                                                    abs@dabs
-                                                    10 dabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dabs
-                                                    Private
-                                                ),
                                             arraynd:
                                                 (Variable
                                                     8
@@ -687,7 +673,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs]
+                                    []
                                     []
                                     [(=
                                         (Var 8 eps)
@@ -706,21 +692,25 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 8 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 64 (Integer 4 []))
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 8 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 32 (Integer 4 []))
                                             ())
                                             [(DoLoop
+                                                ()
                                                 ((Var 8 k)
                                                 (IntegerConstant 1 (Integer 4 []))
                                                 (IntegerConstant 8 (Integer 4 []))
                                                 ())
                                                 [(DoLoop
+                                                    ()
                                                     ((Var 8 l)
                                                     (IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 4 (Integer 4 []))
@@ -913,16 +903,16 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 8 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (IntegerConstant 65536 (Integer 4 []))
                                         ())
                                         [(If
                                             (RealCompare
-                                                (FunctionCall
-                                                    8 abs@dabs
-                                                    8 abs
-                                                    [((RealBinOp
+                                                (IntrinsicFunction
+                                                    Abs
+                                                    [(RealBinOp
                                                         (ArrayItem
                                                             (Var 8 observed1d)
                                                             [(()
@@ -947,9 +937,9 @@
                                                         )
                                                         (Real 8 [])
                                                         ()
-                                                    ))]
+                                                    )]
+                                                    0
                                                     (Real 8 [])
-                                                    ()
                                                     ()
                                                 )
                                                 Gt
@@ -973,26 +963,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            abs:
-                                                (ExternalSymbol
-                                                    3
-                                                    abs
-                                                    10 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@dabs:
-                                                (ExternalSymbol
-                                                    3
-                                                    abs@dabs
-                                                    10 dabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dabs
-                                                    Private
-                                                ),
                                             array:
                                                 (Variable
                                                     3
@@ -1091,7 +1061,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs]
+                                    []
                                     [(Var 3 array)
                                     (Var 3 result)
                                     (Var 3 size)]
@@ -1112,16 +1082,16 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 3 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (Var 3 size)
                                         ())
                                         [(If
                                             (RealCompare
-                                                (FunctionCall
-                                                    3 abs@dabs
-                                                    3 abs
-                                                    [((RealBinOp
+                                                (IntrinsicFunction
+                                                    Abs
+                                                    [(RealBinOp
                                                         (IntrinsicFunction
                                                             Sin
                                                             [(IntrinsicFunction
@@ -1155,9 +1125,9 @@
                                                         )
                                                         (Real 8 [])
                                                         ()
-                                                    ))]
+                                                    )]
+                                                    0
                                                     (Real 8 [])
-                                                    ()
                                                     ()
                                                 )
                                                 Gt
@@ -1181,26 +1151,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            abs:
-                                                (ExternalSymbol
-                                                    5
-                                                    abs
-                                                    10 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@dabs:
-                                                (ExternalSymbol
-                                                    5
-                                                    abs@dabs
-                                                    10 dabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dabs
-                                                    Private
-                                                ),
                                             array:
                                                 (Variable
                                                     5
@@ -1338,7 +1288,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs]
+                                    []
                                     [(Var 5 array)
                                     (Var 5 result)
                                     (Var 5 size1)
@@ -1360,21 +1310,22 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 5 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (Var 5 size1)
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 5 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (Var 5 size2)
                                             ())
                                             [(If
                                                 (RealCompare
-                                                    (FunctionCall
-                                                        5 abs@dabs
-                                                        5 abs
-                                                        [((RealBinOp
+                                                    (IntrinsicFunction
+                                                        Abs
+                                                        [(RealBinOp
                                                             (RealBinOp
                                                                 (IntrinsicFunction
                                                                     Cos
@@ -1422,9 +1373,9 @@
                                                             )
                                                             (Real 8 [])
                                                             ()
-                                                        ))]
+                                                        )]
+                                                        0
                                                         (Real 8 [])
-                                                        ()
                                                         ()
                                                     )
                                                     Gt
@@ -1449,26 +1400,6 @@
                                     (SymbolTable
                                         4
                                         {
-                                            abs:
-                                                (ExternalSymbol
-                                                    4
-                                                    abs
-                                                    10 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@dabs:
-                                                (ExternalSymbol
-                                                    4
-                                                    abs@dabs
-                                                    10 dabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    dabs
-                                                    Private
-                                                ),
                                             array:
                                                 (Variable
                                                     4
@@ -1645,7 +1576,7 @@
                                         []
                                         .false.
                                     )
-                                    [abs@dabs]
+                                    []
                                     [(Var 4 array)
                                     (Var 4 result)
                                     (Var 4 size1)
@@ -1668,26 +1599,28 @@
                                         ()
                                     )
                                     (DoLoop
+                                        ()
                                         ((Var 4 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (Var 4 size1)
                                         ())
                                         [(DoLoop
+                                            ()
                                             ((Var 4 j)
                                             (IntegerConstant 1 (Integer 4 []))
                                             (Var 4 size2)
                                             ())
                                             [(DoLoop
+                                                ()
                                                 ((Var 4 k)
                                                 (IntegerConstant 1 (Integer 4 []))
                                                 (Var 4 size3)
                                                 ())
                                                 [(If
                                                     (RealCompare
-                                                        (FunctionCall
-                                                            4 abs@dabs
-                                                            4 abs
-                                                            [((RealBinOp
+                                                        (IntrinsicFunction
+                                                            Abs
+                                                            [(RealBinOp
                                                                 (RealBinOp
                                                                     (IntrinsicFunction
                                                                         Sin
@@ -1741,9 +1674,9 @@
                                                                 )
                                                                 (Real 8 [])
                                                                 ()
-                                                            ))]
+                                                            )]
+                                                            0
                                                             (Real 8 [])
-                                                            ()
                                                             ()
                                                         )
                                                         Gt
@@ -1785,15 +1718,7 @@
                         []
                         ()
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

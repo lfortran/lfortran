@@ -57,6 +57,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -133,6 +134,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -213,6 +215,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -289,6 +292,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -369,6 +373,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -441,6 +446,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -517,6 +523,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -597,6 +604,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -673,6 +681,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -753,6 +762,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -829,6 +839,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)

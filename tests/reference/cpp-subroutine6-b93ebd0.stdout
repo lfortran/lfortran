@@ -24,4 +24,25 @@ struct dimension_descriptor
 };
 // Forward declarations
 
+template <typename T0, typename T1, typename T2>
+void triad(T0* a, T1* b, float scalar, T2* c);
+
 // Implementations
+
+template <typename T0, typename T1, typename T2>
+void triad(T0* a, T1* b, float scalar, T2* c)
+{
+    int32_t i;
+    int32_t j;
+    int32_t n;
+    int32_t n2;
+    n = a->data->extent(0);
+    n2 = b->data->extent(0);
+    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i) {
+        c->data->operator[](i - c->dims[0].lower_bound) = a->data->operator[](i - a->dims[0].lower_bound) + scalar*b->data->operator[](i - b->dims[0].lower_bound);
+    });
+    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n2+1), KOKKOS_LAMBDA(const long j) {
+        c->data->operator[](j - c->dims[0].lower_bound) = b->data->operator[](j - b->dims[0].lower_bound) + scalar;
+    });
+}
+

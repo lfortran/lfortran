@@ -98,7 +98,7 @@ class ReplaceArraySection: public ASR::BaseExprReplacer<ReplaceArraySection> {
     void replace_ArraySection(ASR::ArraySection_t* x) {
         LCOMPILERS_ASSERT(current_scope != nullptr);
         ASR::expr_t* x_arr_var = x->m_v;
-        std::string new_name = "~" + std::to_string(slice_counter) + "_slice";
+        std::string new_name = "__libasr__created__section__" + std::to_string(slice_counter) + "_slice";
         slice_counter += 1;
         char* new_var_name = s2c(al, new_name);
         ASR::ttype_t* slice_asr_type = get_array_from_slice(x, x_arr_var);
@@ -154,7 +154,7 @@ class ReplaceArraySection: public ASR::BaseExprReplacer<ReplaceArraySection> {
                                         const_1, int_type, nullptr));
             ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x->base.base.loc, idx_vars_target[i], inc_expr, nullptr));
             doloop_body.push_back(al, assign_stmt);
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, head, doloop_body.p, doloop_body.size()));
+            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr, head, doloop_body.p, doloop_body.size()));
         }
         int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(idx_vars_target[0]));
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, a_kind, nullptr, 0));

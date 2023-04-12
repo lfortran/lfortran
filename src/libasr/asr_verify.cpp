@@ -60,6 +60,7 @@ public:
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
 #define require(cond, error_msg) require_impl((cond), (error_msg), x.base.base.loc)
+#define require_with_loc(cond, error_msg, loc) require_impl((cond), (error_msg), loc)
     void require_impl(bool cond, const std::string &error_msg, const Location &loc) {
         if (!cond) {
             diagnostics.message_label("ASR verify: " + error_msg,
@@ -221,6 +222,20 @@ public:
         current_symtab = parent_symtab;
     }
 
+    void verify_unique_dependencies(char** m_dependencies,
+        size_t n_dependencies, std::string m_name, const Location& loc) {
+        // Check if any dependency is duplicated
+        // in the dependency list of the function
+        std::set<std::string> dependencies_set;
+        for( size_t i = 0; i < n_dependencies; i++ ) {
+            std::string found_dep = m_dependencies[i];
+            require_with_loc(dependencies_set.find(found_dep) == dependencies_set.end(),
+                    "Symbol " + found_dep + " is duplicated in the dependency "
+                    "list of " + m_name, loc);
+            dependencies_set.insert(found_dep);
+        }
+    }
+
     void visit_Module(const Module_t &x) {
         module_dependencies.clear();
         module_dependencies.reserve(x.n_dependencies);
@@ -242,6 +257,10 @@ public:
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+
+        verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
+                                   x.m_name, x.base.base.loc);
+
         for (size_t i=0; i < x.n_dependencies; i++) {
             require(x.m_dependencies[i] != nullptr,
                 "A module dependency must not be a nullptr");
@@ -351,6 +370,10 @@ public:
         if (x.m_return_var) {
             visit_expr(*x.m_return_var);
         }
+
+        verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
+                                   x.m_name, x.base.base.loc);
+
         // Check if there are unnecessary dependencies
         // present in the dependency list of the function
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
@@ -426,6 +449,9 @@ public:
                 std::string(x.m_dependencies[i]) + " is not a dependency of " + std::string(x.m_name)
                 + " but it is present in its dependency list.");
         }
+
+        verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
+                                   x.m_name, x.base.base.loc);
         current_symtab = parent_symtab;
     }
 
@@ -538,6 +564,9 @@ public:
             visit_expr(*x.m_symbolic_value);
         visit_ttype(*x.m_type);
 
+        verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
+                                   x.m_name, x.base.base.loc);
+
         // Verify dependencies
         for( size_t i = 0; i < x.n_dependencies; i++ ) {
             require(std::find(
@@ -610,7 +639,8 @@ public:
                 + "') + scope_names not found in a module '"
                 + asr_owner_name + "'");
             require(s == x.m_external,
-                "ExternalSymbol::m_name + scope_names found but not equal to m_external");
+                std::string("ExternalSymbol::m_name + scope_names found but not equal to m_external, ") +
+                "original_name " + std::string(x.m_original_name) + ".");
         }
     }
 
@@ -625,20 +655,8 @@ public:
                 || is_a<Function_t>(*x.m_v) || is_a<ASR::EnumType_t>(*x.m_v),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, ExternalSymbol_t, " \
             "Function_t, Subroutine_t or EnumType_t");
-        bool var_present_in_enum = false;
-        {
-            int i = 1;
-            std::string enum_name = "_nameless_enum";
-            while (!var_present_in_enum && current_symtab->resolve_symbol(
-                    std::to_string(i) + enum_name) != nullptr) {
-                ASR::symbol_t *enum_s = current_symtab->resolve_symbol(
-                    std::to_string(i) + enum_name);
-                var_present_in_enum = symtab_in_scope(ASR::down_cast<
-                    ASR::EnumType_t>(enum_s)->m_symtab, x.m_v);
-                i ++;
-            }
-        }
-        require(symtab_in_scope(current_symtab, x.m_v) || var_present_in_enum,
+
+        require(symtab_in_scope(current_symtab, x.m_v),
             "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
         variable_dependencies.push_back(x_mv_name);
     }

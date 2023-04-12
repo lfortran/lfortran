@@ -203,15 +203,15 @@ ifcont24:                                         ; preds = %else23, %then22
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i32 %65, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
   store i32 0, i32* %j, align 4
   store i32 0, i32* %i, align 4
-  br label %loop.head25
+  br label %a.head
 
-loop.head25:                                      ; preds = %ifcont29, %ifcont24
+a.head:                                           ; preds = %ifcont27, %ifcont24
   %66 = load i32, i32* %i, align 4
   %67 = add i32 %66, 1
   %68 = icmp sle i32 %67, 10
-  br i1 %68, label %loop.body26, label %loop.end30
+  br i1 %68, label %a.body, label %a.end
 
-loop.body26:                                      ; preds = %loop.head25
+a.body:                                           ; preds = %a.head
   %69 = load i32, i32* %i, align 4
   %70 = add i32 %69, 1
   store i32 %70, i32* %i, align 4
@@ -221,45 +221,45 @@ loop.body26:                                      ; preds = %loop.head25
   store i32 %73, i32* %j, align 4
   %74 = load i32, i32* %i, align 4
   %75 = icmp eq i32 %74, 2
-  br i1 %75, label %then27, label %else28
+  br i1 %75, label %then25, label %else26
 
-then27:                                           ; preds = %loop.body26
-  br label %loop.end30
+then25:                                           ; preds = %a.body
+  br label %a.end
 
 unreachable_after_exit:                           ; No predecessors!
-  br label %ifcont29
+  br label %ifcont27
 
-else28:                                           ; preds = %loop.body26
-  br label %ifcont29
+else26:                                           ; preds = %a.body
+  br label %ifcont27
 
-ifcont29:                                         ; preds = %else28, %unreachable_after_exit
-  br label %loop.head25
+ifcont27:                                         ; preds = %else26, %unreachable_after_exit
+  br label %a.head
 
-loop.end30:                                       ; preds = %then27, %loop.head25
+a.end:                                            ; preds = %then25, %a.head
   %76 = load i32, i32* %j, align 4
   %77 = icmp ne i32 %76, 3
-  br i1 %77, label %then31, label %else32
+  br i1 %77, label %then28, label %else29
 
-then31:                                           ; preds = %loop.end30
+then28:                                           ; preds = %a.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @8, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont33
+  br label %ifcont30
 
-else32:                                           ; preds = %loop.end30
-  br label %ifcont33
+else29:                                           ; preds = %a.end
+  br label %ifcont30
 
-ifcont33:                                         ; preds = %else32, %then31
+ifcont30:                                         ; preds = %else29, %then28
   store i32 0, i32* %j, align 4
   store i32 -1, i32* %i, align 4
-  br label %loop.head34
+  br label %b.head
 
-loop.head34:                                      ; preds = %ifcont39, %ifcont33
+b.head:                                           ; preds = %ifcont34, %ifcont30
   %78 = load i32, i32* %i, align 4
   %79 = add i32 %78, 2
   %80 = icmp sle i32 %79, 10
-  br i1 %80, label %loop.body35, label %loop.end40
+  br i1 %80, label %b.body, label %b.end
 
-loop.body35:                                      ; preds = %loop.head34
+b.body:                                           ; preds = %b.head
   %81 = load i32, i32* %i, align 4
   %82 = add i32 %81, 2
   store i32 %82, i32* %i, align 4
@@ -269,86 +269,86 @@ loop.body35:                                      ; preds = %loop.head34
   store i32 %85, i32* %j, align 4
   %86 = load i32, i32* %i, align 4
   %87 = icmp eq i32 %86, 3
-  br i1 %87, label %then36, label %else38
+  br i1 %87, label %then31, label %else33
 
-then36:                                           ; preds = %loop.body35
-  br label %loop.end40
+then31:                                           ; preds = %b.body
+  br label %b.end
 
-unreachable_after_exit37:                         ; No predecessors!
-  br label %ifcont39
+unreachable_after_exit32:                         ; No predecessors!
+  br label %ifcont34
 
-else38:                                           ; preds = %loop.body35
-  br label %ifcont39
+else33:                                           ; preds = %b.body
+  br label %ifcont34
 
-ifcont39:                                         ; preds = %else38, %unreachable_after_exit37
-  br label %loop.head34
+ifcont34:                                         ; preds = %else33, %unreachable_after_exit32
+  br label %b.head
 
-loop.end40:                                       ; preds = %then36, %loop.head34
+b.end:                                            ; preds = %then31, %b.head
   %88 = load i32, i32* %j, align 4
   %89 = icmp ne i32 %88, 4
-  br i1 %89, label %then41, label %else42
+  br i1 %89, label %then35, label %else36
 
-then41:                                           ; preds = %loop.end40
+then35:                                           ; preds = %b.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @9, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont43
+  br label %ifcont37
 
-else42:                                           ; preds = %loop.end40
-  br label %ifcont43
+else36:                                           ; preds = %b.end
+  br label %ifcont37
 
-ifcont43:                                         ; preds = %else42, %then41
+ifcont37:                                         ; preds = %else36, %then35
   store i32 0, i32* %j, align 4
   store i32 1, i32* %i, align 4
-  br label %loop.head44
+  br label %c.head
 
-loop.head44:                                      ; preds = %ifcont49, %ifcont43
-  br i1 true, label %loop.body45, label %loop.end50
+c.head:                                           ; preds = %ifcont41, %ifcont37
+  br i1 true, label %c.body, label %c.end
 
-loop.body45:                                      ; preds = %loop.head44
+c.body:                                           ; preds = %c.head
   %90 = load i32, i32* %j, align 4
   %91 = load i32, i32* %i, align 4
   %92 = add i32 %90, %91
   store i32 %92, i32* %j, align 4
   %93 = load i32, i32* %i, align 4
   %94 = icmp eq i32 %93, 2
-  br i1 %94, label %then46, label %else48
+  br i1 %94, label %then38, label %else40
 
-then46:                                           ; preds = %loop.body45
-  br label %loop.end50
+then38:                                           ; preds = %c.body
+  br label %c.end
 
-unreachable_after_exit47:                         ; No predecessors!
-  br label %ifcont49
+unreachable_after_exit39:                         ; No predecessors!
+  br label %ifcont41
 
-else48:                                           ; preds = %loop.body45
-  br label %ifcont49
+else40:                                           ; preds = %c.body
+  br label %ifcont41
 
-ifcont49:                                         ; preds = %else48, %unreachable_after_exit47
+ifcont41:                                         ; preds = %else40, %unreachable_after_exit39
   %95 = load i32, i32* %i, align 4
   %96 = add i32 %95, 1
   store i32 %96, i32* %i, align 4
-  br label %loop.head44
+  br label %c.head
 
-loop.end50:                                       ; preds = %then46, %loop.head44
+c.end:                                            ; preds = %then38, %c.head
   %97 = load i32, i32* %j, align 4
   %98 = icmp ne i32 %97, 3
-  br i1 %98, label %then51, label %else52
+  br i1 %98, label %then42, label %else43
 
-then51:                                           ; preds = %loop.end50
+then42:                                           ; preds = %c.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @10, i32 0, i32 0))
   call void @exit(i32 1)
-  br label %ifcont53
+  br label %ifcont44
 
-else52:                                           ; preds = %loop.end50
-  br label %ifcont53
+else43:                                           ; preds = %c.end
+  br label %ifcont44
 
-ifcont53:                                         ; preds = %else52, %then51
+ifcont44:                                         ; preds = %else43, %then42
   store i32 2, i32* %k, align 4
   %99 = load i32, i32* %k, align 4
   %100 = sub i32 1, %99
   store i32 %100, i32* %i, align 4
-  br label %loop.head54
+  br label %loop.head45
 
-loop.head54:                                      ; preds = %goto_target, %ifcont53
+loop.head45:                                      ; preds = %goto_target, %ifcont44
   %101 = load i32, i32* %k, align 4
   %102 = icmp sgt i32 %101, 0
   %103 = load i32, i32* %i, align 4
@@ -357,17 +357,17 @@ loop.head54:                                      ; preds = %goto_target, %ifcon
   %106 = icmp sle i32 %105, 10
   %107 = icmp eq i1 %102, false
   %108 = alloca i1, align 1
-  br i1 %107, label %then55, label %else56
+  br i1 %107, label %then46, label %else47
 
-then55:                                           ; preds = %loop.head54
+then46:                                           ; preds = %loop.head45
   store i1 %102, i1* %108, align 1
-  br label %ifcont57
+  br label %ifcont48
 
-else56:                                           ; preds = %loop.head54
+else47:                                           ; preds = %loop.head45
   store i1 %106, i1* %108, align 1
-  br label %ifcont57
+  br label %ifcont48
 
-ifcont57:                                         ; preds = %else56, %then55
+ifcont48:                                         ; preds = %else47, %then46
   %109 = load i1, i1* %108, align 1
   %110 = load i32, i32* %k, align 4
   %111 = icmp sle i32 %110, 0
@@ -377,45 +377,45 @@ ifcont57:                                         ; preds = %else56, %then55
   %115 = icmp sge i32 %114, 10
   %116 = icmp eq i1 %111, false
   %117 = alloca i1, align 1
-  br i1 %116, label %then58, label %else59
+  br i1 %116, label %then49, label %else50
 
-then58:                                           ; preds = %ifcont57
+then49:                                           ; preds = %ifcont48
   store i1 %111, i1* %117, align 1
-  br label %ifcont60
+  br label %ifcont51
 
-else59:                                           ; preds = %ifcont57
+else50:                                           ; preds = %ifcont48
   store i1 %115, i1* %117, align 1
-  br label %ifcont60
+  br label %ifcont51
 
-ifcont60:                                         ; preds = %else59, %then58
+ifcont51:                                         ; preds = %else50, %then49
   %118 = load i1, i1* %117, align 1
   %119 = icmp eq i1 %109, false
   %120 = alloca i1, align 1
-  br i1 %119, label %then61, label %else62
+  br i1 %119, label %then52, label %else53
 
-then61:                                           ; preds = %ifcont60
+then52:                                           ; preds = %ifcont51
   store i1 %118, i1* %120, align 1
-  br label %ifcont63
+  br label %ifcont54
 
-else62:                                           ; preds = %ifcont60
+else53:                                           ; preds = %ifcont51
   store i1 %109, i1* %120, align 1
-  br label %ifcont63
+  br label %ifcont54
 
-ifcont63:                                         ; preds = %else62, %then61
+ifcont54:                                         ; preds = %else53, %then52
   %121 = load i1, i1* %120, align 1
-  br i1 %121, label %loop.body64, label %loop.end65
+  br i1 %121, label %loop.body55, label %loop.end56
 
-loop.body64:                                      ; preds = %ifcont63
+loop.body55:                                      ; preds = %ifcont54
   %122 = load i32, i32* %i, align 4
   %123 = load i32, i32* %k, align 4
   %124 = add i32 %122, %123
   store i32 %124, i32* %i, align 4
   br label %goto_target
 
-goto_target:                                      ; preds = %loop.body64
-  br label %loop.head54
+goto_target:                                      ; preds = %loop.body55
+  br label %loop.head45
 
-loop.end65:                                       ; preds = %ifcont63
+loop.end56:                                       ; preds = %ifcont54
   ret i32 0
 }
 

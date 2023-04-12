@@ -7,36 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            abs:
-                                (ExternalSymbol
-                                    2
-                                    abs
-                                    13 abs
-                                    lfortran_intrinsic_math
-                                    []
-                                    abs
-                                    Private
-                                ),
-                            abs@dabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@dabs
-                                    13 dabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    dabs
-                                    Private
-                                ),
-                            abs@sabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@sabs
-                                    13 sabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    sabs
-                                    Private
-                                ),
                             dp:
                                 (Variable
                                     2
@@ -228,10 +198,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@sabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (FunctionCall
                                         2 epsilon@sepsilon
                                         2 epsilon
@@ -253,13 +222,13 @@
                                         -0.000000
                                         (Real 4 [])
                                     )
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
                                 (RealConstant
                                     0.000000
                                     (Real 4 [])
                                 )
-                                ()
                             )
                             Gt
                             (RealConstant
@@ -279,10 +248,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (FunctionCall
                                         2 epsilon@depsilon
                                         2 epsilon
@@ -304,13 +272,13 @@
                                         0.000000
                                         (Real 8 [])
                                     )
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
                                 (RealConstant
                                     0.000000
                                     (Real 8 [])
                                 )
-                                ()
                             )
                             Gt
                             (RealConstant
@@ -330,10 +298,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (RealBinOp
                                         (FunctionCall
                                             2 epsilon@depsilon
@@ -370,13 +337,13 @@
                                         0.000000
                                         (Real 8 [])
                                     )
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
                                 (RealConstant
                                     0.000000
                                     (Real 8 [])
                                 )
-                                ()
                             )
                             Gt
                             (RealConstant

@@ -264,9 +264,6 @@
                                     )
                                     [allocated
                                     1_to_string
-                                    allocated
-                                    1_to_string
-                                    allocated
                                     time_to_string]
                                     [(Var 12 lhs)
                                     (Var 12 rhs)]
@@ -581,11 +578,7 @@
                                         []
                                         .false.
                                     )
-                                    [present
-                                    present
-                                    present
-                                    present
-                                    present]
+                                    [present]
                                     [(Var 13 hour)
                                     (Var 13 minute)
                                     (Var 13 second)
@@ -841,7 +834,6 @@
                                         .false.
                                     )
                                     [allocated
-                                    allocated
                                     trim
                                     len_trim]
                                     [(Var 14 lhs)
@@ -1271,16 +1263,6 @@
                         })
                     tomlf_datetime
                     [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_string
                     lfortran_intrinsic_string
                     tomlf_datetime]
                     .true.

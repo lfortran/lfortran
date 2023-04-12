@@ -77,6 +77,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
@@ -200,6 +201,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
@@ -314,6 +316,7 @@
                         ()
                     )
                     (WhileLoop
+                        a
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -357,7 +360,9 @@
                                 (Logical 4 [])
                                 ()
                             )
-                            [(Exit)]
+                            [(Exit
+                                a
+                            )]
                             []
                         )]
                     )
@@ -391,6 +396,7 @@
                         ()
                     )
                     (WhileLoop
+                        b
                         (IntegerCompare
                             (IntegerBinOp
                                 (Var 2 i)
@@ -434,7 +440,9 @@
                                 (Logical 4 [])
                                 ()
                             )
-                            [(Exit)]
+                            [(Exit
+                                b
+                            )]
                             []
                         )]
                     )
@@ -462,6 +470,7 @@
                         ()
                     )
                     (WhileLoop
+                        c
                         (LogicalConstant
                             .true.
                             (Logical 4 [])
@@ -485,7 +494,9 @@
                                 (Logical 4 [])
                                 ()
                             )
-                            [(Exit)]
+                            [(Exit
+                                c
+                            )]
                             []
                         )
                         (=
@@ -530,6 +541,7 @@
                         ()
                     )
                     (WhileLoop
+                        ()
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare

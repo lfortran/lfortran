@@ -148,7 +148,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                         al, loc, idx_vars_value[i], inc_expr, nullptr));
                     doloop_body.push_back(al, assign_stmt);
                 }
-                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, head, doloop_body.p, doloop_body.size()));
+                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
             }
             if( var_rank > 0 ) {
                 ASR::expr_t* idx_lb = PassUtils::get_bound(op_expr, 1, "lbound", al);
@@ -175,7 +175,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             } else {
                 doloop_body.push_back(al, doloop);
             }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, head, doloop_body.p, doloop_body.size()));
+            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
             pass_result.push_back(al, doloop);
         }
 
@@ -219,6 +219,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_vars_helper(x);
     }
 
+    void replace_ArrayItem(ASR::ArrayItem_t* x) {
+        replace_vars_helper(x);
+    }
+
     template <typename LOOP_BODY>
     void create_do_loop(const Location& loc, int result_rank,
         Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& loop_vars,
@@ -255,7 +259,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             } else {
                 doloop_body.push_back(al, doloop);
             }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, head, doloop_body.p, doloop_body.size()));
+            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size()));
         }
         pass_result.push_back(al, doloop);
     }
@@ -1159,7 +1163,10 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         void visit_Assignment(const ASR::Assignment_t &x) {
             if( (ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value)) ||
-                (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) ) {
+                (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) ||
+                (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+                 ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+                 ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) ) { // TODO: fix for StructInstanceMember targets
                 return ;
             }
 

@@ -2,8 +2,8 @@
     (type (;0;) (func (param i32) (result)))
     (type (;1;) (func (param i32 i32 i32 i32) (result i32)))
     (type (;2;) (func (param i32) (result i32)))
-    (type (;3;) (func (param f64) (result f64)))
-    (type (;4;) (func (param f32) (result f32)))
+    (type (;3;) (func (param f32) (result f32)))
+    (type (;4;) (func (param f64) (result f64)))
     (type (;5;) (func (param) (result)))
     (type (;6;) (func (param i64) (result)))
     (type (;7;) (func (param f64) (result)))
@@ -21,23 +21,7 @@
         local.get 1
         return
     )
-    (func $3 (type 3) (param f64) (result f64)
-        (local f64)
-        local.get 0
-        f64.const 0.000000
-        f64.ge
-        if
-            local.get 0
-            local.set 1
-        else
-            local.get 0
-            f64.neg
-            local.set 1
-        end
-        local.get 1
-        return
-    )
-    (func $4 (type 4) (param f32) (result f32)
+    (func $3 (type 3) (param f32) (result f32)
         (local f32)
         local.get 0
         f32.const 0.000000
@@ -48,6 +32,22 @@
         else
             local.get 0
             f32.neg
+            local.set 1
+        end
+        local.get 1
+        return
+    )
+    (func $4 (type 4) (param f64) (result f64)
+        (local f64)
+        local.get 0
+        f64.const 0.000000
+        f64.ge
+        if
+            local.get 0
+            local.set 1
+        else
+            local.get 0
+            f64.neg
             local.set 1
         end
         local.get 1
@@ -86,7 +86,7 @@
         local.get 2
         f32.const 9.000000
         f32.sub
-        call 4
+        call 3
         f32.const 0.000001
         f32.gt
         if
@@ -128,7 +128,7 @@
         local.get 1
         f64.const 9.000000
         f64.sub
-        call 3
+        call 4
         f64.const 0.000000
         f64.gt
         if
@@ -338,8 +338,8 @@
     (memory (;0;) 100 100)
     (export "memory" (memory 0))
     (export "kind" (func 2))
-    (export "dabs" (func 3))
-    (export "sabs" (func 4))
+    (export "_lcompilers_abs_f32" (func 3))
+    (export "_lcompilers_abs_f64" (func 4))
     (export "_start" (func 5))
     (export "print_i64" (func 6))
     (export "print_f64" (func 7))

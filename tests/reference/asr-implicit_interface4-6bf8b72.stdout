@@ -196,8 +196,8 @@
                         []
                         .false.
                     )
-                    [driver2
-                    f]
+                    [f
+                    driver2]
                     [(Var 2 f)
                     (Var 2 n)]
                     [(SubroutineCall

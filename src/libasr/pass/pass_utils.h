@@ -43,7 +43,8 @@ namespace LCompilers {
 
         void create_vars(Vec<ASR::expr_t*>& vars, int n_vars, const Location& loc,
                          Allocator& al, SymbolTable*& current_scope, std::string suffix="_k",
-                         ASR::intentType intent=ASR::intentType::Local);
+                         ASR::intentType intent=ASR::intentType::Local,
+                         ASR::presenceType presence=ASR::presenceType::Required);
 
         void create_idx_vars(Vec<ASR::expr_t*>& idx_vars, int n_dims, const Location& loc,
                              Allocator& al, SymbolTable*& current_scope, std::string suffix="_k");
@@ -192,7 +193,15 @@ namespace LCompilers {
                     ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
                     SymbolTable* current_scope_copy = this->current_scope;
                     this->current_scope = xx.m_symtab;
+                    self().visit_ttype(*x.m_function_signature);
+                    for (size_t i=0; i<x.n_args; i++) {
+                        self().visit_expr(*x.m_args[i]);
+                    }
                     transform_stmts(xx.m_body, xx.n_body);
+
+                    if (x.m_return_var) {
+                        self().visit_expr(*x.m_return_var);
+                    }
 
                     for (auto &item : x.m_symtab->get_scope()) {
                         if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -234,9 +243,9 @@ namespace LCompilers {
 
             private:
 
-                Vec<char*> function_dependencies;
-                Vec<char*> module_dependencies;
-                Vec<char*> variable_dependencies;
+                SetChar function_dependencies;
+                SetChar module_dependencies;
+                SetChar variable_dependencies;
                 Allocator& al;
                 bool fill_function_dependencies;
                 bool fill_module_dependencies;
@@ -256,7 +265,7 @@ namespace LCompilers {
 
                 void visit_Function(const ASR::Function_t& x) {
                     ASR::Function_t& xx = const_cast<ASR::Function_t&>(x);
-                    Vec<char*> function_dependencies_copy;
+                    SetChar function_dependencies_copy;
                     function_dependencies_copy.from_pointer_n_copy(al, function_dependencies.p, function_dependencies.size());
                     function_dependencies.n = 0;
                     function_dependencies.reserve(al, 1);
@@ -280,9 +289,7 @@ namespace LCompilers {
                     fill_module_dependencies = true;
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_Module(x);
                     for( size_t i = 0; i < xx.n_dependencies; i++ ) {
-                        if( !present(module_dependencies, xx.m_dependencies[i]) ) {
-                            module_dependencies.push_back(al, xx.m_dependencies[i]);
-                        }
+                        module_dependencies.push_back(al, xx.m_dependencies[i]);
                     }
                     xx.n_dependencies = module_dependencies.size();
                     xx.m_dependencies = module_dependencies.p;
@@ -303,9 +310,7 @@ namespace LCompilers {
 
                 void visit_Var(const ASR::Var_t& x) {
                     if( fill_variable_dependencies ) {
-                        if( !present(variable_dependencies, ASRUtils::symbol_name(x.m_v)) ) {
-                            variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
-                        }
+                        variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
                     }
                 }
 
@@ -490,7 +495,7 @@ namespace LCompilers {
                 }
             }
             ASR::stmt_t* doloop = ASRUtils::STMT(ASR::make_DoLoop_t(replacer->al, arr_var->base.base.loc,
-                                                                    head, doloop_body.p, doloop_body.size()));
+                                                                    nullptr, head, doloop_body.p, doloop_body.size()));
             result_vec->push_back(replacer->al, doloop);
         }
 

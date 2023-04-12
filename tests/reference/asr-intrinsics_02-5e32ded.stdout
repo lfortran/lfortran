@@ -7,36 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            abs:
-                                (ExternalSymbol
-                                    2
-                                    abs
-                                    4 abs
-                                    lfortran_intrinsic_math
-                                    []
-                                    abs
-                                    Private
-                                ),
-                            abs@dabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@dabs
-                                    4 dabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    dabs
-                                    Private
-                                ),
-                            abs@sabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@sabs
-                                    4 sabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    sabs
-                                    Private
-                                ),
                             x:
                                 (Variable
                                     2
@@ -157,10 +127,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (Var 2 y)
                                     Sub
                                     (Cast
@@ -177,9 +146,9 @@
                                     )
                                     (Real 8 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -205,10 +174,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@sabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (IntrinsicFunction
                                         Sin
                                         [(RealBinOp
@@ -283,13 +251,13 @@
                                         -0.000000
                                         (Real 4 [])
                                     )
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
                                 (RealConstant
                                     0.000000
                                     (Real 4 [])
                                 )
-                                ()
                             )
                             Gt
                             (RealConstant
@@ -309,10 +277,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@dabs
-                                2 abs
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
                                     (IntrinsicFunction
                                         Sin
                                         [(RealBinOp
@@ -370,9 +337,9 @@
                                     )
                                     (Real 8 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -396,15 +363,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

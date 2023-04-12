@@ -27,11 +27,13 @@ set(SRC
     codegen/wasm_to_x64.cpp
     codegen/wasm_utils.cpp
 
+    pass/nested_vars.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp
     pass/for_all.cpp
     pass/global_stmts.cpp
     pass/global_stmts_program.cpp
+    pass/global_symbols.cpp
     pass/select_case.cpp
     pass/init_expr.cpp
     pass/implied_do_loops.cpp
@@ -41,7 +43,7 @@ set(SRC
     pass/class_constructor.cpp
     pass/arr_slice.cpp
     pass/print_arr.cpp
-    pass/print_list.cpp
+    pass/print_list_tuple.cpp
     pass/pass_utils.cpp
     pass/unused_functions.cpp
     pass/flip_sign.cpp
@@ -75,7 +77,6 @@ if (WITH_LLVM)
         codegen/asr_to_llvm.cpp
         codegen/llvm_array_utils.cpp
         codegen/llvm_utils.cpp
-        pass/nested_vars.cpp
     )
     # We use deprecated API in LLVM, so we disable the warning until we upgrade
     if (NOT MSVC)
@@ -89,7 +90,7 @@ if (WITH_LLVM)
             COMPILE_FLAGS -Wno-deprecated-declarations)
     endif()
 endif()
-add_library(asr ${SRC})
+add_library(asr STATIC ${SRC})
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
 if (WITH_BFD)

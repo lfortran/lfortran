@@ -7,36 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            abs:
-                                (ExternalSymbol
-                                    2
-                                    abs
-                                    4 abs
-                                    lfortran_intrinsic_math
-                                    []
-                                    abs
-                                    Private
-                                ),
-                            abs@cabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@cabs
-                                    4 cabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    cabs
-                                    Private
-                                ),
-                            abs@zabs:
-                                (ExternalSymbol
-                                    2
-                                    abs@zabs
-                                    4 zabs
-                                    lfortran_intrinsic_math
-                                    []
-                                    zabs
-                                    Private
-                                ),
                             c1:
                                 (Variable
                                     2
@@ -95,7 +65,15 @@
                                     [real_part]
                                     Local
                                     (ComplexConstructor
-                                        (Var 2 real_part)
+                                        (Cast
+                                            (Var 2 real_part)
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                42.000000
+                                                (Real 4 [])
+                                            )
+                                        )
                                         (RealConstant
                                             0.000000
                                             (Real 4 [])
@@ -188,7 +166,15 @@
                                     img_part]
                                     Local
                                     (ComplexConstructor
-                                        (Var 2 real_part)
+                                        (Cast
+                                            (Var 2 real_part)
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                42.000000
+                                                (Real 4 [])
+                                            )
+                                        )
                                         (Var 2 img_part)
                                         (Complex 4 [])
                                         (ComplexConstant
@@ -302,10 +288,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@cabs
-                                2 abs
-                                [((ComplexBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
                                     (Var 2 x)
                                     Sub
                                     (ComplexConstructor
@@ -320,9 +305,9 @@
                                     )
                                     (Complex 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -340,10 +325,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@cabs
-                                2 abs
-                                [((ComplexBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
                                     (Var 2 y)
                                     Sub
                                     (ComplexConstructor
@@ -358,9 +342,9 @@
                                     )
                                     (Complex 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -378,10 +362,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@cabs
-                                2 abs
-                                [((ComplexBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
                                     (Var 2 z)
                                     Sub
                                     (ComplexConstructor
@@ -396,9 +379,9 @@
                                     )
                                     (Complex 4 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -416,10 +399,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@zabs
-                                2 abs
-                                [((ComplexBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
                                     (Var 2 x2)
                                     Sub
                                     (Cast
@@ -439,9 +421,9 @@
                                     )
                                     (Complex 8 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -467,10 +449,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@zabs
-                                2 abs
-                                [((ComplexBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
                                     (Var 2 y2)
                                     Sub
                                     (Cast
@@ -490,9 +471,9 @@
                                     )
                                     (Complex 8 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -518,10 +499,9 @@
                     )
                     (If
                         (RealCompare
-                            (FunctionCall
-                                2 abs@zabs
-                                2 abs
-                                [((ComplexBinOp
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
                                     (Var 2 z2)
                                     Sub
                                     (Cast
@@ -541,9 +521,9 @@
                                     )
                                     (Complex 8 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             )
                             Gt
@@ -575,15 +555,7 @@
                         ()
                         ()
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

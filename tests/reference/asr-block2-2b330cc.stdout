@@ -7,46 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            block:
-                                (Block
-                                    (SymbolTable
-                                        4
-                                        {
-                                            abs:
-                                                (ExternalSymbol
-                                                    4
-                                                    abs
-                                                    6 abs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    abs
-                                                    Private
-                                                ),
-                                            abs@sabs:
-                                                (ExternalSymbol
-                                                    4
-                                                    abs@sabs
-                                                    6 sabs
-                                                    lfortran_intrinsic_math
-                                                    []
-                                                    sabs
-                                                    Private
-                                                )
-                                        })
-                                    block
-                                    [(=
-                                        (Var 2 delta)
-                                        (FunctionCall
-                                            4 abs@sabs
-                                            4 abs
-                                            [((Var 2 ratio))]
-                                            (Real 4 [])
-                                            ()
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                ),
                             delta:
                                 (Variable
                                     2
@@ -107,6 +67,26 @@
                                     .false.
                                     .false.
                                 ),
+                            main:
+                                (Block
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    main
+                                    [(=
+                                        (Var 2 delta)
+                                        (IntrinsicFunction
+                                            Abs
+                                            [(Var 2 ratio)]
+                                            0
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                ),
                             ratio:
                                 (Variable
                                     2
@@ -139,25 +119,17 @@
                         []
                         .false.
                     )
-                    [abs@sabs]
+                    []
                     []
                     [(BlockCall
                         -1
-                        2 block
+                        2 main
                     )]
                     ()
                     Public
                     .false.
                     .false.
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

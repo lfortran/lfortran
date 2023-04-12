@@ -94,8 +94,7 @@
                                         []
                                         .false.
                                     )
-                                    [len_string
-                                    len_string]
+                                    [len_string]
                                     [(Var 5 string)]
                                     []
                                     (Var 5 character_string)
@@ -316,8 +315,7 @@
                                         []
                                         .false.
                                     )
-                                    [len
-                                    len]
+                                    [len]
                                     [(Var 7 string)]
                                     []
                                     (Var 7 lps_array)
@@ -387,8 +385,8 @@
                                         []
                                         .false.
                                     )
-                                    [compute_lps
-                                    len]
+                                    [len
+                                    compute_lps]
                                     [(Var 36 string)]
                                     [(Print
                                         ()
@@ -494,8 +492,8 @@
                                         []
                                         .false.
                                     )
-                                    [char@char_string
-                                    len_string]
+                                    [len_string
+                                    char@char_string]
                                     [(Var 37 string)]
                                     [(Print
                                         ()
@@ -653,9 +651,7 @@
                                         .false.
                                     )
                                     [len
-                                    len
                                     imax
-                                    len
                                     padl_char_pad_with]
                                     [(Var 40 string)
                                     (Var 40 output_length)]
@@ -987,10 +983,10 @@
                                         []
                                         .false.
                                     )
-                                    [char@char_string
-                                    imax
+                                    [len_string
+                                    char@char_string
                                     len
-                                    len_string
+                                    imax
                                     padl_char_pad_with]
                                     [(Var 38 string)
                                     (Var 38 output_length)]
@@ -1203,10 +1199,10 @@
                                         []
                                         .false.
                                     )
-                                    [char@char_string
-                                    imax
+                                    [len_string
+                                    char@char_string
                                     len
-                                    len_string
+                                    imax
                                     padl_char_pad_with]
                                     [(Var 39 string)
                                     (Var 39 output_length)
@@ -1294,9 +1290,6 @@
                         })
                     stdlib_strings
                     [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
                     stdlib_string_type
                     lfortran_intrinsic_math2
                     stdlib_strings]

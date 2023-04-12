@@ -1108,7 +1108,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 elif field.type == "alloc_arg":
                     self.emit("    ASR::alloc_arg_t alloc_arg_copy;", level)
                     self.emit("    alloc_arg_copy.loc = x->m_%s[i].loc;"%(field.name), level)
-                    self.emit("    alloc_arg_copy.m_a = x->m_%s[i].m_a;"%(field.name), level)
+                    self.emit("    alloc_arg_copy.m_a = self().duplicate_expr(x->m_%s[i].m_a);"%(field.name), level)
                     self.emit("    alloc_arg_copy.n_dims = x->m_%s[i].n_dims;"%(field.name), level)
                     self.emit("    Vec<ASR::dimension_t> dims_copy;", level)
                     self.emit("    dims_copy.reserve(al, alloc_arg_copy.n_dims);", level)
@@ -2178,7 +2178,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     if field.type == "identifier":
                         self.emit('{', 2)
                         self.emit('uint64_t n = self().read_int64();', 3)
-                        self.emit("Vec<char*> v;", 3)
+                        self.emit("Vec<char*> v_%s;" % (field.name), 3)
                         self.emit("v.reserve(al, n);", 3)
                         self.emit("for (uint64_t i=0; i<n; i++) {", 3)
                         self.emit("v.push_back(al, self().read_cstring());", 4)

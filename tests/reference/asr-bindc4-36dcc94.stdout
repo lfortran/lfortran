@@ -170,6 +170,7 @@
                         (Var 2 xv)
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 x)
@@ -187,6 +188,7 @@
                         )
                         ())
                         [(DoLoop
+                            ()
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 x)
@@ -251,6 +253,7 @@
                         ()
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 x)
@@ -268,6 +271,7 @@
                         )
                         ())
                         [(DoLoop
+                            ()
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 x)
@@ -338,6 +342,7 @@
                         ()
                     )
                     (DoLoop
+                        ()
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 x)
@@ -355,6 +360,7 @@
                         )
                         ())
                         [(DoLoop
+                            ()
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 x)

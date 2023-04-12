@@ -70,7 +70,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         switch (func_idx) {
             case 0: {  // proc_exit
             /*
-                TODO: This way increases the number of intructions.
+                TODO: This way increases the number of instructions.
                 There is a possibility that we can wrap these statements
                 with some add label and then just jump/call to that label
             */
@@ -81,7 +81,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             }
             case 1: {  // fd_write
             /*
-                TODO: This way increases the number of intructions.
+                TODO: This way increases the number of instructions.
                 There is a possibility that we can wrap these statements
                 with some add label and then just jump/call to that label
             */
@@ -210,19 +210,58 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         m_a.add_label(".else_" + label);
     }
 
+    void visit_GlobalGet(uint32_t globalidx) {
+        std::string loc = "global_" + std::to_string(globalidx);
+        std::string var_type = vt2s(globals[globalidx].type);
+
+        X64Reg base = X64Reg::rbx;
+        m_a.asm_mov_r64_label(X64Reg::rbx, loc);
+        if (var_type == "i32" || var_type == "i64") {
+            m_a.asm_mov_r64_m64(X64Reg::rax, &base, nullptr, 1, 0);
+            m_a.asm_push_r64(X64Reg::rax);
+        } else if (var_type == "f32" || var_type == "f64") {
+            m_a.asm_movsd_r64_m64(X64FReg::xmm0, &base, nullptr, 1, 0);
+            m_a.asm_sub_r64_imm32(X64Reg::rsp,  8); // create space for value to be fetched
+            X64Reg stack_top = X64Reg::rsp;
+            m_a.asm_movsd_m64_r64(&stack_top, nullptr, 1, 0, X64FReg::xmm0);
+        } else {
+            throw AssemblerError("WASM_X64: Var type not supported");
+        }
+    }
+
+    void visit_GlobalSet(uint32_t globalidx) {
+        if (globals[globalidx].mut == 0) {
+            throw AssemblerError("Attempt to modify unmutable global variable");
+        }
+
+        std::string loc = "global_" + std::to_string(globalidx);
+        std::string var_type = vt2s(globals[globalidx].type);
+
+        X64Reg base = X64Reg::rbx;
+        m_a.asm_mov_r64_label(X64Reg::rbx, loc);
+        if (var_type == "i32" || var_type == "i64") {
+            m_a.asm_pop_r64(X64Reg::rax);
+            m_a.asm_mov_m64_r64(&base, nullptr, 1, 0, X64Reg::rax);
+        } else if (var_type == "f32" || var_type == "f64") {
+            X64Reg stack_top = X64Reg::rsp;
+            m_a.asm_movsd_r64_m64(X64FReg::xmm0, &stack_top, nullptr, 1, 0);
+            m_a.asm_add_r64_imm32(X64Reg::rsp,  8); // deallocate space
+            m_a.asm_movsd_m64_r64(&base, nullptr, 1, 0, X64FReg::xmm0);
+        } else {
+            throw AssemblerError("WASM_X64: Var type not supported");
+        }
+    }
+
     void visit_LocalGet(uint32_t localidx) {
         X64Reg base = X64Reg::rbp;
         auto cur_func_param_type = func_types[type_indices[cur_func_idx]];
         int no_of_params = (int)cur_func_param_type.param_types.size();
         if ((int)localidx < no_of_params) {
-            std::string var_type = var_type_to_string[cur_func_param_type.param_types[localidx]];
-            if (var_type == "i32") {
+            std::string var_type = vt2s(cur_func_param_type.param_types[localidx]);
+            if (var_type == "i32" || var_type == "i64") {
                 m_a.asm_mov_r64_m64(X64Reg::rax, &base, nullptr, 1, 8 * (2 + no_of_params - (int)localidx - 1));
                 m_a.asm_push_r64(X64Reg::rax);
-            } else if (var_type == "i64") {
-                m_a.asm_mov_r64_m64(X64Reg::rax, &base, nullptr, 1, 8 * (2 + no_of_params - (int)localidx - 1));
-                m_a.asm_push_r64(X64Reg::rax);
-            } else if (var_type == "f64") {
+            } else if (var_type == "f32" || var_type == "f64") {
                 m_a.asm_sub_r64_imm32(X64Reg::rsp,  8); // create space for value to be fetched
                 m_a.asm_movsd_r64_m64(X64FReg::xmm0, &base, nullptr, 1, 8 * (2 + no_of_params - (int)localidx - 1));
                 X64Reg stack_top = X64Reg::rsp;
@@ -232,14 +271,11 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             }
         } else {
             localidx -= no_of_params;
-            std::string var_type = var_type_to_string[codes[cur_func_idx].locals[localidx].type];
-            if (var_type == "i32") {
+            std::string var_type = vt2s(codes[cur_func_idx].locals[localidx].type);
+            if (var_type == "i32" || var_type == "i64") {
                 m_a.asm_mov_r64_m64(X64Reg::rax, &base, nullptr, 1, -8 * (1 + (int)localidx));
                 m_a.asm_push_r64(X64Reg::rax);
-            } else if (var_type == "i64") {
-                m_a.asm_mov_r64_m64(X64Reg::rax, &base, nullptr, 1, -8 * (1 + (int)localidx));
-                m_a.asm_push_r64(X64Reg::rax);
-            } else if (var_type == "f64") {
+            } else if (var_type == "f32" || var_type == "f64") {
                 m_a.asm_sub_r64_imm32(X64Reg::rsp,  8); // create space for value to be fetched
                 m_a.asm_movsd_r64_m64(X64FReg::xmm0, &base, nullptr, 1, -8 * (1 + (int)localidx));
                 X64Reg stack_top = X64Reg::rsp;
@@ -255,14 +291,11 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         auto cur_func_param_type = func_types[type_indices[cur_func_idx]];
         int no_of_params = (int)cur_func_param_type.param_types.size();
         if ((int)localidx < no_of_params) {
-            std::string var_type = var_type_to_string[cur_func_param_type.param_types[localidx]];
-            if (var_type == "i32") {
+            std::string var_type = vt2s(cur_func_param_type.param_types[localidx]);
+            if (var_type == "i32" || var_type == "i64") {
                 m_a.asm_pop_r64(X64Reg::rax);
                 m_a.asm_mov_m64_r64(&base, nullptr, 1, 8 * (2 + no_of_params - (int)localidx - 1), X64Reg::rax);
-            } else if (var_type == "i64") {
-                m_a.asm_pop_r64(X64Reg::rax);
-                m_a.asm_mov_m64_r64(&base, nullptr, 1, 8 * (2 + no_of_params - (int)localidx - 1), X64Reg::rax);
-            } else if (var_type == "f64") {
+            } else if (var_type == "f32" || var_type == "f64") {
                 X64Reg stack_top = X64Reg::rsp;
                 m_a.asm_movsd_r64_m64(X64FReg::xmm0, &stack_top, nullptr, 1, 0);
                 m_a.asm_movsd_m64_r64(&base, nullptr, 1, 8 * (2 + no_of_params - (int)localidx - 1), X64FReg::xmm0);
@@ -272,14 +305,11 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             }
         } else {
             localidx -= no_of_params;
-            std::string var_type = var_type_to_string[codes[cur_func_idx].locals[localidx].type];
-            if (var_type == "i32") {
+            std::string var_type = vt2s(codes[cur_func_idx].locals[localidx].type);
+            if (var_type == "i32" || var_type == "i64") {
                 m_a.asm_pop_r64(X64Reg::rax);
                 m_a.asm_mov_m64_r64(&base, nullptr, 1, -8 * (1 + (int)localidx), X64Reg::rax);
-            } else if (var_type == "i64") {
-                m_a.asm_pop_r64(X64Reg::rax);
-                m_a.asm_mov_m64_r64(&base, nullptr, 1, -8 * (1 + (int)localidx), X64Reg::rax);
-            } else if (var_type == "f64") {
+            } else if (var_type == "f32" || var_type == "f64") {
                 X64Reg stack_top = X64Reg::rsp;
                 m_a.asm_movsd_r64_m64(X64FReg::xmm0, &stack_top, nullptr, 1, 0);
                 m_a.asm_movsd_m64_r64(&base, nullptr, 1, -8 * (1 + (int)localidx), X64FReg::xmm0);
@@ -290,95 +320,30 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         }
     }
 
-    void visit_I32Const(int32_t value) {
-        m_a.asm_mov_r64_imm64(X64Reg::rax, labs((int64_t)value));
-        if (value < 0) m_a.asm_neg_r64(X64Reg::rax);
-        m_a.asm_push_r64(X64Reg::rax);
-    }
+    void visit_I32Const(int32_t value) { visit_I64Const(int64_t(value)); }
 
-    template<typename F>
-    void handleI32Opt(F && f) {
-        m_a.asm_pop_r64(X64Reg::rbx);
-        m_a.asm_pop_r64(X64Reg::rax);
-        f();
-        m_a.asm_push_r64(X64Reg::rax);
-    }
+    void visit_I32Add() { visit_I64Add(); }
+    void visit_I32Sub() { visit_I64Sub(); }
+    void visit_I32Mul() { visit_I64Mul(); }
+    void visit_I32DivS() { visit_I64DivS(); }
 
-    void visit_I32Add() {
-        handleI32Opt([&](){ m_a.asm_add_r64_r64(X64Reg::rax, X64Reg::rbx);});
-    }
-    void visit_I32Sub() {
-        handleI32Opt([&](){ m_a.asm_sub_r64_r64(X64Reg::rax, X64Reg::rbx);});
-    }
-    void visit_I32Mul() {
-        handleI32Opt([&](){ m_a.asm_mul_r64(X64Reg::rbx);});
-    }
-    void visit_I32DivS() {
-        handleI32Opt([&](){
-            m_a.asm_mov_r64_imm64(X64Reg::rdx, 0);
-            m_a.asm_div_r64(X64Reg::rbx);
-        });
-    }
+    void visit_I32And() { visit_I64And(); }
+    void visit_I32Or() { visit_I64Or(); }
+    void visit_I32Xor() { visit_I64Xor(); }
+    void visit_I32Shl() { visit_I64Shl(); }
+    void visit_I32ShrS() { visit_I64ShrS(); }
 
-    void visit_I32And() {
-        handleI32Opt([&](){ m_a.asm_and_r64_r64(X64Reg::rax, X64Reg::rbx);});
-    }
+    void visit_I32Eqz() { visit_I64Eqz(); }
+    void visit_I32Eq() { visit_I64Eq(); }
+    void visit_I32GtS() { visit_I64GtS(); }
+    void visit_I32GeS() { visit_I64GeS(); }
+    void visit_I32LtS() { visit_I64LtS(); }
+    void visit_I32LeS() { visit_I64LeS(); }
+    void visit_I32Ne() { visit_I64Ne(); }
 
-    void visit_I32Or() {
-        handleI32Opt([&](){ m_a.asm_or_r64_r64(X64Reg::rax, X64Reg::rbx);});
-    }
+    void visit_I32WrapI64() { } // empty, since i32's and i64's are considered similar currently.
 
-    void visit_I32Xor() {
-        handleI32Opt([&](){ m_a.asm_xor_r64_r64(X64Reg::rax, X64Reg::rbx);});
-    }
-
-    void visit_I32Shl() {
-        m_a.asm_pop_r64(X64Reg::rcx);
-        m_a.asm_pop_r64(X64Reg::rax);
-        m_a.asm_shl_r64_cl(X64Reg::rax);
-        m_a.asm_push_r64(X64Reg::rax);
-    }
-    void visit_I32ShrS() {
-        m_a.asm_pop_r64(X64Reg::rcx);
-        m_a.asm_pop_r64(X64Reg::rax);
-        m_a.asm_sar_r64_cl(X64Reg::rax);
-        m_a.asm_push_r64(X64Reg::rax);
-     }
-
-    void visit_I32Eqz() {
-        m_a.asm_mov_r64_imm64(X64Reg::rax, 0);
-        m_a.asm_push_r64(X64Reg::rax);
-        handle_I32Compare<&X86Assembler::asm_je_label>();
-    }
-
-    using JumpFn = void(X86Assembler::*)(const std::string&);
-    template<JumpFn T>
-    void handle_I32Compare() {
-        std::string label = std::to_string(offset);
-        m_a.asm_pop_r64(X64Reg::rbx);
-        m_a.asm_pop_r64(X64Reg::rax);
-        // `rax` and `rbx` contain the left and right operands, respectively
-        m_a.asm_cmp_r64_r64(X64Reg::rax, X64Reg::rbx);
-
-        (m_a.*T)(".compare_1" + label);
-
-        // if the `compare` condition in `true`, jump to compare_1
-        // and assign `1` else assign `0`
-        m_a.asm_push_imm8(0);
-        m_a.asm_jmp_label(".compare.end_" + label);
-        m_a.add_label(".compare_1" + label);
-        m_a.asm_push_imm8(1);
-        m_a.add_label(".compare.end_" + label);
-    }
-
-    void visit_I32Eq() { handle_I32Compare<&X86Assembler::asm_je_label>(); }
-    void visit_I32GtS() { handle_I32Compare<&X86Assembler::asm_jg_label>(); }
-    void visit_I32GeS() { handle_I32Compare<&X86Assembler::asm_jge_label>(); }
-    void visit_I32LtS() { handle_I32Compare<&X86Assembler::asm_jl_label>(); }
-    void visit_I32LeS() { handle_I32Compare<&X86Assembler::asm_jle_label>(); }
-    void visit_I32Ne() { handle_I32Compare<&X86Assembler::asm_jne_label>(); }
-
-    void visit_I64Const(int32_t value) {
+    void visit_I64Const(int64_t value) {
         m_a.asm_mov_r64_imm64(X64Reg::rax, labs((int64_t)value));
         if (value < 0) m_a.asm_neg_r64(X64Reg::rax);
         m_a.asm_push_r64(X64Reg::rax);
@@ -427,10 +392,6 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         m_a.asm_push_r64(X64Reg::rdx);
     }
 
-    void visit_I32WrapI64() {
-        // empty, since i32's and i64's are considered similar currently.
-    }
-
     void visit_I64Store(uint32_t /*mem_align*/, uint32_t /*mem_offset*/) {
         m_a.asm_pop_r64(X64Reg::rbx);
         m_a.asm_pop_r64(X64Reg::rax);
@@ -458,6 +419,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         handle_I64Compare<&X86Assembler::asm_je_label>();
     }
 
+    using JumpFn = void(X86Assembler::*)(const std::string&);
     template<JumpFn T>
     void handle_I64Compare() {
         std::string label = std::to_string(offset);
@@ -492,15 +454,17 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         m_a.asm_push_r64(X64Reg::rax);
     }
 
-    void visit_I64ExtendI32S() {
-        // empty, since all i32's are already considered as i64's currently.
-    }
+    void visit_I64ExtendI32S() { } // empty, since all i32's are already considered as i64's currently.
 
     std::string float_to_str(double z) {
         std::string float_str = "";
-        for (auto ch:std::to_string(z)) {
+        std::ostringstream strs;
+        strs << z;
+        for (auto ch:strs.str()) {
             if (ch == '-') {
                 float_str += "neg_";
+            } else if (ch == '+') {
+                float_str += "_plus_";
             } else if (ch == '.') {
                 float_str += "_dot_";
             } else {
@@ -577,6 +541,45 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         m_a.asm_movsd_m64_r64(&stack_top, nullptr, 1, 0, X64FReg::xmm0); // store float on integer stack top;
     }
 
+    void visit_F64ConvertI32S() { visit_F64ConvertI64S(); } // I32's considered as I64's currently
+    void visit_F64PromoteF32() { } // F32's considered as F64's currently
+
+    void visit_F64Neg() {
+        visit_F64Const(double(-1.0));
+        visit_F64Mul();
+    }
+
+    void visit_F64Sqrt() {
+        X64Reg stack_top = X64Reg::rsp;
+        // load operand into floating-point register
+        m_a.asm_movsd_r64_m64(X64FReg::xmm1, &stack_top, nullptr, 1, 0);
+        m_a.asm_add_r64_imm32(X64Reg::rsp, 8); // pop the argument
+
+        m_a.asm_sqrtsd_r64_r64(X64FReg::xmm0, X64FReg::xmm1); // perform sqrt operation
+
+        m_a.asm_sub_r64_imm32(X64Reg::rsp, 8); // decrement stack and create space
+        m_a.asm_movsd_m64_r64(&stack_top, nullptr, 1, 0, X64FReg::xmm0); // store the result on stack top;
+    }
+
+
+    void visit_F32Const(float z) { visit_F64Const(double(z)); }
+
+    void visit_F32Add() { visit_F64Add(); }
+    void visit_F32Sub() { visit_F64Sub(); }
+    void visit_F32Mul() { visit_F64Mul(); }
+    void visit_F32Div() { visit_F64Div(); }
+
+    void visit_F32Eq() { visit_F64Eq(); }
+    void visit_F32Gt() { visit_F64Gt(); }
+    void visit_F32Ge() { visit_F64Ge(); }
+    void visit_F32Lt() { visit_F64Lt(); }
+    void visit_F32Le() { visit_F64Le(); }
+    void visit_F32Ne() { visit_F64Ne(); }
+
+    void visit_F32ConvertI64S() { visit_F64ConvertI32S(); }
+    void visit_F32Neg() { visit_F64Neg(); }
+    void visit_F32Sqrt() { visit_F64Sqrt(); }
+
     void gen_x64_bytes() {
         emit_elf64_header(m_a);
 
@@ -588,6 +591,9 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         label_to_str["base_memory"] = base_memory;
 
         NO_OF_IMPORTS = imports.size();
+
+        m_a.align_by_byte(0x1000);
+        m_a.add_label("text_segment_start");
         for (uint32_t idx = 0; idx < type_indices.size(); idx++) {
             m_a.add_label(exports[idx + 1].name);
             {
@@ -606,13 +612,41 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
 
         }
 
+        for (auto &d : double_consts) {
+            emit_double_const(m_a, d.first, d.second);
+        }
+
+        m_a.add_label("text_segment_end");
+
+        m_a.align_by_byte(0x1000);
+        m_a.add_label("data_segment_start");
         for (auto &s : label_to_str) {
             emit_data_string(m_a, s.first, s.second);
         }
 
-        for (auto &d : double_consts) {
-            emit_double_const(m_a, d.first, d.second);
+        for (size_t i = 0; i < globals.size(); i++) {
+            std::string global_loc = "global_" + std::to_string(i);
+            switch (globals[i].type) {
+                case 0x7F: {
+                    emit_i64_const(m_a, global_loc, globals[i].n32);
+                    break;
+                }
+                case 0x7E: {
+                    emit_i64_const(m_a, global_loc, globals[i].n64);
+                    break;
+                }
+                case 0x7D: {
+                    emit_double_const(m_a, global_loc, globals[i].r32);
+                    break;
+                }
+                case 0x7C: {
+                    emit_double_const(m_a, global_loc, globals[i].r64);
+                    break;
+                }
+                default: throw CodeGenError("decode_global_section: Unsupport global type"); break;
+            }
         }
+        m_a.add_label("data_segment_end");
 
         emit_elf64_footer(m_a);
     }

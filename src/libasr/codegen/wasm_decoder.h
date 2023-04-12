@@ -4,8 +4,6 @@
 #include <fstream>
 
 #include <libasr/assert.h>
-#include <libasr/alloc.h>
-#include <libasr/containers.h>
 #include <libasr/codegen/wasm_utils.h>
 
 // #define WAT_DEBUG
@@ -48,9 +46,6 @@ class WASMDecoder {
     Struct &self() { return static_cast<Struct &>(*this); }
 
    public:
-    std::unordered_map<uint8_t, std::string> var_type_to_string;
-    std::unordered_map<uint8_t, std::string> kind_to_string;
-
     Allocator &al;
     diag::Diagnostics &diag;
     Vec<uint8_t> wasm_bytes;
@@ -67,10 +62,6 @@ class WASMDecoder {
 
     WASMDecoder(Allocator &al, diag::Diagnostics &diagonostics)
         : al(al), diag(diagonostics) {
-        var_type_to_string = {
-            {0x7F, "i32"}, {0x7E, "i64"}, {0x7D, "f32"}, {0x7C, "f64"}};
-        kind_to_string = {
-            {0x00, "func"}, {0x01, "table"}, {0x02, "memory"}, {0x03, "global"}};
 
         PREAMBLE_SIZE = 8 /* BYTES */;
         // wasm_bytes.reserve(al, 1024 * 128);
@@ -237,10 +228,10 @@ class WASMDecoder {
             wasm::read_b8(wasm_bytes, offset);
             switch (globals[i].type)
             {
-                case 0x7F: wasm::read_i32(wasm_bytes, offset); break;
-                case 0x7E: wasm::read_i64(wasm_bytes, offset); break;
-                case 0x7D: wasm::read_f32(wasm_bytes, offset); break;
-                case 0x7C: wasm::read_f64(wasm_bytes, offset); break;
+                case 0x7F: globals.p[i].n32 = wasm::read_i32(wasm_bytes, offset); break;
+                case 0x7E: globals.p[i].n64 = wasm::read_i64(wasm_bytes, offset); break;
+                case 0x7D: globals.p[i].r32 = wasm::read_f32(wasm_bytes, offset); break;
+                case 0x7C: globals.p[i].r64 = wasm::read_f64(wasm_bytes, offset); break;
                 default: throw CodeGenError("decode_global_section: Unsupport global type"); break;
             }
 
@@ -349,41 +340,39 @@ class WASMDecoder {
                 "Expected: 0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00");
         }
         index += PREAMBLE_SIZE;
+        uint32_t expected_min_section_id = 1;
         while (index < wasm_bytes.size()) {
             uint32_t section_id = read_u32(wasm_bytes, index);
             uint32_t section_size = read_u32(wasm_bytes, index);
+            if (section_id < expected_min_section_id) {
+                throw CodeGenError("DecodeWASM: Invalid sectionId, expected id >= "
+                    + std::to_string(expected_min_section_id));
+            }
+            expected_min_section_id = section_id + 1;
             switch (section_id) {
                 case 1U:
                     decode_type_section(index);
-                    // exit(0);
                     break;
                 case 2U:
                     decode_imports_section(index);
-                    // exit(0);
                     break;
                 case 3U:
                     decode_function_section(index);
-                    // exit(0);
                     break;
                 case 5U:
                     decode_memory_section(index);
-                    // exit(0);
                     break;
                 case 6U:
                     decode_global_section(index);
-                    // exit(0);
                     break;
                 case 7U:
                     decode_export_section(index);
-                    // exit(0);
                     break;
                 case 10U:
                     decode_code_section(index);
-                    // exit(0)
                     break;
                 case 11U:
                     decode_data_section(index);
-                    // exit(0)
                     break;
                 default:
                     std::cout << "Unknown section id: " << section_id

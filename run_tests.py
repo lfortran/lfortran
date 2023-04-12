@@ -60,12 +60,18 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]
 
-    if pass_ and (pass_ not in ["do_loops", "global_stmts",
-                                "transform_optional_argument_functions",
-                                "array_op", "select_case",
-                                "class_constructor"] and
-                  pass_ not in optimization_passes):
-        raise Exception(f"Unknown pass: {pass_}")
+    if pass_ is not None:
+        pass_list = pass_.split(",")
+
+        for _pass in pass_list:
+            _pass = _pass.rstrip(" ").lstrip(" ")
+            if (_pass not in ["do_loops", "global_stmts",
+                        "transform_optional_argument_functions",
+                        "array_op", "select_case",
+                        "class_constructor", "implied_do_loops",
+                        "pass_array_by_data"] and
+                _pass not in optimization_passes):
+                raise Exception(f"Unknown pass: {_pass}")
     log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
 
     extra_args = f"--no-error-banner {show_verbose}"
@@ -190,6 +196,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 if pass_ is not None:
                     cmd = "lfortran --pass=" + pass_ + \
                         " --indent --show-asr --no-color {infile} -o {outfile}"
+                    pass_ = pass_.replace(",", "_")
                     run_test(filename, "pass_{}".format(pass_), cmd,
                             filename, update_reference, extra_args)
 
@@ -284,6 +291,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             cmd += "--cumulative "
         cmd += "--pass=" + pass_ + \
             " --indent --show-asr --no-color {infile} -o {outfile}"
+        pass_ = pass_.replace(",", "_")
         run_test(filename, "pass_{}".format(pass_), cmd,
                  filename, update_reference, extra_args)
     if llvm:
