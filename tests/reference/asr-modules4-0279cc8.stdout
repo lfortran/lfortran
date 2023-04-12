@@ -310,7 +310,6 @@
                                         .false.
                                     )
                                     [allocated
-                                    allocated
                                     1_destroy]
                                     [(Var 6 self)]
                                     [(If
@@ -511,7 +510,6 @@
                         })
                     tomlf_type_array
                     [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
                     tomlf_type_value
                     tomlf_structure
                     tomlf_structure_base]
@@ -596,8 +594,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated
-                                    allocated]
+                                    [allocated]
                                     [(Var 51 self)]
                                     [(If
                                         (FunctionCall
@@ -794,8 +791,7 @@
                                 )
                         })
                     tomlf_type_keyval
-                    [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin]
+                    [lfortran_intrinsic_builtin]
                     .true.
                     .false.
                 ),

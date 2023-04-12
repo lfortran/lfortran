@@ -1375,8 +1375,8 @@
                                         []
                                         .false.
                                     )
-                                    [test_1d_to_nd
-                                    test_nd_to_1d]
+                                    [test_nd_to_1d
+                                    test_1d_to_nd]
                                     []
                                     [(DoLoop
                                         ()

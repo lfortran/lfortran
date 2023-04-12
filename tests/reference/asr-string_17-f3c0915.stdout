@@ -242,7 +242,6 @@
                                         .false.
                                     )
                                     [len_string
-                                    len_string
                                     allocated]
                                     [(Var 5 string)]
                                     [(If

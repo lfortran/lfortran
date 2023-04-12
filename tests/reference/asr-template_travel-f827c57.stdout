@@ -577,8 +577,8 @@
                                         []
                                         .false.
                                     )
-                                    [__asr_generic_avg_s_from_t
-                                    slash_real]
+                                    [slash_real
+                                    __asr_generic_avg_s_from_t]
                                     [(Var 19 d1)
                                     (Var 19 s1)
                                     (Var 19 d2)
@@ -911,8 +911,8 @@
                                         []
                                         .false.
                                     )
-                                    [avg_real_s_from_s
-                                    avg_real_s_from_t]
+                                    [avg_real_s_from_t
+                                    avg_real_s_from_s]
                                     []
                                     [(=
                                         (Var 16 s1)
@@ -1157,8 +1157,8 @@
                                         []
                                         .false.
                                     )
-                                    [avg_s_from_t
-                                    d_divided_by_s]
+                                    [d_divided_by_s
+                                    avg_s_from_t]
                                     [(Var 14 d1)
                                     (Var 14 s1)
                                     (Var 14 d2)
@@ -1349,9 +1349,9 @@
                                         []
                                         .false.
                                     )
-                                    [d_divided_by_t
-                                    plus_d
-                                    plus_t]
+                                    [plus_d
+                                    plus_t
+                                    d_divided_by_t]
                                     [(Var 13 d1)
                                     (Var 13 t1)
                                     (Var 13 d2)

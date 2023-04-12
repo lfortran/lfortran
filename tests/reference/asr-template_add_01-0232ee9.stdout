@@ -744,8 +744,8 @@
                                         []
                                         .false.
                                     )
-                                    [add_integer
-                                    add_real]
+                                    [add_real
+                                    add_integer]
                                     []
                                     [(=
                                         (Var 8 x)

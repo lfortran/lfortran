@@ -626,7 +626,7 @@ public:
                         ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
                             s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
                             ASR::storage_typeType::Default, ASRUtils::duplicate_type(al, ltype),
-                            ASR::abiType::Source, ASR::accessType::Private, 
+                            ASR::abiType::Source, ASR::accessType::Private,
                             ASR::presenceType::Required, false);
                         current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
                         ASR::symbol_t *var = current_scope->get_symbol(var_name);
@@ -638,11 +638,11 @@ public:
                     ASR::expr_t *lexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                         current_scope->get_symbol("arg0")));
                     ASR::expr_t *rexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
-                        current_scope->get_symbol("arg1")));   
+                        current_scope->get_symbol("arg1")));
                     switch (ltype->type) {
                         case ASR::ttypeType::Real: {
                             func_name = op_name + "_intrinsic_real";
-                            value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x.base.base.loc, 
+                            value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x.base.base.loc,
                                 lexpr, op, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
                             break;
                         }
@@ -656,7 +656,7 @@ public:
                             func_name = op_name + "_intrinsic_complex";
                             value = ASRUtils::EXPR(ASR::make_ComplexBinOp_t(al, x.base.base.loc,
                                 lexpr, op, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
-                            break;                 
+                            break;
                         }
                         default:
                             throw LCompilersException("Not implemented " + std::to_string(ltype->type));
@@ -707,8 +707,8 @@ public:
             std::string new_f_name = to_lower(use_symbol->m_local_rename);
             pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
                 new_f_name, s);
-            current_function_dependencies.erase(std::string(ASRUtils::symbol_name(s)));
-            current_function_dependencies.insert(new_f_name);
+            current_function_dependencies.erase(ASRUtils::symbol_name(s));
+            current_function_dependencies.push_back(al, s2c(al, new_f_name));
         }
 
         is_instantiate = false;
@@ -731,7 +731,7 @@ public:
                                 {loc, arg->base.base.loc}),
                         Label(restriction_name + " has " + restriction_narg + " parameters",
                                 {restriction->base.base.loc})
-                    } 
+                    }
             ));
             throw SemanticAbort();
         }
@@ -888,7 +888,7 @@ public:
             }
             std::string name = to_lower(x.m_syms[i].m_name);
             char *name_c = s2c(al, name);
-            Vec<char*> variable_dependencies_vec;
+            SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type);
             ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, new_scope,
@@ -1263,7 +1263,7 @@ public:
                             throw SemanticError("Only class and derived type in select type test expressions.",
                                                 class_stmt->base.base.loc);
                         }
-                        Vec<char*> assoc_deps;
+                        SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
@@ -1306,7 +1306,7 @@ public:
                             throw SemanticError("Only class and derived type in select type test expressions.",
                                                 type_stmt_name->base.base.loc);
                         }
-                        Vec<char*> assoc_deps;
+                        SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
@@ -1345,7 +1345,7 @@ public:
                         selector_type = determine_type(type_stmt_type->base.base.loc,
                                                        assoc_variable_name,
                                                        type_stmt_type->m_vartype, false, m_dims);
-                        Vec<char*> assoc_deps;
+                        SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
                         assoc_variable->m_dependencies = assoc_deps.p;
@@ -1419,7 +1419,7 @@ public:
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(t);
-        current_module_dependencies.n = 0;
+        current_module_dependencies.clear(al);
         current_scope = v->m_symtab;
         current_module = v;
 
@@ -1437,12 +1437,10 @@ public:
         }
 
         if( current_module_dependencies.size() > 0 ) {
-            Vec<char*> module_dependencies;
+            SetChar module_dependencies;
             module_dependencies.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
             for( size_t i = 0; i < current_module_dependencies.size(); i++ ) {
-                if( !present(module_dependencies, current_module_dependencies[i]) ) {
-                    module_dependencies.push_back(al, current_module_dependencies[i]);
-                }
+                module_dependencies.push_back(al, current_module_dependencies[i]);
             }
             v->m_dependencies = module_dependencies.p;
             v->n_dependencies = module_dependencies.size();
@@ -1537,11 +1535,11 @@ public:
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
-        std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
-        current_function_dependencies.clear();
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
-        Vec<char*> func_deps;
+        SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
@@ -1581,10 +1579,10 @@ public:
         body.reserve(al, x.n_body);
         Vec<ASR::symbol_t*> rts;
         rts.reserve(al, rt_vec.size());
-        std::set<std::string> current_function_dependencies_copy = current_function_dependencies;
-        current_function_dependencies.clear();
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
-        Vec<char*> func_deps;
+        SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
@@ -1627,7 +1625,7 @@ public:
             labels.insert(var_name);
             Str a_var_name_f;
             a_var_name_f.from_str(al, var_name);
-            Vec<char*> variable_dependencies_vec;
+            SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, int32_type);
             ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
@@ -1722,7 +1720,7 @@ public:
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
             std::string arg_name = variable->m_name;
             arg_name = to_lower(arg_name);
-            Vec<char*> variable_dependencies_vec;
+            SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, ASRUtils::expr_type(end));
             ASR::asr_t *arg_var = ASR::make_Variable_t(al, x.base.base.loc,
@@ -1758,7 +1756,7 @@ public:
 
         // Assign where to_return
         std::string return_var_name = var_name + "_return_var_name";
-        Vec<char*> variable_dependencies_vec;
+        SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
         ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
@@ -2207,7 +2205,7 @@ public:
                 throw SemanticError("Symbol type not supported", x.base.base.loc);
             }
         }
-        current_function_dependencies.insert(std::string(ASRUtils::symbol_name(final_sym)));
+        current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
         tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr);
@@ -2356,7 +2354,7 @@ public:
                 if (inc->m_n == 0) {
                     throw SemanticError("Step expression (Increment) in DO loop cannot be zero", increment->base.loc);
                 }
-            } 
+            }
         } else {
             increment = nullptr;
         }

@@ -288,8 +288,8 @@
                                         []
                                         .false.
                                     )
-                                    [add
-                                    subtract]
+                                    [subtract
+                                    add]
                                     []
                                     [(Print
                                         ()

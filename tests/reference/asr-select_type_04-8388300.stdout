@@ -344,8 +344,6 @@
                                         .false.
                                     )
                                     [present
-                                    present
-                                    present
                                     check_table]
                                     [(Var 8 table)
                                     (Var 8 ptr)
@@ -522,8 +520,6 @@
                         })
                     class_default_select_type_user
                     [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
                     class_default_select_type]
                     .true.
                     .false.

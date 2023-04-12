@@ -165,8 +165,8 @@
                                         []
                                         .false.
                                     )
-                                    [1_match_key
-                                    allocated]
+                                    [allocated
+                                    1_match_key]
                                     [(Var 13 self)
                                     (Var 13 key)
                                     (Var 13 ptr)]
@@ -379,8 +379,8 @@
                                         []
                                         .false.
                                     )
-                                    [min@imin
-                                    present]
+                                    [present
+                                    min@imin]
                                     [(Var 12 self)
                                     (Var 12 n)]
                                     [(=
@@ -625,8 +625,7 @@
                                         []
                                         .false.
                                     )
-                                    [allocated
-                                    allocated]
+                                    [allocated]
                                     [(Var 8 self)]
                                     [(If
                                         (FunctionCall
@@ -735,7 +734,6 @@
                         })
                     tomlf_type_keyval
                     [lfortran_intrinsic_builtin
-                    lfortran_intrinsic_builtin
                     tomlf_type_value]
                     .false.
                     .false.

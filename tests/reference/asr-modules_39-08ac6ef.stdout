@@ -84,8 +84,8 @@
                                         []
                                         .false.
                                     )
-                                    [filewrite
-                                    join_path]
+                                    [join_path
+                                    filewrite]
                                     []
                                     [(SubroutineCall
                                         2 filewrite
