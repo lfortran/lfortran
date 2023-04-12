@@ -222,7 +222,7 @@ ctest
 
 To install the Jupyter kernel, install the following Conda packages also:
 ```
-conda install xeus xtl nlohmann_json cppzmq
+conda install xeus xeus-zmq xtl nlohmann_json cppzmq
 ```
 and enable the kernel by `-DWITH_XEUS=yes` and install into `$CONDA_PREFIX`. For
 example:

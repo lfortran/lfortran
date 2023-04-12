@@ -90,9 +90,9 @@ set(WITH_ZLIB yes
     CACHE BOOL "Compile with ZLIB Library")
 
 # Build to wasm
-set(LFORTRAN_BUILD_TO_WASM no 
+set(LFORTRAN_BUILD_TO_WASM no
     CACHE BOOL "Compile LFortran To WASM")
-    
+
 if (LFORTRAN_BUILD_TO_WASM)
     set(HAVE_BUILD_TO_WASM yes)
     SET(WITH_WHEREAMI no)
@@ -160,7 +160,7 @@ if (WITH_LLVM)
         list(APPEND LFORTRAN_LLVM_COMPONENTS webassemblyasmparser webassemblycodegen webassemblydesc webassemblydisassembler webassemblyinfo)
         add_definitions("-DHAVE_TARGET_WASM=1")
     endif()
-    
+
     llvm_map_components_to_libnames(llvm_libs ${LFORTRAN_LLVM_COMPONENTS})
     unset(LFORTRAN_LLVM_COMPONENTS)
 
@@ -188,7 +188,8 @@ endif()
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
-    find_package(xeus 2.4.1 REQUIRED)
+    find_package(xeus REQUIRED)
+    find_package(xeus-zmq REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
 
     # Generate kernel.json with correct paths
@@ -347,13 +348,13 @@ if (WITH_RUNTIME_LIBRARY)
     ALL
     COMMAND "${CMAKE_COMMAND}" --build  "${CMAKE_BINARY_DIR}/src/runtime"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
-  
+
   add_dependencies(build_runtime configure_runtime)
-  
+
   # This is called after lfortran has been installed
   # For more info https://stackoverflow.com/a/29979349/16568788
   add_subdirectory(cmake/postinstall)
-  
+
   install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
   install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
   install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
