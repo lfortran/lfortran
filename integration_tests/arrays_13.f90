@@ -28,11 +28,22 @@ program arrays_13
     end do
 
     call check_real(r)
+    call check_real_without_pointer(r)
 
 contains
 
     subroutine check_real(r)
         real, pointer :: r(:, :)
+        integer :: u, v
+        do u = lbound(r, 1), ubound(r, 1)
+            do v = lbound(r, 2), ubound(r, 2)
+                if( r(u, v) /= u * v ) error stop
+            end do
+        end do
+    end subroutine
+
+    subroutine check_real_without_pointer(r)
+        real :: r(:, :)
         integer :: u, v
         do u = lbound(r, 1), ubound(r, 1)
             do v = lbound(r, 2), ubound(r, 2)
