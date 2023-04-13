@@ -1,0 +1,5 @@
+semantic error: Variable 'x' is not declared
+ --> tests/errors/implicit_typing2.f90:6:5
+  |
+6 |     x = 1
+  |     ^ 'x' is undeclared

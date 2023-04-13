@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_typing2-440714f",
+    "cmd": "lfortran --indent --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/implicit_typing2.f90",
+    "infile_hash": "36b4bb1882db636cc72a4e0b458d197bd21563dac2e0aa0640803ca9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit_typing2-440714f.stderr",
+    "stderr_hash": "5a5d770bfc817e1cddf9a5567f3b695bcb88dffa5b3ffb694c57df41",
+    "returncode": 2
+}
