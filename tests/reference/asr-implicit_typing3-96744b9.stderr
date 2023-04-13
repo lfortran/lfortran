@@ -1,0 +1,9 @@
+semantic error: Return type not specified
+ --> tests/errors/implicit_typing3.f90:4:9 - 5:25
+  |
+4 |            function fun()
+  |            ^^^^^^^^^^^^^^...
+...
+  |
+5 |            end function fun
+  | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
