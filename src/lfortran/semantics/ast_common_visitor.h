@@ -700,6 +700,7 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
+    std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;

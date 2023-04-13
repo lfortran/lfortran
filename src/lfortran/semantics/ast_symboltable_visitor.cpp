@@ -237,110 +237,6 @@ public:
         }
     }
 
-    template <typename T, typename R>
-    void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
-        assgn_proc_names.clear();
-        class_procedures.clear();
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        current_module_dependencies.reserve(al, 4);
-        generic_procedures.clear();
-        ASR::asr_t *tmp0 = ASR::make_Module_t(al, x.base.base.loc,
-                                            /* a_symtab */ current_scope,
-                                            /* a_name */ s2c(al, to_lower(x.m_name)),
-                                            nullptr,
-                                            0,
-                                            false, false);
-        current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
-        if( x.class_type == AST::modType::Submodule ) {
-            LCompilers::PassOptions pass_options;
-            pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
-            pass_options.mod_files_dir = compiler_options.mod_files_dir;
-            pass_options.include_dirs = compiler_options.include_dirs;
-
-            ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
-                                                parent_name, x.base.base.loc, false,
-                                                pass_options, true,
-                                                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
-                                                ));
-            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
-            std::string unsupported_sym_name = import_all(m);
-            if( !unsupported_sym_name.empty() ) {
-                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
-            }
-        }
-        for (size_t i=0; i<x.n_use; i++) {
-            visit_unit_decl1(*x.m_use[i]);
-        }
-        for (size_t i=0; i<x.n_decl; i++) {
-            visit_unit_decl2(*x.m_decl[i]);
-        }
-        for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
-        }
-        current_module_sym = nullptr;
-        add_generic_procedures();
-        add_overloaded_procedures();
-        add_class_procedures();
-        add_generic_class_procedures();
-        add_assignment_procedures();
-        tmp = tmp0;
-        // Add module dependencies
-        R *m = ASR::down_cast2<R>(tmp);
-        m->m_dependencies = current_module_dependencies.p;
-        m->n_dependencies = current_module_dependencies.size();
-        std::string sym_name = to_lower(x.m_name);
-        if (parent_scope->get_symbol(sym_name) != nullptr) {
-            throw SemanticError("Module already defined", tmp->loc);
-        }
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        current_scope = parent_scope;
-        fix_type_info(m);
-        fix_struct_type(m->m_symtab);
-        dflt_access = ASR::Public;
-    }
-
-    void visit_Module(const AST::Module_t &x) {
-        in_module = true;
-        visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
-        in_module = false;
-    }
-
-    void visit_Submodule(const AST::Submodule_t &x) {
-        in_submodule = true;
-        visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, std::string(x.m_id));
-        in_submodule = false;
-    }
-
-    void visit_Program(const AST::Program_t &x) {
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        current_module_dependencies.reserve(al, 4);
-        for (size_t i=0; i<x.n_use; i++) {
-            visit_unit_decl1(*x.m_use[i]);
-        }
-        for (size_t i=0; i<x.n_decl; i++) {
-            visit_unit_decl2(*x.m_decl[i]);
-        }
-        for (size_t i=0; i<x.n_contains; i++) {
-            visit_program_unit(*x.m_contains[i]);
-        }
-        tmp = ASR::make_Program_t(
-            al, x.base.base.loc,
-            /* a_symtab */ current_scope,
-            /* a_name */ s2c(al, to_lower(x.m_name)),
-            current_module_dependencies.p,
-            current_module_dependencies.size(),
-            /* a_body */ nullptr,
-            /* n_body */ 0);
-        std::string sym_name = to_lower(x.m_name);
-        if (parent_scope->get_symbol(sym_name) != nullptr) {
-            throw SemanticError("Program already defined", tmp->loc);
-        }
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-        current_scope = parent_scope;
-        fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
-    }
 
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
@@ -358,6 +254,13 @@ public:
 
     template <typename T>
     void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+        if (implicit_stack.size() > 0 && x.n_implicit == 0) {
+            // We are inside a module and visiting a function / subroutine with no implicit statement
+            if (!is_interface) {
+                implicit_dictionary = implicit_stack.back();
+                return;
+            }
+        }
         //iterate over all implicit statements
         for (size_t i=0;i<x.n_implicit;i++) {
             //check if the implicit statement is of type "none"
@@ -448,6 +351,126 @@ public:
                 std::cout << it.first << " " << "NULL" << std::endl;
             }
         }
+    }
+
+    template <typename T, typename R>
+    void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
+        assgn_proc_names.clear();
+        class_procedures.clear();
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        current_module_dependencies.reserve(al, 4);
+        generic_procedures.clear();
+        ASR::asr_t *tmp0 = ASR::make_Module_t(al, x.base.base.loc,
+                                            /* a_symtab */ current_scope,
+                                            /* a_name */ s2c(al, to_lower(x.m_name)),
+                                            nullptr,
+                                            0,
+                                            false, false);
+        current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
+        if( x.class_type == AST::modType::Submodule ) {
+            LCompilers::PassOptions pass_options;
+            pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
+            pass_options.mod_files_dir = compiler_options.mod_files_dir;
+            pass_options.include_dirs = compiler_options.include_dirs;
+
+            ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
+                                                parent_name, x.base.base.loc, false,
+                                                pass_options, true,
+                                                [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }
+                                                ));
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
+            std::string unsupported_sym_name = import_all(m);
+            if( !unsupported_sym_name.empty() ) {
+                throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
+            }
+        }
+        for (size_t i=0; i<x.n_use; i++) {
+            visit_unit_decl1(*x.m_use[i]);
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            visit_unit_decl2(*x.m_decl[i]);
+        }
+        for (size_t i=0; i<x.n_contains; i++) {
+            visit_program_unit(*x.m_contains[i]);
+        }
+        current_module_sym = nullptr;
+        add_generic_procedures();
+        add_overloaded_procedures();
+        add_class_procedures();
+        add_generic_class_procedures();
+        add_assignment_procedures();
+        tmp = tmp0;
+        // Add module dependencies
+        R *m = ASR::down_cast2<R>(tmp);
+        m->m_dependencies = current_module_dependencies.p;
+        m->n_dependencies = current_module_dependencies.size();
+        std::string sym_name = to_lower(x.m_name);
+        if (parent_scope->get_symbol(sym_name) != nullptr) {
+            throw SemanticError("Module already defined", tmp->loc);
+        }
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
+        fix_type_info(m);
+        fix_struct_type(m->m_symtab);
+        dflt_access = ASR::Public;
+    }
+
+    void visit_Module(const AST::Module_t &x) {
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+            implicit_stack.push_back(implicit_dictionary);
+        } else {
+            for (size_t i=0;i<x.n_implicit;i++) {
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_implicit[i])) {
+                    throw SemanticError("Implicit typing is not allowed, enable it by using --implicit-typing ", x.m_implicit[i]->base.loc);
+                }
+            }
+        }
+        in_module = true;
+        visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
+        in_module = false;
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
+        }
+    }
+
+    void visit_Submodule(const AST::Submodule_t &x) {
+        in_submodule = true;
+        visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, std::string(x.m_id));
+        in_submodule = false;
+    }
+
+    void visit_Program(const AST::Program_t &x) {
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        current_module_dependencies.reserve(al, 4);
+        for (size_t i=0; i<x.n_use; i++) {
+            visit_unit_decl1(*x.m_use[i]);
+        }
+        for (size_t i=0; i<x.n_decl; i++) {
+            visit_unit_decl2(*x.m_decl[i]);
+        }
+        for (size_t i=0; i<x.n_contains; i++) {
+            visit_program_unit(*x.m_contains[i]);
+        }
+        tmp = ASR::make_Program_t(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, to_lower(x.m_name)),
+            current_module_dependencies.p,
+            current_module_dependencies.size(),
+            /* a_body */ nullptr,
+            /* n_body */ 0);
+        std::string sym_name = to_lower(x.m_name);
+        if (parent_scope->get_symbol(sym_name) != nullptr) {
+            throw SemanticError("Program already defined", tmp->loc);
+        }
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
+        fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
@@ -616,8 +639,12 @@ public:
         AST::AttrType_t* r = nullptr;
         bool found = false;
         if (n == 0 && compiler_options.implicit_interface && compiler_options.implicit_typing) {
-            ASR::ttype_t* t = implicit_dictionary[return_var_name];
+            std::string first_letter = to_lower(std::string(1,return_var_name[0]));
+            ASR::ttype_t* t = implicit_dictionary[first_letter];
             AST::decl_typeType ttype;
+            if (t == nullptr) {
+                throw SemanticError("No implicit return type available for `" + return_var_name +"`", loc);
+            }
             switch( t->type ) {
                 case ASR::ttypeType::Integer: {
                     ttype = AST::decl_typeType::TypeInteger;
@@ -857,7 +884,7 @@ public:
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
         } else {
-            if (return_type) {
+            if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
                 throw SemanticError("Cannot specify the return type twice",
                     x.base.base.loc);
             }
