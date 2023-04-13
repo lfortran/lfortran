@@ -3039,3 +3039,15 @@ asr = true
 [[test]]
 filename = "errors/do_zero_increment.f90"
 asr = true
+
+[[test]]
+filename = "errors/implicit_typing1.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing2.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing3.f90"
+asr_implicit_typing = true

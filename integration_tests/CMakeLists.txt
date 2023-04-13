@@ -499,7 +499,7 @@ RUN(NAME implicit_interface_06 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_07 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_08 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_09 LABELS gfortran llvmImplicit)
-RUN(NAME implicit_interface_10 LABELS gfortran) # ! TODO: fix this test
+RUN(NAME implicit_interface_10 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_11 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_12 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_13 LABELS gfortran llvmImplicit)
