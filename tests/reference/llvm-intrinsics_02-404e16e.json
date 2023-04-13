@@ -2,11 +2,11 @@
     "basename": "llvm-intrinsics_02-404e16e",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/intrinsics_02.f90",
-    "infile_hash": "71a4161c77ded6a5488db020860d283db161a74ffe295edc1c70eb48",
+    "infile_hash": "9042eb55a868aba778eaccfaba75217700b9f99f157df367ffc005fd",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-intrinsics_02-404e16e.stdout",
-    "stdout_hash": "6c9a81bdc0af4d6d1a118f90c4bd436d0ec57fc4ecb4780b159a3017",
+    "stdout_hash": "fe4d5f410c8188ded89437a8f8ed11a3da698349174947cb998b30ec",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

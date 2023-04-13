@@ -89,10 +89,25 @@
                     )
                     (If
                         (RealCompare
-                            (Var 2 x)
-                            NotEq
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 x)
+                                    Sub
+                                    (RealConstant
+                                        0.997495
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
                             (RealConstant
-                                0.997495
+                                0.000001
                                 (Real 4 [])
                             )
                             (Logical 4 [])
@@ -106,15 +121,30 @@
                     (If
                         (RealCompare
                             (IntrinsicFunction
-                                Sin
-                                [(Var 2 x)]
+                                Abs
+                                [(RealBinOp
+                                    (IntrinsicFunction
+                                        Sin
+                                        [(Var 2 x)]
+                                        0
+                                        (Real 4 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        0.840115
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
                                 0
                                 (Real 4 [])
                                 ()
                             )
-                            NotEq
+                            Gt
                             (RealConstant
-                                0.840115
+                                0.000001
                                 (Real 4 [])
                             )
                             (Logical 4 [])
