@@ -11,7 +11,7 @@ contains
 
 subroutine foo()
     b(1) = 43
-call foo2(size(b), b)
+    call foo2(size(b), b)
 end subroutine
 
 subroutine foo2(m, vec)
