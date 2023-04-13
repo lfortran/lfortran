@@ -251,8 +251,8 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/modern_minpack.git
             cd modern_minpack
-            git checkout main
-            git checkout 65e6fded6550879aef2e5941098776c7988af9c6
+            git checkout w2
+            git checkout c0e0e6583b41573f54278469d6d58061fe6ea04b
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
