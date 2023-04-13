@@ -863,7 +863,7 @@ asr = true
 filename = "../integration_tests/arrays_02.f90"
 ast = true
 ast_f90 = true
-# julia = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_03_func.f90"
