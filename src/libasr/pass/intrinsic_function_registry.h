@@ -510,6 +510,9 @@ namespace IntrinsicFunctionRegistry {
     }
 
     static inline impl_function get_instantiate_function(int64_t id) {
+        if( intrinsic_function_by_id_db.find(id) == intrinsic_function_by_id_db.end() ) {
+            return nullptr;
+        }
         return intrinsic_function_by_id_db.at(id);
     }
 
