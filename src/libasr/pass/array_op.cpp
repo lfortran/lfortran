@@ -1103,10 +1103,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                                     }
                                     if ( is_arg ) {
                                         ASR::symbol_t* subrout = subrout_call->m_name;
-                                        if ( ASR::is_a<ASR::ExternalSymbol_t>(*subrout) ) {
-                                            ASR::ExternalSymbol_t* subrout_ext = ASR::down_cast<ASR::ExternalSymbol_t>(subrout);
-                                            subrout = subrout_ext->m_external;
-                                        }
+                                        subrout = ASRUtils::symbol_get_past_external(subrout);
                                         if ( ASR::is_a<ASR::Function_t>(*subrout) ) {
                                             ASR::Function_t* subrout_func = ASR::down_cast<ASR::Function_t>(subrout);
                                             std::string subrout_func_name = std::string(subrout_func->m_name);
