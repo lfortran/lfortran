@@ -23,7 +23,7 @@ None.
 
 **BlockCall** signifies the block symbol call. The Block represents a
 scoped collection of statements and its own symbol table. The Block itself is
-part of a symbol table, and the BlockCall node is used to call it.
+part of a symbol table, and the BlockCall node is used to call it in order to execute the statements inside the block i.e., once the control reaches the `BlockCall` only then the statements inside the block it refers to are executed.
 
 Find more information on [block](../symbol_nodes/symbol.md).
 
