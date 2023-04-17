@@ -1809,23 +1809,23 @@ int main(int argc, char *argv[])
         if (compiler_options.arg_o.size() > 0) {
             outfile = compiler_options.arg_o;
         } else if (arg_S) {
-            outfile = basename.replace_extension(".s");
+            outfile = basename.replace_extension(".s").string();
         } else if (arg_c) {
-            outfile = basename.replace_extension(".o");
+            outfile = basename.replace_extension(".o").string();
         } else if (show_prescan) {
-            outfile = basename.replace_extension(".prescan");
+            outfile = basename.replace_extension(".prescan").string();
         } else if (show_tokens) {
-            outfile = basename.replace_extension(".tokens");
+            outfile = basename.replace_extension(".tokens").string();
         } else if (show_ast) {
-            outfile = basename.replace_extension(".ast");
+            outfile = basename.replace_extension(".ast").string();
         } else if (show_asr) {
-            outfile = basename.replace_extension(".asr");
+            outfile = basename.replace_extension(".asr").string();
         } else if (show_llvm) {
-            outfile = basename.replace_extension(".ll");
+            outfile = basename.replace_extension(".ll").string();
         } else if (show_wat) {
-            outfile = basename.replace_extension(".wat");
+            outfile = basename.replace_extension(".wat").string();
         } else if (show_julia) {
-            outfile = basename.replace_extension(".jl");
+            outfile = basename.replace_extension(".jl").string();
         } else {
             outfile = "a.out";
         }
