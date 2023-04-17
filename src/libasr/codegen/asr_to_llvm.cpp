@@ -186,12 +186,6 @@ public:
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
 
-    uint64_t parent_function_hash;
-    uint64_t calling_function_hash; /* These hashes are compared to resulted
-        from the nested_vars analysis pass to determine if we need to save or
-        reload a local scope (and increment or decrement the stack pointer) */
-    const ASR::Function_t *parent_function = nullptr;
-
     std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop,
         so that we can jump to the head of the loop when we reach a cycle */
     std::vector<std::string> loop_head_names;
@@ -3675,7 +3669,6 @@ public:
         }
         visit_procedures(x);
         generate_function(x);
-        parent_function = nullptr;
         dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
         dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
 
@@ -3900,8 +3893,6 @@ public:
 
     inline void define_function_entry(const ASR::Function_t& x) {
         uint32_t h = get_hash((ASR::asr_t*)&x);
-        parent_function = &x;
-        parent_function_hash = h;
         llvm::Function* F = llvm_symtab_fn[h];
         if (compiler_options.emit_debug_info) debug_current_scope = llvm_symtab_fn_discope[h];
         proc_return = llvm::BasicBlock::Create(context, "return");
@@ -5880,9 +5871,6 @@ public:
     inline void fetch_val(ASR::Variable_t* x) {
         uint32_t x_h = get_hash((ASR::asr_t*)x);
         llvm::Value* x_v;
-        // Check if x is a needed global here, if so, it should exist as an
-        // element in the runtime descriptor, get element pointer and create
-        // load
         LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
         x_v = llvm_symtab[x_h];
         if (x->m_value_attr) {
@@ -7319,7 +7307,6 @@ public:
             args.insert(args.end(), args2.begin(), args2.end());
             builder->CreateCall(fn, args);
         }
-        calling_function_hash = h;
     }
 
     void handle_bitwise_args(const ASR::FunctionCall_t& x, llvm::Value*& arg1,
@@ -7659,7 +7646,6 @@ public:
                 }
             }
         }
-        calling_function_hash = h;
     }
 
     void visit_ArraySize(const ASR::ArraySize_t& x) {
