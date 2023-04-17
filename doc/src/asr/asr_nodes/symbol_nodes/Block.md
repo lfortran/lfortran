@@ -33,6 +33,12 @@ local to the block.
 The Block itself is part of a symbol table and one uses the BlockCall `stmt`
 node to call (enter) the block from a list of statements.
 
+A `BlockCall` is different from a `FunctionCall` in the sense that it does
+not expect/accept any arguments. It is more like an inline `Function`. Also,
+the statements inside a `Block` can access the variables in the parent/caller
+scope, unlike `Function` where statements cannot access variables of the caller
+scope.
+
 ## Types
 
 
