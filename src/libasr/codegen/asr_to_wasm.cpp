@@ -15,6 +15,9 @@
 #include <libasr/pass/do_loops.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/pass_array_by_data.h>
+#include <libasr/pass/array_op.h>
+#include <libasr/pass/implied_do_loops.h>
+#include <libasr/pass/select_case.h>
 #include <libasr/pass/print_arr.h>
 #include <libasr/pass/intrinsic_function.h>
 #include <libasr/exception.h>
@@ -2899,8 +2902,11 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 
     LCompilers::PassOptions pass_options;
     pass_array_by_data(al, asr, pass_options);
+    pass_replace_array_op(al, asr, pass_options);
+    pass_replace_implied_do_loops(al, asr, pass_options);
     pass_replace_print_arr(al, asr, pass_options);
     pass_replace_do_loops(al, asr, pass_options);
+    pass_replace_select_case(al, asr, pass_options);
     pass_replace_intrinsic_function(al, asr, pass_options);
     pass_options.always_run = true;
     pass_unused_functions(al, asr, pass_options);
