@@ -4211,6 +4211,8 @@ public:
     void visit_Associate(const ASR::Associate_t& x) {
         ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
         ASR::Variable_t *asr_value = EXPR2VAR(x.m_value);
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
         uint32_t value_h = get_hash((ASR::asr_t*)asr_value);
         uint32_t target_h = get_hash((ASR::asr_t*)asr_target);
         llvm::Value* llvm_target = llvm_symtab[target_h];
@@ -4259,7 +4261,36 @@ public:
             builder->CreateStore(value_vtabid, llvm_utils->create_gep(llvm_target, 0));
             builder->CreateStore(value_class, llvm_utils->create_gep(llvm_target, 1));
         } else {
-            builder->CreateStore(llvm_value, llvm_target);
+            if( ASRUtils::is_array(target_type) &&
+                ASRUtils::is_array(value_type) &&
+                ASRUtils::check_equal_type(target_type, value_type) ) {
+                llvm::Value* llvm_target_ptr = llvm_target;
+                llvm::Value* llvm_value_ptr = llvm_value;
+
+                llvm::Value* target_array = llvm_target;
+                llvm::Value* value_array = llvm_value;
+
+                llvm::Value* target_ptr = llvm_target;
+                llvm::Value* value_ptr = llvm_value;
+                if (llvm_value->getType()->isPointerTy() && llvm_value->getType()->getPointerElementType()->isFloatTy()) {
+                    // check if target is not float*
+                    if (!(llvm_target->getType()->isPointerTy() && llvm_target->getType()->getPointerElementType()->isFloatTy())) {
+                        llvm_target_ptr = builder->CreateLoad(llvm_target);
+                        target_array = arr_descr->get_pointer_to_data(llvm_target_ptr);
+                        target_ptr = builder->CreateGEP(target_array, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)});
+                    }
+                } else {
+                    // check if target is float*
+                    if (llvm_target->getType()->isPointerTy() && llvm_target->getType()->getPointerElementType()->isFloatTy()) {
+                        llvm_value_ptr = builder->CreateLoad(llvm_value);
+                        value_array = arr_descr->get_pointer_to_data(llvm_value_ptr);
+                        value_ptr = builder->CreateGEP(value_array, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)});
+                    }
+                }
+                builder->CreateStore(value_ptr, target_ptr);
+            } else {
+                builder->CreateStore(llvm_value, llvm_target);
+            }
         }
 
     }
