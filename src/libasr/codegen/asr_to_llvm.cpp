@@ -4272,19 +4272,22 @@ public:
 
                 llvm::Value* target_ptr = llvm_target;
                 llvm::Value* value_ptr = llvm_value;
+
+                std::vector<llvm::Value*> idx_vec = {
+                    llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
                 if (llvm_value->getType()->isPointerTy() && llvm_value->getType()->getPointerElementType()->isFloatTy()) {
                     // check if target is not float*
                     if (!(llvm_target->getType()->isPointerTy() && llvm_target->getType()->getPointerElementType()->isFloatTy())) {
-                        llvm_target_ptr = builder->CreateLoad(llvm_target);
+                        llvm_target_ptr = CreateLoad(llvm_target);
                         target_array = arr_descr->get_pointer_to_data(llvm_target_ptr);
-                        target_ptr = builder->CreateGEP(target_array, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)});
+                        target_ptr = CreateGEP(target_array, idx_vec);
                     }
                 } else {
                     // check if target is float*
                     if (llvm_target->getType()->isPointerTy() && llvm_target->getType()->getPointerElementType()->isFloatTy()) {
-                        llvm_value_ptr = builder->CreateLoad(llvm_value);
+                        llvm_value_ptr = CreateLoad(llvm_value);
                         value_array = arr_descr->get_pointer_to_data(llvm_value_ptr);
-                        value_ptr = builder->CreateGEP(value_array, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)});
+                        value_ptr = CreateGEP(value_array, idx_vec);
                     }
                 }
                 builder->CreateStore(value_ptr, target_ptr);
