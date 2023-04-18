@@ -534,7 +534,8 @@ public:
     }
 
     void fill_array_details(llvm::Value* arr, llvm::Type* llvm_data_type,
-                            ASR::dimension_t* m_dims, int n_dims, bool is_data_only=false) {
+                            ASR::dimension_t* m_dims, int n_dims, bool is_data_only=false,
+                            bool reserve_data_memory=true) {
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
         for( int r = 0; r < n_dims; r++ ) {
             ASR::dimension_t m_dim = m_dims[r];
@@ -556,7 +557,7 @@ public:
                 builder->CreateStore(arr_first, arr);
             }
         } else {
-            arr_descr->fill_array_details(arr, llvm_data_type, n_dims, llvm_dims);
+            arr_descr->fill_array_details(arr, llvm_data_type, n_dims, llvm_dims, reserve_data_memory);
         }
     }
 
@@ -4259,6 +4260,22 @@ public:
             builder->CreateStore(value_vtabid, llvm_utils->create_gep(llvm_target, 0));
             builder->CreateStore(value_class, llvm_utils->create_gep(llvm_target, 1));
         } else {
+            bool is_value_data_only_array = ASRUtils::is_data_only_array(
+                asr_value->m_type, asr_value->m_abi);
+            if( is_value_data_only_array &&
+                asr_value->m_intent != ASR::intentType::Local ) {
+                ASR::ttype_t* target_type = ASRUtils::type_get_past_pointer(asr_target->m_type);
+                llvm::Type* llvm_target_type = get_type_from_ttype_t_util(target_type);
+                llvm::Value* llvm_target_ = builder->CreateAlloca(llvm_target_type);
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(asr_value->m_type, m_dims);
+                ASR::ttype_t* data_type = ASRUtils::duplicate_type_without_dims(
+                                            al, target_type, target_type->base.loc);
+                llvm::Type* llvm_data_type = get_type_from_ttype_t_util(data_type);
+                fill_array_details(llvm_target_, llvm_data_type, m_dims, n_dims, false, false);
+                builder->CreateStore(llvm_value, arr_descr->get_pointer_to_data(llvm_target_));
+                llvm_value = llvm_target_;
+            }
             builder->CreateStore(llvm_value, llvm_target);
         }
 
