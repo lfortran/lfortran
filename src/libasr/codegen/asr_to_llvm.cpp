@@ -4275,16 +4275,16 @@ public:
 
                 std::vector<llvm::Value*> idx_vec = {
                     llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-                if (llvm_value->getType()->isPointerTy() && llvm_value->getType()->getPointerElementType()->isFloatTy()) {
+                if (llvm_value->getType()->isPointerTy() && ( llvm_value->getType()->getPointerElementType()->isFloatTy() || llvm_value->getType()->getPointerElementType()->isDoubleTy() )) {
                     // check if target is not float*
-                    if (!(llvm_target->getType()->isPointerTy() && llvm_target->getType()->getPointerElementType()->isFloatTy())) {
+                    if (!(llvm_target->getType()->isPointerTy() && ( llvm_target->getType()->getPointerElementType()->isFloatTy() || llvm_target->getType()->getPointerElementType()->isDoubleTy() ))) {
                         llvm_target_ptr = CreateLoad(llvm_target);
                         target_array = arr_descr->get_pointer_to_data(llvm_target_ptr);
                         target_ptr = CreateGEP(target_array, idx_vec);
                     }
                 } else {
                     // check if target is float*
-                    if (llvm_target->getType()->isPointerTy() && llvm_target->getType()->getPointerElementType()->isFloatTy()) {
+                    if (llvm_target->getType()->isPointerTy() && ( llvm_target->getType()->getPointerElementType()->isFloatTy() || llvm_target->getType()->getPointerElementType()->isDoubleTy() )) {
                         llvm_value_ptr = CreateLoad(llvm_value);
                         value_array = arr_descr->get_pointer_to_data(llvm_value_ptr);
                         value_ptr = CreateGEP(value_array, idx_vec);
