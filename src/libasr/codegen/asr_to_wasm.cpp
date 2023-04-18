@@ -13,8 +13,6 @@
 #include <libasr/codegen/wasm_assembler.h>
 
 #include <libasr/pass/pass_manager.h>
-#include <libasr/exception.h>
-#include <libasr/asr_utils.h>
 
 #define INCLUDE_RUNTIME_FUNC(fn)                 \
     if (m_rt_func_used_idx[fn] == -1) {          \
