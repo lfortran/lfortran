@@ -141,7 +141,8 @@ namespace LCompilers {
                 virtual
                 void fill_array_details(
                     llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
-                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims) = 0;
+                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
+                    bool reserve_data_memory=true) = 0;
 
                 virtual
                 void fill_array_details(
@@ -340,7 +341,8 @@ namespace LCompilers {
                 virtual
                 void fill_array_details(
                     llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
-                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims);
+                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
+                    bool reserve_data_memory=true);
 
                 virtual
                 void fill_array_details(
