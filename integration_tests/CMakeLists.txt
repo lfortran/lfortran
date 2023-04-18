@@ -134,13 +134,13 @@ RUN(NAME error_stop_02 FAIL LABELS llvm wasm llvm2)
 RUN(NAME stop_01 LABELS llvm wasm llvm2)
 
 RUN(NAME print_01 LABELS gfortran llvm cpp llvm2 wasm)
-RUN(NAME print_02 LABELS gfortran llvm llvm2)
-RUN(NAME print_03 LABELS gfortran llvm llvm2)
-RUN(NAME print_arr_01 LABELS gfortran llvm llvm2)
-RUN(NAME print_arr_02 LABELS gfortran llvm llvm2)
+RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm)
 
-RUN(NAME include_01 LABELS gfortran llvm)
-RUN(NAME include_02 LABELS gfortran llvm)
+RUN(NAME include_01 LABELS gfortran llvm wasm)
+RUN(NAME include_02 LABELS gfortran llvm wasm)
 
 RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME cond_02 LABELS gfortran llvm wasm)
@@ -155,8 +155,8 @@ RUN(NAME expr_07 LABELS gfortran llvm wasm)
 RUN(NAME expr_08 LABELS gfortran llvm wasm)
 RUN(NAME expr_09 LABELS gfortran llvm wasm)
 RUN(NAME expr_10 LABELS gfortran llvm wasm)
-RUN(NAME expr_12 LABELS gfortran llvm)
-RUN(NAME expr_13 LABELS gfortran llvm)
+RUN(NAME expr_12 LABELS gfortran llvm) # it uses string compare
+RUN(NAME expr_13 LABELS gfortran llvm wasm)
 
 RUN(NAME data_01 LABELS gfortran llvm)
 RUN(NAME data_02 LABELS gfortran)
@@ -164,7 +164,7 @@ RUN(NAME data_03 LABELS gfortran llvm)
 RUN(NAME data_04 LABELS gfortran llvm)
 RUN(NAME data_05 LABELS gfortran llvmImplicit)
 RUN(NAME minmax_01 LABELS gfortran llvm wasm)
-RUN(NAME arithmetic_if_01 LABELS gfortran llvm)
+RUN(NAME arithmetic_if_01 LABELS gfortran llvm) # arithmetic tests use goto
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm)
 RUN(NAME arithmetic_if_03 LABELS gfortran llvm)
 RUN(NAME arithmetic_if_04 LABELS gfortran llvm)
@@ -185,12 +185,12 @@ RUN(NAME while_02 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME doloop_02 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME doloop_03 LABELS gfortran llvm cpp wasm)
-RUN(NAME doloop_04 LABELS gfortran llvm)
-RUN(NAME doloop_05 LABELS gfortran llvm cpp)
+RUN(NAME doloop_04 LABELS gfortran llvm) # uses goto target
+RUN(NAME doloop_05 LABELS gfortran llvm cpp) # uses goto
 RUN(NAME doloop_06 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_07 LABELS gfortran llvm cpp wasm)
 RUN(NAME doloop_08 LABELS gfortran llvm cpp wasm)
-RUN(NAME doloop_09 LABELS gfortran llvm)
+RUN(NAME doloop_09 LABELS gfortran llvm) # nested subroutine
 
 RUN(NAME cycle_and_exit1 LABELS gfortran llvm)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm)
@@ -280,7 +280,7 @@ RUN(NAME arrays_18_func LABELS gfortran llvm)
 RUN(NAME arrays_19 LABELS gfortran llvm)
 RUN(NAME arrays_20 LABELS gfortran llvm)
 RUN(NAME arrays_22 LABELS gfortran llvm)
-RUN(NAME arrays_23 LABELS gfortran llvmm wasm)
+RUN(NAME arrays_23 LABELS gfortran llvm wasm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)
@@ -750,12 +750,12 @@ RUN(NAME enum_02 LABELS gfortran llvm EXTRAFILES
 
 RUN(NAME array_section_01 LABELS gfortran llvm)
 
-RUN(NAME pass_array_by_data_01 LABELS gfortran llvm)
+RUN(NAME pass_array_by_data_01 LABELS gfortran llvm wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_03 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_04 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_05 LABELS gfortran llvm)
-RUN(NAME pass_array_by_data_06 LABELS gfortran llvm)
+RUN(NAME pass_array_by_data_06 LABELS gfortran llvm wasm)
 
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
@@ -764,7 +764,7 @@ RUN(NAME write_01 LABELS gfortran llvm)
 RUN(NAME do_loop_01 LABELS gfortran llvm)
 
 RUN(NAME array_01 LABELS gfortran llvm)
-RUN(NAME array_02 LABELS gfortran llvm)
+RUN(NAME array_02 LABELS gfortran llvm wasm)
 
 RUN(NAME do_loop_02 LABELS gfortran llvm)
 
