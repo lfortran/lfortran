@@ -56,41 +56,72 @@ namespace LCompilers {
     typedef void (*pass_function)(Allocator&, ASR::TranslationUnit_t&,
                                   const LCompilers::PassOptions&);
 
+    enum PASS {
+        do_loops = 0,
+        global_stmts = 1,
+        implied_do_loops = 2,
+        array_op = 3,
+        intrinsic_function = 4,
+        arr_slice = 5,
+        print_arr = 6,
+        print_list_tuple = 7,
+        class_constructor = 8,
+        unused_functions = 9,
+        flip_sign = 10,
+        div_to_mul = 11,
+        fma = 12,
+        sign_from_value = 13,
+        inline_function_calls = 14,
+        loop_unroll = 15,
+        dead_code_removal = 16,
+        forall = 17,
+        select_case = 18,
+        loop_vectorise = 19,
+        array_dim_intrinsics_update = 20,
+        list_expr = 21,
+        array_by_data = 22,
+        subroutine_from_function = 23,
+        transform_optional_argument_functions = 24,
+        init_expr = 25,
+        nested_vars = 26,
+        NO_OF_PASSES = 27
+    };
+
     class PassManager {
         private:
 
-        std::vector<std::string> _passes;
-        std::vector<std::string> _with_optimization_passes;
-        std::vector<std::string> _user_defined_passes;
-        std::vector<std::string> _skip_passes, _c_skip_passes;
-        std::map<std::string, pass_function> _passes_db = {
-            {"do_loops", &pass_replace_do_loops},
-            {"global_stmts", &pass_wrap_global_stmts_into_function},
-            {"implied_do_loops", &pass_replace_implied_do_loops},
-            {"array_op", &pass_replace_array_op},
-            {"intrinsic_function", &pass_replace_intrinsic_function},
-            {"arr_slice", &pass_replace_arr_slice},
-            {"print_arr", &pass_replace_print_arr},
-            {"print_list_tuple", &pass_replace_print_list_tuple},
-            {"class_constructor", &pass_replace_class_constructor},
-            {"unused_functions", &pass_unused_functions},
-            {"flip_sign", &pass_replace_flip_sign},
-            {"div_to_mul", &pass_replace_div_to_mul},
-            {"fma", &pass_replace_fma},
-            {"sign_from_value", &pass_replace_sign_from_value},
-            {"inline_function_calls", &pass_inline_function_calls},
-            {"loop_unroll", &pass_loop_unroll},
-            {"dead_code_removal", &pass_dead_code_removal},
-            {"forall", &pass_replace_forall},
-            {"select_case", &pass_replace_select_case},
-            {"loop_vectorise", &pass_loop_vectorise},
-            {"array_dim_intrinsics_update", &pass_update_array_dim_intrinsic_calls},
-            {"pass_list_expr", &pass_list_expr},
-            {"pass_array_by_data", &pass_array_by_data},
-            {"subroutine_from_function", &pass_create_subroutine_from_function},
-            {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
-            {"init_expr", &pass_replace_init_expr},
-            {"nested_vars", &pass_nested_vars}
+        std::vector<PASS> _passes;
+        std::vector<PASS> _with_optimization_passes;
+        std::vector<PASS> _user_defined_passes;
+        std::vector<PASS> _skip_passes, _c_skip_passes;
+        std::map<PASS, pass_function> _passes_db = {
+            {PASS::do_loops, &pass_replace_do_loops},
+            {PASS::global_stmts, &pass_wrap_global_stmts_into_function},
+            {PASS::implied_do_loops, &pass_replace_implied_do_loops},
+            {PASS::array_op, &pass_replace_array_op},
+            {PASS::intrinsic_function, &pass_replace_intrinsic_function},
+            {PASS::arr_slice, &pass_replace_arr_slice},
+            {PASS::print_arr, &pass_replace_print_arr},
+            {PASS::print_list_tuple, &pass_replace_print_list_tuple},
+            {PASS::class_constructor, &pass_replace_class_constructor},
+            {PASS::unused_functions, &pass_unused_functions},
+            {PASS::flip_sign, &pass_replace_flip_sign},
+            {PASS::div_to_mul, &pass_replace_div_to_mul},
+            {PASS::fma, &pass_replace_fma},
+            {PASS::sign_from_value, &pass_replace_sign_from_value},
+            {PASS::inline_function_calls, &pass_inline_function_calls},
+            {PASS::loop_unroll, &pass_loop_unroll},
+            {PASS::dead_code_removal, &pass_dead_code_removal},
+            {PASS::forall, &pass_replace_forall},
+            {PASS::select_case, &pass_replace_select_case},
+            {PASS::loop_vectorise, &pass_loop_vectorise},
+            {PASS::array_dim_intrinsics_update, &pass_update_array_dim_intrinsic_calls},
+            {PASS::list_expr, &pass_list_expr},
+            {PASS::array_by_data, &pass_array_by_data},
+            {PASS::subroutine_from_function, &pass_create_subroutine_from_function},
+            {PASS::transform_optional_argument_functions, &pass_transform_optional_argument_functions},
+            {PASS::init_expr, &pass_replace_init_expr},
+            {PASS::nested_vars, &pass_nested_vars}
         };
 
         bool is_fast;
@@ -98,11 +129,11 @@ namespace LCompilers {
         bool c_skip_pass; // This will contain the passes that are to be skipped in C
 
         void _apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
-                           std::vector<std::string>& passes, PassOptions &pass_options,
+                           std::vector<PASS>& passes, PassOptions &pass_options,
                            diag::Diagnostics &diagnostics) {
             if (pass_options.pass_cumulative) {
                 int _pass_max_idx = -1, _opt_max_idx = -1;
-                for (std::string &current_pass: passes) {
+                for (PASS current_pass: passes) {
                     auto it1 = std::find(_passes.begin(), _passes.end(), current_pass);
                     if (it1 != _passes.end()) {
                         _pass_max_idx = std::max(_pass_max_idx,
@@ -132,7 +163,7 @@ namespace LCompilers {
                 // Note: this is not enough for rtlib, we also need to include
                 // it
 
-                if (rtlib && passes[i] == "unused_functions") continue;
+                if (rtlib && passes[i] == PASS::unused_functions) continue;
                 if( std::find(_skip_passes.begin(), _skip_passes.end(), passes[i]) != _skip_passes.end())
                     continue;
                 if (c_skip_pass && std::find(_c_skip_passes.begin(),
@@ -158,7 +189,7 @@ namespace LCompilers {
 
         bool rtlib=false;
 
-        void _parse_pass_arg(std::string& arg, std::vector<std::string>& passes) {
+        void _parse_pass_arg(std::string& arg, std::vector<PASS>& passes) {
             if (arg == "") return;
 
             std::string current_pass = "";
@@ -186,63 +217,63 @@ namespace LCompilers {
         PassManager(): is_fast{false}, apply_default_passes{false},
             c_skip_pass{false} {
             _passes = {
-                "nested_vars",
-                "global_stmts",
-                "init_expr",
-                "class_constructor",
-                "implied_do_loops",
-                "pass_list_expr",
-                "arr_slice",
-                "subroutine_from_function",
-                "array_op",
-                "intrinsic_function",
-                "pass_array_by_data",
-                "print_arr",
-                "print_list_tuple",
-                "array_dim_intrinsics_update",
-                "do_loops",
-                "forall",
-                "select_case",
-                "inline_function_calls",
-                "unused_functions",
-                "transform_optional_argument_functions"
+                PASS::nested_vars,
+                PASS::global_stmts,
+                PASS::init_expr,
+                PASS::class_constructor,
+                PASS::implied_do_loops,
+                PASS::list_expr,
+                PASS::arr_slice,
+                PASS::subroutine_from_function,
+                PASS::array_op,
+                PASS::intrinsic_function,
+                PASS::array_by_data,
+                PASS::print_arr,
+                PASS::print_list_tuple,
+                PASS::array_dim_intrinsics_update,
+                PASS::do_loops,
+                PASS::forall,
+                PASS::select_case,
+                PASS::inline_function_calls,
+                PASS::unused_functions,
+                PASS::transform_optional_argument_functions
             };
 
             _with_optimization_passes = {
-                "global_stmts",
-                "init_expr",
-                "class_constructor",
-                "implied_do_loops",
-                "pass_array_by_data",
-                "arr_slice",
-                "subroutine_from_function",
-                "array_op",
-                "intrinsic_function",
-                "print_arr",
-                "print_list_tuple",
-                "loop_vectorise",
-                "loop_unroll",
-                "array_dim_intrinsics_update",
-                "do_loops",
-                "forall",
-                "dead_code_removal",
-                "select_case",
-                "unused_functions",
-                "flip_sign",
-                "sign_from_value",
-                "div_to_mul",
-                "fma",
-                "transform_optional_argument_functions",
-                "inline_function_calls"
+                PASS::global_stmts,
+                PASS::init_expr,
+                PASS::class_constructor,
+                PASS::implied_do_loops,
+                PASS::array_by_data,
+                PASS::arr_slice,
+                PASS::subroutine_from_function,
+                PASS::array_op,
+                PASS::intrinsic_function,
+                PASS::print_arr,
+                PASS::print_list_tuple,
+                PASS::loop_vectorise,
+                PASS::loop_unroll,
+                PASS::array_dim_intrinsics_update,
+                PASS::do_loops,
+                PASS::forall,
+                PASS::dead_code_removal,
+                PASS::select_case,
+                PASS::unused_functions,
+                PASS::flip_sign,
+                PASS::sign_from_value,
+                PASS::div_to_mul,
+                PASS::fma,
+                PASS::transform_optional_argument_functions,
+                PASS::inline_function_calls
             };
 
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {
-                "pass_list_expr",
-                "print_list_tuple",
-                "do_loops",
-                "inline_function_calls"
+                PASS::list_expr,
+                PASS::print_list_tuple,
+                PASS::do_loops,
+                PASS::inline_function_calls
             };
             _user_defined_passes.clear();
         }
