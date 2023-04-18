@@ -12,13 +12,7 @@
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/wasm_assembler.h>
 
-#include <libasr/pass/do_loops.h>
-#include <libasr/pass/unused_functions.h>
-#include <libasr/pass/pass_array_by_data.h>
-#include <libasr/pass/print_arr.h>
-#include <libasr/pass/intrinsic_function.h>
-#include <libasr/exception.h>
-#include <libasr/asr_utils.h>
+#include <libasr/pass/pass_manager.h>
 
 #define INCLUDE_RUNTIME_FUNC(fn)                 \
     if (m_rt_func_used_idx[fn] == -1) {          \
@@ -2894,16 +2888,19 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
 Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                                               Allocator &al,
-                                              diag::Diagnostics &diagnostics) {
+                                              diag::Diagnostics &diagnostics,
+                                              CompilerOptions &co) {
     ASRToWASMVisitor v(al, diagnostics);
 
     LCompilers::PassOptions pass_options;
-    pass_array_by_data(al, asr, pass_options);
-    pass_replace_print_arr(al, asr, pass_options);
-    pass_replace_do_loops(al, asr, pass_options);
-    pass_replace_intrinsic_function(al, asr, pass_options);
     pass_options.always_run = true;
-    pass_unused_functions(al, asr, pass_options);
+    pass_options.verbose = co.verbose;
+    std::vector<std::string> passes = {"pass_array_by_data", "array_op",
+                "implied_do_loops", "print_arr", "do_loops", "select_case",
+                "intrinsic_function", "unused_functions"};
+    LCompilers::PassManager pass_manager;
+    pass_manager.apply_passes(al, &asr, passes, pass_options, diagnostics);
+
 
 #ifdef SHOW_ASR
     std::cout << LCompilers::LFortran::pickle(asr, false /* use colors */, true /* indent */,
@@ -2922,12 +2919,12 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 
 Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
                         const std::string &filename, bool time_report,
-                        diag::Diagnostics &diagnostics) {
+                        diag::Diagnostics &diagnostics, CompilerOptions &co) {
     int time_visit_asr = 0;
     int time_save = 0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics);
+    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics, co);
     auto t2 = std::chrono::high_resolution_clock::now();
     time_visit_asr =
         std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
