@@ -170,7 +170,7 @@ namespace LCompilers {
                         _c_skip_passes.end(), passes[i]) != _c_skip_passes.end())
                     continue;
                 if (pass_options.verbose) {
-                    std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
+                    std::cerr << "ASR Pass starts: '" << p2s(passes[i]) << "'\n";
                 }
                 _passes_db[passes[i]](al, *asr, pass_options);
             #if defined(WITH_LFORTRAN_ASSERT)
@@ -180,7 +180,7 @@ namespace LCompilers {
                 };
             #endif
                 if (pass_options.verbose) {
-                    std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
+                    std::cerr << "ASR Pass ends: '" << p2s(passes[i]) << "'\n";
                 }
             }
         }
@@ -188,6 +188,70 @@ namespace LCompilers {
         public:
 
         bool rtlib=false;
+
+        std::map<std::string, PASS> s2p = {
+            {"do_loops", PASS::do_loops},
+            {"global_stmts", PASS::global_stmts},
+            {"implied_do_loops", PASS::implied_do_loops},
+            {"array_op", PASS::array_op},
+            {"intrinsic_function", PASS::intrinsic_function},
+            {"arr_slice", PASS::arr_slice},
+            {"print_arr", PASS::print_arr},
+            {"print_list_tuple", PASS::print_list_tuple},
+            {"class_constructor", PASS::class_constructor},
+            {"unused_functions", PASS::unused_functions},
+            {"flip_sign", PASS::flip_sign},
+            {"div_to_mul", PASS::div_to_mul},
+            {"fma", PASS::fma},
+            {"sign_from_value", PASS::sign_from_value},
+            {"inline_function_calls", PASS::inline_function_calls},
+            {"loop_unroll", PASS::loop_unroll},
+            {"dead_code_removal", PASS::dead_code_removal},
+            {"forall", PASS::forall},
+            {"select_case", PASS::select_case},
+            {"loop_vectorise", PASS::loop_vectorise},
+            {"array_dim_intrinsics_update", PASS::array_dim_intrinsics_update},
+            {"list_expr", PASS::list_expr},
+            {"array_by_data", PASS::array_by_data},
+            {"subroutine_from_function", PASS::subroutine_from_function},
+            {"transform_optional_argument_functions", PASS::transform_optional_argument_functions},
+            {"init_expr", PASS::init_expr},
+            {"nested_vars", PASS::nested_vars}
+        };
+
+        std::string p2s(PASS p) {
+            switch (p) {
+                case PASS::do_loops: return "do_loops";
+                case PASS::global_stmts: return "global_stmts";
+                case PASS::implied_do_loops: return "implied_do_loops";
+                case PASS::array_op: return "array_op";
+                case PASS::intrinsic_function: return "intrinsic_function";
+                case PASS::arr_slice: return "arr_slice";
+                case PASS::print_arr: return "print_arr";
+                case PASS::print_list_tuple: return "print_list_tuple";
+                case PASS::class_constructor: return "class_constructor";
+                case PASS::unused_functions: return "unused_functions";
+                case PASS::flip_sign: return "flip_sign";
+                case PASS::div_to_mul: return "div_to_mul";
+                case PASS::fma: return "fma";
+                case PASS::sign_from_value: return "sign_from_value";
+                case PASS::inline_function_calls: return "inline_function_calls";
+                case PASS::loop_unroll: return "loop_unroll";
+                case PASS::dead_code_removal: return "dead_code_removal";
+                case PASS::forall: return "forall";
+                case PASS::select_case: return "select_case";
+                case PASS::loop_vectorise: return "loop_vectorise";
+                case PASS::array_dim_intrinsics_update: return "array_dim_intrinsics_update";
+                case PASS::list_expr: return "list_expr";
+                case PASS::array_by_data: return "array_by_data";
+                case PASS::subroutine_from_function: return "subroutine_from_function";
+                case PASS::transform_optional_argument_functions: return "transform_optional_argument_functions";
+                case PASS::init_expr: return "init_expr";
+                case PASS::nested_vars: return "nested_vars";
+                case PASS::NO_OF_PASSES: return std::to_string(NO_OF_PASSES);
+            }
+            return "";
+        }
 
         void _parse_pass_arg(std::string& arg, std::vector<PASS>& passes) {
             if (arg == "") return;
@@ -200,15 +264,16 @@ namespace LCompilers {
                 }
                 if (ch == ',' || i == arg.size() - 1) {
                     current_pass = to_lower(current_pass);
-                    if( _passes_db.find(current_pass) == _passes_db.end() ) {
+                    if( s2p.find(current_pass) == s2p.end() ||
+                        _passes_db.find(s2p[current_pass]) == _passes_db.end() ) {
                         std::cerr << current_pass << " isn't supported yet.";
                         std::cerr << " Only the following passes are supported:- "<<std::endl;
                         for( auto it: _passes_db ) {
-                            std::cerr << it.first << std::endl;
+                            std::cerr << p2s(it.first) << std::endl;
                         }
                         exit(1);
                     }
-                    passes.push_back(current_pass);
+                    passes.push_back(s2p[current_pass]);
                     current_pass.clear();
                 }
             }
