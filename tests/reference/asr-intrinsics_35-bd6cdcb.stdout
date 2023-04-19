@@ -2,23 +2,11 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             test_any:
                 (Program
                     (SymbolTable
                         2
                         {
-                            any:
-                                (ExternalSymbol
-                                    2
-                                    any
-                                    5 any
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    any
-                                    Private
-                                ),
                             l:
                                 (Variable
                                     2
@@ -92,7 +80,7 @@
                                         []
                                         .false.
                                     )
-                                    [any]
+                                    []
                                     []
                                     [(=
                                         (Var 3 a)
@@ -122,19 +110,22 @@
                                     )
                                     (Print
                                         ()
-                                        [(FunctionCall
-                                            2 any
-                                            ()
-                                            [((IntegerCompare
+                                        [(IntrinsicFunction
+                                            Any
+                                            [(IntegerCompare
                                                 (Var 3 a)
                                                 Eq
                                                 (Var 3 b)
-                                                (Logical 4 [])
+                                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 2 (Integer 4 [])))
+                                                ((IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 3 (Integer 4 [])))])
                                                 ()
-                                            ))
-                                            ((IntegerConstant 1 (Integer 4 [])))]
-                                            (Logical 4 [])
-                                            ()
+                                            )
+                                            (IntegerConstant 1 (Integer 4 []))]
+                                            1
+                                            (Logical 4 [(()
+                                            ())])
                                             ()
                                         )]
                                         ()
@@ -142,19 +133,22 @@
                                     )
                                     (Print
                                         ()
-                                        [(FunctionCall
-                                            2 any
-                                            ()
-                                            [((IntegerCompare
+                                        [(IntrinsicFunction
+                                            Any
+                                            [(IntegerCompare
                                                 (Var 3 a)
                                                 Eq
                                                 (Var 3 b)
-                                                (Logical 4 [])
+                                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 2 (Integer 4 [])))
+                                                ((IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 3 (Integer 4 [])))])
                                                 ()
-                                            ))
-                                            ((IntegerConstant 2 (Integer 4 [])))]
-                                            (Logical 4 [])
-                                            ()
+                                            )
+                                            (IntegerConstant 2 (Integer 4 []))]
+                                            1
+                                            (Logical 4 [(()
+                                            ())])
                                             ()
                                         )]
                                         ()
@@ -170,10 +164,9 @@
                     []
                     [(=
                         (Var 2 l)
-                        (FunctionCall
-                            2 any
-                            ()
-                            [((ArrayConstant
+                        (IntrinsicFunction
+                            Any
+                            [(ArrayConstant
                                 [(LogicalConstant
                                     .true.
                                     (Logical 4 [])
@@ -189,9 +182,9 @@
                                 (Logical 4 [((IntegerConstant 1 (Integer 4 []))
                                 (IntegerConstant 3 (Integer 4 [])))])
                                 ColMajor
-                            ))]
+                            )]
+                            0
                             (Logical 4 [])
-                            ()
                             ()
                         )
                         ()

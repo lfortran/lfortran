@@ -300,6 +300,8 @@ RUN(NAME arrays_16_func LABELS gfortran llvm)
 
 RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
+RUN(NAME any_01 LABELS gfortran)
+RUN(NAME any_02 LABELS gfortran llvm)
 
 RUN(NAME reserved_01 LABELS gfortran llvm wasm)
 RUN(NAME reserved_02 LABELS gfortran llvm)
@@ -435,6 +437,7 @@ RUN(NAME modules_34 LABELS gfortran EXTRAFILES
         modules_34_module1a.f90 modules_34_module1.f90
         modules_34_module2.f90 modules_34_module3.f90)
 RUN(NAME modules_35 LABELS gfortran)
+RUN(NAME modules_36 LABELS gfortran)
 RUN(NAME modules_37 LABELS gfortran)
 RUN(NAME modules_38 LABELS gfortran)
 RUN(NAME modules_39 LABELS gfortran EXTRAFILES

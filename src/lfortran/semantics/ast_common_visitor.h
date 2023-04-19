@@ -179,8 +179,25 @@ public:
             ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right)));
     }
+    size_t left_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(left));
+    size_t right_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(right));
+    ASR::dimension_t* result_shape = nullptr;
+    size_t result_dims = 0;
+    if( left_dims == 0 && right_dims == 0 ) {
+
+    } else if( left_dims == 0 ) {
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(right), result_shape);
+        result_dims = right_dims;
+    } else if( right_dims == 0 ) {
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(left), result_shape);
+        result_dims = left_dims;
+    } else {
+        LCOMPILERS_ASSERT(left_dims == right_dims);
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(left), result_shape);
+        result_dims = left_dims;
+    }
     ASR::ttype_t *type = ASRUtils::TYPE(
-        ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+        ASR::make_Logical_t(al, x.base.base.loc, 4, result_shape, result_dims));
 
     ASR::expr_t *value = nullptr;
 
