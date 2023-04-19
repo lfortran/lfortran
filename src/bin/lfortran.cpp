@@ -1,6 +1,7 @@
 #include <chrono>
 #include <iostream>
 #include <stdlib.h>
+#include <filesystem>
 
 #define CLI11_HAS_FILESYSTEM 0
 #include <bin/CLI11.hpp>
@@ -60,18 +61,6 @@ using LCompilers::CompilerOptions;
 enum Backend {
     llvm, cpp, x86, wasm
 };
-
-std::string remove_extension(const std::string& filename) {
-    size_t lastdot = filename.find_last_of(".");
-    if (lastdot == std::string::npos) return filename;
-    return filename.substr(0, lastdot);
-}
-
-std::string remove_path(const std::string& filename) {
-    size_t lastslash = filename.find_last_of("/");
-    if (lastslash == std::string::npos) return filename;
-    return filename.substr(lastslash+1);
-}
 
 std::string read_file(const std::string &filename)
 {
@@ -1816,29 +1805,27 @@ int main(int argc, char *argv[])
             throw LCompilers::LCompilersException("File does not exist: " + arg_file);
 
         std::string outfile;
-        std::string basename;
-        basename = remove_extension(arg_file);
-        basename = remove_path(basename);
+        std::filesystem::path basename = std::filesystem::path(arg_file).filename();
         if (compiler_options.arg_o.size() > 0) {
             outfile = compiler_options.arg_o;
         } else if (arg_S) {
-            outfile = basename + ".s";
+            outfile = basename.replace_extension(".s").string();
         } else if (arg_c) {
-            outfile = basename + ".o";
+            outfile = basename.replace_extension(".o").string();
         } else if (show_prescan) {
-            outfile = basename + ".prescan";
+            outfile = basename.replace_extension(".prescan").string();
         } else if (show_tokens) {
-            outfile = basename + ".tokens";
+            outfile = basename.replace_extension(".tokens").string();
         } else if (show_ast) {
-            outfile = basename + ".ast";
+            outfile = basename.replace_extension(".ast").string();
         } else if (show_asr) {
-            outfile = basename + ".asr";
+            outfile = basename.replace_extension(".asr").string();
         } else if (show_llvm) {
-            outfile = basename + ".ll";
+            outfile = basename.replace_extension(".ll").string();
         } else if (show_wat) {
-            outfile = basename + ".wat";
+            outfile = basename.replace_extension(".wat").string();
         } else if (show_julia) {
-            outfile = basename + ".jl";
+            outfile = basename.replace_extension(".jl").string();
         } else {
             outfile = "a.out";
         }
