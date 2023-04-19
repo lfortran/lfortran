@@ -3558,6 +3558,10 @@ public:
                 }
                 break ;
             }
+            case ASR::ttypeType::FunctionType: {
+                throw CodeGenError("FunctionType not implemented", asr_type->base.loc);
+                break ;
+            }
             default :
                 LCOMPILERS_ASSERT(false);
         }
