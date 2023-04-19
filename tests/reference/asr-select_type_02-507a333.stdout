@@ -32,6 +32,7 @@
                                                     ()
                                                     Default
                                                     (Real 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -47,6 +48,7 @@
                                                     ()
                                                     Default
                                                     (Real 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -130,6 +132,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -159,6 +162,7 @@
                                         4 color_point
                                         []
                                     )
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -177,6 +181,7 @@
                                         4 point
                                         []
                                     )
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -195,6 +200,7 @@
                                         4 point_3d
                                         []
                                     )
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -215,6 +221,7 @@
                                             []
                                         )
                                     )
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -245,6 +252,7 @@
                                                     ()
                                                     Default
                                                     (Real 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -301,6 +309,7 @@
                                                             []
                                                         )
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -384,6 +393,7 @@
                                                             []
                                                         )
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -463,6 +473,7 @@
                                                             []
                                                         )
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -546,6 +557,7 @@
                                                             []
                                                         )
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required

@@ -18,6 +18,7 @@
                                     Allocatable
                                     (Integer 4 [(()
                                     ())])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -33,6 +34,7 @@
                                     ()
                                     Default
                                     (Integer 4 [])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -48,6 +50,7 @@
                                     ()
                                     Default
                                     (Integer 4 [])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -63,6 +66,7 @@
                                     ()
                                     Default
                                     (Integer 4 [])
+                                    ()
                                     Source
                                     Public
                                     Required
