@@ -651,11 +651,14 @@ public:
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
         std::string x_mv_name = ASRUtils::symbol_name(x.m_v);
-        require(is_a<Variable_t>(*x.m_v) || is_a<ExternalSymbol_t>(*x.m_v)
-                || is_a<Function_t>(*x.m_v) || is_a<ASR::EnumType_t>(*x.m_v),
-            "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, ExternalSymbol_t, " \
-            "Function_t, Subroutine_t or EnumType_t");
-
+        ASR::symbol_t *s = x.m_v;
+        if (check_external) {
+            s = ASRUtils::symbol_get_past_external(x.m_v);
+        }
+        require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
+                || is_a<ASR::EnumType_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
+            "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, " \
+            "Function_t, or EnumType_t (possibly behind ExternalSymbol_t)");
         require(symtab_in_scope(current_symtab, x.m_v),
             "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
         variable_dependencies.push_back(x_mv_name);

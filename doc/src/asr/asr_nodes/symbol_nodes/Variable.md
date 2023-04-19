@@ -1,6 +1,6 @@
 # Variable
 
-Variable symbol, a **symbol** node.
+Variable is a **symbol** node representing a variable declaration.
 
 ## Declaration
 
@@ -41,15 +41,29 @@ constant (e.g., can contain binary operations, other variables, etc.)
 
 `value_attr` if true, this parameter has a `value` attribute set
 
+`type_declaration` null for primitive types; for composite types that are
+declared elsewhere in the program (struct, function, enum) it points to the
+symbol that declares the type
+
 ### Return values
 
 None.
 
 ## Description
 
-The `Variable` node is used to represent any variable in the program. It
-contais information about the type, visibility, compile time value, etc.
+The `Variable` node is used to represent a declaration of any variable in the
+program. It contais information about the type, visibility, compile time value,
+etc. The type of the variable can be any of the primitive types like integer,
+real, complex, pointers, arrays and other more complicated types like
+struct, classes, enums and function pointers.
 
+`Variable` has a type, like `StructType`. If the type is declared elsewhere
+than the variable (such as struct, function or enum), the `type_declaration`
+member points to the symbol that declares the type; otherwise
+`type_declaration` is null.
+
+When you want to use a variable in an expression, use the `Var` expression node
+to represent it.
 
 ## Examples
 
@@ -123,4 +137,4 @@ ASR:
 ```
 ## See Also
 
-[Module](Module.md), [Function](Function.md).
+[Var](../expression_nodes/Var.md)
