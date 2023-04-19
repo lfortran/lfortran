@@ -103,7 +103,8 @@ symbol
     | UnionType(symbol_table symtab, identifier name, identifier* dependencies,
         identifier* members, abi abi, access access, symbol? parent)
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
-        intent intent, expr? symbolic_value, expr? value, storage_type storage, ttype type,
+        intent intent, expr? symbolic_value, expr? value, storage_type storage,
+        ttype type, symbol? type_declaration,
         abi abi, access access, presence presence, bool value_attr)
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
     | ClassProcedure(symbol_table parent_symtab, identifier name, identifier? self_argument,

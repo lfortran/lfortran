@@ -51,7 +51,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                     type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind, nullptr, 0));
                     return_var = ASR::make_Variable_t(al, loc,
                         fn_scope, var_name, nullptr, 0, ASRUtils::intent_local, nullptr, nullptr,
-                        ASR::storage_typeType::Default, type,
+                        ASR::storage_typeType::Default, type, nullptr,
                         ASR::abiType::BindC,
                         ASR::Public, ASR::presenceType::Required, false);
                     return_var_ref = EXPR(ASR::make_Var_t(al, loc,
@@ -65,7 +65,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                     type = ASRUtils::expr_type(value);
                     return_var = ASR::make_Variable_t(al, loc,
                         fn_scope, var_name, nullptr, 0, ASRUtils::intent_local, nullptr, nullptr,
-                        ASR::storage_typeType::Default, type,
+                        ASR::storage_typeType::Default, type, nullptr,
                         ASR::abiType::BindC,
                         ASR::Public, ASR::presenceType::Required, false);
                     return_var_ref = EXPR(ASR::make_Var_t(al, loc,
@@ -79,7 +79,7 @@ void pass_wrap_global_stmts_into_function(Allocator &al,
                     type = ASRUtils::expr_type(value);
                     return_var = ASR::make_Variable_t(al, loc,
                         fn_scope, var_name, nullptr, 0, ASRUtils::intent_local, nullptr, nullptr,
-                        ASR::storage_typeType::Default, type,
+                        ASR::storage_typeType::Default, type, nullptr,
                         ASR::abiType::BindC,
                         ASR::Public, ASR::presenceType::Required, false);
                     return_var_ref = EXPR(ASR::make_Var_t(al, loc,
