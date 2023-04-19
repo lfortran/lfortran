@@ -1915,6 +1915,10 @@ asr = true
 extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
 
 [[test]]
+filename = "../integration_tests/modules_36.f90"
+llvm = true
+
+[[test]]
 filename = "dependency_test_01.f90"
 asr = true
 
