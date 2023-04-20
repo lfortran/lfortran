@@ -4,10 +4,6 @@ program main
     real(4), allocatable :: x(:)
 
 
-    if (allocated(x)) then
-        print *, "x is allocated"
-    else 
-        print *, "x is not allocated"
-    end if
+    if (allocated(x)) error stop
 
 end program main

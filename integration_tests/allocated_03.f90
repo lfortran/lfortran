@@ -5,10 +5,6 @@ program main
 
     allocate(x(10))
     
-    if (allocated(x)) then
-        print *, "x is allocated"
-    else 
-        print *, "x is not allocated"
-    end if
+    if (.not.allocated(x)) error stop 
 
 end program main
