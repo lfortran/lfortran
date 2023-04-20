@@ -7358,6 +7358,14 @@ public:
         tmp = builder->CreateOr(arg1, arg2);
     }
 
+    void handle_allocated(const ASR::FunctionCall_t& x) {
+        LCOMPILERS_ASSERT(x.n_args == 1);
+        ASR::call_arg_t arg = x.m_args[0];
+        ASR::Variable_t* arg_var = ASRUtils::EXPR2VAR(arg.m_value);
+        fetch_var(arg_var);
+        tmp = arr_descr->get_is_allocated_flag(tmp);
+    }
+
     llvm::Value* CreatePointerToStructReturnValue(llvm::FunctionType* fnty,
                                                   llvm::Value* return_value,
                                                   ASR::ttype_t* asr_return_type) {
@@ -7541,6 +7549,10 @@ public:
             }
             if( startswith(symbol_name, "_bitwise_or") ) {
                 handle_bitwise_or(x);
+                return ;
+            }
+            if( startswith(symbol_name, "allocated") ){
+                handle_allocated(x);
                 return ;
             }
         }
