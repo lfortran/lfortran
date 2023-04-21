@@ -9,8 +9,8 @@ Variable is a **symbol** node representing a variable declaration.
 ```
 Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
     intent intent, expr? symbolic_value, expr? value, storage_type storage,
-    ttype type, abi abi, access access, presence presence, bool value_attr,
-    symbol type_declaration)
+    ttype type, symbol type_declaration,
+    abi abi, access access, presence presence, bool value_attr)
 ```
 
 ### Arguments
@@ -35,6 +35,10 @@ constant (e.g., can contain binary operations, other variables, etc.)
 
 `type` the ttype of the variable
 
+`type_declaration` null for primitive types; for composite types that are
+declared elsewhere in the program (struct, function, enum) it points to the
+symbol that declares the type
+
 `abi` abi such as: `Source`, `Interface`, `BindC`
 
 `access` visibility: `Public`, `Private`
@@ -43,9 +47,6 @@ constant (e.g., can contain binary operations, other variables, etc.)
 
 `value_attr` if true, this parameter has a `value` attribute set
 
-`type_declaration` null for primitive types; for composite types that are
-declared elsewhere in the program (struct, function, enum) it points to the
-symbol that declares the type
 
 ### Return values
 
