@@ -1343,9 +1343,11 @@ public:
                         Vec<ASR::dimension_t> m_dims;
                         m_dims.reserve(al, 1);
                         std::string assoc_variable_name = std::string(assoc_variable->m_name);
+                        ASR::symbol_t *type_declaration;
                         selector_type = determine_type(type_stmt_type->base.base.loc,
                                                        assoc_variable_name,
-                                                       type_stmt_type->m_vartype, false, m_dims);
+                                                       type_stmt_type->m_vartype, false, m_dims,
+                                                       type_declaration);
                         SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
