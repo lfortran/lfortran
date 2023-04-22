@@ -1517,6 +1517,7 @@ public:
         ASR::dimension_t* m_dims_local = nullptr;
         int n_dims_local = -1, a_kind_local = -1;
         llvm::Type* llvm_el_type = get_type_from_ttype_t(list_type->m_type,
+                                    nullptr,
                                     ASR::storage_typeType::Default, is_array_type_local,
                                     is_malloc_array_type_local, is_list_local, m_dims_local,
                                     n_dims_local, a_kind_local);
@@ -1591,6 +1592,7 @@ public:
         int n_dims = 0, a_kind = -1;
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
             llvm_el_types.push_back(get_type_from_ttype_t(tuple_type->m_type[i],
+                                    nullptr,
                                     m_storage, is_array_type, is_malloc_array_type,
                                     is_list, m_dims, n_dims, a_kind));
         }
@@ -2392,7 +2394,7 @@ public:
             ASR::dimension_t* m_dims = nullptr;
             int n_dims = -1, a_kind = -1;
             bool is_array_type = false, is_malloc_array_type = false, is_list = false;
-            llvm::Type* x_ptr = get_type_from_ttype_t(x.m_type, x.m_storage, is_array_type,
+            llvm::Type* x_ptr = get_type_from_ttype_t(x.m_type, nullptr, x.m_storage, is_array_type,
                                                       is_malloc_array_type, is_list,
                                                       m_dims, n_dims, a_kind);
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
@@ -2448,7 +2450,7 @@ public:
         bool is_array_type = false, is_malloc_array_type = false, is_list = false;
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = -1, a_kind = -1;
-        llvm::Type* value_type = get_type_from_ttype_t(x.m_type, m_storage, is_array_type,
+        llvm::Type* value_type = get_type_from_ttype_t(x.m_type, nullptr, m_storage, is_array_type,
                                     is_malloc_array_type, is_list, m_dims, n_dims, a_kind);
         if( is_integer ) {
             int64_t min_value = INT64_MAX;
@@ -2712,12 +2714,12 @@ public:
         int local_n_dims = 0;
         int local_a_kind = -1;
         ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-        llvm::Type* key_llvm_type = get_type_from_ttype_t(asr_dict->m_key_type, local_m_storage,
+        llvm::Type* key_llvm_type = get_type_from_ttype_t(asr_dict->m_key_type, nullptr, local_m_storage,
                                                             is_local_array_type, is_local_malloc_array_type,
                                                             is_local_list, local_m_dims, local_n_dims,
                                                             local_a_kind);
         int32_t key_type_size = get_type_size(asr_dict->m_key_type, key_llvm_type, local_a_kind);
-        llvm::Type* value_llvm_type = get_type_from_ttype_t(asr_dict->m_value_type, local_m_storage,
+        llvm::Type* value_llvm_type = get_type_from_ttype_t(asr_dict->m_value_type, nullptr, local_m_storage,
                                                             is_local_array_type, is_local_malloc_array_type,
                                                             is_local_list, local_m_dims, local_n_dims,
                                                             local_a_kind);
@@ -2730,6 +2732,7 @@ public:
     }
 
     llvm::Type* get_type_from_ttype_t(ASR::ttype_t* asr_type,
+        ASR::symbol_t *type_declaration,
         ASR::storage_typeType m_storage,
         bool& is_array_type, bool& is_malloc_array_type,
         bool& is_list, ASR::dimension_t*& m_dims,
@@ -2920,7 +2923,7 @@ public:
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
                 bool is_pointer_ = ASR::is_a<ASR::Class_t>(*t2);
-                llvm_type = get_type_from_ttype_t(t2, m_storage, is_array_type,
+                llvm_type = get_type_from_ttype_t(t2, nullptr, m_storage, is_array_type,
                                         is_malloc_array_type, is_list, m_dims,
                                         n_dims, a_kind, m_abi, is_pointer_);
                 if( !is_pointer_ ) {
@@ -2934,7 +2937,7 @@ public:
             case (ASR::ttypeType::List) : {
                 is_list = true;
                 ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(asr_type);
-                llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, m_storage,
+                llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, nullptr, m_storage,
                                                                  is_array_type, is_malloc_array_type,
                                                                  is_list, m_dims, n_dims,
                                                                  a_kind, m_abi);
@@ -2967,7 +2970,7 @@ public:
                     int local_n_dims = 0;
                     int local_a_kind = -1;
                     ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-                    llvm_el_types.push_back(get_type_from_ttype_t(asr_tuple->m_type[i], local_m_storage,
+                    llvm_el_types.push_back(get_type_from_ttype_t(asr_tuple->m_type[i], nullptr, local_m_storage,
                                             is_local_array_type, is_local_malloc_array_type,
                                             is_local_list, local_m_dims, local_n_dims, local_a_kind, m_abi));
                 }
@@ -2984,8 +2987,15 @@ public:
             }
             case (ASR::ttypeType::Const) : {
                 llvm_type = get_type_from_ttype_t(ASRUtils::get_contained_type(asr_type),
+                                nullptr,
                                 m_storage, is_array_type, is_malloc_array_type, is_list,
                                 m_dims, n_dims, a_kind, m_abi);
+                break;
+            }
+            case (ASR::ttypeType::FunctionType) : {
+                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+                    symbol_get_past_external(type_declaration));
+                llvm_type = get_function_type(*fn)->getPointerTo();
                 break;
             }
             default :
@@ -3001,7 +3011,7 @@ public:
         bool is_list_local;
         ASR::dimension_t* m_dims_local;
         int n_dims_local, a_kind_local;
-        return get_type_from_ttype_t(asr_type, m_storage_local, is_array_type_local,
+        return get_type_from_ttype_t(asr_type, nullptr, m_storage_local, is_array_type_local,
                                      is_malloc_array_type_local, is_list_local,
                                      m_dims_local, n_dims_local, a_kind_local, asr_abi);
     }
@@ -3179,7 +3189,7 @@ public:
                 if (v->m_intent == intent_local ||
                     v->m_intent == intent_return_var ||
                     !v->m_intent) {
-                    type = get_type_from_ttype_t(v->m_type, v->m_storage, is_array_type,
+                    type = get_type_from_ttype_t(v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
                                                  is_malloc_array_type, is_list, m_dims, n_dims,
                                                  a_kind);
                     /*
@@ -3532,7 +3542,7 @@ public:
                 bool is_list = true;
                 ASR::dimension_t *m_dims = nullptr;
                 ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(asr_type);
-                llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, m_storage,
+                llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, nullptr, m_storage,
                                                                  is_array_type,
                                                                  is_malloc_array_type,
                                                                  is_list, m_dims, n_dims,
@@ -3879,7 +3889,7 @@ public:
                         int local_n_dims = 0;
                         int local_a_kind = -1;
                         ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-                        llvm_el_types.push_back(get_type_from_ttype_t(asr_tuple->m_type[i], local_m_storage,
+                        llvm_el_types.push_back(get_type_from_ttype_t(asr_tuple->m_type[i], nullptr, local_m_storage,
                                                 is_local_array_type, is_local_malloc_array_type,
                                                 is_local_list, local_m_dims, local_n_dims, local_a_kind));
                     }
@@ -3893,7 +3903,7 @@ public:
                     ASR::storage_typeType m_storage = ASR::storage_typeType::Default;
                     int n_dims = 0, a_kind = -1;
                     ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(return_var_type0);
-                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, m_storage,
+                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, nullptr, m_storage,
                                                                      is_array_type,
                                                                      is_malloc_array_type,
                                                                      is_list, m_dims, n_dims,
