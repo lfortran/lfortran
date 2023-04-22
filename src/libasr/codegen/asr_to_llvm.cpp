@@ -3634,6 +3634,13 @@ public:
         return args;
     }
 
+    bool is_function_variable(const ASR::Variable_t &v) {
+        if (v.m_type_declaration) {
+            return ASR::is_a<ASR::Function_t>(*v.m_type_declaration);
+        } else {
+            return false;
+        }
+    }
 
     // F is the function that we are generating and we go over all arguments
     // (F.args()) and handle three cases:
@@ -3643,18 +3650,27 @@ public:
     void declare_args(const ASR::Function_t &x, llvm::Function &F) {
         size_t i = 0;
         for (llvm::Argument &llvm_arg : F.args()) {
-            if (is_a<ASR::Variable_t>(*symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
-                ASR::Variable_t *arg = EXPR2VAR(x.m_args[i]);
-                LCOMPILERS_ASSERT(is_arg_dummy(arg->m_intent));
-                uint32_t h = get_hash((ASR::asr_t*)arg);
-                std::string arg_s = arg->m_name;
-                llvm_arg.setName(arg_s);
-                llvm_symtab[h] = &llvm_arg;
-            } else if (is_a<ASR::Function_t>(*symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
+            ASR::symbol_t *s = symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (is_a<ASR::Variable_t>(*s)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                if (is_function_variable(*v)) {
+                    // * Function (callback) Variable (`procedure(fn) :: x`)
+                    s = v->m_type_declaration;
+                } else {
+                    // * Variable (`integer :: x`)
+                    ASR::Variable_t *arg = EXPR2VAR(x.m_args[i]);
+                    LCOMPILERS_ASSERT(is_arg_dummy(arg->m_intent));
+                    uint32_t h = get_hash((ASR::asr_t*)arg);
+                    std::string arg_s = arg->m_name;
+                    llvm_arg.setName(arg_s);
+                    llvm_symtab[h] = &llvm_arg;
+                }
+            }
+            if (is_a<ASR::Function_t>(*s)) {
+                // * Function (`fn`)
                 // Deal with case where procedure passed in as argument
-                ASR::Function_t *arg = EXPR2FUN(x.m_args[i]);
+                ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(s);
                 uint32_t h = get_hash((ASR::asr_t*)arg);
                 std::string arg_s = arg->m_name;
                 llvm_arg.setName(arg_s);
