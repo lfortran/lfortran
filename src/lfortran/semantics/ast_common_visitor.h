@@ -1443,7 +1443,9 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
                 }
-                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer, dims);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
+                    dims, type_declaration);
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
@@ -1626,7 +1628,7 @@ public:
                         ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
-                                storage_type, type, nullptr, current_procedure_abi_type, s_access, s_presence,
+                                storage_type, type, type_declaration, current_procedure_abi_type, s_access, s_presence,
                                 value_attr);
                         current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                         if( is_derived_type ) {
@@ -1638,9 +1640,12 @@ public:
         }
     }
 
-    ASR::ttype_t* determine_type(const Location &loc, std::string& sym, AST::decl_attribute_t* decl_attribute, bool is_pointer, Vec<ASR::dimension_t>& dims){
+    ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
+            AST::decl_attribute_t* decl_attribute, bool is_pointer,
+            Vec<ASR::dimension_t>& dims, ASR::symbol_t *&type_declaration){
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type;
+        type_declaration = nullptr;
 
         int a_kind = 4;
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
@@ -1866,6 +1871,7 @@ public:
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
             type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+            type_declaration = v;
         } else {
             throw SemanticError("Type not implemented yet.",
                     loc);
@@ -2128,7 +2134,9 @@ public:
         dims.reserve(al, 1);
         if (x.m_vartype != nullptr) {
             std::string sym = "";
-            type = determine_type(x.base.base.loc, sym, x.m_vartype, false, dims);
+            ASR::symbol_t *type_declaration;
+            type = determine_type(x.base.base.loc, sym, x.m_vartype, false,
+                dims, type_declaration);
         }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
