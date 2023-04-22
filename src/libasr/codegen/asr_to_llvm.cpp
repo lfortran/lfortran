@@ -6784,6 +6784,10 @@ public:
                     ASR::Function_t* func = down_cast<ASR::Function_t>(clss_proc->m_proc);
                     set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
                 }
+            } else if( func_subrout->type == ASR::symbolType::Variable ) {
+                ASR::Variable_t* v = down_cast<ASR::Variable_t>(func_subrout);
+                ASR::Function_t* func = down_cast<ASR::Function_t>(v->m_type_declaration);
+                set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
             } else {
                 LCOMPILERS_ASSERT(false)
             }
@@ -7070,6 +7074,10 @@ public:
                             ASR::Variable_t *orig_arg = nullptr;
                             if( func_subrout->type == ASR::symbolType::Function ) {
                                 ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
+                                orig_arg = EXPR2VAR(func->m_args[i]);
+                            } else if( func_subrout->type == ASR::symbolType::Variable ) {
+                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(func_subrout);
+                                ASR::Function_t* func = down_cast<ASR::Function_t>(v->m_type_declaration);
                                 orig_arg = EXPR2VAR(func->m_args[i]);
                             } else {
                                 LCOMPILERS_ASSERT(false)
