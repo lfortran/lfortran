@@ -1045,6 +1045,14 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 xx.m_global_scope->overwrite_symbol(item.first, item.second);
             }
 
+            std::vector<std::string> build_order
+                = ASRUtils::determine_module_dependencies(x);
+            for (auto &item : build_order) {
+                LCOMPILERS_ASSERT(x.m_global_scope->get_symbol(item));
+                ASR::symbol_t *mod = x.m_global_scope->get_symbol(item);
+                visit_symbol(*mod);
+            }
+
             // Now visit everything else
             for (auto &item : x.m_global_scope->get_scope()) {
                 this->visit_symbol(*item.second);
