@@ -7642,6 +7642,9 @@ public:
         if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
+            if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                throw CodeGenError("The callback function not found in llvm_symtab_fn");
+            }
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             args = convert_call_args(x, is_method);
