@@ -3056,3 +3056,7 @@ asr_implicit_typing = true
 [[test]]
 filename = "errors/implicit_typing3.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "where2.f90"
+asr = true
