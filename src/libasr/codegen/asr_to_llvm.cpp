@@ -3635,8 +3635,12 @@ public:
     }
 
 
-    template<typename T>
-    void declare_args(const T &x, llvm::Function &F) {
+    // F is the function that we are generating and we go over all arguments
+    // (F.args()) and handle three cases:
+    //     * Variable (`integer :: x`)
+    //     * Function (callback) Variable (`procedure(fn) :: x`)
+    //     * Function (`fn`)
+    void declare_args(const ASR::Function_t &x, llvm::Function &F) {
         size_t i = 0;
         for (llvm::Argument &llvm_arg : F.args()) {
             if (is_a<ASR::Variable_t>(*symbol_get_past_external(
