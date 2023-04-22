@@ -1,15 +1,15 @@
 module procedure_01_module
 implicit none
 
-abstract interface
-    integer function fn(n)
-    integer, intent(in) :: n
-    end function
-end interface
 
 contains
 
     integer function plus(f, x)
+    abstract interface
+        integer function fn(n)
+        integer, intent(in) :: n
+        end function
+    end interface
     procedure(fn) :: f
     integer, intent(in) :: x
     plus = f(x+4)
