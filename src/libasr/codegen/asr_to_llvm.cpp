@@ -3685,6 +3685,11 @@ public:
                 std::string arg_s = arg->m_name;
                 llvm_arg.setName(arg_s);
                 llvm_symtab_fn_arg[h] = &llvm_arg;
+                if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                    llvm::FunctionType* fntype = get_function_type(*arg);
+                    llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, arg->m_name, module.get());
+                    llvm_symtab_fn[h] = fn;
+                }
             }
             i++;
         }
