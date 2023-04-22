@@ -3322,6 +3322,7 @@ public:
     }
 
     llvm::Type* get_arg_type_from_ttype_t(ASR::ttype_t* asr_type,
+        ASR::symbol_t *type_declaration,
         ASR::abiType m_abi, ASR::abiType arg_m_abi,
         ASR::storage_typeType m_storage,
         bool arg_m_value_attr,
@@ -3360,7 +3361,7 @@ public:
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(asr_type);
                 bool is_pointer_ = ASR::is_a<ASR::Class_t>(*t2);
-                type = get_arg_type_from_ttype_t(t2, m_abi, arg_m_abi,
+                type = get_arg_type_from_ttype_t(t2, nullptr, m_abi, arg_m_abi,
                             m_storage, arg_m_value_attr, n_dims, a_kind,
                             is_array_type, arg_intent, get_pointer);
                 if( !is_pointer_ ) {
@@ -3370,7 +3371,7 @@ public:
             }
             case (ASR::ttypeType::Const) : {
                 ASR::ttype_t *t2 = ASRUtils::get_contained_type(asr_type);
-                type = get_arg_type_from_ttype_t(t2, m_abi, arg_m_abi,
+                type = get_arg_type_from_ttype_t(t2, nullptr, m_abi, arg_m_abi,
                             m_storage, arg_m_value_attr, n_dims, a_kind,
                             is_array_type, arg_intent, get_pointer);
                 break;
@@ -3559,7 +3560,9 @@ public:
                 break ;
             }
             case ASR::ttypeType::FunctionType: {
-                throw CodeGenError("FunctionType not implemented", asr_type->base.loc);
+                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+                    symbol_get_past_external(type_declaration));
+                type = get_function_type(*fn)->getPointerTo();
                 break ;
             }
             default :
@@ -3581,10 +3584,12 @@ public:
                 llvm::Type *type = nullptr, *type_original = nullptr;
                 int n_dims = 0, a_kind = 4;
                 bool is_array_type = false;
-                type_original = get_arg_type_from_ttype_t(arg->m_type, ASRUtils::get_FunctionType(x)->m_abi,
-                                    arg->m_abi, arg->m_storage, arg->m_value_attr,
-                                    n_dims, a_kind, is_array_type, arg->m_intent,
-                                    false);
+                type_original = get_arg_type_from_ttype_t(arg->m_type,
+                    arg->m_type_declaration,
+                    ASRUtils::get_FunctionType(x)->m_abi,
+                    arg->m_abi, arg->m_storage, arg->m_value_attr,
+                    n_dims, a_kind, is_array_type, arg->m_intent,
+                    false);
                 if( is_array_type ) {
                     type = type_original->getPointerTo();
                 } else {
