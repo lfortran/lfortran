@@ -781,8 +781,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
         const Location& loc = x->base.base.loc;
         ASR::symbol_t *sub = current_scope->resolve_symbol(x_name);
-        if (sub && ASR::is_a<ASR::Function_t>(*sub)
-            && ASR::down_cast<ASR::Function_t>(sub)->m_return_var == nullptr) {
+        ASR::symbol_t *tmp_sub = ASRUtils::symbol_get_past_external(sub);
+        if (sub && ASR::is_a<ASR::Function_t>(*tmp_sub)
+            && ASR::down_cast<ASR::Function_t>(tmp_sub)->m_return_var == nullptr) {
             bool is_dimension_empty = false;
             ASR::ttype_t* result_var_type = x->m_type;
             ASR::dimension_t* m_dims = nullptr;
@@ -796,9 +797,17 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             if( result_type && is_dimension_empty ) {
                 result_var_type = result_type;
             }
-            // TODO: Remove allocatable attribute from temporary variable
+
+            ASR::storage_typeType storage = ASR::storage_typeType::Default;
+            if (result_var != nullptr && ASR::is_a<ASR::Var_t>(*result_var)) {
+                ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(result_var);
+                if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                    storage = v->m_storage;
+                }
+            }
             ASR::expr_t* result_var_ = PassUtils::create_var(result_counter, "_func_call_res",
-                            loc, result_var_type, al, current_scope);
+                            loc, result_var_type, al, current_scope, storage);
             result_counter += 1;
             if( result_var == nullptr ) {
                 result_var = result_var_;
