@@ -17,6 +17,7 @@
                                     ()
                                     Default
                                     (Integer 4 [])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -34,6 +35,7 @@
                                     (Pointer
                                         (Integer 4 [])
                                     )
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -49,6 +51,7 @@
                                     (IntegerConstant 2 (Integer 4 []))
                                     Save
                                     (Integer 4 [])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -64,6 +67,7 @@
                                     (IntegerConstant 1 (Integer 4 []))
                                     Save
                                     (Integer 4 [])
+                                    ()
                                     Source
                                     Public
                                     Required

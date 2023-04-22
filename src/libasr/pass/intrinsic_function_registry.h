@@ -120,7 +120,7 @@ namespace UnaryIntrinsicFunction {
 #define create_variable(var, name, intent, abi, value_attr, symtab, type)   \
     ASR::symbol_t* sym_##var = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(\
         al, loc, symtab, s2c(al, name), nullptr, 0, intent, nullptr, nullptr,   \
-        ASR::storage_typeType::Default, type, abi, ASR::Public,                 \
+        ASR::storage_typeType::Default, type, nullptr, abi, ASR::Public,        \
         ASR::presenceType::Required, value_attr));                              \
     symtab->add_symbol(s2c(al, name), sym_##var);                                 \
     ASR::expr_t* var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_##var));

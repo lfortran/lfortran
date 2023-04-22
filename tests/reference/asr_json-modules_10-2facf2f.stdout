@@ -249,6 +249,7 @@
                                                 "last_column": 28
                                             }
                                         },
+                                        "type_declaration": [],
                                         "abi": "Source",
                                         "access": "Public",
                                         "presence": "Required",

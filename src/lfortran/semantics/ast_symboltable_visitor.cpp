@@ -879,7 +879,7 @@ public:
             return_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type,
+                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
                 current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));

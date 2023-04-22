@@ -22,6 +22,7 @@
                                     ())
                                     (()
                                     ())])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -47,6 +48,7 @@
                                     ()
                                     Allocatable
                                     (Character 1 -2 () [])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -62,6 +64,7 @@
                                     ()
                                     Default
                                     (Character 1 20 () [])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -77,6 +80,7 @@
                                     ()
                                     Allocatable
                                     (Character 1 -2 () [])
+                                    ()
                                     Source
                                     Public
                                     Required

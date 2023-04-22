@@ -2750,7 +2750,7 @@ class SymbolDuplicator {
             ASR::make_Variable_t(al, variable->base.base.loc, destination_symtab,
                 variable->m_name, variable->m_dependencies, variable->n_dependencies,
                 variable->m_intent, m_symbolic_value, m_value, variable->m_storage,
-                m_type, variable->m_abi, variable->m_access, variable->m_presence,
+                m_type, variable->m_type_declaration, variable->m_abi, variable->m_access, variable->m_presence,
                 variable->m_value_attr));
     }
 
