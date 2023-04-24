@@ -147,7 +147,8 @@ namespace LCompilers {
             #if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();
-                    throw LCompilersException("Verify failed");
+                    throw LCompilersException("Verify failed in the pass: "
+                        + passes[i]);
                 };
             #endif
                 if (pass_options.verbose) {
