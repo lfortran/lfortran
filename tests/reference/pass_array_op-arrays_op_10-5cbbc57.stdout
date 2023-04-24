@@ -12,10 +12,10 @@
                                     (SymbolTable
                                         3
                                         {
-                                            __libasr__created__var__0_func_call_res:
+                                            __libasr__created__var__0__func_call_res:
                                                 (Variable
                                                     3
-                                                    __libasr__created__var__0_func_call_res
+                                                    __libasr__created__var__0__func_call_res
                                                     []
                                                     Local
                                                     ()
@@ -23,15 +23,16 @@
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 2 (Integer 4 [])))])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
                                                 ),
-                                            __libasr__created__var__1_func_call_res:
+                                            __libasr__created__var__1__func_call_res:
                                                 (Variable
                                                     3
-                                                    __libasr__created__var__1_func_call_res
+                                                    __libasr__created__var__1__func_call_res
                                                     []
                                                     Local
                                                     ()
@@ -39,6 +40,7 @@
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 2 (Integer 4 [])))])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -54,6 +56,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -70,6 +73,7 @@
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 2 (Integer 4 [])))])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -97,13 +101,13 @@
                                     [(SubroutineCall
                                         2 solution
                                         ()
-                                        [((Var 3 __libasr__created__var__0_func_call_res))]
+                                        [((Var 3 __libasr__created__var__0__func_call_res))]
                                         ()
                                     )
                                     (Print
                                         ()
                                         [(ArraySize
-                                            (Var 3 __libasr__created__var__0_func_call_res)
+                                            (Var 3 __libasr__created__var__0__func_call_res)
                                             ()
                                             (Integer 4 [])
                                             (IntegerConstant 2 (Integer 4 []))
@@ -114,7 +118,7 @@
                                     (SubroutineCall
                                         2 solution
                                         ()
-                                        [((Var 3 __libasr__created__var__1_func_call_res))]
+                                        [((Var 3 __libasr__created__var__1__func_call_res))]
                                         ()
                                     )
                                     (DoLoop
@@ -122,7 +126,7 @@
                                         ((Var 3 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         (ArraySize
-                                            (Var 3 __libasr__created__var__1_func_call_res)
+                                            (Var 3 __libasr__created__var__1__func_call_res)
                                             ()
                                             (Integer 4 [])
                                             (IntegerConstant 2 (Integer 4 []))
@@ -215,6 +219,7 @@
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 2 (Integer 4 [])))])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required

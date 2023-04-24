@@ -17,6 +17,7 @@
                                     ()
                                     Default
                                     (Character 1 3 () [])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -32,6 +33,7 @@
                                     ()
                                     Allocatable
                                     (Character 1 -2 () [])
+                                    ()
                                     Source
                                     Public
                                     Required

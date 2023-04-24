@@ -18,6 +18,7 @@
                                     Default
                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                     (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -41,6 +42,7 @@
                                                         (Real 4 [(()
                                                         ())])
                                                     )
+                                                    ()
                                                     Source
                                                     Private
                                                     Required
@@ -57,6 +59,7 @@
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                                     (IntegerConstant 10 (Integer 4 [])))])
+                                                    ()
                                                     Source
                                                     Private
                                                     Required
@@ -247,6 +250,7 @@
                                     Allocatable
                                     (Real 4 [(()
                                     ())])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -263,6 +267,7 @@
                                     Default
                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                     (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -279,6 +284,7 @@
                                     Default
                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                     (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -295,6 +301,7 @@
                                     Default
                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
                                     (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
                                     Source
                                     Public
                                     Required

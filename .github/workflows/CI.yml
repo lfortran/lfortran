@@ -249,10 +249,10 @@ jobs:
       - name: Test Modern Minpack
         shell: bash -x -l {0}
         run: |
-            git clone https://github.com/certik/modern_minpack.git
+            git clone https://github.com/Pranavchiku/modern_minpack.git
             cd modern_minpack
-            git checkout main
-            git checkout 7405875c5d47f7340f827c246fa3a361cf1e98cc
+            git checkout w2
+            git checkout c0e0e6583b41573f54278469d6d58061fe6ea04b
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90

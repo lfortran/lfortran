@@ -179,8 +179,25 @@ public:
             ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right)));
     }
+    size_t left_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(left));
+    size_t right_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(right));
+    ASR::dimension_t* result_shape = nullptr;
+    size_t result_dims = 0;
+    if( left_dims == 0 && right_dims == 0 ) {
+
+    } else if( left_dims == 0 ) {
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(right), result_shape);
+        result_dims = right_dims;
+    } else if( right_dims == 0 ) {
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(left), result_shape);
+        result_dims = left_dims;
+    } else {
+        LCOMPILERS_ASSERT(left_dims == right_dims);
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(left), result_shape);
+        result_dims = left_dims;
+    }
     ASR::ttype_t *type = ASRUtils::TYPE(
-        ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+        ASR::make_Logical_t(al, x.base.base.loc, 4, result_shape, result_dims));
 
     ASR::expr_t *value = nullptr;
 
@@ -700,6 +717,7 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
+    std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
@@ -746,7 +764,7 @@ public:
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
             current_scope, s2c(al, var_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), intent, nullptr, nullptr,
-            ASR::storage_typeType::Default, type,
+            ASR::storage_typeType::Default, type, nullptr,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
         current_scope->add_symbol(var_name, v);
@@ -762,7 +780,7 @@ public:
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
             current_scope, s2c(al, var_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), intent, nullptr, nullptr,
-            ASR::storage_typeType::Default, type,
+            ASR::storage_typeType::Default, type, nullptr,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
         current_scope->add_symbol(var_name, v);
@@ -1204,7 +1222,7 @@ public:
                                         al, x.m_syms[i].loc, current_scope,
                                         x.m_syms[i].m_name, nullptr, 0, ASR::intentType::Local,
                                         init_expr, init_expr_value, ASR::storage_typeType::Parameter,
-                                        init_type, ASR::abiType::Source, ASR::accessType::Public,
+                                        init_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                         ASR::presenceType::Required, false));
                                     current_scope->add_symbol(x.m_syms[i].m_name, sym);
                                     enum_init_val++;
@@ -1425,7 +1443,9 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
                 }
-                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer, dims);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
+                    dims, type_declaration);
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
@@ -1494,7 +1514,40 @@ public:
                     if ( init_expr ) {
                         if( ASRUtils::is_value_constant(value) ) {
                         } else if( ASRUtils::is_value_constant(init_expr) ) {
-                            value = nullptr;
+                            if (ASR::is_a<ASR::Cast_t>(*init_expr)) {
+                                ASR::Cast_t *cast = ASR::down_cast<ASR::Cast_t>(init_expr);
+                                if (cast->m_arg && ASR::is_a<ASR::ArrayConstant_t>(*cast->m_arg)) {
+                                    ASR::cast_kindType cast_kind = cast->m_kind;
+                                    // TODO: handle other cases
+                                    if (cast_kind == ASR::cast_kindType::IntegerToReal) {
+                                        bool is_int = true;
+                                        ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                        ASR::ttype_t* real_type = cast->m_type;
+                                        Vec<ASR::expr_t*> body;
+                                        body.reserve(al, a->n_args);
+                                        for (size_t i = 0; i < a->n_args; i++) {
+                                            ASR::expr_t *e = a->m_args[i];
+                                            // it will be IntegerConstant_t convert it to RealConstant_t
+                                            if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+                                                ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
+                                                double val = int_const->m_n;
+                                                ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, int_const->base.base.loc, val, real_type));
+                                                body.push_back(al, real_const);
+                                            } else {
+                                                is_int = false;
+                                                break;
+                                            }
+                                        }
+                                        if (is_int) {
+                                            ASR::expr_t* array_const = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                            cast->m_value = ASRUtils::expr_value(array_const);
+                                            value = cast->m_value;
+                                        }
+                                    }
+                                }
+                            } else {
+                                value = nullptr;
+                            }
                         } else {
                             throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
                                                 " must reduce to a compile time constant.",
@@ -1575,7 +1628,7 @@ public:
                         ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
-                                storage_type, type, current_procedure_abi_type, s_access, s_presence,
+                                storage_type, type, type_declaration, current_procedure_abi_type, s_access, s_presence,
                                 value_attr);
                         current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                         if( is_derived_type ) {
@@ -1587,9 +1640,12 @@ public:
         }
     }
 
-    ASR::ttype_t* determine_type(const Location &loc, std::string& sym, AST::decl_attribute_t* decl_attribute, bool is_pointer, Vec<ASR::dimension_t>& dims){
+    ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
+            AST::decl_attribute_t* decl_attribute, bool is_pointer,
+            Vec<ASR::dimension_t>& dims, ASR::symbol_t *&type_declaration){
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type;
+        type_declaration = nullptr;
 
         int a_kind = 4;
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
@@ -1815,6 +1871,7 @@ public:
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
             type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+            type_declaration = v;
         } else {
             throw SemanticError("Type not implemented yet.",
                     loc);
@@ -2077,7 +2134,9 @@ public:
         dims.reserve(al, 1);
         if (x.m_vartype != nullptr) {
             std::string sym = "";
-            type = determine_type(x.base.base.loc, sym, x.m_vartype, false, dims);
+            ASR::symbol_t *type_declaration;
+            type = determine_type(x.base.base.loc, sym, x.m_vartype, false,
+                dims, type_declaration);
         }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
@@ -3506,7 +3565,7 @@ public:
                     ASR::make_Variable_t(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), variable_dependencies_vec.p,
                     variable_dependencies_vec.size(), ASRUtils::intent_unspecified,
-                    nullptr, nullptr, ASR::storage_typeType::Default, var_type,
+                    nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr,
                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_symbol(arg_name, v);
@@ -3525,7 +3584,7 @@ public:
             ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type,
+                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
                 ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));

@@ -275,7 +275,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                 Location loc;
                 ASR::asr_t *asr = ASR::make_Variable_t(al, loc, nullptr,
                     name, nullptr, 0, ASR::intentType::In, nullptr, nullptr,
-                    ASR::storage_typeType::Default, s.v.type,
+                    ASR::storage_typeType::Default, s.v.type, nullptr,
                     ASR::abiType::GFortranModule,
                     ASR::Public, ASR::presenceType::Required, false);
                 s.v.var = down_cast<ASR::symbol_t>(asr);

@@ -1589,6 +1589,12 @@ static inline bool is_fixed_size_array(ASR::dimension_t* m_dims, size_t n_dims) 
     return true;
 }
 
+static inline bool is_fixed_size_array(ASR::ttype_t* type) {
+    ASR::dimension_t* m_dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+    return ASRUtils::is_fixed_size_array(m_dims, n_dims);
+}
+
 static inline int64_t get_fixed_size_of_array(ASR::dimension_t* m_dims, size_t n_dims) {
     if( n_dims == 0 ) {
         return 0;
@@ -1764,6 +1770,20 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
+}
+
+static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::ttype_t* t) {
+    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(t);
+    Vec<ASR::dimension_t> empty_dims;
+    empty_dims.reserve(al, n_dims);
+    for( size_t i = 0; i < n_dims; i++ ) {
+        ASR::dimension_t empty_dim;
+        empty_dim.loc = t->base.loc;
+        empty_dim.m_start = nullptr;
+        empty_dim.m_length = nullptr;
+        empty_dims.push_back(al, empty_dim);
+    }
+    return duplicate_type(al, t, &empty_dims);
 }
 
 static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR::ttype_t* t, const Location& loc) {
@@ -2350,6 +2370,12 @@ static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
     return false;
 }
 
+static inline bool is_data_only_array(ASR::ttype_t* type, ASR::abiType abi) {
+    ASR::dimension_t* m_dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+    return (abi == ASR::abiType::BindC || !ASRUtils::is_dimension_empty(m_dims, n_dims));
+}
+
 static inline void insert_module_dependency(ASR::symbol_t* a,
     Allocator& al, SetChar& module_dependencies) {
     if( ASR::is_a<ASR::ExternalSymbol_t>(*a) ) {
@@ -2724,7 +2750,7 @@ class SymbolDuplicator {
             ASR::make_Variable_t(al, variable->base.base.loc, destination_symtab,
                 variable->m_name, variable->m_dependencies, variable->n_dependencies,
                 variable->m_intent, m_symbolic_value, m_value, variable->m_storage,
-                m_type, variable->m_abi, variable->m_access, variable->m_presence,
+                m_type, variable->m_type_declaration, variable->m_abi, variable->m_access, variable->m_presence,
                 variable->m_value_attr));
     }
 

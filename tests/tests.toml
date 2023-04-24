@@ -863,7 +863,7 @@ asr = true
 filename = "../integration_tests/arrays_02.f90"
 ast = true
 ast_f90 = true
-# julia = true
+julia = true
 
 [[test]]
 filename = "../integration_tests/arrays_03_func.f90"
@@ -1674,6 +1674,7 @@ llvm = true
 [[test]]
 filename = "../integration_tests/intrinsics_02.f90"
 asr = true
+cpp = true
 llvm = true
 
 # sin
@@ -1912,6 +1913,10 @@ extrafiles = "../integration_tests/modules_33_module1.f90, ../integration_tests/
 filename = "../integration_tests/modules_34.f90"
 asr = true
 extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
+
+[[test]]
+filename = "../integration_tests/modules_36.f90"
+llvm = true
 
 [[test]]
 filename = "dependency_test_01.f90"
@@ -3038,4 +3043,20 @@ asr = true
 
 [[test]]
 filename = "errors/do_zero_increment.f90"
+asr = true
+
+[[test]]
+filename = "errors/implicit_typing1.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing2.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing3.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "where2.f90"
 asr = true

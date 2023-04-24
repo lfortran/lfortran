@@ -97,7 +97,9 @@ namespace LCompilers {
         bool apply_default_passes;
         bool c_skip_pass; // This will contain the passes that are to be skipped in C
 
-        void _apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
+        public:
+
+        void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
                            diag::Diagnostics &diagnostics) {
             if (pass_options.pass_cumulative) {
@@ -145,7 +147,8 @@ namespace LCompilers {
             #if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();
-                    throw LCompilersException("Verify failed");
+                    throw LCompilersException("Verify failed in the pass: "
+                        + passes[i]);
                 };
             #endif
                 if (pass_options.verbose) {
@@ -153,8 +156,6 @@ namespace LCompilers {
                 }
             }
         }
-
-        public:
 
         bool rtlib=false;
 
@@ -196,6 +197,7 @@ namespace LCompilers {
                 "subroutine_from_function",
                 "array_op",
                 "intrinsic_function",
+                "array_op",
                 "pass_array_by_data",
                 "print_arr",
                 "print_list_tuple",
@@ -218,6 +220,7 @@ namespace LCompilers {
                 "subroutine_from_function",
                 "array_op",
                 "intrinsic_function",
+                "array_op",
                 "print_arr",
                 "print_list_tuple",
                 "loop_vectorise",
@@ -259,15 +262,15 @@ namespace LCompilers {
                           diag::Diagnostics &diagnostics) {
             if( !_user_defined_passes.empty() ) {
                 pass_options.fast = true;
-                _apply_passes(al, asr, _user_defined_passes, pass_options,
+                apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics);
             } else if( apply_default_passes ) {
                 pass_options.fast = is_fast;
                 if( is_fast ) {
-                    _apply_passes(al, asr, _with_optimization_passes, pass_options,
+                    apply_passes(al, asr, _with_optimization_passes, pass_options,
                         diagnostics);
                 } else {
-                    _apply_passes(al, asr, _passes, pass_options, diagnostics);
+                    apply_passes(al, asr, _passes, pass_options, diagnostics);
                 }
             }
         }

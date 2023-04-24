@@ -28,6 +28,7 @@
                                                     )
                                                     Save
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -43,6 +44,7 @@
                                                     ()
                                                     Allocatable
                                                     (Character 1 -2 () [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -81,6 +83,7 @@
                                                     )
                                                     Save
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -96,6 +99,7 @@
                                                     ()
                                                     Allocatable
                                                     (Character 1 -2 () [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -117,6 +121,7 @@
                                                     )
                                                     Save
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -138,6 +143,7 @@
                                                     )
                                                     Save
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -159,6 +165,7 @@
                                                     )
                                                     Save
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -180,6 +187,7 @@
                                                     )
                                                     Save
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -201,6 +209,7 @@
                                                     )
                                                     Save
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -222,6 +231,7 @@
                                                     )
                                                     Save
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -320,16 +330,6 @@
                                                     with_test
                                                     Public
                                                 ),
-                                            any:
-                                                (ExternalSymbol
-                                                    7
-                                                    any
-                                                    12 any
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    any
-                                                    Private
-                                                ),
                                             cmd_settings:
                                                 (Variable
                                                     7
@@ -343,6 +343,7 @@
                                                         4 fpm_cmd_settings
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -368,8 +369,7 @@
                                         []
                                         .false.
                                     )
-                                    [any
-                                    specified]
+                                    [specified]
                                     [(Var 7 cmd_settings)]
                                     [(Allocate
                                         [((Var 7 cmd_settings)
@@ -379,10 +379,9 @@
                                         ()
                                     )
                                     (If
-                                        (FunctionCall
-                                            7 any
-                                            ()
-                                            [((FunctionCall
+                                        (IntrinsicFunction
+                                            Any
+                                            [(FunctionCall
                                                 4 specified
                                                 ()
                                                 [((ArrayConstant
@@ -414,9 +413,9 @@
                                                 (IntegerConstant 5 (Integer 4 [])))])
                                                 ()
                                                 ()
-                                            ))]
+                                            )]
+                                            0
                                             (Logical 4 [])
-                                            ()
                                             ()
                                         )
                                         [(=
@@ -529,13 +528,10 @@
                                 )
                         })
                     fpm_command_line_20
-                    [lfortran_intrinsic_builtin
-                    m_cli2_20]
+                    [m_cli2_20]
                     .true.
                     .false.
                 ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             m_cli2_20:
                 (Module
                     (SymbolTable
@@ -556,6 +552,7 @@
                                                     ()
                                                     Default
                                                     (Character 1 -1 () [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -571,6 +568,7 @@
                                                     ()
                                                     Default
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -632,6 +630,7 @@
                                         2 fpm_cmd_settings
                                         []
                                     )
+                                    ()
                                     Source
                                     Public
                                     Required

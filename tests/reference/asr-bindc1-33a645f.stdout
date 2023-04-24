@@ -37,6 +37,7 @@
                                     ()
                                     Default
                                     (CPtr)
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -54,6 +55,7 @@
                                     (Pointer
                                         (Integer 4 [])
                                     )
+                                    ()
                                     Source
                                     Public
                                     Required

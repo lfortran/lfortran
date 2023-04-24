@@ -82,6 +82,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -113,6 +114,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -144,6 +146,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -173,6 +176,7 @@
                                         2 foo_c
                                         []
                                     )
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -196,6 +200,7 @@
                                                         2 bar_a
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -230,6 +235,7 @@
                                                         2 bar_b
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -264,6 +270,7 @@
                                                         2 bar_c
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required

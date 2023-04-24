@@ -392,7 +392,7 @@ Result<Vec<uint8_t>> FortranEvaluator::get_wasm(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics);
+        return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics, compiler_options);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;

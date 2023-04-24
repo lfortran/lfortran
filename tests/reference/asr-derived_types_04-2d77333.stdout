@@ -22,6 +22,7 @@
                                                     ()
                                                     Default
                                                     (Logical 4 [])
+                                                    ()
                                                     Source
                                                     Private
                                                     Required
@@ -40,6 +41,7 @@
                                                         2 bitset_type
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Private
                                                     Required
@@ -98,6 +100,7 @@
                                                     ()
                                                     Default
                                                     (Integer 8 [])
+                                                    ()
                                                     Source
                                                     Private
                                                     Required

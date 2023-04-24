@@ -64,6 +64,7 @@
                                                     ()
                                                     Allocatable
                                                     (Character 1 -2 () [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -82,6 +83,7 @@
                                                         15 version_t
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -192,6 +194,7 @@
                                                                     (Pointer
                                                                         (Integer 4 [])
                                                                     )
+                                                                    ()
                                                                     Source
                                                                     Private
                                                                     Required
@@ -234,6 +237,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -252,6 +256,7 @@
                                                         4 package_config_t
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -267,6 +272,7 @@
                                                     ()
                                                     Allocatable
                                                     (Character 1 -2 () [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -355,6 +361,7 @@
                                                         10 version_t
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -370,6 +377,7 @@
                                                     ()
                                                     Allocatable
                                                     (Character 1 -2 () [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -433,6 +441,7 @@
                                                         10 version_t
                                                         []
                                                     )
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -448,6 +457,7 @@
                                                     ()
                                                     Allocatable
                                                     (Character 1 -2 () [])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
@@ -499,6 +509,7 @@
                                                     Allocatable
                                                     (Integer 4 [(()
                                                     ())])
+                                                    ()
                                                     Source
                                                     Public
                                                     Required
