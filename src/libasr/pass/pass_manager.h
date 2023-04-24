@@ -23,6 +23,7 @@
 #include <libasr/pass/global_stmts.h>
 #include <libasr/pass/param_to_const.h>
 #include <libasr/pass/print_arr.h>
+#include <libasr/pass/where.h>
 #include <libasr/pass/print_list_tuple.h>
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/flip_sign.h>
@@ -90,7 +91,8 @@ namespace LCompilers {
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
             {"init_expr", &pass_replace_init_expr},
-            {"nested_vars", &pass_nested_vars}
+            {"nested_vars", &pass_nested_vars},
+            {"where", &pass_replace_where}
         };
 
         bool is_fast;
@@ -195,6 +197,7 @@ namespace LCompilers {
                 "pass_list_expr",
                 "arr_slice",
                 "subroutine_from_function",
+                "where",
                 "array_op",
                 "intrinsic_function",
                 "array_op",
@@ -226,6 +229,7 @@ namespace LCompilers {
                 "loop_vectorise",
                 "loop_unroll",
                 "array_dim_intrinsics_update",
+                "where",
                 "do_loops",
                 "forall",
                 "dead_code_removal",
