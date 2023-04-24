@@ -648,6 +648,7 @@ RUN(NAME nested_07 LABELS gfortran llvm)
 RUN(NAME nested_08 LABELS gfortran llvm)
 RUN(NAME nested_09 LABELS gfortran llvm)
 RUN(NAME nested_10 LABELS gfortran llvm)
+RUN(NAME nested_11 LABELS gfortran llvm)
 
 RUN(NAME nested_vars1 LABELS gfortran llvm)
 RUN(NAME nested_vars2 LABELS gfortran llvm)

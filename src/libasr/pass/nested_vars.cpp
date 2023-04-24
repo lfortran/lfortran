@@ -442,8 +442,25 @@ public:
                             ext_sym = ASR::down_cast<ASR::symbol_t>(fn);
                             current_scope->add_symbol(sym_name_ext, ext_sym);
                         }
+                        ASR::symbol_t* sym_ = sym;
+                        if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(sym_)->get_counter() ) {
+                            std::string sym_name = ASRUtils::symbol_name(sym_);
+                            sym_ = current_scope->get_symbol(sym_name);
+                            if( !sym ) {
+                                ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
+                                    al, t->base.loc,
+                                    /* a_symtab */ current_scope,
+                                    /* a_name */ s2c(al, current_scope->get_unique_name(sym_name)),
+                                    sym_,
+                                    s2c(al, m_name), nullptr, 0, s2c(al, sym_name),
+                                    ASR::accessType::Public
+                                );
+                                sym_ = ASR::down_cast<ASR::symbol_t>(fn);
+                                current_scope->add_symbol(sym_name, sym_);
+                            }
+                        }
                         ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
-                        ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym));
+                        ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
                         if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) ) {
                             ASR::stmt_t *associate = ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc,
                                                         target, val));
@@ -484,7 +501,7 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
-        SymbolTable* current_scope_copy = this->current_scope;
+        SymbolTable* current_scope_copy = current_scope;
         ASR::symbol_t *sym_copy = cur_func_sym;
         cur_func_sym = (ASR::symbol_t*)&xx;
         current_scope = xx.m_symtab;
