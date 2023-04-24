@@ -7,8 +7,8 @@ dependencies:
   - pytest
   - jupyter
   - nbconvert=7.3.1
-  - xeus
-  - xeus-zmq
+  - xeus=3.0.5
+  - xeus-zmq=1.0.2
   - xtl
   - nlohmann_json
   - cppzmq
