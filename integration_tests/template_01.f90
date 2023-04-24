@@ -13,12 +13,12 @@ module template_compose_m
       end function
     end requirement
 
-    template op_t(s, plus, minus)
-        requires pure_oper(s, plus)
-    contains
+    !template op_t(s, plus, minus)
+    !    requires pure_oper(s, plus)
+    !contains
 
        
-    end template
+    !end template
   
   contains
     
