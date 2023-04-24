@@ -80,6 +80,8 @@ public:
     std::string interface_name = "";
     ASR::symbol_t *current_module_sym;
 
+    ASR::ttype_t *tmp_type;
+
     std::map<AST::intrinsicopType, std::string> intrinsic2str = {
         {AST::intrinsicopType::STAR, "~mul"},
         {AST::intrinsicopType::PLUS, "~add"},
@@ -1053,6 +1055,8 @@ public:
         if (is_requirement && data_member_names.size() == 0) {
             current_requirement_type_parameters.push_back(
                 ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
+            tmp_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, 
+                s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
         SetChar struct_dependencies;
         struct_dependencies.reserve(al, 1);
@@ -1558,6 +1562,20 @@ public:
                     dflt_access
                     );
                 current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
+            } else if (ASR::is_a<ASR::Requirement_t>(*item.second)) {
+                ASR::Requirement_t *req = ASR::down_cast<ASR::Requirement_t>(item.second);
+                Str name;
+                name.from_str(al, item.first);
+                char *cname = name.c_str(al);
+                ASR::asr_t *v = ASR::make_ExternalSymbol_t(
+                    al, req->base.base.loc,
+                    current_scope,
+                    cname,
+                    (ASR::symbol_t*)req,
+                    m->m_name, nullptr, 0, req->m_name,
+                    dflt_access
+                );
+                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
             } else {
                 return item.first;
             }
@@ -1974,6 +1992,7 @@ public:
 
     void visit_Requirement(const AST::Requirement_t &x) {
         is_requirement = true;
+
         for (size_t i=0; i<x.n_decl; i++) {
             this->visit_unit_decl2(*x.m_decl[i]);
         }
@@ -2007,6 +2026,22 @@ public:
         current_requirement_type_parameters.clear();
         current_requirement_functions.clear();
         is_requirement = false;
+
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        std::string name = x.m_name;
+
+        Vec<char*> args;
+        args.reserve(al, x.n_namelist);
+        for (size_t i=0; i<x.n_namelist; i++) {
+            args.push_back(al, x.m_namelist[i]);
+        }
+
+        ASR::asr_t *req = ASR::make_Requirement_t(al, x.base.base.loc,
+            current_scope, s2c(al, name), args.p, args.size());
+
+        parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(req));
     }
 
     void visit_Requires(const AST::Requires_t &x) {

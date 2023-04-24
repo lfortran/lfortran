@@ -253,6 +253,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Block: {
             return ASR::down_cast<ASR::Block_t>(f)->m_name;
         }
+        case ASR::symbolType::Requirement: {
+            return ASR::down_cast<ASR::Requirement_t>(f)->m_name;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -424,6 +427,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Block: {
             return ASR::down_cast<ASR::Block_t>(f)->m_symtab->parent;
+        }
+        case ASR::symbolType::Requirement: {
+            return ASR::down_cast<ASR::Requirement_t>(f)->m_symtab->parent;
         }
         default : throw LCompilersException("Not implemented");
     }
