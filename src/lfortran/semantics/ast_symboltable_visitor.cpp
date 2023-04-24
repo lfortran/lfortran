@@ -1993,6 +1993,9 @@ public:
     void visit_Requirement(const AST::Requirement_t &x) {
         is_requirement = true;
 
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
         for (size_t i=0; i<x.n_decl; i++) {
             this->visit_unit_decl2(*x.m_decl[i]);
         }
@@ -2026,9 +2029,6 @@ public:
         current_requirement_type_parameters.clear();
         current_requirement_functions.clear();
         is_requirement = false;
-
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
 
         std::string name = x.m_name;
 
