@@ -150,6 +150,7 @@ RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm)
 
 RUN(NAME include_01 LABELS gfortran llvm wasm)
 RUN(NAME include_02 LABELS gfortran llvm wasm)
+RUN(NAME include_03 LABELS gfortran llvm wasm INCLUDE_PATH include_03)
 
 RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME cond_02 LABELS gfortran llvm wasm)
