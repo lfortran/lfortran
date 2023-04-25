@@ -2712,9 +2712,9 @@ public:
     // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
     template <typename T>
     bool handle_intrinsic_node_args(const T& x,
-        std::vector<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
+        Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name,
-        bool raise_error=true) {
+        bool raise_error=true, int64_t positional_argments=-1) {
         size_t total_args = x.n_args + x.n_keywords;
         if( !(total_args <= max_args && total_args >= min_args) ) {
             if( !raise_error ) {
@@ -2727,13 +2727,15 @@ public:
                                 x.base.base.loc);
         }
 
+        args.reserve(al, max_args);
+
         for( size_t i = 0; i < max_args; i++ ) {
-            args.push_back(nullptr);
+            args.push_back(al, nullptr);
         }
 
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*x.m_args[i].m_end);
-            args[i] = ASRUtils::EXPR(tmp);
+            args.p[i] = ASRUtils::EXPR(tmp);
         }
 
         for( size_t i = 0; i < x.n_keywords; i++ ) {
@@ -2749,7 +2751,10 @@ public:
             }
         }
 
-        size_t offset = min_args;
+        int64_t offset = min_args;
+        if( positional_argments != -1 ) {
+            offset = positional_argments;
+        }
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             auto it = std::find(kwarg_names.begin(), kwarg_names.end(),
@@ -2765,7 +2770,7 @@ public:
                                     x.base.base.loc);
             }
             this->visit_expr(*x.m_keywords[i].m_value);
-            args[kwarg_idx + offset] = ASRUtils::EXPR(tmp);
+            args.p[kwarg_idx + offset] = ASRUtils::EXPR(tmp);
         }
         return true;
     }
@@ -2787,7 +2792,7 @@ public:
 
     ASR::asr_t* create_Floor(const AST::FuncCallOrArray_t &x,
             ASR::ExternalSymbol_t* gp_ext, ASR::symbol_t* v) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "floor");
         ASR::expr_t* kind = args[1];
@@ -2815,7 +2820,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, bound_name);
         ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
@@ -2833,7 +2838,7 @@ public:
     }
 
     ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, std::string("size"));
         ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
@@ -2881,7 +2886,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayTranspose(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names;
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("transpose"));
         ASR::expr_t *matrix = args[0];
@@ -2903,7 +2908,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayMatMul(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names;
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 2, std::string("matmul"));
         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
@@ -2996,7 +3001,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"vector"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "pack");
         ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
@@ -3019,7 +3024,7 @@ public:
         ASR::expr_t *array, *dim, *mask, *kind, *back;
         array = dim = mask = kind = back = nullptr;
 
-        std::vector<ASR::expr_t*> args_0, args_1;
+        Vec<ASR::expr_t*> args_0, args_1;
         std::vector<std::string> kwarg_names_0 = {"dim", "mask", "kind", "back"};
         std::vector<std::string> kwarg_names_1 = {"mask", "kind", "back"};
         // Try syntax MAXLOC(ARRAY, DIM [, MASK] [,KIND] [,BACK])
@@ -3102,7 +3107,7 @@ public:
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"size"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
         ASR::expr_t *source = args[0], *mold = args[1], *size = args[2];
@@ -3149,7 +3154,7 @@ public:
     }
 
     ASR::asr_t* create_Cmplx(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"y", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
@@ -3189,7 +3194,7 @@ public:
     }
 
     ASR::asr_t* create_NullPointerConstant(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"mold"};
         handle_intrinsic_node_args(x, args, kwarg_names, 0, 1, "null");
         ASR::expr_t *mold_ = args[0];
@@ -3204,7 +3209,7 @@ public:
     }
 
     ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"tgt"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
@@ -3214,7 +3219,7 @@ public:
     }
 
     ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"y"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "dcmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1];
@@ -3250,7 +3255,7 @@ public:
     }
 
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");
         ASR::expr_t *arg = args[0], *kind = args[1];
@@ -3272,7 +3277,7 @@ public:
     }
 
     ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "iachar");
         ASR::expr_t *arg = args[0], *kind = args[1];
@@ -3294,7 +3299,7 @@ public:
     }
 
     ASR::asr_t* create_IntrinsicFunctionSqrt(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names;
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, "sqrt");
         ASR::expr_t *arg = args[0];
@@ -3316,7 +3321,7 @@ public:
         ASR::ttype_t *type;
         string = nullptr, set = nullptr, back = nullptr;
         type = nullptr, kind = nullptr;
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"back", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
         string = args[0], set = args[1], back = args[2], kind = args[3];
@@ -3362,7 +3367,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayAll(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"dim"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "all");
         ASR::expr_t *mask = args[0], *dim = args[1];
@@ -3404,9 +3409,28 @@ public:
             ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
             is_function = false;
             if( ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
+                std::vector<ASRUtils::IntrinsicSignature> signatures;
+                ASRUtils::get_intrinsic_signature get_signature_function =
+                    ASRUtils::IntrinsicFunctionRegistry::get_intrinsic_signature_function(var_name);
+                get_signature_function(signatures);
+                Vec<ASR::expr_t*> args;
+                bool signature_matched = false;
+                for( auto& signature: signatures ) {
+                    signature_matched = handle_intrinsic_node_args(
+                        x, args, signature.kwarg_names,
+                        signature.total_args, signature.total_args,
+                        var_name, false, signature.positional_args);
+                    if( signature_matched ) {
+                        break ;
+                    }
+                    args.n = 0;
+                }
+                if( !signature_matched ) {
+                    throw SemanticError("No matching signature found for intrinsic " + var_name,
+                                        x.base.base.loc);
+                }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicFunctionRegistry::get_create_function(var_name);
-                Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
                 tmp = create_func(al, x.base.base.loc, args,
                     [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
             } else if( var_name == "size" ) {
@@ -3454,7 +3478,7 @@ public:
     }
 
     ASR::asr_t* create_PointerToCptr(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
