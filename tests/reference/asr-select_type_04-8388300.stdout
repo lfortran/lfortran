@@ -612,7 +612,7 @@
             select_type4:
                 (Program
                     (SymbolTable
-                        41
+                        40
                         {
                             
                         })

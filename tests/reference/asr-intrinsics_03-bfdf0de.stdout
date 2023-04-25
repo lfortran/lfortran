@@ -27,7 +27,7 @@
                                 (ExternalSymbol
                                     2
                                     dabs
-                                    230 dabs
+                                    229 dabs
                                     lfortran_intrinsic_math2
                                     []
                                     dabs

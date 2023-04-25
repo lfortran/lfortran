@@ -211,7 +211,6 @@ struct IntrinsicProcedures {
             {"allocated", {m_builtin, &not_implemented, false}},
             {"minval", {m_builtin, &not_implemented, false}},
             {"maxval", {m_builtin, &not_implemented, false}},
-            {"sum", {m_builtin, &not_implemented, false}},
             {"index", {m_string, &not_implemented, false}},
             {"system_clock", {m_math, &not_implemented, false}},
             {"random_number", {m_math, &not_implemented, false}},

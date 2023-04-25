@@ -303,7 +303,7 @@
                                                 (ExternalSymbol
                                                     12
                                                     min
-                                                    43 min
+                                                    42 min
                                                     lfortran_intrinsic_math2
                                                     []
                                                     min
@@ -313,7 +313,7 @@
                                                 (ExternalSymbol
                                                     12
                                                     min@imin
-                                                    43 imin
+                                                    42 imin
                                                     lfortran_intrinsic_math2
                                                     []
                                                     imin

@@ -36,7 +36,7 @@ program any_02
         if (c4(2, j)) error stop
     end do
 
-    c3 = any(any(c, 1), 1)
+    c3 = any(any(c, dim=1), 1)
     print *, c3
     do i = lbound(c3, 1), ubound(c3, 1)
         if (.not. c3(i)) error stop
@@ -48,7 +48,7 @@ program any_02
         if (.not. c2(i)) error stop
     end do
 
-    c1 = any(any(c, 2), 2)
+    c1 = any(any(c, 2), dim=2)
     print *, c1
     if (.not. c1(1)) error stop
     if (c1(2)) error stop
@@ -57,7 +57,7 @@ program any_02
     print *, l
     if (.not. l) error stop
 
-    l = any(any(any(c, 2), 2), 1)
+    l = any(any(any(c, 2), dim=2), 1)
     print *, l
     if (.not. l) error stop
 

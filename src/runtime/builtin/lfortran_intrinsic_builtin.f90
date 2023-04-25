@@ -46,10 +46,6 @@ interface
     integer, intent(in) :: x(:)
     end function
 
-    integer function sum(x)
-    integer, intent(in) :: x(:)
-    end function
-
     real function tiny(x)
     integer, intent(in) :: x(:)
     end function
