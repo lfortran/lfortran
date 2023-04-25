@@ -980,7 +980,9 @@ public:
             /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
             /* n_type_parameters */ params.size(), nullptr, 0, is_requirement,
             false, false);
-        if (is_requirement) current_requirement_functions.push_back(tmp);
+        if (is_requirement) {
+            current_requirement_functions.push_back(tmp);
+        }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
@@ -1003,11 +1005,19 @@ public:
         visit_DeclarationUtil(x);
     }
 
-    void visit_Instantiate(const AST::Instantiate_t &){
-
-    }
-
     void visit_DerivedType(const AST::DerivedType_t &x) {
+        if (is_requirement) {
+            ASR::asr_t *tp = ASR::make_TypeParameter_t(
+                al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0);
+            current_requirement_type_parameters.push_back(tp);
+            tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
+                s2c(al, to_lower(x.m_name)), nullptr, 0, ASRUtils::intent_in,
+                nullptr, nullptr, ASR::storage_typeType::Default, ASRUtils::TYPE(tp),
+                ASR::abiType::Source, dflt_access, ASR::presenceType::Required, false);
+            current_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(tmp));
+            is_derived_type = false;
+            return;
+        }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         data_member_names.reserve(al, 0);
@@ -1051,12 +1061,6 @@ public:
                 throw SemanticError(parent_sym_name + " is not defined.", x.base.base.loc);
             }
             parent_sym = parent_scope->get_symbol(parent_sym_name);
-        }
-        if (is_requirement && data_member_names.size() == 0) {
-            current_requirement_type_parameters.push_back(
-                ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0));
-            tmp_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, 
-                s2c(al, to_lower(x.m_name)), nullptr, 0));
         }
         SetChar struct_dependencies;
         struct_dependencies.reserve(al, 1);
@@ -2002,7 +2006,9 @@ public:
         for (size_t i=0; i<x.n_funcs; i++) {
             this->visit_program_unit(*x.m_funcs[i]);
         }
+
         // Assume only TypeParameter (ttype) and Function (symbol) in the map
+        /*
         std::map<std::string, ASR::asr_t*> current_req;
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string current_arg = to_lower(x.m_namelist[i]);
@@ -2028,11 +2034,11 @@ public:
         requirement_map[x.m_name] = current_req;
         current_requirement_type_parameters.clear();
         current_requirement_functions.clear();
-        is_requirement = false;
+        */
 
         std::string name = x.m_name;
 
-        Vec<char*> args;
+        SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
             args.push_back(al, x.m_namelist[i]);
@@ -2042,6 +2048,7 @@ public:
             current_scope, s2c(al, name), args.p, args.size());
 
         parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(req));
+        is_requirement = false;
     }
 
     void visit_Requires(const AST::Requires_t &x) {
