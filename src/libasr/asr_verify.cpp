@@ -597,19 +597,24 @@ public:
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::StructType_t* sm = nullptr;
             ASR::EnumType_t* em = nullptr;
+            ASR::Function_t* fm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
             if( !is_valid_owner ) {
                 ASR::symbol_t* asr_owner_sym = ASRUtils::get_asr_owner(x.m_external);
                 is_valid_owner = (ASR::is_a<ASR::StructType_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::EnumType_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::EnumType_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::Function_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::StructType_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::StructType_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
                 } else if( ASR::is_a<ASR::EnumType_t>(*asr_owner_sym) ) {
                     em = ASR::down_cast<ASR::EnumType_t>(asr_owner_sym);
                     asr_owner_name = em->m_name;
+                } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
+                    fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                    asr_owner_name = fm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -621,7 +626,8 @@ public:
                         current_symtab->resolve_symbol(x.m_module_name)));
             }
             require(is_valid_owner,
-                "ExternalSymbol::m_external is not in a module or struct type");
+                "ExternalSymbol::m_external '" + std::string(x.m_name) + "' is not in a module or struct type, owner: " +
+                x_m_module_name);
             require(x_m_module_name == asr_owner_name,
                 "ExternalSymbol::m_module_name `" + x_m_module_name
                 + "` must match external's module name `" + asr_owner_name + "`");
@@ -632,6 +638,8 @@ public:
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( em ) {
                 s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if( fm ) {
+                s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -882,7 +890,8 @@ public:
         require(symtab_in_scope(current_symtab, x.m_derived_type),
             "Struct::m_derived_type '" +
             std::string(ASRUtils::symbol_name(x.m_derived_type)) +
-            "' cannot point outside of its symbol table");
+            "' cannot point outside of its symbol table, owner: " +
+            std::string(ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type))));
         for (size_t i=0; i<x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
         }

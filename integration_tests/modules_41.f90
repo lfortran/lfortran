@@ -12,6 +12,10 @@ subroutine build_target_list(model)
 
     type(fpm_model_t), intent(inout), pointer :: model
 
+    associate (x=>model)
+        print *, get_object_name()
+    end associate
+
     contains
 
         function get_object_name() result(int)
