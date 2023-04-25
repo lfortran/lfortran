@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <memory>
+#include <filesystem>
 
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
