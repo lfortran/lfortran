@@ -1302,6 +1302,10 @@ struct FixedFormRecursiveDescent {
         }
         while(lex_body_statement(cur));
         eat_label(cur);
+        if (next_is(cur, "contains")) {
+            push_token_advance(cur, "contains");
+            while(lex_body_statement(cur));
+        }
         if (next_is(cur, "endprogram")) {
             push_token_advance(cur, "endprogram");
             tokenize_line(cur);
