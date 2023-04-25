@@ -949,7 +949,9 @@ public:
 
     void visit_Struct(const Struct_t &x) {
         require(symtab_in_scope(current_symtab, x.m_derived_type),
-            "Struct::m_derived_type cannot point outside of its symbol table");
+            "Struct::m_derived_type '" +
+            std::string(ASRUtils::symbol_name(x.m_derived_type)) +
+            "' cannot point outside of its symbol table");
         for (size_t i=0; i<x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
         }

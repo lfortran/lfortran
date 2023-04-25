@@ -262,19 +262,36 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                             ASRUtils::symbol_get_past_external(it2));
                 new_ext_var = current_scope->get_unique_name(new_ext_var);
-                ASR::ttype_t* var_type = var->m_type;
-                if( ASRUtils::is_array(var_type) ) {
-                    Vec<ASR::dimension_t> dims;
-                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(var_type);
-                    dims.reserve(al, n_dims);
-                    for( size_t i = 0; i < n_dims; i++ ) {
-                        ASR::dimension_t dim;
-                        dim.loc = var_type->base.loc;
-                        dim.m_start = nullptr;
-                        dim.m_length = nullptr;
-                        dims.push_back(al, dim);
+                ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(var->m_type);
+                if( ASR::is_a<ASR::Struct_t>(*var_type) ) {
+                    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(var_type);
+                    if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(
+                            struct_t->m_derived_type)->get_counter() ) {
+                        ASR::symbol_t* m_derived_type = current_scope->get_symbol(
+                            ASRUtils::symbol_name(struct_t->m_derived_type));
+                        if( m_derived_type == nullptr ) {
+                            char* fn_name = ASRUtils::symbol_name(struct_t->m_derived_type);
+                            ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
+                            ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
+                                al, struct_t->m_derived_type->base.loc,
+                                /* a_symtab */ current_scope,
+                                /* a_name */ fn_name,
+                                original_symbol,
+                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_symbol)),
+                                nullptr, 0, fn_name, ASR::accessType::Public
+                            );
+                            m_derived_type = ASR::down_cast<ASR::symbol_t>(fn);
+                            current_scope->add_symbol(fn_name, m_derived_type);
+                        }
+                        var_type = ASRUtils::TYPE(ASR::make_Struct_t(al, struct_t->base.base.loc,
+                                    m_derived_type, struct_t->m_dims, struct_t->n_dims));
+                        if( ASR::is_a<ASR::Pointer_t>(*var->m_type) ) {
+                            var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
+                        }
                     }
-                    var_type = ASRUtils::duplicate_type(al, var_type, &dims);
+                }
+                if( ASRUtils::is_array(var_type) ) {
+                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
                 }
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
