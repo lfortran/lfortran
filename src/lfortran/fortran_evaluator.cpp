@@ -196,8 +196,12 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        tmp = LFortran::prescan(*code, lm, compiler_options.fixed_form,
-            parent_path(lm.files.back().in_filename));
+        std::vector<std::filesystem::path> include_dirs;
+        include_dirs.push_back(parent_path(lm.files.back().in_filename));
+        include_dirs.insert(include_dirs.end(),
+                            compiler_options.include_dirs.begin(),
+                            compiler_options.include_dirs.end());
+        tmp = LFortran::prescan(*code, lm, compiler_options.fixed_form, include_dirs);
         code = &tmp;
     }
     Result<LFortran::AST::TranslationUnit_t*>
