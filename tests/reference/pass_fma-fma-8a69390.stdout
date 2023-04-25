@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     fma@IntrinsicOptimization@fmar32
-                                    230 fmar32
+                                    229 fmar32
                                     lfortran_intrinsic_optimization
                                     []
                                     fmar32
@@ -21,7 +21,7 @@
                                 (ExternalSymbol
                                     2
                                     fma@IntrinsicOptimization@fmar64
-                                    230 fmar64
+                                    229 fmar64
                                     lfortran_intrinsic_optimization
                                     []
                                     fmar64
@@ -336,7 +336,7 @@
                 (ExternalSymbol
                     1
                     fma@IntrinsicOptimization
-                    230 fma
+                    229 fma
                     lfortran_intrinsic_optimization
                     []
                     fma

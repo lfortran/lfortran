@@ -16,7 +16,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     huge
-                                                    33 huge
+                                                    32 huge
                                                     lfortran_intrinsic_math2
                                                     []
                                                     huge
@@ -26,7 +26,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     huge@i32huge
-                                                    33 i32huge
+                                                    32 i32huge
                                                     lfortran_intrinsic_math2
                                                     []
                                                     i32huge
