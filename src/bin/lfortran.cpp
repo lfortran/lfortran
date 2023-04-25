@@ -386,8 +386,14 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+
+    std::vector<std::filesystem::path> include_dirs;
+    include_dirs.push_back(LCompilers::parent_path(lm.files.back().in_filename));
+    include_dirs.insert(include_dirs.end(),
+                          compiler_options.include_dirs.begin(),
+                          compiler_options.include_dirs.end());
     std::string prescan = LCompilers::LFortran::prescan(input, lm,
-        compiler_options.fixed_form, LCompilers::parent_path(lm.files.back().in_filename));
+        compiler_options.fixed_form, include_dirs);
     std::cout << prescan << std::endl;
     return 0;
 }
@@ -408,8 +414,13 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
         lm.files.push_back(fl);
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
+        std::vector<std::filesystem::path> include_dirs;
+        include_dirs.push_back(LCompilers::parent_path(lm.files.back().in_filename));
+        include_dirs.insert(include_dirs.end(),
+                            compiler_options.include_dirs.begin(),
+                            compiler_options.include_dirs.end());
         input = LCompilers::LFortran::prescan(input, lm,
-            compiler_options.fixed_form, LCompilers::parent_path(infile));
+            compiler_options.fixed_form, include_dirs);
     }
     auto res = LCompilers::LFortran::tokens(al, input, diagnostics, &stypes, &locations,
         compiler_options.fixed_form);
@@ -1621,7 +1632,7 @@ int main(int argc, char *argv[])
         app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", arg_l, "Link library option");
         app.add_option("-L", arg_L, "Library path option");
-        app.add_option("-I", compiler_options.include_dirs, "Include path");
+        app.add_option("-I", compiler_options.include_dirs, "Include path")->allow_extra_args(false);
         app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
