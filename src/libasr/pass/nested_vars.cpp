@@ -464,19 +464,21 @@ public:
                         if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(sym_)->get_counter() ) {
                             std::string sym_name = ASRUtils::symbol_name(sym_);
                             sym_ = current_scope->get_symbol(sym_name);
-                            if( !sym ) {
+                            if( !sym_ ) {
                                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                                     al, t->base.loc,
                                     /* a_symtab */ current_scope,
                                     /* a_name */ s2c(al, current_scope->get_unique_name(sym_name)),
-                                    sym_,
-                                    s2c(al, m_name), nullptr, 0, s2c(al, sym_name),
-                                    ASR::accessType::Public
+                                    ASRUtils::symbol_get_past_external(sym),
+                                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(sym))),
+                                    nullptr, 0, s2c(al, sym_name), ASR::accessType::Public
                                 );
                                 sym_ = ASR::down_cast<ASR::symbol_t>(fn);
                                 current_scope->add_symbol(sym_name, sym_);
                             }
                         }
+                        LCOMPILERS_ASSERT(ext_sym != nullptr);
+                        LCOMPILERS_ASSERT(sym_ != nullptr);
                         ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
                         ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
                         if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) ) {
