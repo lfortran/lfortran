@@ -183,14 +183,13 @@ public:
         ASR::expr_t* var = idx_vars[0];
 
         ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
-        ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4, nullptr, 0));
 
         // create do loop head
         ASR::do_loop_head_t head;
         head.loc = loc;
         head.m_v = var;
-        head.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type));
-        head.m_end = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc, left, nullptr, real_cmp?real_type:int32_type, nullptr));
+        head.m_start = PassUtils::get_bound(left, 1, "lbound", al);
+        head.m_end = PassUtils::get_bound(left, 1, "ubound", al);
         head.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
 
         // create do loop body
