@@ -750,6 +750,10 @@ filename = "array12.f90"
 asr = true
 
 [[test]]
+filename = "array13.f90"
+pass = "init_expr"
+
+[[test]]
 filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
