@@ -1864,6 +1864,26 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
     }
 }
 
+static inline void set_absent_optional_arguments_to_null(
+    Vec<ASR::call_arg_t>& args, ASR::Function_t* func, Allocator& al,
+    ASR::expr_t* dt=nullptr) {
+    int offset = (dt != nullptr);
+    for( size_t i = args.size(); i < func->n_args - offset; i++ ) {
+        if( ASR::is_a<ASR::Variable_t>(
+                *ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v) ) {
+            LCOMPILERS_ASSERT(ASRUtils::EXPR2VAR(func->m_args[i + offset])->m_presence ==
+                                ASR::presenceType::Optional);
+            ASR::call_arg_t empty_arg;
+            Location loc;
+            loc.first = 1, loc.last = 1;
+            empty_arg.loc = loc;
+            empty_arg.m_value = nullptr;
+            args.push_back(al, empty_arg);
+        }
+    }
+    LCOMPILERS_ASSERT(args.size() == (func->n_args - offset));
+}
+
 static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::ttype_t* t) {
     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(t);
     Vec<ASR::dimension_t> empty_dims;

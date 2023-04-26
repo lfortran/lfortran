@@ -2425,6 +2425,7 @@ public:
         }
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASR::make_FunctionCall_t(al, loc,
             final_sym, v, args.p, args.size(), return_type,
             value, nullptr);
@@ -2481,6 +2482,7 @@ public:
         }
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr);
         return ASR::make_FunctionCall_t(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
                 v_expr);
@@ -2519,6 +2521,7 @@ public:
             }
             current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+            ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASR::make_FunctionCall_t(al, loc,
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr);
@@ -2566,12 +2569,14 @@ public:
             if (cp_s != nullptr) {
                 current_function_dependencies.push_back(al, ASRUtils::symbol_name(cp_s));
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
+                ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASR::make_FunctionCall_t(al, loc,
                     cp_s, v, args.p, args.size(), type,
                     nullptr, nullptr);
             } else {
                 current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
                 ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+                ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASR::make_FunctionCall_t(al, loc,
                     final_sym, v, args.p, args.size(), type,
                     nullptr, nullptr);
@@ -2622,6 +2627,7 @@ public:
             current_module_dependencies.push_back(al, v_module->m_name);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASR::make_FunctionCall_t(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr);
     }
@@ -2631,6 +2637,8 @@ public:
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
         ASR::ttype_t *return_type = func->m_return_var_type;
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        // TODO: Uncomment later
+        // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
         return ASR::make_FunctionCall_t(al, loc, v, nullptr,
             args.p, args.size(), return_type, nullptr, nullptr);
     }
@@ -4440,6 +4448,7 @@ public:
                         }
                         current_function_dependencies.push_back(al, s2c(al, matched_func_name));
                         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+                        ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                         tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
                             a_name, sym, a_args.p, 2, return_type,
                             nullptr, nullptr);
