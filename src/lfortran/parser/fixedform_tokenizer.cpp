@@ -1304,7 +1304,9 @@ struct FixedFormRecursiveDescent {
         eat_label(cur);
         if (next_is(cur, "contains")) {
             push_token_advance(cur, "contains");
-            while(lex_body_statement(cur));
+            push_token_no_advance(cur, "\n");
+            next_line(cur); // Does not generate any code?
+            while(lex_procedure(cur));
         }
         if (next_is(cur, "endprogram")) {
             push_token_advance(cur, "endprogram");
