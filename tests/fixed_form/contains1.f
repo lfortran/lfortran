@@ -9,7 +9,7 @@ C begin with ! are its only other features that were not valid Fortran 77.
       character:: b,c,d='?'
       integer j,k,n(2)
       data j,k/2*0/                 ! repeated value in data            (3)
-      call input(n,'2*4',b,c,d,*666)! repeated value in list-directed input, 
+      call input(n,'2*4',b,c,d,666)! repeated value in list-directed input, 
 C                                   ! alternate return                  (4,5)
       write(*,'(2i2,1x,a)') n(1)*j, ! default output unit ! multiply    (6,7)
      *      n(2)**k,b               ! continuation line ! exponentiate  (8,9)
@@ -19,7 +19,7 @@ C                                   ! alternate return                  (4,5)
 
       contains
 
-      subroutine input(n,a,b,c,d,*) ! dummy alternate return argument   (12)
+      subroutine input(n,a,b,c,d,r) ! dummy alternate return argument   (12)
       integer,intent(out)::n(*)     ! assumed-size array                (13)
       character,intent(in)::a*(*)   ! length selector ! assumed length
 C                                        following variable name        (14,15)
