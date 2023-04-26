@@ -905,6 +905,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "selectrank(")) {
+            lex_selectrank(cur);
+            return true;
+        }
+
         if (is_function_call(cur)) {
             push_token_advance(cur, "call");
             tokenize_line(cur);
@@ -1242,6 +1247,18 @@ struct FixedFormRecursiveDescent {
                 break;
             }
         }
+    }
+
+    void lex_selectrank(unsigned char *&cur) {
+        auto end = cur; next_line(end);
+        push_token_advance(cur, "select");
+        push_token_advance(cur, "rank");
+        tokenize_line(cur); // tokenize rest of line where `select rank` starts
+        while (!next_is(cur, "endselect\n")) {
+            tokenize_line(cur);
+        }
+        push_token_advance(cur, "endselect");
+        tokenize_line(cur);
     }
 
     bool if_advance_or_terminate(unsigned char *&cur) {
