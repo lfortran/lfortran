@@ -452,7 +452,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 // TODO: Use SymbolTable::get_unique_name to avoid potential
                 // clashes with user defined functions
                 char* new_func_sym_name = ASRUtils::symbol_name(new_func_sym);
-                if( current_scope->get_symbol(new_func_sym_name) == nullptr ) {
+                if( current_scope->resolve_symbol(new_func_sym_name) == nullptr ) {
                     new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
                         ASR::make_ExternalSymbol_t(al, x.m_name->base.loc, func_ext_sym->m_parent_symtab,
                             new_func_sym_name, new_func_sym, func_ext_sym->m_module_name,
