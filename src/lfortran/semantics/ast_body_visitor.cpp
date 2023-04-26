@@ -1972,8 +1972,9 @@ public:
             }
         }
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
+        ASR::Function_t *f = nullptr;
         if (ASR::is_a<ASR::Function_t>(*sym)) {
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+            f = ASR::down_cast<ASR::Function_t>(sym);
             if (ASRUtils::is_intrinsic_procedure(f)) {
                 if (intrinsic_module_procedures_as_asr_nodes.find(sub_name) !=
                     intrinsic_module_procedures_as_asr_nodes.end()) {
@@ -2067,6 +2068,7 @@ public:
         ASR::symbol_t *final_sym=nullptr;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
+                f = ASR::down_cast<ASR::Function_t>(original_sym);
                 final_sym=original_sym;
                 original_sym = nullptr;
                 break;
@@ -2104,6 +2106,9 @@ public:
                             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                 }
                 // Create ExternalSymbol for procedures in different modules.
+                if( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(p->m_procs[idx])) ) {
+                    f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(p->m_procs[idx]));
+                }
                 final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     p->m_procs[idx], current_scope);
                 break;
@@ -2129,6 +2134,7 @@ public:
                     if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
                         throw SemanticError("ExternalSymbol must point to a Subroutine", x.base.base.loc);
                     }
+                    f = ASR::down_cast<ASR::Function_t>(final_sym);
                     // We mangle the new ExternalSymbol's local name as:
                     //   generic_procedure_local_name @
                     //     specific_procedure_remote_name
@@ -2210,6 +2216,9 @@ public:
         }
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        if( f ) {
+            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
+        }
         tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr);
     }

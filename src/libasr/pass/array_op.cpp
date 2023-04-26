@@ -835,8 +835,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             std::vector<bool> array_mask(x->n_args, false);
             bool at_least_one_array = false;
             for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
-                array_mask[iarg] = ASRUtils::is_array(
-                    ASRUtils::expr_type(x->m_args[iarg].m_value));
+                array_mask[iarg] = (x->m_args[iarg].m_value != nullptr &&
+                    ASRUtils::is_array(ASRUtils::expr_type(x->m_args[iarg].m_value)));
                 at_least_one_array = at_least_one_array || array_mask[iarg];
             }
             if (!at_least_one_array) {
