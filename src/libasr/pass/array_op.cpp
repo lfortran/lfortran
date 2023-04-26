@@ -73,6 +73,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     Vec<ASR::expr_t*>& result_lbound;
     Vec<ASR::expr_t*>& result_ubound;
     Vec<ASR::expr_t*>& result_inc;
+    std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
 
     public:
 
@@ -85,13 +86,14 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                    bool& apply_again_, bool& remove_original_statement_,
                    Vec<ASR::expr_t*>& result_lbound_,
                    Vec<ASR::expr_t*>& result_ubound_,
-                   Vec<ASR::expr_t*>& result_inc_) :
+                   Vec<ASR::expr_t*>& result_inc_,
+                   std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_) :
     al(al_), pass_result(pass_result_),
     result_counter(0), use_custom_loop_params(use_custom_loop_params_),
     apply_again(apply_again_), remove_original_statement(remove_original_statement_),
     result_lbound(result_lbound_), result_ubound(result_ubound_),
-    result_inc(result_inc_), current_scope(nullptr),
-    result_var(nullptr), result_type(nullptr) {}
+    result_inc(result_inc_), resultvar2value(resultvar2value_),
+    current_scope(nullptr), result_var(nullptr), result_type(nullptr) {}
 
     template <typename LOOP_BODY>
     void create_do_loop(const Location& loc, int var_rank, int result_rank,
@@ -184,7 +186,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     template <typename T>
     void replace_vars_helper(T* x) {
-        if( !(result_var != nullptr && PassUtils::is_array(result_var)) ) {
+        if( !(result_var != nullptr && PassUtils::is_array(result_var) &&
+              resultvar2value.find(result_var) != resultvar2value.end() &&
+              resultvar2value[result_var] == &(x->base)) ) {
             return ;
         }
 
@@ -268,7 +272,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     template <typename T>
     void replace_Constant(T* x) {
-        if( !(result_var != nullptr && PassUtils::is_array(result_var)) ) {
+        if( !(result_var != nullptr && PassUtils::is_array(result_var) &&
+              resultvar2value.find(result_var) != resultvar2value.end() &&
+              resultvar2value[result_var] == &(x->base)) ) {
             return ;
         }
 
@@ -925,6 +931,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::expr_t*> result_lbound, result_ubound, result_inc;
         Vec<ASR::stmt_t*>* parent_body;
+        std::map<ASR::expr_t*, ASR::expr_t*> resultvar2value;
 
     public:
 
@@ -935,7 +942,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         remove_original_statement(false),
         replacer(al_, pass_result, use_custom_loop_params,
                  apply_again, remove_original_statement,
-                 result_lbound, result_ubound, result_inc),
+                 result_lbound, result_ubound, result_inc,
+                 resultvar2value),
         parent_body(nullptr), apply_again(false) {
             pass_result.n = 0;
             result_lbound.n = 0;
@@ -1067,6 +1075,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         inline void visit_AssignmentUtil(const ASR::Assignment_t& x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
             ASR::expr_t* original_value = x.m_value;
+            resultvar2value[replacer.result_var] = original_value;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             this->call_replacer();
             current_expr = current_expr_copy_9;
