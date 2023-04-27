@@ -25,12 +25,6 @@ You can use helper macros and define your own helper macros to reduce
 the code size.
 */
 
-struct IntrinsicSignature {
-    std::vector<std::string> kwarg_names;
-    int64_t total_args;
-    int64_t positional_args;
-};
-
 typedef ASR::expr_t* (*impl_function)(
     Allocator&, const Location &,
     SymbolTable*, Vec<ASR::ttype_t*>&,
@@ -44,9 +38,6 @@ typedef ASR::asr_t* (*create_intrinsic_function)(
     Allocator&, const Location&,
     Vec<ASR::expr_t*>&,
     const std::function<void (const std::string &, const Location &)>);
-
-typedef void (*get_intrinsic_signature)(
-    std::vector<IntrinsicSignature>&);
 
 enum class IntrinsicFunctions : int64_t {
     Sin,
@@ -62,13 +53,6 @@ enum class IntrinsicFunctions : int64_t {
     Sum,
     // ...
 };
-
-static inline void return_default_intrinsic_signature(std::vector<IntrinsicSignature>& signatures) {
-    IntrinsicSignature signature;
-    signature.total_args = 1;
-    signature.positional_args = 1;
-    signatures.push_back(signature);
-}
 
 class ASRBuilder {
     private:
@@ -684,18 +668,6 @@ namespace Abs {
 
 namespace Any {
 
-static inline void return_intrinsic_signature(std::vector<ASRUtils::IntrinsicSignature>& signatures) {
-    ASRUtils::IntrinsicSignature signature1, signature2;
-    signature1.kwarg_names = {};
-    signature1.total_args = 1;
-    signature1.positional_args = 1;
-    signatures.push_back(signature1);
-    signature2.kwarg_names = {"dim"};
-    signature2.total_args = 2;
-    signature2.positional_args = 1;
-    signatures.push_back(signature2);
-}
-
 static inline ASR::expr_t *eval_Any(Allocator & /*al*/,
     const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
     return nullptr;
@@ -926,39 +898,6 @@ static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
 } // namespace Any
 
 namespace Sum {
-
-static inline void return_intrinsic_signature(std::vector<ASRUtils::IntrinsicSignature>& signatures) {
-    ASRUtils::IntrinsicSignature signature1, signature2, signature3, signature4;
-
-    // Accepts only array
-    // Returns a scalar
-    signature1.kwarg_names = {};
-    signature1.total_args = 1;
-    signature1.positional_args = 1;
-    signatures.push_back(signature1);
-
-    // Accepts only array and dim along which the summation is to be done.
-    // Returns an array
-    signature2.kwarg_names = {"dim"};
-    signature2.total_args = 2;
-    signature2.positional_args = 1;
-    signatures.push_back(signature2);
-
-    // Accepts only array, dim along which the summation is to be done,
-    // and the mask which is applied over the array elements
-    // Returns an array
-    signature3.kwarg_names = {"dim", "mask"};
-    signature3.total_args = 3;
-    signature3.positional_args = 1;
-    signatures.push_back(signature3);
-
-    // Accepts only array and the mask which is applied over the array elements
-    // Returns a scalar
-    signature4.kwarg_names = {"mask"};
-    signature4.total_args = 2;
-    signature4.positional_args = 1;
-    signatures.push_back(signature4);
-}
 
 static inline ASR::expr_t *eval_Sum(Allocator & /*al*/,
     const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
@@ -1358,18 +1297,17 @@ namespace IntrinsicFunctionRegistry {
 
     static const std::map<std::string,
         std::tuple<create_intrinsic_function,
-                    eval_intrinsic_function,
-                    get_intrinsic_signature>>& intrinsic_function_by_name_db = {
-                {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_log_gamma, nullptr}},
-                {"sin", {&Sin::create_Sin, &Sin::eval_Sin, nullptr}},
-                {"cos", {&Cos::create_Cos, &Cos::eval_Cos, nullptr}},
-                {"tan", {&Tan::create_Tan, &Tan::eval_Tan, nullptr}},
-                {"asin", {&Asin::create_Asin, &Asin::eval_Asin, nullptr}},
-                {"acos", {&Acos::create_Acos, &Acos::eval_Acos, nullptr}},
-                {"atan", {&Atan::create_Atan, &Atan::eval_Atan, nullptr}},
-                {"abs", {&Abs::create_Abs, &Abs::eval_Abs, nullptr}},
-                {"any", {&Any::create_Any, &Any::eval_Any, &Any::return_intrinsic_signature}},
-                {"sum", {&Sum::create_Sum, &Sum::eval_Sum, &Sum::return_intrinsic_signature}},
+                    eval_intrinsic_function>>& intrinsic_function_by_name_db = {
+                {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_log_gamma}},
+                {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
+                {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
+                {"tan", {&Tan::create_Tan, &Tan::eval_Tan}},
+                {"asin", {&Asin::create_Asin, &Asin::eval_Asin}},
+                {"acos", {&Acos::create_Acos, &Acos::eval_Acos}},
+                {"atan", {&Atan::create_Atan, &Atan::eval_Atan}},
+                {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
+                {"any", {&Any::create_Any, &Any::eval_Any}},
+                {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -1410,14 +1348,6 @@ namespace IntrinsicFunctionRegistry {
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
         return  std::get<0>(intrinsic_function_by_name_db.at(name));
-    }
-
-    static inline get_intrinsic_signature get_intrinsic_signature_function(const std::string& name) {
-        get_intrinsic_signature func = std::get<2>(intrinsic_function_by_name_db.at(name));
-        if( func == nullptr ) {
-            return &return_default_intrinsic_signature;
-        }
-        return func;
     }
 
     static inline impl_function get_instantiate_function(int64_t id) {
