@@ -46,6 +46,7 @@ _CPack_Packages
 
 ## libraries
 *.a
+*.a.*
 *.so
 *.s
 *.ll

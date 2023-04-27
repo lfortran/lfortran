@@ -3,12 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
-
-namespace {
-    class VerifyAbort
-    {
-    };
-}
+#include <libasr/pass/intrinsic_function_registry.h>
 
 namespace LCompilers {
 
@@ -59,17 +54,8 @@ public:
         diagnostics{diagnostics} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
-#define require(cond, error_msg) require_impl((cond), (error_msg), x.base.base.loc)
-#define require_with_loc(cond, error_msg, loc) require_impl((cond), (error_msg), loc)
-    void require_impl(bool cond, const std::string &error_msg, const Location &loc) {
-        if (!cond) {
-            diagnostics.message_label("ASR verify: " + error_msg,
-                {loc}, "failed here",
-                diag::Level::Error, diag::Stage::ASRVerify);
-            throw VerifyAbort();
-        }
-    }
-
+    #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
+    #define require_with_loc(cond, error_msg, loc) ASRUtils::require_impl((cond), (error_msg), loc, diagnostics);
     // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
     // symbol table `symtab` or any of its parents *and* if the symbol in the
     // symbol table is equal to `sym`. It returns false otherwise, such as in the
@@ -674,8 +660,8 @@ public:
             ASR::symbol_t *s = ((ASR::Var_t*)&x)->m_v;
             if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
                 ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(s);
-                require_impl(e->m_external, "m_external cannot be null here",
-                        x.base.loc);
+                ASRUtils::require_impl(e->m_external, "m_external cannot be null here",
+                        x.base.loc, diagnostics);
             }
         }
     }
@@ -767,7 +753,7 @@ public:
     SymbolTable *get_dt_symtab(ASR::symbol_t *dt) {
         LCOMPILERS_ASSERT(dt)
         SymbolTable *symtab = ASRUtils::symbol_symtab(ASRUtils::symbol_get_past_external(dt));
-        require_impl(symtab,
+        require_with_loc(symtab,
             "m_dt::m_v::m_type::class/derived_type must point to a symbol with a symbol table",
             dt->base.loc);
         return symtab;
@@ -786,7 +772,7 @@ public:
                 break;
             }
             default :
-                require_impl(false,
+                require_with_loc(false,
                     "m_dt::m_v::m_type must point to a type with a symbol table (Struct or Class)",
                     dt->base.loc);
         }
@@ -803,7 +789,7 @@ public:
                 break;
             }
             default :
-                require_impl(false,
+                require_with_loc(false,
                     "m_dt::m_v::m_type must point to a Struct type",
                     dt->base.loc);
         }
@@ -832,7 +818,7 @@ public:
                 break;
             }
             default :
-                require_impl(false,
+                require_with_loc(false,
                     "m_dt::m_v::m_type must point to a Struct type",
                     dt->base.loc);
         }
@@ -841,6 +827,14 @@ public:
 
     void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
+    }
+
+    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t& x) {
+        ASRUtils::verify_function verify_ = ASRUtils::IntrinsicFunctionRegistry
+            ::get_verify_function(x.m_intrinsic_id);
+        LCOMPILERS_ASSERT(verify_ != nullptr);
+        verify_(x, diagnostics);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicFunction(x);
     }
 
     void visit_FunctionCall(const FunctionCall_t &x) {
@@ -902,7 +896,7 @@ bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
     ASR::VerifyVisitor v(check_external, diagnostics);
     try {
         v.visit_TranslationUnit(unit);
-    } catch (const VerifyAbort &) {
+    } catch (const ASRUtils::VerifyAbort &) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return false;
     }
