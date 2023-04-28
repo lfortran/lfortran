@@ -1,4 +1,4 @@
-module find_fit_module
+module pass_array_by_data_04_find_fit_module
 
 contains
 
@@ -23,10 +23,10 @@ contains
 
 end subroutine find_fit
 
-end module find_fit_module
+end module
 
 program main
-use find_fit_module, only: find_fit
+use pass_array_by_data_04_find_fit_module, only: find_fit
 implicit none
 
     real :: data_x(3)
