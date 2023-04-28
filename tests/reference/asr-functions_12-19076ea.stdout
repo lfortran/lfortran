@@ -145,7 +145,18 @@
                                     decodebase
                                     (FunctionType
                                         [(Character 1 -1 () [])]
-                                        (Logical 4 [])
+                                        (Character 1 -3 (FunctionCall
+                                            3 len
+                                            ()
+                                            [((FunctionParam
+                                                0
+                                                (Character 1 -1 () [])
+                                                ()
+                                            ))]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
                                         Source
                                         Implementation
                                         ()
