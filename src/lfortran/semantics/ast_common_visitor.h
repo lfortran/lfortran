@@ -1809,6 +1809,22 @@ public:
                 throw SemanticError("Type must have a name", loc);
             }
             std::string derived_type_name = to_lower(sym_type->m_name);
+            if (derived_type_name == "integer") {
+                sym_type->m_type = AST::decl_typeType::TypeInteger;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            } else if (derived_type_name == "real") {
+                sym_type->m_type = AST::decl_typeType::TypeReal;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            } else if (derived_type_name == "complex") {
+                sym_type->m_type = AST::decl_typeType::TypeComplex;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            } else if (derived_type_name == "logical") {
+                sym_type->m_type = AST::decl_typeType::TypeLogical;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            } else if (derived_type_name == "character") {
+                sym_type->m_type = AST::decl_typeType::TypeCharacter;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            }
             bool type_param = false;
             if (is_requirement) {
                 for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
