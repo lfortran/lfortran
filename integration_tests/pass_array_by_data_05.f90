@@ -1,4 +1,4 @@
-module find_fit_module
+module pass_array_by_data_05_find_fit_module
 
 implicit none
 
@@ -20,11 +20,11 @@ if (abs(y - 6.000) > 1e7 ) error stop
 
 end subroutine find_fit
 
-end module find_fit_module
+end module
 
 program example_primes
 
-use find_fit_module, only: find_fit
+use pass_array_by_data_05_find_fit_module, only: find_fit
 
 implicit none
 
