@@ -1561,6 +1561,11 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
             m_dims = nullptr;
             break;
         }
+        case ASR::ttypeType::Set: {
+            n_dims = 0;
+            m_dims = nullptr;
+            break;
+        }
         case ASR::ttypeType::CPtr: {
             n_dims = 0;
             m_dims = nullptr;
@@ -1570,6 +1575,11 @@ inline int extract_dimensions_from_ttype(ASR::ttype_t *x,
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(x);
             n_dims = tp->n_dims;
             m_dims = tp->m_dims;
+            break;
+        }
+        case ASR::ttypeType::FunctionType: {
+            n_dims = 0;
+            m_dims = nullptr;
             break;
         }
         default:
@@ -1699,6 +1709,8 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
               ASR::is_a<ASR::Logical_t>(*asr_type));
 }
 
+static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
+
 static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                                            Vec<ASR::dimension_t>* dims = nullptr) {
     switch (t->type) {
@@ -1772,6 +1784,21 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             //            tp->m_param, dimsp, dimsn, tp->m_rt, tp->n_rt));
             return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc,
                         tp->m_param, dimsp, dimsn));
+        }
+        case ASR::ttypeType::FunctionType: {
+            ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(t);
+            //ASR::ttype_t* dup_type = duplicate_type(al, c->m_type, dims);
+            Vec<ASR::ttype_t*> arg_types;
+            arg_types.reserve(al, ft->n_arg_types);
+            for( size_t i = 0; i < ft->n_arg_types; i++ ) {
+                ASR::ttype_t *t = ASRUtils::duplicate_type(al, ft->m_arg_types[i]);
+                arg_types.push_back(al, t);
+            }
+            return ASRUtils::TYPE(ASR::make_FunctionType_t(al, ft->base.base.loc,
+                arg_types.p, arg_types.size(), ft->m_return_var_type, ft->m_abi,
+                ft->m_deftype, ft->m_bindc_name, ft->m_elemental, ft->m_pure, ft->m_module, ft->m_inline,
+                ft->m_static, ft->m_type_params, ft->n_type_params, ft->m_restrictions, ft->n_restrictions,
+                ft->m_is_restriction));
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
@@ -3293,6 +3320,28 @@ static inline void collect_variable_dependencies(Allocator& al, SetChar& deps_ve
         collector.visit_ttype(*type);
     }
 }
+
+static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims) {
+    Vec<ASR::dimension_t> dims;
+    dims.reserve(al, n_dims);
+    ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+    for (size_t i = 0; i < n_dims; i++) {
+        ASR::expr_t* start = m_dims[i].m_start;
+        if( start != nullptr ) {
+            start = expr_duplicator.duplicate_expr(start);
+        }
+        ASR::expr_t* length = m_dims[i].m_length;
+        if( length != nullptr ) {
+            length = expr_duplicator.duplicate_expr(length);
+        }
+        ASR::dimension_t t;
+        t.m_start = start;
+        t.m_length = length;
+        dims.push_back(al, t);
+    }
+    return dims.p;
+}
+
 
 } // namespace ASRUtils
 
