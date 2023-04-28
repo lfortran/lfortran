@@ -314,6 +314,7 @@ RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
 RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm)
 RUN(NAME sum_01 LABELS gfortran llvm)
+RUN(NAME sum_02 LABELS gfortran llvm)
 
 RUN(NAME reserved_01 LABELS gfortran llvm wasm)
 RUN(NAME reserved_02 LABELS gfortran llvm)

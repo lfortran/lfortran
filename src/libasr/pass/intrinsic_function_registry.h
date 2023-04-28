@@ -1555,8 +1555,9 @@ namespace IntrinsicFunctionRegistry {
             id == ASRUtils::IntrinsicFunctions::Sum ) {
             return 1;
         } else {
-            return -1;
+            LCOMPILERS_ASSERT(false);
         }
+        return -1;
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
