@@ -38,6 +38,7 @@ struct CompilerOptions {
     bool indent = false;
     bool json = false;
     bool tree = false;
+    bool visualize = false;
     bool fast = false;
     bool openmp = false;
     bool generate_object_code = false;
