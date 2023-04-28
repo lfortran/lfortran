@@ -985,7 +985,19 @@
                                         ))
                                         ((IntegerConstant 1 (Integer 4 []))
                                         (FunctionParam
-                                            0
+                                            1
+                                            (Integer 4 [])
+                                            ()
+                                        ))])
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (FunctionParam
+                                            1
+                                            (Integer 4 [])
+                                            ()
+                                        ))
+                                        ((IntegerConstant 1 (Integer 4 []))
+                                        (FunctionParam
+                                            2
                                             (Integer 4 [])
                                             ()
                                         ))])
@@ -997,19 +1009,7 @@
                                         ))
                                         ((IntegerConstant 1 (Integer 4 []))
                                         (FunctionParam
-                                            0
-                                            (Integer 4 [])
-                                            ()
-                                        ))])
-                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (FunctionParam
-                                            0
-                                            (Integer 4 [])
-                                            ()
-                                        ))
-                                        ((IntegerConstant 1 (Integer 4 []))
-                                        (FunctionParam
-                                            0
+                                            2
                                             (Integer 4 [])
                                             ()
                                         ))])]
@@ -1348,7 +1348,22 @@
                                             ))
                                             ((IntegerConstant 1 (Integer 4 []))
                                             (FunctionParam
-                                                0
+                                                1
+                                                (Integer 4 [])
+                                                ()
+                                            ))]
+                                        )
+                                        (TypeParameter
+                                            t
+                                            [((IntegerConstant 1 (Integer 4 []))
+                                            (FunctionParam
+                                                1
+                                                (Integer 4 [])
+                                                ()
+                                            ))
+                                            ((IntegerConstant 1 (Integer 4 []))
+                                            (FunctionParam
+                                                2
                                                 (Integer 4 [])
                                                 ()
                                             ))]
@@ -1363,22 +1378,7 @@
                                             ))
                                             ((IntegerConstant 1 (Integer 4 []))
                                             (FunctionParam
-                                                0
-                                                (Integer 4 [])
-                                                ()
-                                            ))]
-                                        )
-                                        (TypeParameter
-                                            t
-                                            [((IntegerConstant 1 (Integer 4 []))
-                                            (FunctionParam
-                                                0
-                                                (Integer 4 [])
-                                                ()
-                                            ))
-                                            ((IntegerConstant 1 (Integer 4 []))
-                                            (FunctionParam
-                                                0
+                                                2
                                                 (Integer 4 [])
                                                 ()
                                             ))]
