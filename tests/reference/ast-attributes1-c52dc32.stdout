@@ -17,6 +17,7 @@
                 4
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -38,6 +39,7 @@
             (AttrType
                 TypeCharacter
                 []
+                ()
                 ()
                 None
             )
@@ -61,6 +63,7 @@
                 (kind
                 c_char
                 Value)]
+                ()
                 ()
                 None
             )
@@ -91,6 +94,7 @@
                 3
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -108,6 +112,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -132,6 +137,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )
@@ -191,6 +197,7 @@
                     TypeInteger
                     []
                     ()
+                    ()
                     None
                 )
                 []
@@ -208,6 +215,7 @@
                     [(()
                     50
                     Value)]
+                    ()
                     ()
                     None
                 )
@@ -256,6 +264,7 @@
                 TypeDoublePrecision
                 []
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -265,6 +274,151 @@
             [(()
             ()
             AssumedRank)]
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                (AttrType
+                    TypeReal
+                    [(kind
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrAllocatable
+            )]
+            [(x
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                (AttrType
+                    TypeInteger
+                    [(kind
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrAllocatable
+            )]
+            [(x
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                (AttrType
+                    TypeCharacter
+                    [(len
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrAllocatable
+            )]
+            [(x
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                (AttrType
+                    TypeLogical
+                    [(kind
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrAllocatable
+            )]
+            [(x
+            [(()
+            ()
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                (AttrType
+                    TypeComplex
+                    [(kind
+                    4
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrAllocatable
+            )]
+            [(x
+            [(()
+            ()
+            DimensionExpr)]
             []
             ()
             None

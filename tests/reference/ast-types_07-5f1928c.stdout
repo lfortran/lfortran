@@ -12,6 +12,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -30,6 +31,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -47,6 +49,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )
@@ -67,6 +70,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )
@@ -109,6 +113,7 @@
                     ()
                     Colon)]
                     ()
+                    ()
                     None
                 )
                 [(SimpleAttribute
@@ -131,6 +136,7 @@
                     [(()
                     ()
                     Colon)]
+                    ()
                     ()
                     None
                 )
@@ -172,6 +178,7 @@
                     ()
                     Star)]
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -191,6 +198,7 @@
                     [(()
                     ()
                     Star)]
+                    ()
                     ()
                     None
                 )
@@ -229,6 +237,7 @@
                     80
                     Value)]
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -248,6 +257,7 @@
                     [(()
                     80
                     Value)]
+                    ()
                     ()
                     None
                 )
@@ -286,6 +296,7 @@
                     (+ 40 40)
                     Value)]
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -305,6 +316,7 @@
                     [(()
                     (- 100 20)
                     Value)]
+                    ()
                     ()
                     None
                 )

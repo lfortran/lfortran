@@ -18,5 +18,10 @@ procedure, pass :: name => sample
 end type details
 intrinsic :: sin, cos
 double precision, intent(in) :: x(..)
+type(real(4)), allocatable :: x(:)
+type(integer(4)), allocatable :: x(:)
+type(character(len=4)), allocatable :: x(:)
+type(logical(4)), allocatable :: x(:)
+type(complex(4)), allocatable :: x(:)
 save :: /zzrayc/
 end program attributes1

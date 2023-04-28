@@ -9,6 +9,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -30,6 +31,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )

@@ -14,6 +14,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -31,6 +32,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )

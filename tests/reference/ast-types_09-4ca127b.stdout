@@ -21,6 +21,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -53,6 +54,7 @@
                 (()
                 ucs4
                 Value)]
+                ()
                 ()
                 None
             )
@@ -117,6 +119,7 @@
                     ()
                     Colon)]
                     ()
+                    ()
                     None
                 )
                 [(SimpleAttribute
@@ -139,6 +142,7 @@
                     [(len
                     ()
                     Colon)]
+                    ()
                     ()
                     None
                 )
@@ -165,6 +169,7 @@
                     (len
                     ()
                     Star)]
+                    ()
                     ()
                     None
                 )
@@ -214,6 +219,7 @@
                     [(()
                     int32
                     Value)]
+                    ()
                     ()
                     None
                 )

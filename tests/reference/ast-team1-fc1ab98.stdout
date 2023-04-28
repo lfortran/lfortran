@@ -19,6 +19,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -36,6 +37,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 team_type
                 None
             )
@@ -59,6 +61,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(AttrCodimension
@@ -81,6 +84,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )

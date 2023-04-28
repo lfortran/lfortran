@@ -16,6 +16,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -42,6 +43,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -61,6 +63,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 None
             )
@@ -86,6 +89,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -109,6 +113,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -131,6 +136,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 None
             )
@@ -159,6 +165,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -185,6 +192,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -210,6 +218,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 None
             )

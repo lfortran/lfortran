@@ -17,6 +17,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             []
@@ -151,6 +152,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -170,6 +172,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )

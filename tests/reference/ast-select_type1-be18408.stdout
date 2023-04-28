@@ -25,6 +25,7 @@
                     TypeInteger
                     []
                     ()
+                    ()
                     None
                 )
                 ()
@@ -50,6 +51,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     None
                 )
@@ -78,6 +80,7 @@
                     [(()
                     ()
                     Star)]
+                    ()
                     ()
                     None
                 )

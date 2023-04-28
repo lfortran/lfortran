@@ -33,6 +33,7 @@
                             TypeInteger
                             []
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -77,6 +78,7 @@
                             TypeInteger
                             []
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -109,6 +111,7 @@
                             TypeReal
                             []
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -131,6 +134,7 @@
             (AttrType
                 TypeProcedure
                 []
+                ()
                 a1
                 None
             )
@@ -178,6 +182,7 @@
                             (AttrType
                                 TypeInteger
                                 []
+                                ()
                                 ()
                                 None
                             )

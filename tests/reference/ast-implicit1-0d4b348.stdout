@@ -50,6 +50,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             []
@@ -67,6 +68,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )
@@ -91,6 +93,7 @@
                 8
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -110,6 +113,7 @@
                 [(()
                 8
                 Value)]
+                ()
                 ()
                 None
             )
@@ -133,6 +137,7 @@
                 TypeDoublePrecision
                 []
                 ()
+                ()
                 None
             )
             []
@@ -155,6 +160,7 @@
                 TypeCharacter
                 []
                 ()
+                ()
                 None
             )
             []
@@ -172,6 +178,7 @@
             (AttrType
                 TypeCharacter
                 []
+                ()
                 ()
                 None
             )
@@ -194,6 +201,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -207,6 +215,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -242,6 +251,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -267,6 +277,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -291,6 +302,7 @@
                 8
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -317,6 +329,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -337,6 +350,7 @@
                 4
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -357,6 +371,7 @@
                 4
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -379,6 +394,7 @@
                 TypeLogical
                 []
                 ()
+                ()
                 None
             )
             []
@@ -396,6 +412,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 None
             )
@@ -420,6 +437,7 @@
                 4
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -439,6 +457,7 @@
                 [(()
                 4
                 Value)]
+                ()
                 ()
                 None
             )
@@ -462,6 +481,7 @@
                 TypeComplex
                 []
                 ()
+                ()
                 None
             )
             []
@@ -475,6 +495,7 @@
             (AttrType
                 TypeComplex
                 []
+                ()
                 ()
                 None
             )
@@ -497,6 +518,7 @@
                 TypeComplex
                 []
                 ()
+                ()
                 None
             )
             []
@@ -513,6 +535,7 @@
                 4
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -528,6 +551,7 @@
                 [(()
                 4
                 Value)]
+                ()
                 ()
                 None
             )
@@ -546,6 +570,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 BLOB
                 None
             )
@@ -560,6 +585,7 @@
             (AttrType
                 TypeClass
                 []
+                ()
                 X
                 None
             )
@@ -574,6 +600,7 @@
             (AttrType
                 TypeProcedure
                 []
+                ()
                 Y
                 None
             )

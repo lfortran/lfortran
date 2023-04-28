@@ -16,6 +16,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -32,6 +33,7 @@
                 TypeLogical
                 []
                 ()
+                ()
                 None
             )
             []
@@ -47,6 +49,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 None
             )
@@ -76,6 +79,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     type
                     None
                 )
@@ -115,6 +119,7 @@
                             TypeInteger
                             []
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -132,6 +137,7 @@
                         (AttrType
                             TypeInteger
                             []
+                            ()
                             ()
                             None
                         )
@@ -231,6 +237,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -252,6 +259,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 type
                 None
             )
@@ -349,6 +357,7 @@
                 (AttrType
                     TypeLogical
                     []
+                    ()
                     ()
                     None
                 )

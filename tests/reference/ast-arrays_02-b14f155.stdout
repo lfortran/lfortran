@@ -12,6 +12,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -39,6 +40,7 @@
                 [(()
                 dp
                 Value)]
+                ()
                 ()
                 None
             )

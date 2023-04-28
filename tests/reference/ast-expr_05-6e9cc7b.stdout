@@ -18,6 +18,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -51,6 +52,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 None
             )

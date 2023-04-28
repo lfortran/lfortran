@@ -20,6 +20,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -99,6 +100,7 @@
                     r8
                     Value)]
                     ()
+                    ()
                     None
                 )
                 []
@@ -118,6 +120,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     C
                     None
                 )
@@ -144,6 +147,7 @@
                     [(()
                     r8
                     Value)]
+                    ()
                     ()
                     None
                 )
@@ -218,6 +222,7 @@
                 (AttrType
                     TypeClass
                     []
+                    ()
                     X
                     None
                 )
@@ -253,6 +258,7 @@
                 (AttrType
                     TypeClass
                     []
+                    ()
                     X
                     None
                 )
@@ -292,6 +298,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 X
                 None
             )

@@ -13,6 +13,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -42,6 +43,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -64,6 +66,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -133,6 +136,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )

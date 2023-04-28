@@ -6,6 +6,7 @@
             TypeInteger
             []
             ()
+            ()
             None
         )]
         ()
@@ -34,6 +35,7 @@
             TypeInteger
             []
             ()
+            ()
             None
         )]
         ()
@@ -61,6 +63,7 @@
         [(AttrType
             TypeInteger
             []
+            ()
             ()
             None
         )]
