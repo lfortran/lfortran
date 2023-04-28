@@ -2719,6 +2719,17 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
 };
 
+// Finds the argument index that is equal to `v`, otherwise -1.
+inline int64_t lookup_var_index(ASR::expr_t **args, size_t n_args, ASR::Var_t *v) {
+    ASR::symbol_t *s = v->m_v;
+    for (size_t i = 0; i < n_args; i++) {
+        if (ASR::down_cast<ASR::Var_t>(args[i])->m_v == s) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     SymbolTable* m_symtab, char* m_name, char** m_dependencies, size_t n_dependencies,
     ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
@@ -2730,7 +2741,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     for( size_t i = 0; i < n_args; i++ ) {
-        // We need to substitute direct argument variable references with
+        // We need to substitute all direct argument variable references with
         // FunctionParam.
         ASR::ttype_t *t = ASRUtils::duplicate_type(al, expr_type(a_args[i]));
         ASR::dimension_t* dims = nullptr;
@@ -2740,14 +2751,14 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
             if (length != nullptr) {
                 if (ASR::is_a<ASR::Var_t>(*length)) {
                     // We substitute for FunctionParam here. For now
-                    // other cases are ignored.
-
-                    // TODO: determine this arg_index properly by looking
-                    // up the "length" (n) variable in a_args and storing
-                    // its index here:
-                    int64_t arg_index = 0;
+                    // other cases are ignored. This takes care of the most
+                    // common case, the rest we'll handle later.
+                    ASR::Var_t *length_var = ASR::down_cast<ASR::Var_t>(length);
+                    int64_t arg_index = lookup_var_index(a_args, n_args,
+                        length_var);
+                    LCOMPILERS_ASSERT(arg_index >= 0)
                     ASR::ttype_t *fp_type = ASRUtils::symbol_type(
-                        ASR::down_cast<ASR::Var_t>(length)->m_v);
+                        length_var->m_v);
                     length = ASRUtils::EXPR(make_FunctionParam_t(
                         al, length->base.loc, arg_index, fp_type, nullptr));
                     dims[i].m_length = length;
