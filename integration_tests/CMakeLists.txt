@@ -576,6 +576,7 @@ RUN(NAME derived_types_19 LABELS gfortran
 RUN(NAME derived_types_20 LABELS gfortran
         EXTRAFILES derived_types_20_module2.f90
                    derived_types_20_module1.f90)
+RUN(NAME derived_types_21 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
