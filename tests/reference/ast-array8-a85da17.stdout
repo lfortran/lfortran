@@ -14,6 +14,7 @@
                 255
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -31,6 +32,7 @@
             (AttrType
                 TypeCharacter
                 []
+                ()
                 ()
                 None
             )

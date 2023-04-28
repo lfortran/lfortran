@@ -24,6 +24,7 @@
                     1
                     Value)]
                     ()
+                    ()
                     None
                 )
                 [(SimpleAttribute
@@ -45,6 +46,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 varying_string
                 None
             )
@@ -61,6 +63,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 varying_string
                 None
             )
@@ -82,6 +85,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -101,6 +105,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -123,6 +128,7 @@
                 [(kind
                 4
                 Value)]
+                ()
                 ()
                 None
             )
@@ -161,6 +167,7 @@
                     TypeReal
                     []
                     ()
+                    ()
                     None
                 )
                 ()
@@ -175,6 +182,7 @@
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     None
                 )
@@ -192,6 +200,7 @@
                     [(kind
                     4
                     Value)]
+                    ()
                     ()
                     None
                 )
@@ -223,6 +232,7 @@
                     TypeReal
                     []
                     ()
+                    ()
                     None
                 )
                 ()
@@ -238,6 +248,7 @@
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     None
                 )
@@ -256,6 +267,7 @@
                     [(kind
                     4
                     Value)]
+                    ()
                     ()
                     None
                 )

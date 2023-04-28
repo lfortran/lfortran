@@ -187,6 +187,7 @@
                             TypeInteger
                             []
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -204,6 +205,7 @@
                         (AttrType
                             TypeLogical
                             []
+                            ()
                             ()
                             None
                         )
@@ -499,6 +501,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     None
                 )

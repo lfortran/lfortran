@@ -55,6 +55,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -80,6 +81,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -101,6 +103,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -118,6 +121,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )
@@ -144,6 +148,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )
@@ -180,6 +185,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -201,6 +207,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )
@@ -236,6 +243,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -263,6 +271,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )
@@ -292,6 +301,7 @@
                 TypeCharacter
                 []
                 ()
+                ()
                 None
             )
             []
@@ -314,6 +324,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 event_type
                 None
             )
@@ -332,6 +343,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 event_type
                 None
             )
@@ -358,6 +370,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )

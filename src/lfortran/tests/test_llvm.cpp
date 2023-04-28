@@ -370,7 +370,7 @@ end function)";
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(LCompilers::LFortran::parse(al, source,
         diagnostics));
     LCompilers::LFortran::AST::ast_t* ast = tu->m_items[0];
-    CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () None) [] [(f [] [] () None ())] ())] [(= 0 f 5 ())] [])");
+    CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () () None) [] [(f [] [] () None ())] ())] [(= 0 f 5 ())] [])");
 
     // AST -> ASR
     LCompilers::SymbolTable::reset_global_counter();
@@ -413,7 +413,7 @@ end function)";
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(LCompilers::LFortran::parse(al, source,
         diagnostics));
     LCompilers::LFortran::AST::ast_t* ast = tu->m_items[0];
-    CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () None) [] [(f [] [] () None ())] ())] [(= 0 f 4 ())] [])");
+    CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () () None) [] [(f [] [] () None ())] ())] [(= 0 f 4 ())] [])");
 
     // AST -> ASR
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,

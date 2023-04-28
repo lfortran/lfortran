@@ -28,6 +28,7 @@
                     TypeInteger
                     []
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -45,6 +46,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     None
                 )
@@ -72,6 +74,7 @@
                     TypeReal
                     []
                     ()
+                    ()
                     None
                 )
                 [(AttrDimension
@@ -98,6 +101,7 @@
                     TypeReal
                     []
                     ()
+                    ()
                     None
                 )
                 [(AttrDimension
@@ -123,6 +127,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     None
                 )

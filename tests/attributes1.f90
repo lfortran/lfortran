@@ -17,5 +17,10 @@ type details
 end type details
 intrinsic sin, cos
 doubleprecision, intent (in) :: x(..)
+type(real(kind=4)), allocatable :: x(:)
+type(integer(kind=4)), allocatable :: x(:)
+type(character(len=4)), allocatable :: x(:)
+type(logical(kind=4)), allocatable :: x(:)
+type(complex(kind=4)), allocatable :: x(:)
 save /zzrayc/
 end program

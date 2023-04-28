@@ -16,6 +16,7 @@
                 TypeType
                 []
                 ()
+                ()
                 Asterisk
             )
             [(AttrIntent
@@ -35,6 +36,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 ()
                 Asterisk
             )
@@ -59,6 +61,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -79,6 +82,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 None
             )

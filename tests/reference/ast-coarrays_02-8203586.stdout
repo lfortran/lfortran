@@ -23,6 +23,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -47,6 +48,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -73,6 +75,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -107,6 +110,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 event_type
                 None
             )
@@ -129,6 +133,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )

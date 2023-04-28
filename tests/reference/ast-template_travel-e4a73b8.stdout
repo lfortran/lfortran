@@ -65,6 +65,7 @@
                     TypeReal
                     []
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -88,6 +89,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     None
                 )
@@ -130,6 +132,7 @@
                     TypeReal
                     []
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -153,6 +156,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     None
                 )
@@ -282,6 +286,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         D
                         None
                     )
@@ -306,6 +311,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         D
                         None
                     )
@@ -342,6 +348,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         T
                         None
                     )
@@ -366,6 +373,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         T
                         None
                     )
@@ -402,6 +410,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         D
                         None
                     )
@@ -420,6 +429,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         T
                         None
                     )
@@ -438,6 +448,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         S
                         None
                     )
@@ -470,6 +481,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         D
                         None
                     )
@@ -488,6 +500,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         S
                         None
                     )
@@ -506,6 +519,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         T
                         None
                     )
@@ -585,6 +599,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         D
                         None
                     )
@@ -609,6 +624,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         T
                         None
                     )
@@ -633,6 +649,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         S
                         None
                     )
@@ -705,6 +722,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         D
                         None
                     )
@@ -729,6 +747,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         S
                         None
                     )
@@ -753,6 +772,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         S
                         None
                     )
@@ -933,6 +953,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     None
                 )

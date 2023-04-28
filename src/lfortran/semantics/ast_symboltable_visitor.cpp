@@ -686,7 +686,7 @@ public:
                     throw SemanticError("Implicit return type not supported yet", loc);
                 }
             }
-            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, AST::symbolType::None);
+            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, AST::symbolType::None);
             AST::decl_attribute_t* r_attr = AST::down_cast<AST::decl_attribute_t>(r_ast);
             r = AST::down_cast<AST::AttrType_t>(r_attr);
         }

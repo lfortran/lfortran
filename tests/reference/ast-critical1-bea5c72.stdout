@@ -12,6 +12,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -36,6 +37,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -58,6 +60,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             []
@@ -75,6 +78,7 @@
                 [(()
                 50
                 Value)]
+                ()
                 ()
                 None
             )

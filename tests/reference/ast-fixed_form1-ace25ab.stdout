@@ -31,6 +31,7 @@
                 TypeDoublePrecision
                 []
                 ()
+                ()
                 None
             )
             []
@@ -274,6 +275,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )

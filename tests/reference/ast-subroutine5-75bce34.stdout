@@ -15,6 +15,7 @@
                 TypeReal
                 []
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -38,6 +39,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 None
             )

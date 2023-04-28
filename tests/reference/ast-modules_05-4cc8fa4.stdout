@@ -25,6 +25,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -46,6 +47,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -63,6 +65,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )

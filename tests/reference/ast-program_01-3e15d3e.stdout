@@ -12,6 +12,7 @@
                 TypeInteger
                 []
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -40,6 +41,7 @@
                 dp
                 Value)]
                 ()
+                ()
                 None
             )
             []
@@ -55,6 +57,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -138,6 +141,7 @@
                     dp
                     Value)]
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -155,6 +159,7 @@
                 (AttrType
                     TypeLogical
                     []
+                    ()
                     ()
                     None
                 )
@@ -175,6 +180,7 @@
                     [(()
                     dp
                     Value)]
+                    ()
                     ()
                     None
                 )
@@ -197,6 +203,7 @@
                     [(()
                     dp
                     Value)]
+                    ()
                     ()
                     None
                 )

@@ -1572,6 +1572,12 @@ public:
             }
             r.append(")");
         }
+        if (x.m_attr) {
+            r.append("(");
+            this->visit_decl_attribute(*x.m_attr);
+            r.append(s);
+            r.append(")");
+        }
         if (x.m_name) {
             r.append("(");
             r.append(x.m_name);

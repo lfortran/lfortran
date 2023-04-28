@@ -9,6 +9,7 @@
             8
             Value)]
             ()
+            ()
             None
         )]
         ()
@@ -21,6 +22,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 None
             )
@@ -39,6 +41,7 @@
                 [(()
                 8
                 Value)]
+                ()
                 ()
                 None
             )

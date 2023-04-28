@@ -207,32 +207,39 @@ static inline LCompilers::LFortran::IntSuffix divide_int_by_2(
 #define ATTR_TYPE(x, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
-            nullptr, 0, \
+            nullptr, 0, nullptr, \
             nullptr, None)
 
 #define ATTR_TYPE_INT(x, n, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
-            nullptr, None)
+            nullptr, nullptr, None)
 
 #define ATTR_TYPE_KIND(x, kind, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             kind.p, kind.size(), \
-            nullptr, None)
+            nullptr, nullptr, None)
 
 #define ATTR_TYPE_NAME(x, name, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
-            nullptr, 0, \
+            nullptr, 0, nullptr, \
             name2char(name), None)
 
 #define ATTR_TYPE_STAR(x, sym, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
-            nullptr, 0, \
+            nullptr, 0, nullptr, \
             nullptr, sym)
+
+#define ATTR_TYPE_ATTR(x, attr, l) make_AttrType_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
+            nullptr, 0, \
+            down_cast<decl_attribute_t>(attr), \
+            nullptr, None)
 
 #define IMPORT0(x, trivia, l) make_Import_t( \
             p.m_a, l, \
@@ -1976,7 +1983,7 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 #define DERIVED_TYPE2(name, attr, trivia, l) \
         TYPEPARAMETER0(p.m_a, attr, name, trivia, l)
 
-ast_t* TYPEPARAMETER0(Allocator &al, 
+ast_t* TYPEPARAMETER0(Allocator &al,
         const ast_t *attr,
         const ast_t *id,
         const ast_t *trivia,
