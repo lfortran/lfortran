@@ -748,9 +748,17 @@ public:
             "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
         if (check_external) {
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
-            require(ASR::is_a<ASR::Function_t>(*s) ||
-                    ASR::is_a<ASR::ClassProcedure_t>(*s),
-                "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or ClassProcedure.");
+            if (ASR::is_a<ASR::Variable_t>(*s)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*v->m_type_declaration),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but does not point to Function");
+                require(ASR::is_a<ASR::FunctionType_t>(*v->m_type),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
+            } else {
+                require(ASR::is_a<ASR::Function_t>(*s) ||
+                        ASR::is_a<ASR::ClassProcedure_t>(*s),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or ClassProcedure.");
+            }
         }
 
         function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
