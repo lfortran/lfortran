@@ -258,6 +258,10 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90
+            $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90
+            $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90
+            $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90
+            $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90
 
   fpm:
     name: Check fpm Compilation
