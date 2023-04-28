@@ -1802,7 +1802,12 @@ public:
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
-            LCOMPILERS_ASSERT(sym_type->m_name);
+            if (sym_type->m_attr) {
+                return determine_type(loc, sym, sym_type->m_attr, is_pointer, dims, type_declaration);
+            }
+            if (!sym_type->m_name) {
+                throw SemanticError("Type must have a name", loc);
+            }
             std::string derived_type_name = to_lower(sym_type->m_name);
             bool type_param = false;
             if (is_requirement) {
