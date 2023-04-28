@@ -6942,19 +6942,34 @@ public:
                             }
                         }
                     } else {
-                        if (arg->m_value == nullptr) {
-                            throw CodeGenError(std::string(arg->m_name) + " isn't defined in any scope.");
-                        }
-                        this->visit_expr_wrapper(arg->m_value, true);
-                        if( x_abi != ASR::abiType::BindC &&
-                            !ASR::is_a<ASR::ArrayConstant_t>(*arg->m_value) ) {
-                            llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
-                            llvm::IRBuilder<> builder0(context);
-                            builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
-                            llvm::AllocaInst *target = builder0.CreateAlloca(
-                                get_type_from_ttype_t_util(arg->m_type), nullptr, "call_arg_value");
-                            builder->CreateStore(tmp, target);
-                            tmp = target;
+                        if (arg->m_type_declaration
+                                    && is_a<ASR::Function_t>(
+                                    *symbol_get_past_external(arg->m_type_declaration))) {
+                            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+                                symbol_get_past_external(arg->m_type_declaration));
+                            uint32_t h = get_hash((ASR::asr_t*)fn);
+                            if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Implementation) {
+                                LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
+                                tmp = llvm_symtab_fn[h];
+                            } else {
+                                // Must be an argument/chained procedure pass
+                                tmp = llvm_symtab_fn_arg[h];
+                            }
+                        } else {
+                            if (arg->m_value == nullptr) {
+                                throw CodeGenError(std::string(arg->m_name) + " isn't defined in any scope.");
+                            }
+                            this->visit_expr_wrapper(arg->m_value, true);
+                            if( x_abi != ASR::abiType::BindC &&
+                                !ASR::is_a<ASR::ArrayConstant_t>(*arg->m_value) ) {
+                                llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+                                llvm::IRBuilder<> builder0(context);
+                                builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+                                llvm::AllocaInst *target = builder0.CreateAlloca(
+                                    get_type_from_ttype_t_util(arg->m_type), nullptr, "call_arg_value");
+                                builder->CreateStore(tmp, target);
+                                tmp = target;
+                            }
                         }
                     }
                 } else if (is_a<ASR::Function_t>(*symbol_get_past_external(
@@ -7280,10 +7295,19 @@ public:
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
         if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
             s = ASR::down_cast<ASR::Function_t>(proc_sym);
-        } else {
+        } else if (ASR::is_a<ASR::ClassProcedure_t>(*proc_sym)) {
             ASR::ClassProcedure_t *clss_proc = ASR::down_cast<
                 ASR::ClassProcedure_t>(proc_sym);
             s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+        } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
+            ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
+            LCOMPILERS_ASSERT(type_decl);
+            s = ASR::down_cast<ASR::Function_t>(type_decl);
+        } else {
+            throw CodeGenError("SubroutineCall: Symbol type not supported");
+        }
+        if( s == nullptr ) {
+            s = ASR::down_cast<ASR::Function_t>(symbol_get_past_external(x.m_name));
         }
         bool is_method = false;
         if (x.m_dt) {
@@ -7366,7 +7390,6 @@ public:
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
-            std::string m_name = ASR::down_cast<ASR::Function_t>(x.m_name)->m_name;
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
@@ -7669,7 +7692,6 @@ public:
                 throw CodeGenError("The callback function not found in llvm_symtab_fn");
             }
             llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
-            std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {

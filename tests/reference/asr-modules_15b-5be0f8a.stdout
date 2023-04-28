@@ -1150,7 +1150,11 @@
                                     (FunctionType
                                         [(Integer 4 [])
                                         (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                        (Var 48 n))])]
+                                        (FunctionParam
+                                            0
+                                            (Integer 4 [])
+                                            ()
+                                        ))])]
                                         (Real 8 [])
                                         BindC
                                         Interface
@@ -1634,7 +1638,11 @@
                                     (FunctionType
                                         [(Integer 4 [])
                                         (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (Var 47 n))])]
+                                        (FunctionParam
+                                            0
+                                            (Integer 4 [])
+                                            ()
+                                        ))])]
                                         (Real 4 [])
                                         BindC
                                         Interface
@@ -1798,7 +1806,11 @@
                                     (FunctionType
                                         [(Integer 4 [])
                                         (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (Var 46 n))])]
+                                        (FunctionParam
+                                            0
+                                            (Integer 4 [])
+                                            ()
+                                        ))])]
                                         (Integer 4 [])
                                         BindC
                                         Interface
@@ -3110,7 +3122,11 @@
                                     (FunctionType
                                         [(Integer 4 [])
                                         (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                        (Var 63 n))])
+                                        (FunctionParam
+                                            0
+                                            (Integer 4 [])
+                                            ()
+                                        ))])
                                         (Real 8 [])]
                                         ()
                                         BindC
@@ -3522,7 +3538,11 @@
                                     (FunctionType
                                         [(Integer 4 [])
                                         (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (Var 62 n))])
+                                        (FunctionParam
+                                            0
+                                            (Integer 4 [])
+                                            ()
+                                        ))])
                                         (Real 4 [])]
                                         ()
                                         BindC
@@ -3606,7 +3626,11 @@
                                     (FunctionType
                                         [(Integer 4 [])
                                         (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (Var 61 n))])
+                                        (FunctionParam
+                                            0
+                                            (Integer 4 [])
+                                            ()
+                                        ))])
                                         (Integer 4 [])]
                                         ()
                                         BindC
