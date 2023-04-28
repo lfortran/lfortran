@@ -651,6 +651,15 @@ struct TypeMissingData {
     ASR::ttype_t* type;
 };
 
+struct IntrinsicSignature {
+    std::vector<std::string> kwarg_names;
+    int positional_args, max_args;
+
+    IntrinsicSignature(std::vector<std::string> kwarg_names_,
+        int positional_args_, int max_args_): kwarg_names(kwarg_names_),
+        positional_args(positional_args_), max_args(max_args_) {}
+};
+
 template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
@@ -667,6 +676,12 @@ public:
         {AST::cmpopType::LtE, "~lte"},
         {AST::cmpopType::Gt, "~gt"},
         {AST::cmpopType::GtE, "~gte"}
+    };
+
+    std::map<std::string, std::vector<IntrinsicSignature>> name2signature = {
+        {"any", {IntrinsicSignature({"dim"}, 1, 2)}},
+        {"sum", {IntrinsicSignature({"dim", "mask"}, 1, 3),
+                 IntrinsicSignature({"mask"}, 1, 2)}},
     };
 
 
@@ -2530,7 +2545,14 @@ public:
         if( ASRUtils::get_FunctionType(func)->m_elemental &&
             func->n_args == 1 &&
             ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            ASR::dimension_t* array_dims;
+            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(args[0].m_value), array_dims);
+            Vec<ASR::dimension_t> new_dims;
+            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+            return_type = ASRUtils::duplicate_type(al,
+                            ASRUtils::get_FunctionType(func)->m_return_var_type,
+                            &new_dims);
         } else {
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             return_type = handle_return_type(return_type, loc, args, func);
@@ -2714,14 +2736,14 @@ public:
     bool handle_intrinsic_node_args(const T& x,
         Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name,
-        bool raise_error=true, int64_t positional_argments=-1) {
+        bool raise_error=true) {
         size_t total_args = x.n_args + x.n_keywords;
         if( !(total_args <= max_args && total_args >= min_args) ) {
             if( !raise_error ) {
                 return false;
             }
             throw SemanticError("Incorrect number of arguments "
-                                "passed to the " + intrinsic_name + " intrinsic."
+                                "passed to the " + intrinsic_name + " intrinsic. "
                                 "It accepts at least " + std::to_string(min_args) +
                                 " and at most " + std::to_string(max_args) + " arguments.",
                                 x.base.base.loc);
@@ -2752,9 +2774,6 @@ public:
         }
 
         int64_t offset = min_args;
-        if( positional_argments != -1 ) {
-            offset = positional_argments;
-        }
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             auto it = std::find(kwarg_names.begin(), kwarg_names.end(),
@@ -3401,6 +3420,13 @@ public:
         return ASR::make_ArrayAll_t(al, x.base.base.loc, mask, dim, type, value);
     }
 
+    std::vector<IntrinsicSignature> get_intrinsic_signature(std::string& var_name) {
+        if( name2signature.find(var_name) == name2signature.end() ) {
+            return {IntrinsicSignature({}, 1, 1)};
+        }
+        return name2signature[var_name];
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -3409,17 +3435,14 @@ public:
             ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
             is_function = false;
             if( ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
-                std::vector<ASRUtils::IntrinsicSignature> signatures;
-                ASRUtils::get_intrinsic_signature get_signature_function =
-                    ASRUtils::IntrinsicFunctionRegistry::get_intrinsic_signature_function(var_name);
-                get_signature_function(signatures);
+                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
                 Vec<ASR::expr_t*> args;
                 bool signature_matched = false;
                 for( auto& signature: signatures ) {
                     signature_matched = handle_intrinsic_node_args(
                         x, args, signature.kwarg_names,
-                        signature.total_args, signature.total_args,
-                        var_name, false, signature.positional_args);
+                        signature.positional_args, signature.max_args,
+                        var_name, false);
                     if( signature_matched ) {
                         break ;
                     }

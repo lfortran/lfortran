@@ -2364,7 +2364,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
     return false;
 }
 
-inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y) {
+inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions=false) {
     ASR::ttype_t *x_underlying, *y_underlying;
     x_underlying = nullptr;
     y_underlying = nullptr;
@@ -2434,7 +2434,7 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y) {
         return left_param.compare(right_param) == 0;
     }
 
-    return types_equal(x, y);
+    return types_equal(x, y, check_for_dimensions);
 }
 
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
@@ -3413,6 +3413,18 @@ static inline void collect_variable_dependencies(Allocator& al, SetChar& deps_ve
     }
     if( type ) {
         collector.visit_ttype(*type);
+    }
+}
+
+class VerifyAbort {};
+
+static inline void require_impl(bool cond, const std::string &error_msg,
+    const Location &loc, diag::Diagnostics &diagnostics) {
+    if (!cond) {
+        diagnostics.message_label("ASR verify: " + error_msg,
+            {loc}, "failed here",
+            diag::Level::Error, diag::Stage::ASRVerify);
+        throw VerifyAbort();
     }
 }
 
