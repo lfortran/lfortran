@@ -228,7 +228,14 @@
                                         (Character 1 -3 (FunctionCall
                                             2 len_string
                                             2 len
-                                            [((Var 5 string))]
+                                            [((FunctionParam
+                                                0
+                                                (Struct
+                                                    2 string_type
+                                                    []
+                                                )
+                                                ()
+                                            ))]
                                             (Integer 4 [])
                                             ()
                                             ()

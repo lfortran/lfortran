@@ -154,6 +154,15 @@ public:
                         if( expr->type == ASR::exprType::FunctionCall ) {
                             char_type->m_len_expr = expr;
                             char_type->m_len = -3;
+                            if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
+                                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                                    ASR::down_cast<ASR::symbol_t>(data->scope->asr_owner));
+                                ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
+                                if( func_type->m_return_var_type ) {
+                                    ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
+                                    func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(data->type);
+                                }
+                            }
                         }
                         break;
                     }

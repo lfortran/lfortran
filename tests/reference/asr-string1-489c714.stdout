@@ -255,7 +255,11 @@
                                     (FunctionType
                                         [(CPtr)
                                         (Integer 8 [])]
-                                        (Character 1 -3 (Var 40 n) [])
+                                        (Character 1 -3 (FunctionParam
+                                            1
+                                            (Integer 8 [])
+                                            ()
+                                        ) [])
                                         Source
                                         Implementation
                                         ()

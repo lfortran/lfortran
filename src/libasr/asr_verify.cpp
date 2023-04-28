@@ -49,9 +49,11 @@ private:
 
     std::set<std::pair<uint64_t, std::string>> const_assigned;
 
+    bool symbol_visited;
+
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics} {}
+        diagnostics{diagnostics}, symbol_visited{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -376,6 +378,8 @@ public:
                     "Function " + std::string(x.m_name) + " depends on " + found_dep +
                     " but isn't found in its dependency list.");
         }
+
+        visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
         function_dependencies = function_dependencies_copy;
     }
@@ -634,6 +638,7 @@ public:
     // nodes that have symbol in their fields:
 
     void visit_Var(const Var_t &x) {
+        symbol_visited = true;
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
         std::string x_mv_name = ASRUtils::symbol_name(x.m_v);
@@ -835,6 +840,22 @@ public:
 
     void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
+    }
+
+    void visit_FunctionType(const FunctionType_t& x) {
+
+        #define verify_nonscoped_ttype(ttype) symbol_visited = false; \
+            visit_ttype(*ttype); \
+            require(symbol_visited == false, \
+                    "ASR::ttype_t in ASR::FunctionType" \
+                    " cannot be tied to a scope."); \
+
+        for( size_t i = 0; i < x.n_arg_types; i++ ) {
+            verify_nonscoped_ttype(x.m_arg_types[i]);
+        }
+        if( x.m_return_var_type ) {
+            verify_nonscoped_ttype(x.m_return_var_type);
+        }
     }
 
     void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t& x) {

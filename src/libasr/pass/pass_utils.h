@@ -669,7 +669,9 @@ namespace LCompilers {
                 Vec<ASR::ttype_t*> arg_types;
                 arg_types.reserve(al, a_args.n);
                 for(auto &e: a_args) {
-                    arg_types.push_back(al, ASRUtils::expr_type(e));
+                    ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, x->m_args, x->n_args);
+                    arg_types.push_back(al, replacer.replace_args_with_FunctionParam(
+                                                ASRUtils::expr_type(e)));
                 }
                 s_func_type->m_arg_types = arg_types.p;
                 s_func_type->n_arg_types = arg_types.n;

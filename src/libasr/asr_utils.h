@@ -2730,6 +2730,67 @@ inline int64_t lookup_var_index(ASR::expr_t **args, size_t n_args, ASR::Var_t *v
     return -1;
 }
 
+class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
+{
+    public:
+
+    ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
+
+};
+
+class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithFunctionParamVisitor> {
+
+    private:
+
+    Allocator& al;
+
+    ASR::expr_t** m_args;
+
+    size_t n_args;
+
+    public:
+
+    ReplaceWithFunctionParamVisitor(Allocator& al_, ASR::expr_t** m_args_, size_t n_args_) :
+        al(al_), m_args(m_args_), n_args(n_args_) {}
+
+    void replace_Var(ASR::Var_t* x) {
+        size_t arg_idx = 0;
+        bool idx_found = false;
+        std::string arg_name = ASRUtils::symbol_name(x->m_v);
+        for( size_t j = 0; j < n_args && !idx_found; j++ ) {
+            if( ASR::is_a<ASR::Var_t>(*(m_args[j])) ) {
+                std::string arg_name_2 = std::string(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(m_args[j])->m_v));
+                arg_idx = j;
+                idx_found = arg_name_2 == arg_name;
+            }
+        }
+
+        if( idx_found ) {
+            LCOMPILERS_ASSERT(current_expr);
+            ASR::ttype_t* t_ = replace_args_with_FunctionParam(
+                                ASRUtils::symbol_type(x->m_v));
+            *current_expr = ASRUtils::EXPR(ASR::make_FunctionParam_t(
+                                al, m_args[arg_idx]->base.loc, arg_idx,
+                                t_, nullptr));
+        }
+    }
+
+    ASR::ttype_t* replace_args_with_FunctionParam(ASR::ttype_t* t) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        duplicator.allow_procedure_calls = true;
+
+        // We need to substitute all direct argument variable references with
+        // FunctionParam.
+        duplicator.success = true;
+        t = duplicator.duplicate_ttype(t);
+        LCOMPILERS_ASSERT(duplicator.success);
+        replace_ttype(t);
+        return t;
+    }
+
+};
+
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     SymbolTable* m_symtab, char* m_name, char** m_dependencies, size_t n_dependencies,
     ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
@@ -2740,36 +2801,18 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     bool m_is_restriction, bool m_deterministic, bool m_side_effect_free) {
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
+    ReplaceWithFunctionParamVisitor replacer(al, a_args, n_args);
     for( size_t i = 0; i < n_args; i++ ) {
         // We need to substitute all direct argument variable references with
         // FunctionParam.
-        ASR::ttype_t *t = ASRUtils::duplicate_type(al, expr_type(a_args[i]));
-        ASR::dimension_t* dims = nullptr;
-        int n_dims = extract_dimensions_from_ttype(t, dims);
-        for( int i = 0; i < n_dims; i++ ) {
-            ASR::expr_t* length = dims[i].m_length;
-            if (length != nullptr) {
-                if (ASR::is_a<ASR::Var_t>(*length)) {
-                    // We substitute for FunctionParam here. For now
-                    // other cases are ignored. This takes care of the most
-                    // common case, the rest we'll handle later.
-                    ASR::Var_t *length_var = ASR::down_cast<ASR::Var_t>(length);
-                    int64_t arg_index = lookup_var_index(a_args, n_args,
-                        length_var);
-                    LCOMPILERS_ASSERT(arg_index >= 0)
-                    ASR::ttype_t *fp_type = ASRUtils::symbol_type(
-                        length_var->m_v);
-                    length = ASRUtils::EXPR(make_FunctionParam_t(
-                        al, length->base.loc, arg_index, fp_type, nullptr));
-                    dims[i].m_length = length;
-                }
-            }
-        }
+        ASR::ttype_t *t = replacer.replace_args_with_FunctionParam(
+                            expr_type(a_args[i]));
         arg_types.push_back(al, t);
     }
     ASR::ttype_t* return_var_type = nullptr;
     if( m_return_var ) {
-        return_var_type = ASRUtils::expr_type(m_return_var);
+        return_var_type = replacer.replace_args_with_FunctionParam(
+                            ASRUtils::expr_type(m_return_var));
     }
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
         al, loc, arg_types.p, arg_types.size(), return_var_type, m_abi,
@@ -2781,14 +2824,6 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
         m_side_effect_free);
 }
-
-class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
-{
-    public:
-
-    ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
-
-};
 
 class SymbolDuplicator {
 
