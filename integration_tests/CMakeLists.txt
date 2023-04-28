@@ -802,7 +802,7 @@ RUN(NAME declaration_01 LABELS gfortran llvm)
 
 RUN(NAME procedure_01 LABELS gfortran llvm)
 RUN(NAME procedure_02 LABELS gfortran llvm)
-RUN(NAME procedure_03 LABELS gfortran)
+RUN(NAME procedure_03 LABELS gfortran llvm)
 
 RUN(NAME allocated_01 LABELS gfortran llvm)
 RUN(NAME allocated_02 LABELS gfortran llvm)
