@@ -111,6 +111,7 @@ symbol
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
     | Requirement(symbol_table symtab, identifier name, identifier* args)
+    | Template(symbol_table symtab, identifier name)
 
 storage_type = Default | Save | Parameter | Allocatable
 access = Public | Private

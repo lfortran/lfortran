@@ -694,9 +694,13 @@ public:
     std::vector<ASR::asr_t*> current_requirement_functions;
     std::map<std::string, std::map<std::string, ASR::asr_t*>> requirement_map;
     std::map<std::string, ASR::asr_t*> called_requirement;
+    std::map<std::string, ASR::symbol_t*> template_parameters;
     std::map<std::string, std::map<std::string, ASR::asr_t*>> template_asr_map;
     std::map<std::string, std::map<int, std::string>> template_arg_map;
     std::vector<ASR::symbol_t*> rt_vec;
+
+    std::vector<std::string> current_template_args;
+    std::map<std::string, std::string> current_template_map;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;

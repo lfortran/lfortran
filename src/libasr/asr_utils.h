@@ -256,6 +256,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Requirement: {
             return ASR::down_cast<ASR::Requirement_t>(f)->m_name;
         }
+        case ASR::symbolType::Template: {
+            return ASR::down_cast<ASR::Template_t>(f)->m_name;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -431,6 +434,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Requirement: {
             return ASR::down_cast<ASR::Requirement_t>(f)->m_symtab->parent;
         }
+        case ASR::symbolType::Template: {
+            return ASR::down_cast<ASR::Template_t>(f)->m_symtab->parent;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -481,6 +487,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Requirement: {
             return ASR::down_cast<ASR::Requirement_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::Template: {
+            return ASR::down_cast<ASR::Template_t>(f)->m_symtab;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -2657,6 +2666,45 @@ class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
     ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
 
 };
+
+/*
+class SymbolReplacer {
+    
+    private:
+
+    public:
+
+    void replace_symbol(ASR::symbol_t* sym, SymbolTable* dest) {
+        ASR::symbol_t* new_sym = nullptr;
+        std::string new_symbol_name = "";
+        switch (sym->type) {
+            case ASR::symbolType::Variable: {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                replace_Variable(v, dest);
+                break;
+            }
+            case ASR::symbolType::Function: {
+                ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+                replace_Function(f, dest);
+                break;
+            }
+            default: {
+                throw LCompilersException("Replicating ASR::symbolType::" +
+                    std::to_string(sym->type) + " is not supported.");
+            }
+        }
+    }
+
+    void replace_Variable(ASR::Variable_t* v, SymbolTable* dest) {
+
+    }
+
+    void replace_Function(ASR::Function_t* f, SymbolTable* dest) {
+
+    }
+
+};
+*/
 
 class SymbolDuplicator {
 
