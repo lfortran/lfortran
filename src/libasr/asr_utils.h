@@ -1716,51 +1716,100 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
     switch (t->type) {
         case ASR::ttypeType::Integer: {
             ASR::Integer_t* tnew = ASR::down_cast<ASR::Integer_t>(t);
-            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
-            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            ASR::dimension_t* dimsp;
+            size_t dimsn;
+            if (dims != nullptr) {
+                dimsp = dims->p;
+                dimsn = dims->n;
+            } else {
+                dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
+                dimsn = tnew->n_dims;
+            }
             return ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc,
                         tnew->m_kind, dimsp, dimsn));
         }
         case ASR::ttypeType::Real: {
             ASR::Real_t* tnew = ASR::down_cast<ASR::Real_t>(t);
-            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
-            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            ASR::dimension_t* dimsp;
+            size_t dimsn;
+            if (dims != nullptr) {
+                dimsp = dims->p;
+                dimsn = dims->n;
+            } else {
+                dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
+                dimsn = tnew->n_dims;
+            }
             return ASRUtils::TYPE(ASR::make_Real_t(al, t->base.loc,
                         tnew->m_kind, dimsp, dimsn));
         }
         case ASR::ttypeType::Complex: {
             ASR::Complex_t* tnew = ASR::down_cast<ASR::Complex_t>(t);
-            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
-            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            ASR::dimension_t* dimsp;
+            size_t dimsn;
+            if (dims != nullptr) {
+                dimsp = dims->p;
+                dimsn = dims->n;
+            } else {
+                dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
+                dimsn = tnew->n_dims;
+            }
             return ASRUtils::TYPE(ASR::make_Complex_t(al, t->base.loc,
                         tnew->m_kind, dimsp, dimsn));
         }
         case ASR::ttypeType::Logical: {
             ASR::Logical_t* tnew = ASR::down_cast<ASR::Logical_t>(t);
-            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
-            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            ASR::dimension_t* dimsp;
+            size_t dimsn;
+            if (dims != nullptr) {
+                dimsp = dims->p;
+                dimsn = dims->n;
+            } else {
+                dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
+                dimsn = tnew->n_dims;
+            }
             return ASRUtils::TYPE(ASR::make_Logical_t(al, t->base.loc,
                         tnew->m_kind, dimsp, dimsn));
         }
         case ASR::ttypeType::Character: {
             ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
-            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
-            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            ASR::dimension_t* dimsp;
+            size_t dimsn;
+            if (dims != nullptr) {
+                dimsp = dims->p;
+                dimsn = dims->n;
+            } else {
+                dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
+                dimsn = tnew->n_dims;
+            }
             return ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
                         tnew->m_kind, tnew->m_len, tnew->m_len_expr,
                         dimsp, dimsn));
         }
         case ASR::ttypeType::Struct: {
             ASR::Struct_t* tnew = ASR::down_cast<ASR::Struct_t>(t);
-            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
-            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            ASR::dimension_t* dimsp;
+            size_t dimsn;
+            if (dims != nullptr) {
+                dimsp = dims->p;
+                dimsn = dims->n;
+            } else {
+                dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
+                dimsn = tnew->n_dims;
+            }
             return ASRUtils::TYPE(ASR::make_Struct_t(al, t->base.loc,
                         tnew->m_derived_type, dimsp, dimsn));
         }
         case ASR::ttypeType::Class: {
             ASR::Class_t* tnew = ASR::down_cast<ASR::Class_t>(t);
-            ASR::dimension_t* dimsp = dims ? dims->p : tnew->m_dims;
-            size_t dimsn = dims ? dims->n : tnew->n_dims;
+            ASR::dimension_t* dimsp;
+            size_t dimsn;
+            if (dims != nullptr) {
+                dimsp = dims->p;
+                dimsn = dims->n;
+            } else {
+                dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
+                dimsn = tnew->n_dims;
+            }
             return ASRUtils::TYPE(ASR::make_Class_t(al, t->base.loc,
                         tnew->m_class_type, dimsp, dimsn));
         }
@@ -1778,8 +1827,15 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-            ASR::dimension_t* dimsp = dims ? dims->p : tp->m_dims;
-            size_t dimsn = dims ? dims->n : tp->n_dims;
+            ASR::dimension_t* dimsp;
+            size_t dimsn;
+            if (dims != nullptr) {
+                dimsp = dims->p;
+                dimsn = dims->n;
+            } else {
+                dimsp = duplicate_dimensions(al, tp->m_dims, tp->n_dims);
+                dimsn = tp->n_dims;
+            }
             //return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc,
             //            tp->m_param, dimsp, dimsn, tp->m_rt, tp->n_rt));
             return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, t->base.loc,
