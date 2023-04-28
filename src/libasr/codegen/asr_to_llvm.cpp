@@ -6942,19 +6942,34 @@ public:
                             }
                         }
                     } else {
-                        if (arg->m_value == nullptr) {
-                            throw CodeGenError(std::string(arg->m_name) + " isn't defined in any scope.");
-                        }
-                        this->visit_expr_wrapper(arg->m_value, true);
-                        if( x_abi != ASR::abiType::BindC &&
-                            !ASR::is_a<ASR::ArrayConstant_t>(*arg->m_value) ) {
-                            llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
-                            llvm::IRBuilder<> builder0(context);
-                            builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
-                            llvm::AllocaInst *target = builder0.CreateAlloca(
-                                get_type_from_ttype_t_util(arg->m_type), nullptr, "call_arg_value");
-                            builder->CreateStore(tmp, target);
-                            tmp = target;
+                        if (arg->m_type_declaration
+                                    && is_a<ASR::Function_t>(
+                                    *symbol_get_past_external(arg->m_type_declaration))) {
+                            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+                                symbol_get_past_external(arg->m_type_declaration));
+                            uint32_t h = get_hash((ASR::asr_t*)fn);
+                            if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Implementation) {
+                                LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
+                                tmp = llvm_symtab_fn[h];
+                            } else {
+                                // Must be an argument/chained procedure pass
+                                tmp = llvm_symtab_fn_arg[h];
+                            }
+                        } else {
+                            if (arg->m_value == nullptr) {
+                                throw CodeGenError(std::string(arg->m_name) + " isn't defined in any scope.");
+                            }
+                            this->visit_expr_wrapper(arg->m_value, true);
+                            if( x_abi != ASR::abiType::BindC &&
+                                !ASR::is_a<ASR::ArrayConstant_t>(*arg->m_value) ) {
+                                llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+                                llvm::IRBuilder<> builder0(context);
+                                builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+                                llvm::AllocaInst *target = builder0.CreateAlloca(
+                                    get_type_from_ttype_t_util(arg->m_type), nullptr, "call_arg_value");
+                                builder->CreateStore(tmp, target);
+                                tmp = target;
+                            }
                         }
                     }
                 } else if (is_a<ASR::Function_t>(*symbol_get_past_external(
