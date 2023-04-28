@@ -91,10 +91,8 @@ std::string get_kokkos_dir()
 
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os) {
     using namespace LCompilers;
-    std::ofstream out;
-    out.open("./src/runtime/astr_data.js");
-    out << "var astr_data = " << astr_data_json << ";" << std::endl;
-    std::string open_cmd = "", file_loc = "./src/runtime/visualize.html";
+    std::string file_loc = LCompilers::LFortran::generate_visualize_html(astr_data_json);
+    std::string open_cmd = "";
     switch (os) {
         case Linux: open_cmd = "xdg-open"; break;
         case Windows: open_cmd = "start"; break;
