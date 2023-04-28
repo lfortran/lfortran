@@ -2,7 +2,7 @@ module procedure_03_mod
 implicit none
 
 interface
-    subroutine func(n, x, y)
+    subroutine func(x, y, n)
     implicit none
     integer, intent(in) :: n
     real, intent(in) :: x(n)
@@ -18,7 +18,7 @@ contains
     real, parameter :: eps = 1e-5
     real :: a(m), b(m)
     a = [1, 2, 3]
-    call fcn(m, a, b)
+    call fcn(a, b, m)
     print *, a
     print *, b
     if ((b(1) - 3) > eps) error stop
@@ -36,10 +36,10 @@ call hybrd(fn)
 
 contains
 
-    subroutine fn(n, x, y)
-    integer, intent(in) :: n
-    real, intent(in) :: x(n)
-    real, intent(out) :: y(n)
+    subroutine fn(x, y, k)
+    integer, intent(in) :: k
+    real, intent(in) :: x(k)
+    real, intent(out) :: y(k)
     y = x * 3
     end subroutine
 

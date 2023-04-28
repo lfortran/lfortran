@@ -1819,6 +1819,10 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             return ASRUtils::TYPE(ASR::make_Pointer_t(al, ptr->base.base.loc,
                         dup_type));
         }
+        case ASR::ttypeType::CPtr: {
+            ASR::CPtr_t* ptr = ASR::down_cast<ASR::CPtr_t>(t);
+            return ASRUtils::TYPE(ASR::make_CPtr_t(al, ptr->base.base.loc));
+        }
         case ASR::ttypeType::Const: {
             ASR::Const_t* c = ASR::down_cast<ASR::Const_t>(t);
             ASR::ttype_t* dup_type = duplicate_type(al, c->m_type, dims);
@@ -2715,6 +2719,17 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
 };
 
+// Finds the argument index that is equal to `v`, otherwise -1.
+inline int64_t lookup_var_index(ASR::expr_t **args, size_t n_args, ASR::Var_t *v) {
+    ASR::symbol_t *s = v->m_v;
+    for (size_t i = 0; i < n_args; i++) {
+        if (ASR::down_cast<ASR::Var_t>(args[i])->m_v == s) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     SymbolTable* m_symtab, char* m_name, char** m_dependencies, size_t n_dependencies,
     ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
@@ -2726,7 +2741,31 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     for( size_t i = 0; i < n_args; i++ ) {
-        arg_types.push_back(al, ASRUtils::expr_type(a_args[i]));
+        // We need to substitute all direct argument variable references with
+        // FunctionParam.
+        ASR::ttype_t *t = ASRUtils::duplicate_type(al, expr_type(a_args[i]));
+        ASR::dimension_t* dims = nullptr;
+        int n_dims = extract_dimensions_from_ttype(t, dims);
+        for( int i = 0; i < n_dims; i++ ) {
+            ASR::expr_t* length = dims[i].m_length;
+            if (length != nullptr) {
+                if (ASR::is_a<ASR::Var_t>(*length)) {
+                    // We substitute for FunctionParam here. For now
+                    // other cases are ignored. This takes care of the most
+                    // common case, the rest we'll handle later.
+                    ASR::Var_t *length_var = ASR::down_cast<ASR::Var_t>(length);
+                    int64_t arg_index = lookup_var_index(a_args, n_args,
+                        length_var);
+                    LCOMPILERS_ASSERT(arg_index >= 0)
+                    ASR::ttype_t *fp_type = ASRUtils::symbol_type(
+                        length_var->m_v);
+                    length = ASRUtils::EXPR(make_FunctionParam_t(
+                        al, length->base.loc, arg_index, fp_type, nullptr));
+                    dims[i].m_length = length;
+                }
+            }
+        }
+        arg_types.push_back(al, t);
     }
     ASR::ttype_t* return_var_type = nullptr;
     if( m_return_var ) {
