@@ -155,19 +155,6 @@ public:
         if (ASRUtils::is_array(ASRUtils::expr_type(right))) {
             is_right_array = true;
         }
-
-        ASR::array_index_t left_array_index;
-        left_array_index.loc = loc;
-        left_array_index.m_left = nullptr;
-        left_array_index.m_right = var;
-        left_array_index.m_step = nullptr;
-
-
-        ASR::array_index_t right_array_index;
-        right_array_index.loc = loc;
-        right_array_index.m_left = nullptr;
-        right_array_index.m_right = var;
-        right_array_index.m_step = nullptr;
         
         ASR::expr_t* left_array = PassUtils::create_array_ref(left, idx_vars, al);
         ASR::expr_t* right_array = PassUtils::create_array_ref(right, idx_vars, al);
