@@ -3,6 +3,7 @@ program main
 
     real :: z(2)
 
+    print *, solution()
     z = solution()
     call compare_solutions(z)
 
@@ -25,7 +26,7 @@ contains
 
     pure function solution() result(x)
         real, dimension(:), allocatable :: x
-
+        allocate(x(2))
         x = [1.0, 2.0]
     end function solution
 end program main

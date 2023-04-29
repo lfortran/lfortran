@@ -793,23 +793,25 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             if( result_type && is_dimension_empty ) {
                 result_var_type = result_type;
             }
-
-            ASR::storage_typeType storage = ASR::storage_typeType::Default;
-            if (result_var != nullptr && ASR::is_a<ASR::Var_t>(*result_var)) {
-                ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(result_var);
-                if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
-                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var->m_v);
+            {
+                ASR::storage_typeType storage = ASR::storage_typeType::Default;
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_name);
+                // Assuming the `m_return_var` is appended to the `args`.
+                ASR::symbol_t *v_sym = ASR::down_cast<ASR::Var_t>(
+                    fn->m_args[fn->n_args-1])->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
                     storage = v->m_storage;
                 }
-            }
-            ASR::expr_t* result_var_ = PassUtils::create_var(result_counter, "_func_call_res",
-                            loc, result_var_type, al, current_scope, storage);
-            result_counter += 1;
-            if( result_var == nullptr ) {
-                result_var = result_var_;
-                *current_expr = result_var;
-            } else {
-                *current_expr = result_var_;
+                ASR::expr_t* result_var_ = PassUtils::create_var(result_counter,
+                    "_func_call_res", loc, result_var_type, al, current_scope, storage);
+                result_counter += 1;
+                if( result_var == nullptr ) {
+                    result_var = result_var_;
+                    *current_expr = result_var;
+                } else {
+                    *current_expr = result_var_;
+                }
             }
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, x->n_args + 1);
