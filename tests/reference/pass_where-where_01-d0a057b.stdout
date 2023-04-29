@@ -1,0 +1,252 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            where_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __1_k:
+                                (Variable
+                                    2
+                                    __1_k
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    where_01
+                    []
+                    [(DoLoop
+                        ()
+                        ((Var 2 __1_k)
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4 [])
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4 [])
+                            UBound
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4 [])))
+                        [(If
+                            (IntegerCompare
+                                (ArrayItem
+                                    (Var 2 a)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                GtE
+                                (IntegerConstant 0 (Integer 4 []))
+                                (Logical 4 [])
+                                ()
+                            )
+                            [(=
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                (IntegerConstant 1 (Integer 4 []))
+                                ()
+                            )]
+                            [(=
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 4 []))
+                                ()
+                            )]
+                        )]
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 __1_k)
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4 [])
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4 [])
+                            UBound
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4 [])))
+                        [(If
+                            (IntegerCompare
+                                (ArrayItem
+                                    (Var 2 a)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                GtE
+                                (IntegerConstant 0 (Integer 4 []))
+                                (Logical 4 [])
+                                ()
+                            )
+                            [(=
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                (IntegerConstant 1 (Integer 4 []))
+                                ()
+                            )]
+                            [(=
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 4 []))
+                                ()
+                            )]
+                        )]
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 __1_k)
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4 [])
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 2 a)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4 [])
+                            UBound
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4 [])))
+                        [(If
+                            (IntegerCompare
+                                (ArrayItem
+                                    (Var 2 a)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                GtE
+                                (IntegerConstant 0 (Integer 4 []))
+                                (Logical 4 [])
+                                ()
+                            )
+                            [(=
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                (IntegerConstant 1 (Integer 4 []))
+                                ()
+                            )]
+                            [(=
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (Var 2 __1_k)
+                                    ())]
+                                    (Integer 4 [])
+                                    RowMajor
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 4 []))
+                                ()
+                            )]
+                        )]
+                    )]
+                )
+        })
+    []
+)

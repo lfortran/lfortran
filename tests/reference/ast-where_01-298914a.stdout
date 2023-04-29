@@ -9,7 +9,7 @@
         )]
         [(Declaration
             (AttrType
-                TypeReal
+                TypeInteger
                 []
                 ()
                 ()
