@@ -9,65 +9,135 @@
 
 namespace LCompilers {
 
+uint64_t static inline get_hash(ASR::asr_t *node)
+{
+    return (uint64_t)node;
+}
+
 using ASR::down_cast;
 using ASR::is_a;
+
+class ReplaceVar : public ASR::BaseExprReplacer<ReplaceVar>
+{
+public:
+    Allocator& al;
+    SymbolTable* current_scope;
+    Vec<ASR::expr_t*> idx_vars;
+    ReplaceVar(Allocator &al_) : al(al_), 
+        current_scope(nullptr) {}
+
+    void replace_Var(ASR::Var_t* x) {
+        ASR::expr_t* expr_ = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, x->m_v));
+        ASR::expr_t* new_expr_ = PassUtils::create_array_ref(expr_, idx_vars, al);
+        current_expr = &new_expr_;
+    }
+
+    void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
+        ASR::expr_t** curr_expr = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x->m_left));
+        this->replace_expr(x->m_left);
+        ASR::expr_t* left = *current_expr;
+        current_expr = curr_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x->m_right));
+        this->replace_expr(x->m_right);
+        ASR::expr_t* right = *current_expr;
+        current_expr = curr_expr;
+        ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc, left, x->m_op, right, x->m_type, nullptr));
+        current_expr = &new_expr;
+    }
+
+    void replace_RealBinOp(ASR::RealBinOp_t* x) {
+        ASR::expr_t** curr_expr = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x->m_left));
+        this->replace_expr(x->m_left);
+        ASR::expr_t* left = *current_expr;
+        current_expr = curr_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x->m_right));
+        this->replace_expr(x->m_right);
+        ASR::expr_t* right = *current_expr;
+        current_expr = curr_expr;
+        ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x->base.base.loc, left, x->m_op, right, x->m_type, nullptr));
+        current_expr = &new_expr;
+    }
+
+};
+
+class VarVisitor : public ASR::CallReplacerOnExpressionsVisitor<VarVisitor>
+{
+public:
+
+    Allocator &al;
+    ReplaceVar replacer;
+    std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash;
+    Vec<ASR::stmt_t*> pass_result;
+
+    VarVisitor(Allocator &al_, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash) : 
+        al(al_), replacer(al), assignment_hash(assignment_hash) {
+        pass_result.reserve(al, 1);
+    }
+
+    void call_replacer_(Vec<ASR::expr_t*> idx_vars_) {
+        replacer.current_expr = current_expr;
+        replacer.current_scope = current_scope;
+        replacer.idx_vars = idx_vars_;
+        replacer.replace_expr(*current_expr);
+    }
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, n_body);
+        for (size_t i=0; i<n_body; i++) {
+            pass_result.n = 0;
+            ASR::stmt_t* stmt_ = m_body[i];
+            visit_stmt(*m_body[i]);
+            if (stmt_->type == ASR::stmtType::Assignment && pass_result.size() > 0) {
+                for (size_t j=0; j < pass_result.size(); j++) {
+                    body.push_back(al, pass_result[j]);
+                }
+            } else {
+                body.push_back(al, m_body[i]);
+            }
+        }
+        m_body = body.p;
+        n_body = body.size();
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        uint64_t h = get_hash((ASR::asr_t*) &x);
+        if (assignment_hash.find(h) == assignment_hash.end()) {
+            return;
+        }
+        ASR::expr_t** curr_expr = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
+        this->call_replacer_(assignment_hash[h]);
+        ASR::expr_t* target = *replacer.current_expr;
+        current_expr = curr_expr;
+        this->visit_expr(*x.m_target);
+        current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+        this->call_replacer_(assignment_hash[h]);
+        ASR::expr_t* value = *replacer.current_expr;
+        current_expr = curr_expr;
+        this->visit_expr(*x.m_value);
+        ASR::stmt_t* tmp_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target, value, nullptr));
+        pass_result.push_back(al, tmp_stmt);
+    }
+};
+
 
 class WhereVisitor : public PassUtils::PassVisitor<WhereVisitor>
 {
 public:
-    std::map<ASR::symbol_t*, ASR::expr_t*> &replace_expr_map;
-    ASR::expr_t* tmp;
-    ASR::stmt_t* tmp_stmt;
-    WhereVisitor(Allocator &al, std::map<ASR::symbol_t*, ASR::expr_t*> &replace_expr_map) : PassVisitor(al, nullptr), replace_expr_map(replace_expr_map) {
+    std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash;
+    WhereVisitor(Allocator &al, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash) : PassVisitor(al, nullptr), 
+        assignment_hash(assignment_hash) {
         pass_result.reserve(al, 1);
     }
 
-    void visit_Assignment(const ASR::Assignment_t& x) {
-        tmp_stmt = nullptr;
-        ASR::expr_t* target = x.m_target;
-        ASR::expr_t* value = x.m_value;
-        visit_expr(*x.m_target);
-        if (tmp) target = tmp;
-        visit_expr(*x.m_value);
-        if (tmp) value = tmp;
-        tmp_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target, value, nullptr));
-    }
-
-    void visit_expr(ASR::expr_t &x) {
-        tmp = nullptr;
-        if (ASR::is_a<ASR::Var_t>(x)) {
-            ASR::Var_t* var = down_cast<ASR::Var_t>(&x);
-            ASR::symbol_t* sym = var->m_v;
-            if (replace_expr_map.find(sym) != replace_expr_map.end()) {
-                ASR::expr_t* new_expr = replace_expr_map[sym];
-                tmp = new_expr;
-            }
-        }
-        if (ASR::is_a<ASR::IntegerBinOp_t>(x)) {
-            ASR::IntegerBinOp_t* integer_ = ASR::down_cast<ASR::IntegerBinOp_t>(&x);
-            visit_expr(*integer_->m_left);
-            if (tmp) integer_->m_left = tmp;
-            visit_expr(*integer_->m_right);
-            if (tmp) integer_->m_right = tmp;
-            tmp = ASRUtils::EXPR((ASR::asr_t*) integer_);
-        }
-        if (ASR::is_a<ASR::RealBinOp_t>(x)) {
-            ASR::RealBinOp_t* real_ = ASR::down_cast<ASR::RealBinOp_t>(&x);
-            visit_expr(*real_->m_left);
-            if (tmp) real_->m_left = tmp;
-            visit_expr(*real_->m_right);
-            if (tmp) real_->m_right = tmp;
-            tmp = ASRUtils::EXPR((ASR::asr_t*) real_);
-        }
-    }
-
-    ASR::stmt_t* handle_If(ASR::Where_t& x, ASR::expr_t* test, ASR::expr_t* var, Location& loc) {
+    ASR::stmt_t* handle_If(ASR::Where_t& x, ASR::expr_t* test, ASR::expr_t* var, Location& loc, Vec<ASR::expr_t*> idx_vars) {
         ASR::IntegerCompare_t* int_cmp = nullptr;
         ASR::RealCompare_t* real_cmp = nullptr;
         ASR::expr_t* left, *right;
         bool is_right_array = false;
-        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
-        ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4, nullptr, 0));
         ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4,nullptr, 0));
 
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
@@ -82,13 +152,8 @@ public:
             right = real_cmp->m_right;
         }
 
-        ASR::Var_t* left_var = ASR::down_cast<ASR::Var_t>(left);
-        ASR::Var_t* right_var = nullptr;
         if (ASRUtils::is_array(ASRUtils::expr_type(right))) {
             is_right_array = true;
-            if (ASR::is_a<ASR::Var_t>(*right)) {
-                right_var = ASR::down_cast<ASR::Var_t>(right);
-            }
         }
 
         ASR::array_index_t left_array_index;
@@ -103,39 +168,27 @@ public:
         right_array_index.m_left = nullptr;
         right_array_index.m_right = var;
         right_array_index.m_step = nullptr;
-
-        // create ArrayItem for left and right
-        Vec<ASR::array_index_t> left_array_index_vec;
-        left_array_index_vec.reserve(al, 1);
-        left_array_index_vec.push_back(al, left_array_index);
-
-        Vec<ASR::array_index_t> right_array_index_vec;
-        right_array_index_vec.reserve(al, 1);
-        right_array_index_vec.push_back(al, right_array_index);
-        ASR::expr_t* left_array = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, left, left_array_index_vec.p, left_array_index_vec.size(),
-                                                real_cmp?real_type:int32_type, ASR::arraystorageType::ColMajor, nullptr));
-        ASR::expr_t* right_array = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, right, right_array_index_vec.p, right_array_index_vec.size(),
-                                                real_cmp?real_type:int32_type, ASR::arraystorageType::ColMajor, nullptr));
         
+        ASR::expr_t* left_array = PassUtils::create_array_ref(left, idx_vars, al);
+        ASR::expr_t* right_array = PassUtils::create_array_ref(right, idx_vars, al);
+
         ASR::expr_t* test_new = ASRUtils::EXPR(
                     real_cmp?ASR::make_RealCompare_t(al, loc, left_array, real_cmp->m_op, is_right_array?right_array:right,
                                             logical_type, nullptr):
                              ASR::make_IntegerCompare_t(al, loc, left_array, int_cmp->m_op, is_right_array?right_array:right,
                                             logical_type, nullptr));
         
-        // populate replace expression map
-        replace_expr_map[left_var->m_v] = left_array;
-        if (right_var) {
-            replace_expr_map[right_var->m_v] = right_array;
-        }
         
         Vec<ASR::stmt_t*> if_body;
         if_body.reserve(al, x.n_body);
         for (size_t i = 0; i < x.n_body; i++) {
             ASR::stmt_t* stmt = x.m_body[i];
-            visit_stmt(*stmt);
-            if (tmp_stmt) if_body.push_back(al, tmp_stmt);
-            else if_body.push_back(al, stmt);
+            if (stmt->type == ASR::stmtType::Assignment) {
+                ASR::Assignment_t* assign_ = ASR::down_cast<ASR::Assignment_t>(stmt);
+                uint64_t h = get_hash((ASR::asr_t*) assign_);
+                assignment_hash[h] = idx_vars;
+            }
+            if_body.push_back(al, stmt);
         }
 
         Vec<ASR::stmt_t*> orelse_body;
@@ -143,13 +196,16 @@ public:
         for (size_t i = 0; i < x.n_orelse; i++) {
             if (ASR::is_a<ASR::Where_t>(*x.m_orelse[i])) {
                 ASR::Where_t* where = ASR::down_cast<ASR::Where_t>(x.m_orelse[i]);
-                ASR::stmt_t* if_stmt = handle_If(*where, where->m_test, var, where->base.base.loc);
+                ASR::stmt_t* if_stmt = handle_If(*where, where->m_test, var, where->base.base.loc, idx_vars);
                 orelse_body.push_back(al, if_stmt);
             } else {
                 ASR::stmt_t* stmt = x.m_orelse[i];
-                visit_stmt(*stmt);
-                if (tmp_stmt) orelse_body.push_back(al, tmp_stmt);
-                else orelse_body.push_back(al, stmt);
+                if (stmt->type == ASR::stmtType::Assignment) {
+                    ASR::Assignment_t* assign_ = ASR::down_cast<ASR::Assignment_t>(stmt);
+                    uint64_t h = get_hash((ASR::asr_t*) assign_);
+                    assignment_hash[h] = idx_vars;
+                }
+                orelse_body.push_back(al, stmt);
             }
         }
         ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, test_new, if_body.p, if_body.size(), orelse_body.p, orelse_body.size()));  
@@ -197,7 +253,7 @@ public:
         do_loop_body.reserve(al, 1);
 
         // create an if statement
-        ASR::stmt_t* if_stmt = handle_If(xx, test, var, loc);
+        ASR::stmt_t* if_stmt = handle_If(xx, test, var, loc, idx_vars);
         do_loop_body.push_back(al, if_stmt);
 
         doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, 0, head, do_loop_body.p, do_loop_body.size()));
@@ -207,9 +263,15 @@ public:
 
 void pass_replace_where(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& /*pass_options*/) {
-    std::map<ASR::symbol_t*, ASR::expr_t*> replace_expr_map = {};
-    WhereVisitor v(al, replace_expr_map);
+    std::map<uint64_t, Vec<ASR::expr_t*>> assignment_hash;
+    WhereVisitor v(al, assignment_hash);
     v.visit_TranslationUnit(unit);
+    if (assignment_hash.size() > 0) {
+        VarVisitor w(al, assignment_hash);
+        w.visit_TranslationUnit(unit);
+        PassUtils::UpdateDependenciesVisitor x(al);
+        x.visit_TranslationUnit(unit);
+    }
 }
 
 
