@@ -1414,6 +1414,8 @@ ast = true
 [[test]]
 filename = "../integration_tests/where_01.f90"
 ast = true
+asr = true
+pass = "where"
 
 [[test]]
 filename = "../integration_tests/forallloop_01.f90"
@@ -3066,5 +3068,11 @@ filename = "errors/implicit_typing3.f90"
 asr_implicit_typing = true
 
 [[test]]
-filename = "where2.f90"
+filename = "../integration_tests/where_02.f90"
 asr = true
+pass = "where"
+
+[[test]]
+filename = "../integration_tests/where_03.f90"
+asr = true
+pass = "where"
