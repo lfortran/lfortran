@@ -539,6 +539,8 @@ RUN(NAME types_13 LABELS gfortran)
 RUN(NAME types_14 LABELS gfortran llvm wasm)
 RUN(NAME types_16 LABELS gfortran llvm wasm)
 RUN(NAME types_17 LABELS gfortran llvm)
+RUN(NAME types_18 LABELS gfortran llvm cpp wasm)
+RUN(NAME types_19 LABELS gfortran llvm cpp wasm)
 
 RUN(NAME complex_01 LABELS gfortran llvm wasm)
 RUN(NAME complex_02 LABELS gfortran llvm wasm)
