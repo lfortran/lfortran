@@ -1,0 +1,13 @@
+{
+    "basename": "pass_where-where_04-87885be",
+    "cmd": "lfortran --pass=where --indent --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/where_04.f90",
+    "infile_hash": "48a470d63d757345f37561af480f581a5f708922ea79e68b07389e63",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_where-where_04-87885be.stdout",
+    "stdout_hash": "b201b01c201cbc4c03fc5ecc28f542465dbff93196de0a923e4894c2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
