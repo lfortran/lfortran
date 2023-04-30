@@ -1454,6 +1454,10 @@ public:
         tmp = nullptr;
     }
 
+    void visit_Use(const AST::Use_t& /* x */) {
+        // handled in symbol table visitor
+    }
+
     void visit_Program(const AST::Program_t &x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
