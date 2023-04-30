@@ -26,8 +26,6 @@ cd bench
 
 git clone https://github.com/lfortran/lfortran
 cd lfortran
-./build0.sh
-cd ..
 
 mkdir main
 cd main
@@ -40,8 +38,6 @@ cd lfortran
 git clean -dfx
 git fetch origin pull/$PR/head:pr-origin-$PR
 git checkout pr-origin-$PR
-./build0.sh
-cd ..
 
 mkdir pr
 cd pr

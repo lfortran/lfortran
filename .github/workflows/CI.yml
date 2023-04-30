@@ -32,7 +32,6 @@ jobs:
             python=${{ matrix.python-version }}
             sel(unix): bison=3.4
             sel(win): m2-bison=3.0.4
-            sel(win): m2-filesystem
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -173,11 +172,9 @@ jobs:
       - name: Build Linux
         shell: bash -l {0}
         run: |
-            ./build0.sh
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
@@ -371,11 +368,9 @@ jobs:
       - name: Build Linux
         shell: bash -l {0}
         run: |
-            ./build0.sh
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
@@ -568,11 +563,9 @@ jobs:
       - name: Build Linux
         shell: bash -l {0}
         run: |
-            ./build0.sh
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
@@ -604,9 +597,7 @@ jobs:
       - name: Upload Tarball
         shell: bash -l {0}
         run: |
-          ./build0.sh
-          lfortran_version=$(<version)
-          ci/create_source_tarball.sh $lfortran_version
+          xonsh ci/create_source_tarball.xsh
           ci/upload_tarball.sh
         env:
           SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
@@ -631,7 +622,6 @@ jobs:
       - name: Build Kernel
         shell: bash -l {0}
         run: |
-          ./build0.sh
           export CXXFLAGS="-Werror"
           cmake . -GNinja \
             -DCMAKE_BUILD_TYPE=Debug \

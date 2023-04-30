@@ -31,24 +31,9 @@ $IS_LINUX = platform.system() == "Linux"
 echo "CONDA_PREFIX=$CONDA_PREFIX"
 llvm-config --components
 
-# Generate the `version` file
-bash ci/version.sh
-
-# Generate a Fortran AST from AST.asdl (C++)
-python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
-# Generate a Fortran ASR from ASR.asdl (C++)
-python src/libasr/asdl_cpp.py src/libasr/ASR.asdl src/libasr/asr.h
-# Generate a wasm_visitor.h from src/libasr/wasm_instructions.txt (C++)
-python src/libasr/wasm_instructions_visitor.py
-
-# Generate the tokenizer and parser
-pushd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && popd
-pushd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && popd
-pushd src/lfortran/parser && bison -Wall -d -r all parser.yy && popd
-
+# Create tarball and unpack
+xonsh ci/create_source_tarball.xsh
 $lfortran_version=$(cat version).strip()
-$dest="lfortran-" + $lfortran_version
-bash ci/create_source_tarball0.sh
 tar xzf dist/lfortran-$lfortran_version.tar.gz
 cd lfortran-$lfortran_version
 
@@ -61,7 +46,7 @@ if $IS_LINUX:
     BUILD_TYPE = "Debug"
 else:
     BUILD_TYPE = "Release"
-cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) ..
+cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DLFORTRAN_TARBALL=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) ..
 cmake --build . --target install
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt

@@ -79,10 +79,7 @@ Clone the LFortran git repository:
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
 ```
-Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`):
-```bash
-./build0.sh
-```
+
 Now the process is the same as installing from the source tarball. For example to build in Debug mode:
 ```
 cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
@@ -127,8 +124,7 @@ git clone https://github.com/lfortran/lfortran.git
 cd lfortran
 conda env create -f environment_win.yml
 conda activate lf
-build0.bat
-build1.bat
+build.bat
 ```
 
 If everything compiled, then you can use LFortran as follows:
@@ -196,9 +192,7 @@ cd lfortran
 * Run the following commands
 ```bash
 conda activate lf
-./build0.sh
-cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .\
-make -j8
+./build.sh
 ```
 
 * If everything compiles, you can use LFortran as follows
@@ -285,8 +279,7 @@ The `--pure` flag ensures no system dependencies are used in the environment.
 
 The build steps are the same as with the `ci`:
 ```bash
-./build0.sh
-./build1.sh
+./build.sh
 ```
 
 To change the compilation environment from `gcc` (default) to `clang` we can use `--argstr`:

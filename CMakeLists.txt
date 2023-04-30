@@ -1,11 +1,60 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
-# We don't execute this if we have a tarball
-if (LFORTRAN_BUILD_ALL)
-    find_program(BASH_BIN bash)
-    execute_process(COMMAND "${BASH_BIN}" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set(LFORTRAN_TARBALL no CACHE BOOL "Set to `yes` if building from a tarball.")
+
+# Tarballs have the genererated files from the Python, Bison and re2c and not
+# the original scripts that generated them.
+if (NOT LFORTRAN_TARBALL)
+    find_program(GIT_BIN git REQUIRED)
+    find_program(RE2C_BIN re2c REQUIRED)
+    find_package(Python3 REQUIRED)
+    find_package(BISON 3.0.4 REQUIRED)
+
+    # Fetch the version from git
+    execute_process(
+        COMMAND "${GIT_BIN}" "describe" "--tags" "--dirty"
+        OUTPUT_VARIABLE LFORTRAN_VERSION
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    string(REGEX REPLACE "^v" "" LFORTRAN_VERSION ${LFORTRAN_VERSION})
+    file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/version" "${LFORTRAN_VERSION}")
+
+    # Keep the Python calls seperate to avoid a BrokenPipeError exception being raised
+    # Generate a Fortran AST from AST.asdl (C++)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "src/libasr/asdl_cpp.py" "grammar/AST.asdl" "src/lfortran/ast.h"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    # Generate a Fortran ASR from ASR.asdl (C++)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "src/libasr/asdl_cpp.py" "src/libasr/ASR.asdl" "src/libasr/asr.h"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    # Generate a wasm_visitor.h from src/libasr/wasm_instructions.txt (C++)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "src/libasr/wasm_instructions_visitor.py"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+
+    # Generate the tokenizer and parser
+    execute_process(
+        COMMAND "${RE2C_BIN}" "-W" "-b" "tokenizer.re" "-o" "tokenizer.cpp"
+        COMMAND "${RE2C_BIN}" "-W" "-b" "preprocessor.re" "-o" "preprocessor.cpp"
+        COMMAND "${BISON_EXECUTABLE}" "-Wall" "-d" "-r" "all" "parser.yy"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran/parser"
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/lfortran/parser/parser.yy" PARSER_YY)
+    string(FIND "${PARSER_YY}" "'" SINGLE_QUOTE_FOUND)
+    if(NOT SINGLE_QUOTE_FOUND EQUAL -1)
+        message(FATAL_ERROR "Found single quote in parser.yy. Value not allowed!")
+    endif()
 endif()
 
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
