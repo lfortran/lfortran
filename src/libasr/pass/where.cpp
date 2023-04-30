@@ -23,13 +23,25 @@ public:
     Allocator& al;
     SymbolTable* current_scope;
     Vec<ASR::expr_t*> idx_vars;
-    ReplaceVar(Allocator &al_) : al(al_), 
-        current_scope(nullptr) {}
+    std::map<uint64_t, ASR::expr_t*> return_var_hash;
+    ReplaceVar(Allocator &al_) : al(al_), current_scope(nullptr) {}
 
     void replace_Var(ASR::Var_t* x) {
         ASR::expr_t* expr_ = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, x->m_v));
-        ASR::expr_t* new_expr_ = PassUtils::create_array_ref(expr_, idx_vars, al);
-        current_expr = &new_expr_;
+        current_expr = &expr_;
+        if (ASRUtils::is_array(ASRUtils::expr_type(expr_))) {
+            ASR::expr_t* new_expr_ = PassUtils::create_array_ref(expr_, idx_vars, al);
+            current_expr = &new_expr_;
+        }
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        uint64_t h = get_hash((ASR::asr_t*) x->m_name);
+        if (return_var_hash.find(h) != return_var_hash.end()) {
+            ASR::expr_t* new_expr_ = return_var_hash[h];
+            new_expr_ = PassUtils::create_array_ref(new_expr_, idx_vars, al);
+            current_expr = &new_expr_;
+        }
     }
 
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
@@ -43,7 +55,7 @@ public:
         ASR::expr_t* right = *current_expr;
         current_expr = curr_expr;
         ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc, left, x->m_op, right, x->m_type, nullptr));
-        current_expr = &new_expr;
+        *current_expr = new_expr;
     }
 
     void replace_RealBinOp(ASR::RealBinOp_t* x) {
@@ -57,7 +69,22 @@ public:
         ASR::expr_t* right = *current_expr;
         current_expr = curr_expr;
         ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x->base.base.loc, left, x->m_op, right, x->m_type, nullptr));
-        current_expr = &new_expr;
+        *current_expr = new_expr;
+    }
+
+    void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x->n_args);
+        for (size_t i=0; i<x->n_args; i++) {
+            ASR::expr_t* arg = x->m_args[i];
+            current_expr = const_cast<ASR::expr_t**>(&(arg));
+            this->replace_expr(arg);
+            args.push_back(al, *current_expr);
+        }
+        // Currently hardcoded to real
+        ASR::ttype_t* real = ASRUtils::TYPE(ASR::make_Real_t(al, x->base.base.loc, 4, nullptr, 0));
+        ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_IntrinsicFunction_t(al, x->base.base.loc, x->m_intrinsic_id, args.p, x->n_args, x->m_overload_id, real, x->m_value));
+        *current_expr = new_expr;
     }
 
 };
@@ -69,10 +96,11 @@ public:
     Allocator &al;
     ReplaceVar replacer;
     std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash;
+    std::map<uint64_t, ASR::expr_t*> &return_var_hash;
     Vec<ASR::stmt_t*> pass_result;
 
-    VarVisitor(Allocator &al_, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash) : 
-        al(al_), replacer(al), assignment_hash(assignment_hash) {
+    VarVisitor(Allocator &al_, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash, std::map<uint64_t, ASR::expr_t*> &return_var_hash) : 
+        al(al_), replacer(al_), assignment_hash(assignment_hash), return_var_hash(return_var_hash) {
         pass_result.reserve(al, 1);
     }
 
@@ -80,6 +108,7 @@ public:
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
         replacer.idx_vars = idx_vars_;
+        replacer.return_var_hash = return_var_hash;
         replacer.replace_expr(*current_expr);
     }
 
@@ -128,8 +157,9 @@ class WhereVisitor : public PassUtils::PassVisitor<WhereVisitor>
 {
 public:
     std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash;
-    WhereVisitor(Allocator &al, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash) : PassVisitor(al, nullptr), 
-        assignment_hash(assignment_hash) {
+    std::map<uint64_t, ASR::expr_t*> &return_var_hash;
+    WhereVisitor(Allocator &al, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash, std::map<uint64_t, ASR::expr_t*> &return_var_hash) : 
+        PassVisitor(al, nullptr), assignment_hash(assignment_hash), return_var_hash(return_var_hash) {
         pass_result.reserve(al, 1);
     }
 
@@ -206,6 +236,8 @@ public:
         ASR::IntegerCompare_t* int_cmp = nullptr;
         ASR::RealCompare_t* real_cmp = nullptr;
         ASR::expr_t* left;
+        ASR::expr_t* opt_left = nullptr;
+        ASR::stmt_t* assign_stmt = nullptr;
 
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
             int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
@@ -227,12 +259,35 @@ public:
 
         ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
 
+        if (ASR::is_a<ASR::FunctionCall_t>(*left)) {
+            // Create an assignment `return_var = left` and replace function call with return_var
+            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(left);
+            uint64_t h = get_hash((ASR::asr_t*) fc->m_name);
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fc->m_name);
+            ASR::expr_t* return_var_expr = fn->m_return_var;
+            ASR::Variable_t* return_var = ASRUtils::EXPR2VAR(return_var_expr);
+            ASR::expr_t* new_return_var_expr = PassUtils::create_var(1, return_var->m_name, return_var->base.base.loc, return_var->m_type,
+                                                al, current_scope, return_var->m_storage);
+            assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, new_return_var_expr, left, nullptr));
+            opt_left = new_return_var_expr;
+            return_var_hash[h] = opt_left;
+        }
+
+        if (opt_left && ASR::is_a<ASR::IntegerCompare_t>(*test)) {
+            int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
+            int_cmp->m_left = opt_left;
+        }
+        if (opt_left && ASR::is_a<ASR::RealCompare_t>(*test)) {
+            real_cmp = ASR::down_cast<ASR::RealCompare_t>(test);
+            real_cmp->m_left = opt_left;
+        }
+
         // create do loop head
         ASR::do_loop_head_t head;
         head.loc = loc;
         head.m_v = var;
-        head.m_start = PassUtils::get_bound(left, 1, "lbound", al);
-        head.m_end = PassUtils::get_bound(left, 1, "ubound", al);
+        head.m_start = PassUtils::get_bound(opt_left?opt_left:left, 1, "lbound", al);
+        head.m_end = PassUtils::get_bound(opt_left?opt_left:left, 1, "ubound", al);
         head.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
 
         // create do loop body
@@ -240,7 +295,10 @@ public:
         do_loop_body.reserve(al, 1);
 
         // create an if statement
-        ASR::stmt_t* if_stmt = handle_If(xx, test, var, loc, idx_vars);
+        ASR::stmt_t* if_stmt = handle_If(xx, int_cmp?ASRUtils::EXPR((ASR::asr_t*)int_cmp):ASRUtils::EXPR((ASR::asr_t*)real_cmp), var, loc, idx_vars);
+        if (assign_stmt) {
+            pass_result.push_back(al, assign_stmt);
+        }
         do_loop_body.push_back(al, if_stmt);
 
         doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, 0, head, do_loop_body.p, do_loop_body.size()));
@@ -251,10 +309,11 @@ public:
 void pass_replace_where(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& /*pass_options*/) {
     std::map<uint64_t, Vec<ASR::expr_t*>> assignment_hash;
-    WhereVisitor v(al, assignment_hash);
+    std::map<uint64_t, ASR::expr_t*> return_var_hash;
+    WhereVisitor v(al, assignment_hash, return_var_hash);
     v.visit_TranslationUnit(unit);
     if (assignment_hash.size() > 0) {
-        VarVisitor w(al, assignment_hash);
+        VarVisitor w(al, assignment_hash, return_var_hash);
         w.visit_TranslationUnit(unit);
         PassUtils::UpdateDependenciesVisitor x(al);
         x.visit_TranslationUnit(unit);
