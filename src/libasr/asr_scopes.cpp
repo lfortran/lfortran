@@ -75,7 +75,7 @@ void SymbolTable::reset_global_counter() {
     symbol_table_counter = 0;
 }
 
-void SymbolTable::mark_all_variables_external(Allocator &/*al*/) {
+void SymbolTable::mark_all_variables_external(Allocator &al) {
     for (auto &a : scope) {
         switch (a.second->type) {
             case (ASR::symbolType::Variable) : {
@@ -90,6 +90,10 @@ void SymbolTable::mark_all_variables_external(Allocator &/*al*/) {
                 v->m_body = nullptr;
                 v->n_body = 0;
                 break;
+            }
+            case (ASR::symbolType::Module) : {
+                ASR::Module_t *v = ASR::down_cast<ASR::Module_t>(a.second);
+                v->m_symtab->mark_all_variables_external(al);
             }
             default : {};
         }
