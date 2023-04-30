@@ -3076,3 +3076,8 @@ pass = "where"
 filename = "../integration_tests/where_03.f90"
 asr = true
 pass = "where"
+
+[[test]]
+filename = "../integration_tests/where_04.f90"
+asr = true
+pass = "where"
