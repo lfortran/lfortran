@@ -86,7 +86,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         return res.error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
-    std::cout << pickle(*tu, 0, 1) << std::endl;
 #if defined(WITH_LFORTRAN_ASSERT)
         if (!asr_verify(*tu, true, diagnostics)) {
             return Error();

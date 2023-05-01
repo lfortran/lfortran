@@ -505,10 +505,17 @@ public:
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 0);
 
-        // Check if the template exists
-        ASR::symbol_t* sym = current_scope->resolve_symbol(template_name);
-        if (!sym || !ASR::is_a<ASR::Template_t>(*sym)) {
+        // check if the template exists
+        ASR::symbol_t* sym0 = current_scope->resolve_symbol(template_name);
+        if (!sym0) {
             throw SemanticError("Use of an unspecified template '" + template_name
+                + "'", x.base.base.loc);
+        }
+
+        // check if a template is instantiated
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(sym0);
+        if (!ASR::is_a<ASR::Template_t>(*sym)) {
+            throw SemanticError("Cannot instantiate a non-tempalte '" + template_name
                 + "'", x.base.base.loc);
         }
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);

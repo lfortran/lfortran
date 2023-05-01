@@ -1772,7 +1772,8 @@ public:
             LCOMPILERS_ASSERT(sym_type->m_name);
             std::string derived_type_name = to_lower(sym_type->m_name);
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
-            if (v && ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::symbol_type(v))) {
+            if (v && ASR::is_a<ASR::Variable_t>(*v) 
+                  && ASR::is_a<ASR::TypeParameter_t>(*ASR::down_cast<ASR::Variable_t>(v)->m_type)) {
                 type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
                     s2c(al, derived_type_name), dims.p, dims.size()));
             } else if (v && ASRUtils::is_c_ptr(v, derived_type_name)) {
