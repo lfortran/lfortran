@@ -9,7 +9,7 @@
         )]
         [(Declaration
             (AttrType
-                TypeReal
+                TypeInteger
                 []
                 ()
                 ()
@@ -31,10 +31,79 @@
             []
             ()
             None
+            ())
+            (i
+            []
+            []
+            ()
+            None
             ())]
             ()
         )]
-        [(Where
+        [(=
+            0
+            a
+            (u- 2)
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                a
+                []
+                [(()
+                1
+                ())]
+                []
+                []
+            )
+            1
+            ()
+        )
+        (=
+            0
+            (FuncCallOrArray
+                a
+                []
+                [(()
+                5
+                ())]
+                []
+                []
+            )
+            8
+            ()
+        )
+        (=
+            0
+            b
+            (u- 3)
+            ()
+        )
+        (Where
+            0
+            ()
+            (>= a 0)
+            [(=
+                0
+                b
+                1
+                ()
+            )]
+            [(=
+                0
+                b
+                0
+                ()
+            )]
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (Where
             0
             ()
             (>= a 0)
@@ -80,23 +149,162 @@
                 (EndOfLine)]
             )
         )
-        (Where
+        (If
             0
             ()
-            (>= a 0)
-            [(=
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- (FuncCallOrArray
+                    b
+                    []
+                    [(()
+                    1
+                    ())]
+                    []
+                    []
+                ) 1)
+                ())]
+                []
+                []
+            ) (Real "1e-6"))
+            [(ErrorStop
                 0
-                b
-                1
+                ()
+                ()
                 ()
             )]
-            [(=
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- (FuncCallOrArray
+                    b
+                    []
+                    [(()
+                    5
+                    ())]
+                    []
+                    []
+                ) 1)
+                ())]
+                []
+                []
+            ) (Real "1e-6"))
+            [(ErrorStop
                 0
-                b
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (DoLoop
+            0
+            ()
+            0
+            i
+            2
+            4
+            ()
+            [(If
                 0
+                ()
+                (> (FuncCallOrArray
+                    abs
+                    []
+                    [(()
+                    (- (FuncCallOrArray
+                        b
+                        []
+                        [(()
+                        i
+                        ())]
+                        []
+                        []
+                    ) 0)
+                    ())]
+                    []
+                    []
+                ) (Real "1e-6"))
+                [(ErrorStop
+                    0
+                    ()
+                    ()
+                    ()
+                )]
+                []
+                ()
+                ()
                 ()
             )]
             ()
+            ()
+        )
+        (DoLoop
+            0
+            ()
+            0
+            i
+            6
+            10
+            ()
+            [(If
+                0
+                ()
+                (> (FuncCallOrArray
+                    abs
+                    []
+                    [(()
+                    (- (FuncCallOrArray
+                        b
+                        []
+                        [(()
+                        i
+                        ())]
+                        []
+                        []
+                    ) 0)
+                    ())]
+                    []
+                    []
+                ) (Real "1e-6"))
+                [(ErrorStop
+                    0
+                    ()
+                    ()
+                    ()
+                )]
+                []
+                ()
+                ()
+                ()
+            )]
+            ()
+            ()
+        )
+        (Print
+            0
+            ()
+            [b]
+            ()
+        )
+        (Print
+            0
+            ()
+            [a]
             ()
         )]
         []

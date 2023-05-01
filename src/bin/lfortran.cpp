@@ -29,6 +29,7 @@
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/print_arr.h>
+#include <libasr/pass/where.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
