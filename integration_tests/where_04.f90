@@ -9,9 +9,15 @@ program main
     implicit none
     real :: reldiff(2)
     real :: absdiff
-    real, dimension(:), allocatable :: x
+    reldiff = [0.0,0.0]
+    absdiff = 0.5
     
     where (solution() /= 0.0) reldiff = absdiff / abs(solution())
+
+    if (abs(reldiff(1) - 5.0) > 1e-7) error stop
+    if (abs(reldiff(2) - 5.0) > 1e-7) error stop
+
+    print *, reldiff
 
     end subroutine compare_solutions
 
