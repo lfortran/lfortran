@@ -2021,35 +2021,6 @@ public:
             this->visit_program_unit(*x.m_funcs[i]);
         }
 
-        // Assume only TypeParameter (ttype) and Function (symbol) in the map
-        /*
-        std::map<std::string, ASR::asr_t*> current_req;
-        for (size_t i=0; i<x.n_namelist; i++) {
-            std::string current_arg = to_lower(x.m_namelist[i]);
-            bool tp_not_found = true;
-            for (ASR::asr_t *tp_asr: current_requirement_type_parameters) {
-                ASR::TypeParameter_t *tp = ASR::down_cast2<ASR::TypeParameter_t>(tp_asr);
-                std::string tp_name = tp->m_param;
-                if (tp_name.compare(current_arg) == 0) {
-                    tp_not_found = false;
-                    current_req[current_arg] = tp_asr;
-                }
-            }
-            if (tp_not_found) {
-                for (ASR::asr_t *func_asr: current_requirement_functions) {
-                    ASR::Function_t *func = ASR::down_cast2<ASR::Function_t>(func_asr);
-                    std::string func_name = func->m_name;
-                    if (func_name.compare(current_arg) == 0) {
-                        current_req[current_arg] = func_asr;
-                    }
-                }
-            }
-        }
-        requirement_map[x.m_name] = current_req;
-        current_requirement_type_parameters.clear();
-        current_requirement_functions.clear();
-        */
-
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -2092,17 +2063,10 @@ public:
             }
             std::string req_arg = req->m_args[i];
             ASR::symbol_t *req_arg_sym = (req->m_symtab)->get_symbol(req_arg);
+            // TODO: inline this? convert into a static method?
             ASR::symbol_t *temp_arg_sym = replace_symbol(req_arg_sym, temp_arg);
             current_scope->add_symbol(temp_arg, temp_arg_sym);
         }
-
-        // TODO: check arguments given to requires
-        //if (requirement_map.find(req_name) == requirement_map.end()) {
-            // TODO: provide error message for undefined requirement
-        //    LCOMPILERS_ASSERT(false);
-        //}
-        //called_requirement = requirement_map[req_name];
-
     }
 
     void visit_Template(const AST::Template_t &x){
@@ -2124,20 +2088,15 @@ public:
             this->visit_program_unit(*x.m_contains[i]);
         }
 
-        /*
-        std::vector<ASR::asr_t*> current_template_type_parameters;
-        for (const auto &req: called_requirement) {
-            if (ASR::is_a<ASR::ttype_t>(*req.second)) {
-                ASR::TypeParameter_t *tp = ASR::down_cast2<ASR::TypeParameter_t>(req.second);
-                current_template_type_parameters.push_back(
-                    ASR::make_TypeParameter_t(al, x.base.base.loc, tp->m_param, tp->m_dims, tp->n_dims));
-            }
+        SetChar args;
+        args.reserve(al, x.n_namelist);
+        for (size_t i=0; i<x.n_namelist; i++) {
+            std::string arg = to_lower(x.m_namelist[i]);
+            args.push_back(al, s2c(al, arg));
         }
-        called_requirement.clear();
-        */
 
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
-            current_scope, x.m_name);
+            current_scope, x.m_name, args.p, args.size());
 
         parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(temp));
 
@@ -2145,6 +2104,10 @@ public:
         current_template_args.clear();
         current_template_map.clear();
         is_template = false;
+
+    }
+
+    void visit_Instantiate(const AST::Instantiate_t /*&x*/) {
 
     }
 
