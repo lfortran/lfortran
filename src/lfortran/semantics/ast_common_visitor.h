@@ -691,13 +691,7 @@ public:
 
     // fields for generics
     std::vector<ASR::asr_t*> current_requirement_type_parameters;
-    std::vector<ASR::asr_t*> current_requirement_functions;
-    std::map<std::string, std::map<std::string, ASR::asr_t*>> requirement_map;
     std::map<std::string, ASR::asr_t*> called_requirement;
-    std::map<std::string, ASR::symbol_t*> template_parameters;
-    std::map<std::string, std::map<std::string, ASR::asr_t*>> template_asr_map;
-    std::map<std::string, std::map<int, std::string>> template_arg_map;
-    std::vector<ASR::symbol_t*> rt_vec;
 
     std::vector<std::string> current_template_args;
     std::map<std::string, std::string> current_template_map;
@@ -1794,53 +1788,6 @@ public:
                         type));
                 }
             }
-            /*
-            bool type_param = false;
-            if (is_requirement) {
-                for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
-                    ASR::TypeParameter_t* param = ASR::down_cast2<ASR::TypeParameter_t>(current_requirement_type_parameters[i]);
-                    std::string name = std::string(param->m_param);
-                    if(name.compare(derived_type_name) == 0){
-                        type_param = true;
-                        type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                                        param->m_param, param->m_dims, param->n_dims));
-                    }
-                }
-            } else if (is_template) {
-                for (const auto &pair: called_requirement) {
-                    if (pair.first.compare(derived_type_name) == 0) {
-                        ASR::asr_t *req_asr = pair.second;
-                        if (ASR::is_a<ASR::ttype_t>(*req_asr)) {
-                            type_param = true;
-                            type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc,
-                                                            s2c(al, derived_type_name), dims.p, dims.size()));
-                        }
-                    }
-                }
-            }
-
-            ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
-            if(!type_param) {
-                if( v && ASRUtils::is_c_ptr(v, derived_type_name) ) {
-                    type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
-                } else {
-                    if (!v) {
-                        // Placeholder symbol for Struct type
-                        // Derived type can be used before its actually defined
-                        v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                                al, loc, current_scope, s2c(al, derived_type_name),
-                                nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
-                                ASR::accessType::Private));
-                    }
-                    type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, v,
-                        dims.p, dims.size()));
-                    if (is_pointer) {
-                        type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-                            type));
-                    }
-                }
-            }
-            */
         } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
             std::string derived_type_name;
             if( !sym_type->m_name ) {
@@ -3884,26 +3831,6 @@ public:
                         }
                     }
                 }
-                // check whether the requirement function is included in the template
-                /*
-                if (ASRUtils::get_FunctionType(f)->m_is_restriction) {
-                    if (!is_template) {
-                        throw SemanticError("A requirement function must be called from a template",
-                                            x.base.base.loc);
-                    }
-                    bool requirement_found = false;
-                    std::string f_name = f->m_name;
-                    if (called_requirement.find(f_name) != called_requirement.end()
-                            && ASR::is_a<ASR::symbol_t>(*called_requirement[f_name])) {
-                        requirement_found = true;
-                    }
-                    if (!requirement_found) {
-                        throw SemanticError("The template did not declare this requirement function",
-                                            x.base.base.loc);
-                    }
-                    rt_vec.push_back(v);
-                }
-                */
             }
             if (x.n_member >= 1) {
                 tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt);

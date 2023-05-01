@@ -586,12 +586,14 @@ public:
             }
         } else {
             params.reserve(al, called_requirement.size());
+            /*
             for (const auto &req: called_requirement) {
                 if (ASR::is_a<ASR::ttype_t>(*req.second)) {
                     ASR::ttype_t *new_param = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::ttype_t>(req.second));
                     params.push_back(al, new_param);
                 }
             }
+            */
         }
 
         SetChar func_deps;
@@ -853,6 +855,7 @@ public:
                             }
                         }
                     } else if (is_template) {
+                        /*
                         for (const auto &pair: called_requirement) {
                             if (pair.first.compare(derived_type_name) == 0) {
                                 ASR::asr_t *req_asr = pair.second;
@@ -864,6 +867,7 @@ public:
                                 }
                             }
                         }
+                        */
                     }
                     if (!type_param) {
                         type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
@@ -952,12 +956,14 @@ public:
         } else {
             // TODO: build based on called requirement
             params.reserve(al, called_requirement.size());
+            /*
             for (const auto &req: called_requirement) {
                 if (ASR::is_a<ASR::ttype_t>(*req.second)) {
                     ASR::ttype_t *new_param = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::ttype_t>(req.second));
                     params.push_back(al, new_param);
                 }
             }
+            */
         }
 
         SetChar func_deps;
@@ -980,9 +986,6 @@ public:
             /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
             /* n_type_parameters */ params.size(), nullptr, 0, is_requirement,
             false, false);
-        if (is_requirement) {
-            current_requirement_functions.push_back(tmp);
-        }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();
@@ -2285,7 +2288,6 @@ public:
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
-        std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping);
@@ -2300,7 +2302,6 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         return error;
     }
     ASR::asr_t *unit = v.tmp;
-    requirement_map = v.requirement_map;
     return unit;
 }
 

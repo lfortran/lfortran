@@ -520,9 +520,6 @@ public:
         }
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(sym);
 
-        //std::map<int, std::string> current_template_arg = template_arg_map[template_name];
-        //std::map<std::string, ASR::asr_t*> current_template_asr = template_asr_map[template_name];
-
         // Check if number of type parameters match
         if (temp->n_args != x.n_args) {
             throw SemanticError("Number of template arguments don't match", x.base.base.loc);
@@ -1586,8 +1583,6 @@ public:
         current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        Vec<ASR::symbol_t*> rts;
-        rts.reserve(al, rt_vec.size());
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         transform_stmts(body, x.n_body, x.m_body);
@@ -1606,8 +1601,8 @@ public:
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
         ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
-        v_func_type->m_restrictions = rts.p;
-        v_func_type->n_restrictions = rts.size();
+        v_func_type->m_restrictions = nullptr;
+        v_func_type->n_restrictions = 0;
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
@@ -2695,13 +2690,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
     try {
         b.is_body_visitor = true;
-        b.requirement_map = requirement_map;
         b.visit_TranslationUnit(ast);
         b.is_body_visitor = false;
     } catch (const SemanticError &e) {
