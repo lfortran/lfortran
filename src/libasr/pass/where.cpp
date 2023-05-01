@@ -55,48 +55,38 @@ public:
 
     void replace_Var(ASR::Var_t* x) {
         ASR::expr_t* expr_ = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, x->m_v));
-        current_expr = &expr_;
+        *current_expr = expr_;
         if (ASRUtils::is_array(ASRUtils::expr_type(expr_))) {
             ASR::expr_t* new_expr_ = PassUtils::create_array_ref(expr_, idx_vars, al);
-            current_expr = &new_expr_;
+            *current_expr = new_expr_;
         }
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         uint64_t h = get_hash((ASR::asr_t*) x->m_name);
         if (return_var_hash.find(h) != return_var_hash.end()) {
-            ASR::expr_t* new_expr_ = return_var_hash[h];
-            new_expr_ = PassUtils::create_array_ref(new_expr_, idx_vars, al);
-            current_expr = &new_expr_;
+            *current_expr = PassUtils::create_array_ref(return_var_hash[h], idx_vars, al);
         }
     }
 
+    #define BinOpReplacement(Constructor) ASR::expr_t** current_expr_copy = current_expr; \
+        current_expr = const_cast<ASR::expr_t**>(&(x->m_left)); \
+        this->replace_expr(x->m_left); \
+        ASR::expr_t* left = *current_expr; \
+        current_expr = current_expr_copy; \
+        current_expr = const_cast<ASR::expr_t**>(&(x->m_right)); \
+        this->replace_expr(x->m_right); \
+        ASR::expr_t* right = *current_expr; \
+        current_expr = current_expr_copy; \
+        *current_expr = ASRUtils::EXPR(ASR::Constructor(al, x->base.base.loc, \
+            left, x->m_op, right, x->m_type, nullptr)); \
+
     void replace_IntegerBinOp(ASR::IntegerBinOp_t* x) {
-        ASR::expr_t** curr_expr = current_expr;
-        current_expr = const_cast<ASR::expr_t**>(&(x->m_left));
-        this->replace_expr(x->m_left);
-        ASR::expr_t* left = *current_expr;
-        current_expr = curr_expr;
-        current_expr = const_cast<ASR::expr_t**>(&(x->m_right));
-        this->replace_expr(x->m_right);
-        ASR::expr_t* right = *current_expr;
-        current_expr = curr_expr;
-        ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc, left, x->m_op, right, x->m_type, nullptr));
-        *current_expr = new_expr;
+        BinOpReplacement(make_IntegerBinOp_t)
     }
 
     void replace_RealBinOp(ASR::RealBinOp_t* x) {
-        ASR::expr_t** curr_expr = current_expr;
-        current_expr = const_cast<ASR::expr_t**>(&(x->m_left));
-        this->replace_expr(x->m_left);
-        ASR::expr_t* left = *current_expr;
-        current_expr = curr_expr;
-        current_expr = const_cast<ASR::expr_t**>(&(x->m_right));
-        this->replace_expr(x->m_right);
-        ASR::expr_t* right = *current_expr;
-        current_expr = curr_expr;
-        ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x->base.base.loc, left, x->m_op, right, x->m_type, nullptr));
-        *current_expr = new_expr;
+        BinOpReplacement(make_RealBinOp_t)
     }
 
     void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
@@ -126,7 +116,7 @@ public:
     std::map<uint64_t, ASR::expr_t*> &return_var_hash;
     Vec<ASR::stmt_t*> pass_result;
 
-    VarVisitor(Allocator &al_, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash, std::map<uint64_t, ASR::expr_t*> &return_var_hash) : 
+    VarVisitor(Allocator &al_, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash, std::map<uint64_t, ASR::expr_t*> &return_var_hash) :
         al(al_), replacer(al_), assignment_hash(assignment_hash), return_var_hash(return_var_hash) {
         pass_result.reserve(al, 1);
     }
@@ -163,16 +153,16 @@ public:
         if (assignment_hash.find(h) == assignment_hash.end()) {
             return;
         }
-        ASR::expr_t** curr_expr = current_expr;
+        ASR::expr_t** current_expr_copy = current_expr;
         current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
         this->call_replacer_(assignment_hash[h]);
         ASR::expr_t* target = *replacer.current_expr;
-        current_expr = curr_expr;
+        current_expr = current_expr_copy;
         this->visit_expr(*x.m_target);
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         this->call_replacer_(assignment_hash[h]);
         ASR::expr_t* value = *replacer.current_expr;
-        current_expr = curr_expr;
+        current_expr = current_expr_copy;
         this->visit_expr(*x.m_value);
         ASR::stmt_t* tmp_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, target, value, nullptr));
         pass_result.push_back(al, tmp_stmt);
@@ -185,7 +175,7 @@ class WhereVisitor : public PassUtils::PassVisitor<WhereVisitor>
 public:
     std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash;
     std::map<uint64_t, ASR::expr_t*> &return_var_hash;
-    WhereVisitor(Allocator &al, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash, std::map<uint64_t, ASR::expr_t*> &return_var_hash) : 
+    WhereVisitor(Allocator &al, std::map<uint64_t, Vec<ASR::expr_t*>> &assignment_hash, std::map<uint64_t, ASR::expr_t*> &return_var_hash) :
         PassVisitor(al, nullptr), assignment_hash(assignment_hash), return_var_hash(return_var_hash) {
         pass_result.reserve(al, 1);
     }
@@ -212,7 +202,7 @@ public:
         if (ASRUtils::is_array(ASRUtils::expr_type(right))) {
             is_right_array = true;
         }
-        
+
         ASR::expr_t* left_array = PassUtils::create_array_ref(left, idx_vars, al);
         ASR::expr_t* right_array = PassUtils::create_array_ref(right, idx_vars, al);
 
@@ -221,8 +211,8 @@ public:
                                             logical_type, nullptr):
                              ASR::make_IntegerCompare_t(al, loc, left_array, int_cmp->m_op, is_right_array?right_array:right,
                                             logical_type, nullptr));
-        
-        
+
+
         Vec<ASR::stmt_t*> if_body;
         if_body.reserve(al, x.n_body);
         for (size_t i = 0; i < x.n_body; i++) {
@@ -252,8 +242,8 @@ public:
                 orelse_body.push_back(al, stmt);
             }
         }
-        ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, test_new, if_body.p, if_body.size(), orelse_body.p, orelse_body.size()));  
-        return if_stmt;  
+        ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, test_new, if_body.p, if_body.size(), orelse_body.p, orelse_body.size()));
+        return if_stmt;
     }
 
     void visit_Where(const ASR::Where_t& x) {
