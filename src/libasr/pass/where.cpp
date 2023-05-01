@@ -9,6 +9,33 @@
 
 namespace LCompilers {
 
+/*
+This ASR pass replaces where with do loops and array expression assignments.
+The function `pass_replace_where` transforms the ASR tree in-place.
+
+Converts:
+
+    where(a > b)
+        a = 2.0
+    else where(a == 2.0)
+        b = 3.0
+    else where
+        a = b * 2.0 / x * 3.0
+    endwhere
+
+to:
+
+    do i = lbound(1, a), ubound(1, a)
+        if (a(i) > b(i))
+            a(i) = 2.0
+        else if (a(i) == 2.0)
+            b(i) = 3.0
+        else
+            a(i) = b(i) * 2.0 / x(i) * 3.0
+        end if
+    end do
+*/
+
 uint64_t static inline get_hash(ASR::asr_t *node)
 {
     return (uint64_t)node;
