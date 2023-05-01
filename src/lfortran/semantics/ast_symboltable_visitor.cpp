@@ -1864,14 +1864,14 @@ public:
         char *msym_cc = msym_c.c_str(al);
         current_module_dependencies.push_back(al, msym_cc);
 
-        ASR::symbol_t *t = current_scope->parent->resolve_symbol(msym);
+        ASR::symbol_t *t = current_scope->resolve_symbol(msym);
         if (!t) {
             LCompilers::PassOptions pass_options;
             pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
             pass_options.mod_files_dir = compiler_options.mod_files_dir;
             pass_options.include_dirs = compiler_options.include_dirs;
 
-            SymbolTable *tu_symtab = current_scope->parent;
+            SymbolTable *tu_symtab = current_scope;
             while (tu_symtab->parent != nullptr) {
                 tu_symtab = tu_symtab->parent;
             }

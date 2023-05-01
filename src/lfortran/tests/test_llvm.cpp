@@ -586,6 +586,46 @@ TEST_CASE("FortranEvaluator 6") {
     diagnostics.diagnostics.clear();
 }
 
+TEST_CASE("FortranEvaluator 6 importing modules") {
+    CompilerOptions cu;
+    cu.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(module funcmod
+    implicit none
+
+    contains
+
+    function add(x,y)
+        real :: x, y
+        real :: add
+        add = x+y
+    end function add
+    function subtract(x,y)
+        real :: x, y
+        real :: subtract
+        subtract = x-y
+    end function subtract
+end module funcmod)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+
+    r = e.evaluate2("use funcmod, only : add, subtract");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+
+    r = e.evaluate2("add(2.0, 5.0)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(abs(r.result.f32 - 7.0) <= 1e-8 );
+
+    r = e.evaluate2("subtract(2.0, 5.0)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(abs(r.result.f32 - (-3.0)) <= 1e-8 );
+}
+
 // Tests passing the complex struct by reference
 TEST_CASE("llvm complex type") {
     LCompilers::LLVMEvaluator e;
