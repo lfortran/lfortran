@@ -675,6 +675,101 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_ArrayOpCommon<ASR::LogicalCompare_t>(x, "_logical_comp_op_res");
     }
 
+    ASR::expr_t* get_ArrayConstant_size(ASR::ArrayConstant_t* x, ASR::storage_typeType& storage_type) {
+        ASRUtils::ASRBuilder builder(al);
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4, nullptr, 0));
+        ASR::expr_t* array_size = nullptr;
+        size_t constant_size = 0;
+        for( size_t i = 0; i < x->n_args; i++ ) {
+            ASR::expr_t* element = x->m_args[i];
+            if( ASR::is_a<ASR::ArrayConstant_t>(*element) ) {
+                if( ASRUtils::is_value_constant(element) ) {
+                    constant_size += ASR::down_cast<ASR::ArrayConstant_t>(element)->n_args;
+                } else {
+                    ASR::expr_t* element_array_size = get_ArrayConstant_size(
+                                    ASR::down_cast<ASR::ArrayConstant_t>(element), storage_type);
+                    if( array_size == nullptr ) {
+                        array_size = element_array_size;
+                    } else {
+                        array_size = builder.ElementalAdd(array_size,
+                                        element_array_size, x->base.base.loc);
+                    }
+                }
+            } else if( ASR::is_a<ASR::Var_t>(*element) ) {
+                ASR::ttype_t* element_type = ASRUtils::expr_type(element);
+                if( ASRUtils::is_array(element_type) ) {
+                    if( ASRUtils::is_fixed_size_array(element_type) ) {
+                        ASR::dimension_t* m_dims = nullptr;
+                        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(element_type, m_dims);
+                        constant_size += ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+                    } else {
+                        ASR::expr_t* element_array_size = ASRUtils::get_size(element, al);
+                        if( array_size == nullptr ) {
+                            array_size = element_array_size;
+                        } else {
+                            array_size = builder.ElementalAdd(array_size,
+                                            element_array_size, x->base.base.loc);
+                        }
+                    }
+                }
+            } else {
+                constant_size += 1;
+            }
+        }
+        ASR::expr_t* constant_size_asr = nullptr;
+        if( constant_size != 0 ) {
+            constant_size_asr = make_ConstantWithType(make_IntegerConstant_t,
+                                    constant_size, int_type, x->base.base.loc);
+            if( array_size == nullptr ) {
+                return constant_size_asr;
+            }
+        }
+        if( constant_size_asr ) {
+            array_size = builder.ElementalAdd(array_size, constant_size_asr, x->base.base.loc);
+        }
+        storage_type = ASR::storage_typeType::Allocatable;
+        return array_size;
+    }
+
+    void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
+        if (result_var == nullptr) {
+            ASR::ttype_t* result_type_ = nullptr;
+            ASR::storage_typeType storage_type = ASR::storage_typeType::Default;
+            ASR::expr_t* array_constant_size = get_ArrayConstant_size(x, storage_type);
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = x->base.base.loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x->base.base.loc,
+                            1, ASRUtils::expr_type(array_constant_size)));
+            dim.m_length = array_constant_size;
+            dims.push_back(al, dim);
+            if( storage_type == ASR::storage_typeType::Allocatable ) {
+                result_type_ = ASRUtils::duplicate_type_with_empty_dims(al, x->m_type);
+            } else {
+                result_type_ = ASRUtils::duplicate_type(al, x->m_type, &dims);
+            }
+            result_var = PassUtils::create_var(result_counter, "_array_constant_",
+                            x->base.base.loc, result_type_, al, current_scope, storage_type);
+            result_counter += 1;
+            if( storage_type == ASR::storage_typeType::Allocatable ) {
+                Vec<ASR::alloc_arg_t> alloc_args;
+                alloc_args.reserve(al, 1);
+                ASR::alloc_arg_t arg;
+                arg.m_a = result_var;
+                arg.m_dims = dims.p;
+                arg.n_dims = dims.size();
+                alloc_args.push_back(al, arg);
+                ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, x->base.base.loc,
+                                                alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
+                pass_result.push_back(al, allocate_stmt);
+            }
+        }
+        LCOMPILERS_ASSERT(result_var != nullptr);
+        *current_expr = result_var;
+        result_var = nullptr;
+    }
+
     void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
         if( !ASRUtils::IntrinsicFunctionRegistry::is_elemental(x->m_intrinsic_id) ) {
             return ;

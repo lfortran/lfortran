@@ -627,9 +627,13 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     } else if (ASR::is_a<ASR::StringConstant_t>(*a_value)) {
         // OK
     } else if(ASR::is_a<ASR::ArrayConstant_t>(*a_value)) {
-        // OK
-        // TODO: Check for each value of array constant
-        // and make sure each one is a constant.
+        ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
+        for( size_t i = 0; i < array_constant->n_args; i++ ) {
+            if( !ASRUtils::is_value_constant(array_constant->m_args[i]) ) {
+                return false;
+            }
+        }
+        return true;
     } else if(ASR::is_a<ASR::ImpliedDoLoop_t>(*a_value)) {
         // OK
     } else if(ASR::is_a<ASR::Cast_t>(*a_value)) {
@@ -3329,6 +3333,12 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4, nullptr, 0));
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc, dim, int32_type));
     return ASRUtils::EXPR(ASR::make_ArraySize_t(al, arr_expr->base.loc, arr_expr, dim_expr,
+                                                int32_type, nullptr));
+}
+
+static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al) {
+    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4, nullptr, 0));
+    return ASRUtils::EXPR(ASR::make_ArraySize_t(al, arr_expr->base.loc, arr_expr, nullptr,
                                                 int32_type, nullptr));
 }
 
