@@ -44,23 +44,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            x:
-                                                (Variable
-                                                    3
-                                                    x
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Allocatable
-                                                    (Real 4 [(()
-                                                    ())])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
                                                 )
                                         })
                                     compare_solutions
@@ -81,7 +64,32 @@
                                     )
                                     [solution]
                                     []
-                                    [(Where
+                                    [(=
+                                        (Var 3 reldiff)
+                                        (ArrayConstant
+                                            [(RealConstant
+                                                0.000000
+                                                (Real 4 [])
+                                            )
+                                            (RealConstant
+                                                0.000000
+                                                (Real 4 [])
+                                            )]
+                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4 [])))])
+                                            ColMajor
+                                        )
+                                        ()
+                                    )
+                                    (=
+                                        (Var 3 absdiff)
+                                        (RealConstant
+                                            0.500000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )
+                                    (Where
                                         (RealCompare
                                             (FunctionCall
                                                 2 solution
@@ -129,8 +137,89 @@
                                         )]
                                         []
                                     )
-                                    (ImplicitDeallocate
-                                        [(Var 3 x)]
+                                    (If
+                                        (RealCompare
+                                            (IntrinsicFunction
+                                                Abs
+                                                [(RealBinOp
+                                                    (ArrayItem
+                                                        (Var 3 reldiff)
+                                                        [(()
+                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        ())]
+                                                        (Real 4 [])
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    Sub
+                                                    (RealConstant
+                                                        5.000000
+                                                        (Real 4 [])
+                                                    )
+                                                    (Real 4 [])
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            Gt
+                                            (RealConstant
+                                                0.000000
+                                                (Real 4 [])
+                                            )
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        (RealCompare
+                                            (IntrinsicFunction
+                                                Abs
+                                                [(RealBinOp
+                                                    (ArrayItem
+                                                        (Var 3 reldiff)
+                                                        [(()
+                                                        (IntegerConstant 2 (Integer 4 []))
+                                                        ())]
+                                                        (Real 4 [])
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    Sub
+                                                    (RealConstant
+                                                        5.000000
+                                                        (Real 4 [])
+                                                    )
+                                                    (Real 4 [])
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 4 [])
+                                                ()
+                                            )
+                                            Gt
+                                            (RealConstant
+                                                0.000000
+                                                (Real 4 [])
+                                            )
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 3 reldiff)]
+                                        ()
+                                        ()
                                     )]
                                     ()
                                     Public
