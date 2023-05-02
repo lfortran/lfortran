@@ -3494,6 +3494,24 @@ static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimensi
     return dims.p;
 }
 
+static inline bool is_allocatable(ASR::expr_t* expr) {
+    switch (expr->type) {
+        case ASR::exprType::Var: {
+            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*
+                ASRUtils::symbol_get_past_external(var->m_v)));
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(var->m_v));
+            return variable->m_storage == ASR::storage_typeType::Allocatable;
+        }
+        default: {
+            throw LCompilersException("ASR::exprType::" + std::to_string(expr->type) +
+                                      " cannot be checked for allocatable attribute.");
+        }
+    }
+    return false;
+}
+
 
 } // namespace ASRUtils
 

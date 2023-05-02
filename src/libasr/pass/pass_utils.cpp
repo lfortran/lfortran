@@ -159,6 +159,27 @@ namespace LCompilers {
             return get_rank(x) > 0;
         }
 
+        ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr, ASR::expr_t* idx_var, Allocator& al) {
+            Vec<ASR::array_index_t> args;
+            args.reserve(al, 1);
+            ASR::array_index_t ai;
+            ai.loc = arr_expr->base.loc;
+            ai.m_left = nullptr;
+            ai.m_right = idx_var;
+            ai.m_step = nullptr;
+            args.push_back(al, ai);
+            Vec<ASR::dimension_t> empty_dims;
+            empty_dims.reserve(al, 1);
+            ASR::ttype_t* _type = ASRUtils::expr_type(arr_expr);
+            _type = ASRUtils::duplicate_type(al, _type, &empty_dims);
+            ASR::expr_t* array_ref = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
+                                        arr_expr->base.loc, arr_expr,
+                                        args.p, args.size(),
+                                        _type, ASR::arraystorageType::RowMajor,
+                                        nullptr));
+            return array_ref;
+        }
+
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr, Vec<ASR::expr_t*>& idx_vars, Allocator& al) {
             Vec<ASR::array_index_t> args;
             args.reserve(al, 1);

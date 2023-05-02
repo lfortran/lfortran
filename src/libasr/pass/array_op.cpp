@@ -711,6 +711,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                                             element_array_size, x->base.base.loc);
                         }
                     }
+                } else {
+                    constant_size += 1;
                 }
             } else {
                 constant_size += 1;
@@ -731,7 +733,79 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         return array_size;
     }
 
+    template <typename LOOP_BODY>
+    void create_do_loop(const Location& loc, int value_rank, ASR::expr_t* value_array,
+        Vec<ASR::expr_t*>& idx_vars, Vec<ASR::stmt_t*>& doloop_body,
+        LOOP_BODY loop_body) {
+        PassUtils::create_idx_vars(idx_vars, value_rank, loc, al, current_scope, "_t");
+        LCOMPILERS_ASSERT(value_rank == (int) idx_vars.size())
+
+        ASR::stmt_t* doloop = nullptr;
+        for( int i = value_rank - 1; i >= 0; i-- ) {
+            // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
+            ASR::do_loop_head_t head;
+            head.m_v = idx_vars[i];
+            head.m_start = PassUtils::get_bound(value_array, i + 1, "lbound", al);
+            head.m_end = PassUtils::get_bound(value_array, i + 1, "ubound", al);
+            head.m_increment = nullptr;
+            head.loc = head.m_v->base.loc;
+
+            doloop_body.reserve(al, 1);
+            if( doloop == nullptr ) {
+                loop_body();
+            } else {
+                doloop_body.push_back(al, doloop);
+            }
+            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                        doloop_body.p, doloop_body.size()));
+        }
+        pass_result.push_back(al, doloop);
+    }
+
+    void visit_ArrayConstant(ASR::ArrayConstant_t* x, ASR::expr_t* result_idx_var) {
+        #define increment_by_one(var, body) ASR::expr_t* inc_by_one = builder.ElementalAdd(var, \
+                make_ConstantWithType(make_IntegerConstant_t, 1, \
+                    ASRUtils::expr_type(var), loc), loc); \
+            ASR::stmt_t* assign_inc = builder.Assign(var, inc_by_one, loc); \
+            body.push_back(al, assign_inc); \
+
+        ASRUtils::ASRBuilder builder(al);
+        const Location& loc = x->base.base.loc;
+        for( size_t i = 0; i < x->n_args; i++ ) {
+            ASR::expr_t* element = x->m_args[i];
+            if( ASR::is_a<ASR::ArrayConstant_t>(*element) ) {
+                visit_ArrayConstant(ASR::down_cast<ASR::ArrayConstant_t>(element), result_idx_var);
+            } else if( ASR::is_a<ASR::Var_t>(*element) ) {
+                ASR::ttype_t* element_type = ASRUtils::expr_type(element);
+                if( ASRUtils::is_array(element_type) ) {
+                    Vec<ASR::expr_t*> idx_vars;
+                    Vec<ASR::stmt_t*> doloop_body;
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(element_type);
+                    create_do_loop(loc, n_dims, element, idx_vars, doloop_body,
+                        [=, &idx_vars, &doloop_body, &builder] () {
+                        ASR::expr_t* ref = PassUtils::create_array_ref(element, idx_vars, al);
+                        ASR::expr_t* res = PassUtils::create_array_ref(result_var, result_idx_var, al);
+                        ASR::stmt_t* assign = builder.Assign(res, ref, loc);
+                        doloop_body.push_back(al, assign);
+                        increment_by_one(result_idx_var, doloop_body)
+                    });
+                } else {
+                    ASR::expr_t* res = PassUtils::create_array_ref(result_var, result_idx_var, al);
+                    ASR::stmt_t* assign = builder.Assign(res, element, loc);
+                    pass_result.push_back(al, assign);
+                    increment_by_one(result_idx_var, pass_result)
+                }
+            } else {
+                ASR::expr_t* res = PassUtils::create_array_ref(result_var, result_idx_var, al);
+                ASR::stmt_t* assign = builder.Assign(res, element, loc);
+                pass_result.push_back(al, assign);
+                increment_by_one(result_idx_var, pass_result)
+            }
+        }
+    }
+
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
+        const Location& loc = x->base.base.loc;
         if (result_var == nullptr) {
             ASR::ttype_t* result_type_ = nullptr;
             ASR::storage_typeType storage_type = ASR::storage_typeType::Default;
@@ -739,8 +813,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 1);
             ASR::dimension_t dim;
-            dim.loc = x->base.base.loc;
-            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x->base.base.loc,
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
                             1, ASRUtils::expr_type(array_constant_size)));
             dim.m_length = array_constant_size;
             dims.push_back(al, dim);
@@ -750,7 +824,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 result_type_ = ASRUtils::duplicate_type(al, x->m_type, &dims);
             }
             result_var = PassUtils::create_var(result_counter, "_array_constant_",
-                            x->base.base.loc, result_type_, al, current_scope, storage_type);
+                            loc, result_type_, al, current_scope, storage_type);
             result_counter += 1;
             if( storage_type == ASR::storage_typeType::Allocatable ) {
                 Vec<ASR::alloc_arg_t> alloc_args;
@@ -760,12 +834,22 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 arg.m_dims = dims.p;
                 arg.n_dims = dims.size();
                 alloc_args.push_back(al, arg);
-                ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, x->base.base.loc,
-                                                alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
+                ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
+                                                alloc_args.p, alloc_args.size(),
+                                                nullptr, nullptr, nullptr));
                 pass_result.push_back(al, allocate_stmt);
             }
         }
         LCOMPILERS_ASSERT(result_var != nullptr);
+
+        ASRUtils::ASRBuilder builder(al);
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+        ASR::expr_t* result_idx_var = PassUtils::create_var(result_counter, "_result_idx_", loc,
+                                        int32_type, al, current_scope, ASR::storage_typeType::Default);
+        ASR::stmt_t* set_to_one = builder.Assign(result_idx_var,
+            make_ConstantWithType(make_IntegerConstant_t, 1, int32_type, loc), loc);
+        pass_result.push_back(al, set_to_one);
+        visit_ArrayConstant(x, result_idx_var);
         *current_expr = result_var;
         result_var = nullptr;
     }
@@ -793,12 +877,14 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         ASR::expr_t* operand = nullptr;
         int common_rank = 0;
         bool are_all_rank_same = true;
+        bool is_allocatable = false;
         for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
             result_var = nullptr;
             ASR::expr_t** current_expr_copy_9 = current_expr;
             current_expr = &(x->m_args[iarg]);
             self().replace_expr(x->m_args[iarg]);
             operand = *current_expr;
+            is_allocatable = ASRUtils::is_allocatable(operand);
             current_expr = current_expr_copy_9;
             operands.push_back(operand);
             int rank_operand = PassUtils::get_rank(operand);
@@ -821,8 +907,37 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         }
         result_var = result_var_copy;
         if( result_var == nullptr ) {
-            result_var = PassUtils::create_var(result_counter, res_prefix,
-                            loc, operand, al, current_scope);
+            if( is_allocatable ) {
+                ASR::ttype_t* operand_type = ASRUtils::expr_type(operand);
+                ASR::ttype_t* result_var_type = ASRUtils::duplicate_type_with_empty_dims(al, operand_type);
+                result_var = PassUtils::create_var(result_counter, res_prefix,
+                                loc, result_var_type, al, current_scope,
+                                ASR::storage_typeType::Allocatable);
+                size_t n_dims = ASRUtils::extract_n_dims_from_ttype(operand_type);
+                Vec<ASR::dimension_t> alloc_dims;
+                alloc_dims.reserve(al, n_dims);
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    ASR::dimension_t alloc_dim;
+                    alloc_dim.loc = loc;
+                    alloc_dim.m_start = make_ConstantWithKind(make_IntegerConstant_t,
+                                            make_Integer_t, 1, 4, loc);
+                    alloc_dim.m_length = ASRUtils::get_size(operand, i + 1, al);
+                    alloc_dims.push_back(al, alloc_dim);
+                }
+                Vec<ASR::alloc_arg_t> alloc_args;
+                alloc_args.reserve(al, 1);
+                ASR::alloc_arg_t alloc_arg;
+                alloc_arg.m_a = result_var;
+                alloc_arg.m_dims = alloc_dims.p;
+                alloc_arg.n_dims = alloc_dims.size();
+                alloc_args.push_back(al, alloc_arg);
+                ASR::stmt_t* alloc_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
+                    alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
+                pass_result.push_back(al, alloc_stmt);
+            } else {
+                result_var = PassUtils::create_var(result_counter, res_prefix,
+                                loc, operand, al, current_scope);
+            }
             result_counter += 1;
         }
         *current_expr = result_var;
