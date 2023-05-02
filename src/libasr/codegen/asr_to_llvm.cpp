@@ -4656,7 +4656,7 @@ public:
         if ( is_a<ASR::Character_t>(*expr_type(x.m_value)) ) {
             ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(expr_type(x.m_value));
             if (t->n_dims == 0) {
-                if (lhs_is_string_arrayref) {
+                if (lhs_is_string_arrayref && value->getType()->isPointerTy()) {
                     value = CreateLoad(value);
                 }
                 if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
