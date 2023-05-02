@@ -83,8 +83,10 @@ enum GLOBAL_VAR {
     tmp_reg_i32 = 1,
     tmp_reg_i64 = 2,
     tmp_reg_f32 = 3,
-    tmp_reg_f64 = 4,
-    GLOBAL_VARS_CNT = 5
+    tmp_reg2_f32 = 4,
+    tmp_reg_f64 = 5,
+    tmp_reg2_f64 = 6,
+    GLOBAL_VARS_CNT = 7
 };
 
 enum IMPORT_FUNC {
@@ -623,7 +625,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_compiler_globals[tmp_reg_i32] = m_wa.declare_global_var(wasm::var_type::i32, 0);
         m_compiler_globals[tmp_reg_i64] = m_wa.declare_global_var(wasm::var_type::i64, 0);
         m_compiler_globals[tmp_reg_f32] = m_wa.declare_global_var(wasm::var_type::f32, 0);
+        m_compiler_globals[tmp_reg2_f32] = m_wa.declare_global_var(wasm::var_type::f32, 0);
         m_compiler_globals[tmp_reg_f64] = m_wa.declare_global_var(wasm::var_type::f64, 0);
+        m_compiler_globals[tmp_reg2_f64] = m_wa.declare_global_var(wasm::var_type::f64, 0);
 
         emit_string(" ");
         emit_string("\n");
@@ -860,14 +864,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (m_var_idx_map.find(hash) != m_var_idx_map.end()) {
             uint32_t var_idx = m_var_idx_map[hash];
             m_wa.emit_local_get(var_idx);
-            if (ASRUtils::is_complex(*v->m_type)) {
+            if (ASRUtils::is_complex(*v->m_type) && !ASRUtils::is_array(v->m_type)) {
                 // get the imaginary part
                 m_wa.emit_local_get(var_idx + 1u);
             }
         } else if (m_global_var_idx_map.find(hash) != m_global_var_idx_map.end()) {
             uint32_t var_idx = m_global_var_idx_map[hash];
             m_wa.emit_global_get(var_idx);
-            if (ASRUtils::is_complex(*v->m_type)) {
+            if (ASRUtils::is_complex(*v->m_type) && !ASRUtils::is_array(v->m_type)) {
                 // get the imaginary part
                 m_wa.emit_global_get(var_idx + 1u);
             }
@@ -880,14 +884,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint64_t hash = get_hash((ASR::asr_t *)v);
         if (m_var_idx_map.find(hash) != m_var_idx_map.end()) {
             uint32_t var_idx = m_var_idx_map[hash];
-            if (ASRUtils::is_complex(*v->m_type)) {
+            if (ASRUtils::is_complex(*v->m_type) && !ASRUtils::is_array(v->m_type)) {
                 // set the imaginary part
                 m_wa.emit_local_set(var_idx + 1u);
             }
             m_wa.emit_local_set(var_idx);
         } else if (m_global_var_idx_map.find(hash) != m_global_var_idx_map.end()) {
             uint32_t var_idx = m_global_var_idx_map[hash];
-            if (ASRUtils::is_complex(*v->m_type)) {
+            if (ASRUtils::is_complex(*v->m_type) && !ASRUtils::is_array(v->m_type)) {
                 // set the imaginary part
                 m_wa.emit_global_set(var_idx + 1u);
             }
@@ -921,6 +925,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
                         m_wa.emit_i32_const(avail_mem_loc);
                         emit_var_set(v);
+
+                        if (v->m_type->type == ASR::ttypeType::Complex) {
+                            kind *= 2;
+                        }
                         avail_mem_loc += kind * total_array_size;
                     }
                 }
@@ -1130,6 +1138,41 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
+            case ASR::ttypeType::Complex: {
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_f32]); // complex part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg2_f32]); // real part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]); // location
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg2_f32]); // real part
+                        m_wa.emit_f32_store(wasm::mem_align::b8, 0);
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_f32]); // complex part
+                        m_wa.emit_f32_store(wasm::mem_align::b8, kind);
+                        break;
+                    case 8:
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_f64]); // complex part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg2_f64]); // real part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]); // location
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg2_f64]); // real part
+                        m_wa.emit_f64_store(wasm::mem_align::b8, 0);
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_f64]); // complex part
+                        m_wa.emit_f64_store(wasm::mem_align::b8, kind);
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryStore: Unsupported Complex kind");
+                }
+                kind *= 2;
+                break;
+            }
             default: {
                 throw CodeGenError("MemoryStore: Type " +
                                    ASRUtils::type_to_str(ttype) +
@@ -1192,6 +1235,29 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     default:
                         throw CodeGenError(
                             "MemoryLoad: Unsupported Character kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Complex: {
+                m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]); // location
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_f32_load(wasm::mem_align::b8, 0); // real part
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_f32_load(wasm::mem_align::b8, kind); // complex part
+                        break;
+                    case 8:
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_f64_load(wasm::mem_align::b8, 0); // real part
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_f64_load(wasm::mem_align::b8, kind); // complex part
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryLoad: Unsupported Complex kind");
                 }
                 break;
             }
@@ -1906,6 +1972,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 diag.codegen_warning_label("/* FIXME right index */",
                                            {x.base.base.loc}, "");
             }
+        }
+        if (ttype->type == ASR::ttypeType::Complex) {
+            kind *= 2;
         }
         m_wa.emit_i32_const(kind);
         m_wa.emit_i32_mul();
