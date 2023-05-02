@@ -250,6 +250,7 @@ jobs:
         shell: bash -x -l {0}
         run: |
             git clone https://github.com/fortran-lang/minpack.git
+            git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
             cd minpack
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
             $(pwd)/../src/bin/lfortran ./test/test_hybrd.f90
