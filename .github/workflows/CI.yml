@@ -246,6 +246,13 @@ jobs:
             examples/example_lmdif1
             examples/example_primes
             ctest
+      - name: Test Minpack (Fortran-Lang)
+        shell: bash -x -l {0}
+        run: |
+            git clone https://github.com/fortran-lang/minpack.git
+            cd minpack
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
+            $(pwd)/../src/bin/lfortran ./test/test_hybrd.f90
       - name: Test Modern Minpack
         shell: bash -x -l {0}
         run: |
