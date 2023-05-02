@@ -686,6 +686,7 @@ public:
 
 
     ASR::asr_t *tmp;
+    std::vector<ASR::asr_t *> tmp_vec;
     Allocator &al;
     CompilerOptions &compiler_options;
     SymbolTable *current_scope;

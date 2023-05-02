@@ -793,6 +793,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             if( result_type && is_dimension_empty ) {
                 result_var_type = result_type;
             }
+            bool is_allocatable = false;
             {
                 ASR::storage_typeType storage = ASR::storage_typeType::Default;
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_name);
@@ -802,6 +803,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 if (ASR::is_a<ASR::Variable_t>(*v_sym)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
                     storage = v->m_storage;
+                    is_allocatable = v->m_storage == ASR::storage_typeType::Allocatable;
                 }
                 ASR::expr_t* result_var_ = PassUtils::create_var(result_counter,
                     "_func_call_res", loc, result_var_type, al, current_scope, storage);
@@ -825,6 +827,28 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                                             x->m_name, nullptr, s_args.p, s_args.size(), nullptr));
             pass_result.push_back(al, subrout_call);
+            if (is_allocatable && result_var != *current_expr) {
+                Vec<ASR::alloc_arg_t> vec_alloc;
+                vec_alloc.reserve(al, 1);
+                ASR::alloc_arg_t alloc_arg;
+                alloc_arg.loc = loc;
+                alloc_arg.m_a = result_var;
+
+                Vec<ASR::dimension_t> vec_dims;
+                vec_dims.reserve(al, 1);
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0))));
+                dim.m_length = PassUtils::get_bound(*current_expr, 1, "ubound", al);
+                vec_dims.push_back(al, dim);
+
+                alloc_arg.m_dims = vec_dims.p;
+                alloc_arg.n_dims = vec_dims.n;
+                vec_alloc.push_back(al, alloc_arg);
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(
+                    al, loc, vec_alloc.p, 1, nullptr, nullptr, nullptr)));
+            }
             apply_again = true;
             remove_original_statement = false;
         } else if( PassUtils::is_elemental(x->m_name) ) {
