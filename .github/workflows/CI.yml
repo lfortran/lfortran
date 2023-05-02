@@ -249,16 +249,16 @@ jobs:
       - name: Test Minpack (Fortran-Lang)
         shell: bash -x -l {0}
         run: |
-            git clone https://github.com/fortran-lang/minpack.git
+            git clone https://github.com/fortran-lang/minpack.git modern_minpack_01
+            cd modern_minpack_01
             git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
-            cd minpack
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
             $(pwd)/../src/bin/lfortran ./test/test_hybrd.f90
       - name: Test Modern Minpack
         shell: bash -x -l {0}
         run: |
-            git clone https://github.com/Pranavchiku/modern_minpack.git
-            cd modern_minpack
+            git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
+            cd modern_minpack_02
             git checkout w5
             git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
