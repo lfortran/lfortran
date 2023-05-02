@@ -98,9 +98,8 @@ public:
             this->replace_expr(arg);
             args.push_back(al, *current_expr);
         }
-        // Currently hardcoded to real
-        ASR::ttype_t* real = ASRUtils::TYPE(ASR::make_Real_t(al, x->base.base.loc, 4, nullptr, 0));
-        ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_IntrinsicFunction_t(al, x->base.base.loc, x->m_intrinsic_id, args.p, x->n_args, x->m_overload_id, real, x->m_value));
+        ASR::ttype_t* type = ASRUtils::expr_type(args[0]);
+        ASR::expr_t* new_expr = ASRUtils::EXPR(ASR::make_IntrinsicFunction_t(al, x->base.base.loc, x->m_intrinsic_id, args.p, x->n_args, x->m_overload_id, type, x->m_value));
         *current_expr = new_expr;
     }
 
