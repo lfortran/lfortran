@@ -75,7 +75,9 @@ enum RT_FUNCS {
     mul_c64 = 7,
     abs_c32 = 9,
     abs_c64 = 10,
-    NO_OF_RT_FUNCS = 11, // keep this as the last enumerator
+    equal_c32 = 11,
+    equal_c64 = 12,
+    NO_OF_RT_FUNCS = 13,
 };
 
 enum GLOBAL_VAR {
@@ -518,6 +520,38 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         });
     }
 
+    void emit_complex_equal_32() {
+        using namespace wasm;
+        m_wa.define_func({f32, f32, f32, f32}, {i32}, {}, "equal_c32", [&](){
+            m_wa.emit_local_get(0);
+            m_wa.emit_local_get(2);
+            m_wa.emit_f32_eq();
+
+            m_wa.emit_local_get(1);
+            m_wa.emit_local_get(3);
+            m_wa.emit_f32_eq();
+
+            m_wa.emit_i32_and();
+            m_wa.emit_return();
+        });
+    }
+
+    void emit_complex_equal_64() {
+        using namespace wasm;
+        m_wa.define_func({f64, f64, f64, f64}, {i32}, {}, "equal_c64", [&](){
+            m_wa.emit_local_get(0);
+            m_wa.emit_local_get(2);
+            m_wa.emit_f64_eq();
+
+            m_wa.emit_local_get(1);
+            m_wa.emit_local_get(3);
+            m_wa.emit_f64_eq();
+
+            m_wa.emit_i32_and();
+            m_wa.emit_return();
+        });
+    }
+
     void declare_global_var(ASR::Variable_t* v) {
         if (v->m_type->type == ASR::ttypeType::TypeParameter) {
             // Ignore type variables
@@ -651,6 +685,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_rt_funcs_map[mul_c64] = &ASRToWASMVisitor::emit_complex_mul_64;
         m_rt_funcs_map[abs_c32] = &ASRToWASMVisitor::emit_complex_abs_32;
         m_rt_funcs_map[abs_c64] = &ASRToWASMVisitor::emit_complex_abs_64;
+        m_rt_funcs_map[equal_c32] = &ASRToWASMVisitor::emit_complex_equal_32;
+        m_rt_funcs_map[equal_c64] = &ASRToWASMVisitor::emit_complex_equal_64;
 
         {
             // Pre-declare all functions first, then generate code
@@ -1829,6 +1865,53 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void handle_complex_compare(const ASR::ComplexCompare_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        this->visit_expr(*x.m_left);
+        this->visit_expr(*x.m_right);
+        int a_kind = get_kind_from_operands(x);
+        if (a_kind == 4) {
+            INCLUDE_RUNTIME_FUNC(equal_c32);
+            switch (x.m_op) {
+                case (ASR::cmpopType::Eq): {
+                    m_wa.emit_call(m_rt_func_used_idx[equal_c32]);
+                    break;
+                }
+                case (ASR::cmpopType::NotEq): {
+                    m_wa.emit_call(m_rt_func_used_idx[equal_c32]);
+                    m_wa.emit_i32_const(1);
+                    m_wa.emit_i32_xor();
+                    break;
+                }
+                default:
+                    throw CodeGenError(
+                        "handle_complex_compare: Kind 4: Unhandled switch case");
+            }
+        } else if (a_kind == 8) {
+            INCLUDE_RUNTIME_FUNC(equal_c64);
+            switch (x.m_op) {
+                case (ASR::cmpopType::Eq): {
+                    m_wa.emit_call(m_rt_func_used_idx[equal_c64]);
+                    break;
+                }
+                case (ASR::cmpopType::NotEq): {
+                    m_wa.emit_call(m_rt_func_used_idx[equal_c64]);
+                    m_wa.emit_i32_const(1);
+                    m_wa.emit_i32_xor();
+                    break;
+                }
+                default:
+                    throw CodeGenError(
+                        "handle_complex_compare: Kind 8: Unhandled switch case");
+            }
+        } else {
+            throw CodeGenError("RealCompare: kind 4 and 8 supported only");
+        }
+    }
+
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
         handle_integer_compare(x);
     }
@@ -1837,8 +1920,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         handle_real_compare(x);
     }
 
-    void visit_ComplexCompare(const ASR::ComplexCompare_t & /*x*/) {
-        throw CodeGenError("Complex Types not yet supported");
+    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+        handle_complex_compare(x);
     }
 
     void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
