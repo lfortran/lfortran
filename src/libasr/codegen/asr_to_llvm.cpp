@@ -1416,7 +1416,7 @@ public:
                     std::vector<llvm::Value*> args = {x_arr, len};
                     llvm::Function *fn = _AllocateString();
                     builder->CreateCall(fn, args);
-                    continue;;
+                    continue;
                 }
             }
             llvm::Type* llvm_data_type = get_type_from_ttype_t_util(asr_data_type);
@@ -3494,13 +3494,27 @@ public:
                 }
                 break;
             }
-            case (ASR::ttypeType::Character) :
-                if (arg_m_abi == ASR::abiType::BindC) {
-                    type = character_type;
+            case (ASR::ttypeType::Character) : {
+                ASR::Character_t* v_type = down_cast<ASR::Character_t>(asr_type);
+                n_dims = v_type->n_dims;
+                a_kind = v_type->m_kind;
+                if( n_dims > 0 ) {
+                    is_array_type = true;
+                    llvm::Type* el_type = get_el_type(asr_type);
+                    if( m_storage == ASR::storage_typeType::Allocatable ) {
+                        type = arr_descr->get_malloc_array_type(asr_type, el_type, get_pointer);
+                    } else {
+                        type = arr_descr->get_array_type(asr_type, el_type, get_pointer);
+                    }
                 } else {
-                    type = character_type->getPointerTo();
+                    if (arg_m_abi == ASR::abiType::BindC) {
+                        type = character_type;
+                    } else {
+                        type = character_type->getPointerTo();
+                    }
                 }
                 break;
+            }
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = down_cast<ASR::Logical_t>(asr_type);
                 n_dims = v_type->n_dims;
