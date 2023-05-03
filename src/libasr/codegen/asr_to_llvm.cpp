@@ -5055,10 +5055,13 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1;
         this->visit_expr_wrapper(x.m_left, true);
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
+        ptr_loads = ptr_loads_copy;
         std::string fn;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {

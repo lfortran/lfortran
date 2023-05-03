@@ -3166,7 +3166,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
              argi->m_intent == ASRUtils::intent_out ||
              argi->m_intent == ASRUtils::intent_inout) &&
             argi->m_storage != ASR::storage_typeType::Allocatable &&
-            !ASR::is_a<ASR::Struct_t>(*argi->m_type)) {
+            !ASR::is_a<ASR::Struct_t>(*argi->m_type) &&
+            !ASR::is_a<ASR::Character_t>(*argi->m_type)) {
             v.push_back(i);
         }
     }
@@ -3193,6 +3194,11 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc, dim, int32_type));
     return ASRUtils::EXPR(ASR::make_ArraySize_t(al, arr_expr->base.loc, arr_expr, dim_expr,
                                                 int32_type, nullptr));
+}
+
+static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al) {
+    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4, nullptr, 0));
+    return ASRUtils::EXPR(ASR::make_ArraySize_t(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr));
 }
 
 static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,

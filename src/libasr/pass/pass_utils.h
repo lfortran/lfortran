@@ -507,19 +507,19 @@ namespace LCompilers {
         void replace_ArrayConstant(ASR::ArrayConstant_t* x, T* replacer,
             bool& remove_original_statement, Vec<ASR::stmt_t*>* result_vec) {
             Allocator& al = replacer->al;
-            if( !replacer->result_var ) {
-                return ;
-            }
+            LCOMPILERS_ASSERT(replacer->result_var != nullptr);
             if( x->n_args == 0 ) {
                 remove_original_statement = true;
                 return ;
             }
 
             const Location& loc = x->base.base.loc;
+            ASR::ttype_t* result_var_type = ASRUtils::expr_type(replacer->result_var);
             if( ASR::is_a<ASR::Var_t>(*replacer->result_var) ) {
-                LCOMPILERS_ASSERT_MSG(PassUtils::get_rank(replacer->result_var) == 1,
+                LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
                                     "Initialisation using ArrayConstant is "
-                                    "supported only for single dimensional arrays.")
+                                    "supported only for single dimensional arrays, found: " +
+                                    std::to_string(ASRUtils::extract_n_dims_from_ttype(result_var_type)))
                 ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(replacer->result_var);
                 Vec<ASR::expr_t*> idx_vars;
                 PassUtils::create_idx_vars(idx_vars, 1, loc, replacer->al, replacer->current_scope);
@@ -644,7 +644,6 @@ namespace LCompilers {
                     }
                 }
             }
-            remove_original_statement = true;
         }
     }
 
