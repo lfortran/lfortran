@@ -485,17 +485,19 @@ namespace LCompilers {
                                             array_ref_type, ASR::arraystorageType::RowMajor,
                                             nullptr));
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
-                    throw LCompilersException("Pass for nested ImpliedDoLoop nodes isn't implemented yet."); // idoloop->m_values[i]->base.loc
-                }
-                ASR::stmt_t* doloop_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, arr_var->base.base.loc,
-                                                array_ref, idoloop->m_values[i], nullptr));
-                doloop_body.push_back(replacer->al, doloop_stmt);
-                if( arr_idx != nullptr ) {
-                    ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, arr_var->base.base.loc,
-                                                arr_idx, ASR::binopType::Add, const_1, ASRUtils::expr_type(arr_idx), nullptr));
-                    ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, arr_var->base.base.loc,
-                                                arr_idx, increment, nullptr));
-                    doloop_body.push_back(replacer->al, assign_stmt);
+                    create_do_loop(replacer, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
+                                   arr_var, &doloop_body, arr_idx);
+                } else {
+                    ASR::stmt_t* doloop_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, arr_var->base.base.loc,
+                                                    array_ref, idoloop->m_values[i], nullptr));
+                    doloop_body.push_back(replacer->al, doloop_stmt);
+                    if( arr_idx != nullptr ) {
+                        ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, arr_var->base.base.loc,
+                                                    arr_idx, ASR::binopType::Add, const_1, ASRUtils::expr_type(arr_idx), nullptr));
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, arr_var->base.base.loc,
+                                                    arr_idx, increment, nullptr));
+                        doloop_body.push_back(replacer->al, assign_stmt);
+                    }
                 }
             }
             ASR::stmt_t* doloop = ASRUtils::STMT(ASR::make_DoLoop_t(replacer->al, arr_var->base.base.loc,

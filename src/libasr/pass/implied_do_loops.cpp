@@ -36,6 +36,40 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     current_scope(nullptr), result_var(nullptr), result_counter(0),
     resultvar2value(resultvar2value_) {}
 
+    ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
+        ASRUtils::ASRBuilder builder(al);
+        const Location& loc = implied_doloop->base.base.loc;
+        ASR::expr_t* start = implied_doloop->m_start;
+        ASR::expr_t* end = implied_doloop->m_end;
+        ASR::expr_t* d = implied_doloop->m_increment;
+        ASR::expr_t* implied_doloop_size = nullptr;
+        if( d == nullptr ) {
+            implied_doloop_size = builder.ElementalAdd(
+                builder.ElementalSub(end, start, loc),
+                make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc), loc);
+        } else {
+            implied_doloop_size = builder.ElementalAdd(builder.ElementalDiv(
+                builder.ElementalSub(end, start, loc), d, loc),
+                make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc), loc);
+        }
+        int const_elements = 0;
+        for( size_t i = 0; i < implied_doloop->n_values; i++ ) {
+            if( ASR::is_a<ASR::ImpliedDoLoop_t>(*implied_doloop->m_values[i]) ) {
+                ASR::expr_t* implied_doloop_size_ = get_ImpliedDoLoop_size(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i]));
+                implied_doloop_size = builder.ElementalMul(implied_doloop_size_, implied_doloop_size, loc);
+            } else {
+                const_elements += 1;
+            }
+        }
+        if(  const_elements > 0 ) {
+            implied_doloop_size = builder.ElementalAdd(
+                make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, const_elements, 4, loc),
+                implied_doloop_size, loc);
+        }
+        return implied_doloop_size;
+    }
+
     ASR::expr_t* get_ArrayConstant_size(ASR::ArrayConstant_t* x, ASR::storage_typeType& storage_type) {
         ASRUtils::ASRBuilder builder(al);
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4, nullptr, 0));
@@ -77,20 +111,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     constant_size += 1;
                 }
             } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*element) ) {
-                ASR::ImpliedDoLoop_t* implied_doloop = ASR::down_cast<ASR::ImpliedDoLoop_t>(element);
-                ASR::expr_t* start = implied_doloop->m_start;
-                ASR::expr_t* end = implied_doloop->m_end;
-                ASR::expr_t* d = implied_doloop->m_increment;
-                ASR::expr_t* implied_doloop_size = nullptr;
-                if( d == nullptr ) {
-                    implied_doloop_size = builder.ElementalAdd(
-                        builder.ElementalSub(end, start, loc),
-                        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc), loc);
-                } else {
-                    implied_doloop_size = builder.ElementalAdd(builder.ElementalDiv(
-                        builder.ElementalSub(end, start, loc), d, loc),
-                        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc), loc);
-                }
+                ASR::expr_t* implied_doloop_size = get_ImpliedDoLoop_size(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(element));
                 if( array_size ) {
                     array_size = builder.ElementalAdd(implied_doloop_size, array_size, loc);
                 } else {
@@ -247,6 +269,8 @@ void pass_replace_implied_do_loops(Allocator &al,
     const LCompilers::PassOptions& /*pass_options*/) {
     ArrayConstantVisitor v(al);
     v.visit_TranslationUnit(unit);
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(unit);
 }
 
 
