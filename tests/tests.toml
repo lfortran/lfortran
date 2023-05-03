@@ -2720,6 +2720,10 @@ filename = "errors/arithmetic_if1.f90"
 asr = true
 
 [[test]]
+filename = "errors/assign_01.f90"
+asr = true
+
+[[test]]
 filename = "fixed_form_if_variations.f"
 ast = true
 asr = true
