@@ -2,6 +2,15 @@ program intrinsics_50
 
     implicit none
 
+    character(len=80), parameter :: help_text_build_common(*) = [character(len=80) ::      &
+    ' --profile PROF    Selects the compilation profile for the build.               ',&
+    '                   Currently available profiles are "release" for               ',&
+    '                   high optimization and "debug" for full debug options.        ',&
+    '                   If --flag is not specified the "debug" flags are the         ',&
+    '                   default.                                                     ',&
+    ' --no-prune        Disable tree-shaking/pruning of unused module dependencies   '&
+    ]
+
     character(len=1) :: strings(2, 2)
     print *, string_array_contains("1", ["1", "2", "3"])
     strings(1, 1) = "2"
