@@ -1834,9 +1834,16 @@ public:
             }
             if (sym->type == ASR::symbolType::Variable) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                ASR::intentType intent = v->m_intent;
-                if (intent == ASR::intentType::In) {
+                if (v->m_intent == ASR::intentType::In) {
                     throw SemanticError("Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`", target->base.loc);
+                }
+                if (v->m_storage == ASR::storage_typeType::Parameter) {
+                    throw SemanticError(diag::Diagnostic(
+                                "Cannot assign to a constant variable",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("assignment here", {x.base.base.loc}),
+                                    diag::Label("declared as constant", {v->base.base.loc}, false),
+                                }));
                 }
             }
         }
