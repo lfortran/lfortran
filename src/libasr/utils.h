@@ -17,6 +17,7 @@ enum Platform {
     OpenBSD,
 };
 
+std::string pf2s(Platform);
 Platform get_platform();
 
 struct CompilerOptions {

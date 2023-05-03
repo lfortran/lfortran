@@ -1721,16 +1721,7 @@ int main(int argc, char *argv[])
         if (arg_version) {
             std::string version = LFORTRAN_VERSION;
             std::cout << "LFortran version: " << version << std::endl;
-            std::cout << "Platform: ";
-            switch (compiler_options.platform) {
-                case (LCompilers::Platform::Linux) : std::cout << "Linux"; break;
-                case (LCompilers::Platform::macOS_Intel) : std::cout << "macOS Intel"; break;
-                case (LCompilers::Platform::macOS_ARM) : std::cout << "macOS ARM"; break;
-                case (LCompilers::Platform::Windows) : std::cout << "Windows"; break;
-                case (LCompilers::Platform::FreeBSD) : std::cout << "FreeBSD"; break;
-                case (LCompilers::Platform::OpenBSD) : std::cout << "OpenBSD"; break;
-            }
-            std::cout << std::endl;
+            std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM
             std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
 #endif
