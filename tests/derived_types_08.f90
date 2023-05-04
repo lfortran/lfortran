@@ -27,6 +27,8 @@ use derived_types_08_fpm_error
 implicit none
 
 type(error_t), allocatable :: error
+character(len=:), allocatable :: message
+print *, allocated(message)
 
 print *, bad_name_error(error, "1", "x")
 print *, error%message

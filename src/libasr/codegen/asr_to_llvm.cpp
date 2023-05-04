@@ -1497,7 +1497,8 @@ public:
     }
 
     inline void call_lfortran_free_string(llvm::Function* fn) {
-        std::vector<llvm::Value*> args = {tmp};
+        std::vector<llvm::Value*> args = {LLVM::CreateLoad(*builder,
+            llvm_utils->create_gep(tmp, 0))};
         builder->CreateCall(fn, args);
     }
 
@@ -1532,11 +1533,17 @@ public:
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                     symbol_get_past_external(curr_obj));
 
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
             fetch_var(v);
+            ptr_loads = ptr_loads_copy;
             if (ASRUtils::is_character(*v->m_type)) {
                 int dims = ASR::down_cast<ASR::Character_t>(v->m_type)->n_dims;
                 if (dims == 0) {
-                    call_lfortran_free_string(free_fn);
+                    llvm::Value *cond = LLVM::CreateLoad(*builder, llvm_utils->create_gep(tmp, 1));
+                    create_if_else(cond, [=]() {
+                        call_lfortran_free_string(free_fn);
+                    }, [](){});
                     continue;
                 }
             }
@@ -2907,6 +2914,10 @@ public:
                     }
                 } else {
                     llvm_type = character_type;
+                    if( m_storage == ASR::storage_typeType::Allocatable ) {
+                        llvm_type = llvm::StructType::create(context,
+                            {llvm_type, llvm::Type::getInt1Ty(context)}, "i8_malloc");
+                    }
                 }
                 break;
             }
@@ -7523,7 +7534,11 @@ public:
         if( n_dims > 0 ) {
             tmp = arr_descr->get_is_allocated_flag(tmp);
         } else {
-            LCOMPILERS_ASSERT(false);
+            if( ASRUtils::is_character(*asr_type) ) {
+                tmp = LLVM::CreateLoad(*builder, llvm_utils->create_gep(tmp, 1));
+            } else {
+                LCOMPILERS_ASSERT_MSG(false, "ASR type: " + ASRUtils::get_type_code(asr_type));
+            }
         }
     }
 
