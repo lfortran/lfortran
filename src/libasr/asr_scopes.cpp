@@ -3,6 +3,7 @@
 
 #include <libasr/asr_scopes.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/pass_utils.h>
 
 namespace LCompilers  {
 
@@ -84,11 +85,13 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 break;
             }
             case (ASR::symbolType::Function) : {
-                ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(a.second);
-                ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
-                v_func_type->m_abi = ASR::abiType::Interactive;
-                v->m_body = nullptr;
-                v->n_body = 0;
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(a.second);
+                ASR::FunctionType_t* f_func_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                f_func_type->m_abi = ASR::abiType::Interactive;
+                f->m_body = nullptr;
+                f->n_body = 0;
+                PassUtils::UpdateDependenciesVisitor v(al);
+                v.visit_Function(*f);
                 break;
             }
             case (ASR::symbolType::Module) : {
