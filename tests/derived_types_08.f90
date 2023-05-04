@@ -16,7 +16,7 @@ contains
         allocate(error)
         ! allocate(character(len=4) :: error%message) ! TODO: Should happen automatically in AST -> ASR transition
         error%message = label//"_"//name
-        ! bad_name_error = allocated(error%message)
+        ! bad_name_error = allocated(error%message) ! TODO: Uncomment
 
     end function bad_name_error
 
