@@ -351,6 +351,8 @@ ttype
     | Complex(int kind, dimension* dims)
     | Character(int kind, int len, expr? len_expr, dimension* dims)
     | Logical(int kind, dimension* dims)
+    | BitVector(int len, dimension* dims)
+    | ModularInteger(int modulus, dimension* dims)
     | Set(ttype type)
     | List(ttype type)
     | Tuple(ttype* type)
