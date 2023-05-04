@@ -169,6 +169,7 @@ public:
     llvm::StructType *complex_type_4, *complex_type_8;
     llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
     llvm::PointerType *character_type;
+    llvm::StructType *allocatable_character_type;
     llvm::PointerType *list_type;
     std::vector<std::string> struct_type_stack;
 
@@ -1320,6 +1321,9 @@ public:
         complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
         complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
         character_type = llvm::Type::getInt8PtrTy(context);
+        allocatable_character_type = llvm::StructType::create(context,
+                                        {character_type, llvm::Type::getInt1Ty(context)},
+                                        "i8_malloc");
         list_type = llvm::Type::getInt8PtrTy(context);
 
         llvm::Type* bound_arg = static_cast<llvm::Type*>(arr_descr->get_dimension_descriptor_type(true));
@@ -1403,7 +1407,12 @@ public:
             }
             std::uint32_t h = get_hash((ASR::asr_t*)tmp_sym);
             LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
-            llvm::Value* x_arr = llvm_symtab[h];
+            llvm::Value* x_arr_ = llvm_symtab[h];
+            llvm::Value* x_arr = x_arr_;
+            if( ASRUtils::is_allocatable(tmp_expr) &&
+                ASRUtils::is_character(*ASRUtils::expr_type(tmp_expr)) ) {
+                x_arr = llvm_utils->create_gep(x_arr_, 0);
+            }
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
             if( n_dims == 0 ) {
@@ -1412,17 +1421,12 @@ public:
                 if (ASRUtils::is_character(*curr_arg_m_a_type)) {
                     // TODO: Add ASR reference to capture the length of the string
                     // during initialization.
-                    ASR::Character_t* character_t = ASR::down_cast<ASR::Character_t>(curr_arg_m_a_type);
-                    llvm::Value* m_len = nullptr;
-                    if( character_t->m_len_expr ) {
-                        int64_t ptr_loads_copy = ptr_loads;
-                        ptr_loads = 2;
-                        visit_expr(*character_t->m_len_expr);
-                        ptr_loads = ptr_loads_copy;
-                        m_len = tmp;
-                    } else {
-                        m_len = llvm::ConstantInt::get(context, llvm::APInt(32, character_t->m_len));
-                    }
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2;
+                    LCOMPILERS_ASSERT(curr_arg.m_len_expr != nullptr);
+                    visit_expr(*curr_arg.m_len_expr);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Value* m_len = tmp;
                     malloc_size = builder->CreateMul(malloc_size, m_len);
                     std::vector<llvm::Value*> args = {x_arr, malloc_size};
                     builder->CreateCall(fn, args);
@@ -1440,6 +1444,8 @@ public:
                 } else {
                     LCOMPILERS_ASSERT(false);
                 }
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, true)),
+                    llvm_utils->create_gep(x_arr_, 1));
             } else {
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
@@ -2039,6 +2045,7 @@ public:
         llvm::Value* array = nullptr;
         bool is_data_only = false;
         ASR::Variable_t *v = nullptr;
+        bool is_allocatable = ASRUtils::is_allocatable(x.m_v);
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             v = ASRUtils::EXPR2VAR(x.m_v);
             if( ASR::is_a<ASR::Struct_t>(*ASRUtils::get_contained_type(v->m_type)) ) {
@@ -2074,7 +2081,12 @@ public:
             this->visit_expr_wrapper(x.m_args[0].m_right, true);
             llvm::Value *p = nullptr;
             llvm::Value *idx = tmp;
-            llvm::Value *str = CreateLoad(array);
+            llvm::Value *str = nullptr;
+            if( is_allocatable ) {
+                str = LLVM::CreateLoad(*builder, llvm_utils->create_gep(array, 0));
+            } else {
+                str = CreateLoad(array);
+            }
             if( is_assignment_target ) {
                 idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 std::vector<llvm::Value*> idx_vec = {idx};
@@ -2915,8 +2927,7 @@ public:
                 } else {
                     llvm_type = character_type;
                     if( m_storage == ASR::storage_typeType::Allocatable ) {
-                        llvm_type = llvm::StructType::create(context,
-                            {llvm_type, llvm::Type::getInt1Ty(context)}, "i8_malloc");
+                        llvm_type = allocatable_character_type;
                     }
                 }
                 break;
@@ -3904,7 +3915,8 @@ public:
     llvm::FunctionType* get_function_type(const ASR::Function_t &x){
         llvm::Type *return_type;
         if (x.m_return_var) {
-            ASR::ttype_t *return_var_type0 = EXPR2VAR(x.m_return_var)->m_type;
+            ASR::Variable_t* m_return_variable = EXPR2VAR(x.m_return_var);
+            ASR::ttype_t *return_var_type0 = m_return_variable->m_type;
             ASR::ttypeType return_var_type = return_var_type0->type;
             switch (return_var_type) {
                 case (ASR::ttypeType::Integer) : {
@@ -3954,9 +3966,14 @@ public:
                     }
                     break;
                 }
-                case (ASR::ttypeType::Character) :
+                case (ASR::ttypeType::Character) : {
                     return_type = character_type;
+                    if( m_return_variable->m_storage ==
+                        ASR::storage_typeType::Allocatable ) {
+                        return_type = allocatable_character_type;
+                    }
                     break;
+                }
                 case (ASR::ttypeType::Logical) :
                     return_type = llvm::Type::getInt1Ty(context);
                     break;

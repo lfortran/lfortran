@@ -3320,6 +3320,30 @@ static inline void collect_variable_dependencies(Allocator& al, SetChar& deps_ve
     }
 }
 
+static inline bool is_allocatable(ASR::symbol_t* symbol) {
+    switch( symbol->type ) {
+        case ASR::symbolType::Variable: {
+            return (ASR::down_cast<ASR::Variable_t>(symbol)->m_storage ==
+                    ASR::storage_typeType::Allocatable);
+        }
+        default: {
+            throw LCompilersException("Not yet supported: ASR::symbolType::" + std::to_string(symbol->type));
+        }
+    }
+    return false;
+}
+
+static inline bool is_allocatable(ASR::expr_t* expr) {
+    switch( expr->type ) {
+        case ASR::exprType::Var: {
+            return is_allocatable(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        }
+        default: {
+            throw LCompilersException("Not yet supported: ASR::exprType::" + std::to_string(expr->type));
+        }
+    }
+}
+
 } // namespace ASRUtils
 
 } // namespace LCompilers
