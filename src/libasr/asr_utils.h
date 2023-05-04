@@ -3274,6 +3274,12 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
         return false;
     }
 
+    // Interactive marked functions are already processed in a previous compilation.
+    // They should not be processed again.
+    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Interactive) {
+        return false;
+    }
+
     ASR::ttype_t* typei = nullptr;
     ASR::dimension_t* dims = nullptr;
     for( size_t i = 0; i < x->n_args; i++ ) {
