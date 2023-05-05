@@ -2330,12 +2330,11 @@ public:
         }
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
-        if (ASRUtils::is_allocatable(x.m_v)) {
+        ASR::dimension_t* m_dims;
+        int n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_v_type, m_dims);
+        if (ASRUtils::is_allocatable(x.m_v) && n_dims == 0) {
             // If it's the allocatable struct, get the pointer to it.
             tmp = llvm_utils->create_gep(tmp, 0);
-            // if (tmp->getType()->isPointerTy()) {
-            //     tmp = CreateLoad(tmp);
-            // }
         }
         if( ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)) ) {
             tmp = CreateLoad(llvm_utils->create_gep(tmp, 1));
