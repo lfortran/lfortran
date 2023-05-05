@@ -1409,12 +1409,12 @@ public:
             LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
             llvm::Value* x_arr_ = llvm_symtab[h];
             llvm::Value* x_arr = x_arr_;
-            if( ASRUtils::is_allocatable(tmp_expr) &&
-                ASRUtils::is_character(*ASRUtils::expr_type(tmp_expr)) ) {
-                x_arr = llvm_utils->create_gep(x_arr_, 0);
-            }
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
+            if ( ASRUtils::is_allocatable(tmp_expr) &&
+                ASRUtils::is_character(*ASRUtils::expr_type(tmp_expr)) && n_dims == 0) {
+                x_arr = llvm_utils->create_gep(x_arr_, 0);
+            }
             if( n_dims == 0 ) {
                 llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, getIntType(4));
                 llvm::Function *fn = _Allocate();
