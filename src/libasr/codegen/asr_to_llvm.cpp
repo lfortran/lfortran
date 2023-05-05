@@ -796,7 +796,8 @@ public:
         return (llvm::Type*) *der_type_llvm;
     }
 
-    llvm::Type* getStructType(ASR::ttype_t* _type, bool is_pointer=false) {
+    llvm::Type* getStructType(ASR::ttype_t* _type, bool is_pointer=false,
+                bool is_allocatable=false) {
         ASR::StructType_t* der_type;
         if( ASR::is_a<ASR::Struct_t>(*_type) ) {
             ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(_type);
@@ -810,8 +811,23 @@ public:
             LCOMPILERS_ASSERT(false);
         }
         llvm::Type* type = getStructType(der_type, is_pointer);
+        if (is_allocatable) {
+            if (is_pointer) {
+                type = type->getPointerElementType();
+            }
+            std::string der_type_name = std::string(der_type->m_name);
+            der_type_name += "_allocatable_struct";
+            if (name2dertype.find(der_type_name) == name2dertype.end() ) {
+                name2dertype[der_type_name] = llvm::StructType::create(context,
+                            {type, llvm::Type::getInt1Ty(context)}, der_type_name);
+            }
+            type = name2dertype[der_type_name];
+            if (is_pointer) {
+                type = type->getPointerTo();
+            }
+        }
         LCOMPILERS_ASSERT(type != nullptr);
-        return type;
+        return (llvm::Type*)type;
     }
 
     llvm::Type* getUnionType(ASR::UnionType_t* union_type, bool is_pointer=false) {
@@ -1392,6 +1408,13 @@ public:
         }
     }
 
+    bool has_allocate_struct(ASR::ttype_t* t) {
+        bool res = (ASRUtils::is_character(*t) ||
+                    ASR::is_a<ASR::Class_t>(*t) ||
+                    ASR::is_a<ASR::Struct_t>(*t));
+        return res;
+    }
+
     void visit_Allocate(const ASR::Allocate_t& x) {
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t curr_arg = x.m_args[i];
@@ -1412,7 +1435,7 @@ public:
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
             if ( ASRUtils::is_allocatable(tmp_expr) &&
-                ASRUtils::is_character(*ASRUtils::expr_type(tmp_expr)) && n_dims == 0) {
+                    has_allocate_struct(ASRUtils::expr_type(tmp_expr)) && n_dims == 0) {
                 x_arr = llvm_utils->create_gep(x_arr_, 0);
             }
             if( n_dims == 0 ) {
@@ -1438,14 +1461,13 @@ public:
                     llvm::AllocaInst *target = builder0.CreateAlloca(
                         character_type, nullptr, "derived_type_ptr");
                     builder->CreateStore(builder->CreateBitCast(x_arr, character_type), target);
-                    tmp = target;
                     std::vector<llvm::Value*> args = {target, malloc_size};
                     builder->CreateCall(fn, args);
                 } else {
                     LCOMPILERS_ASSERT(false);
                 }
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, true)),
-                    llvm_utils->create_gep(x_arr_, 1));
+                        llvm_utils->create_gep(x_arr_, 1));
             } else {
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
@@ -1561,7 +1583,7 @@ public:
                 }, [](){});
             } else {
                 // TODO: Handle Struct, Class types
-                LCOMPILERS_ASSERT(false);
+                //  LCOMPILERS_ASSERT(false);
             }
         }
     }
@@ -2308,6 +2330,13 @@ public:
         }
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
+        if (ASRUtils::is_allocatable(x.m_v)) {
+            // If it's the allocatable struct, get the pointer to it.
+            tmp = llvm_utils->create_gep(tmp, 0);
+            // if (tmp->getType()->isPointerTy()) {
+            //     tmp = CreateLoad(tmp);
+            // }
+        }
         if( ASR::is_a<ASR::Class_t>(*ASRUtils::type_get_past_pointer(x_m_v_type)) ) {
             tmp = CreateLoad(llvm_utils->create_gep(tmp, 1));
             if( current_select_type_block_type ) {
@@ -2969,7 +2998,8 @@ public:
                         llvm_type = arr_descr->get_array_type(asr_type, el_type);
                     }
                 } else {
-                    llvm_type = getStructType(asr_type, false);
+                    llvm_type = getStructType(asr_type, false,
+                                m_storage == ASR::storage_typeType::Allocatable);
                 }
                 break;
             }
@@ -2988,6 +3018,10 @@ public:
                     }
                 } else {
                     llvm_type = getClassType(asr_type, is_pointer);
+                    if( m_storage == ASR::storage_typeType::Allocatable ) {
+                        llvm_type = llvm::StructType::create(context,
+                            {llvm_type, llvm::Type::getInt1Ty(context)}, "class_malloc");
+                    }
                 }
                 break;
             }
@@ -3352,7 +3386,6 @@ public:
                             ptr->setAlignment(align);
                         }
                     }
-
                     llvm_symtab[h] = ptr;
                     fill_array_details_(ptr, m_dims, n_dims,
                         is_malloc_array_type,
@@ -3564,11 +3597,16 @@ public:
                         type = arr_descr->get_array_type(asr_type, el_type, get_pointer);
                     }
                 } else {
-                    if (arg_m_abi == ASR::abiType::BindC) {
-                        type = character_type;
-                    } else {
-                        type = character_type->getPointerTo();
+                    llvm::Type *_type = character_type;
+                    if( m_storage == ASR::storage_typeType::Allocatable ) {
+                        _type = allocatable_character_type;
                     }
+                    if (arg_m_abi == ASR::abiType::BindC) {
+                        type = _type;
+                    } else {
+                        type = _type->getPointerTo();
+                    }
+
                 }
                 break;
             }
@@ -3612,7 +3650,8 @@ public:
                         type = arr_descr->get_array_type(asr_type, el_type, get_pointer);
                     }
                 } else {
-                    type = getStructType(asr_type, true);
+                    type = getStructType(asr_type, true,
+                        m_storage == ASR::storage_typeType::Allocatable);
                 }
                 break;
             }
@@ -7551,7 +7590,7 @@ public:
         if( n_dims > 0 ) {
             tmp = arr_descr->get_is_allocated_flag(tmp);
         } else {
-            if( ASRUtils::is_character(*asr_type) ) {
+            if( has_allocate_struct(asr_type) ) {
                 tmp = LLVM::CreateLoad(*builder, llvm_utils->create_gep(tmp, 1));
             } else {
                 LCOMPILERS_ASSERT_MSG(false, "ASR type: " + ASRUtils::get_type_code(asr_type));
