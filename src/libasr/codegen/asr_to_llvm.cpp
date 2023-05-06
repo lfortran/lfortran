@@ -1545,8 +1545,44 @@ public:
         return alloc_fun;
     }
 
-    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
+    void deallocate_variable(ASR::Variable_t *v) {
         llvm::Function* free_fn = _Deallocate();
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        fetch_var(v);
+        ptr_loads = ptr_loads_copy;
+        int n_dims = ASRUtils::extract_n_dims_from_ttype(v->m_type);
+        if (ASRUtils::is_character(*v->m_type) && n_dims == 0) {
+            llvm::Value *cond = LLVM::CreateLoad(*builder,
+                                        llvm_utils->create_gep(tmp, 1));
+            create_if_else(cond, [=]() {
+                call_lfortran_free_string(free_fn);
+            }, [](){});
+            return;
+        }
+        if( n_dims > 0 ) {
+            llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp);
+            create_if_else(cond, [=]() {
+                call_lfortran_free(free_fn);
+            }, [](){});
+        } else {
+            // Deallocate Struct and Class of dim == 0, they are defined as: struct{var, flag};
+
+            // Get the allocated flag
+            llvm::Value *cond = LLVM::CreateLoad(*builder, llvm_utils->create_gep(tmp, 1));
+            create_if_else(cond, [=]() {
+                llvm::Value* arr = CreateLoad(llvm_utils->create_gep(tmp, 0));
+                llvm::AllocaInst *arg_arr = builder->CreateAlloca(character_type, nullptr);
+                builder->CreateStore(builder->CreateBitCast(arr, character_type), arg_arr);
+                std::vector<llvm::Value*> args = {CreateLoad(arg_arr)};
+                builder->CreateCall(free_fn, args);
+                // Set the allocated flag to 0
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, false)),
+                    llvm_utils->create_gep(tmp, 1));
+            }, [](){});
+        }
+    }
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
         for( size_t i = 0; i < x.n_vars; i++ ) {
             const ASR::expr_t* tmp_expr = x.m_vars[i];
             ASR::symbol_t* curr_obj = nullptr;
@@ -1561,35 +1597,11 @@ public:
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                     symbol_get_past_external(curr_obj));
 
-            int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
-            fetch_var(v);
-            ptr_loads = ptr_loads_copy;
-            if (ASRUtils::is_character(*v->m_type)) {
-                int dims = ASR::down_cast<ASR::Character_t>(v->m_type)->n_dims;
-                if (dims == 0) {
-                    llvm::Value *cond = LLVM::CreateLoad(*builder, llvm_utils->create_gep(tmp, 1));
-                    create_if_else(cond, [=]() {
-                        call_lfortran_free_string(free_fn);
-                    }, [](){});
-                    continue;
-                }
-            }
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(v->m_type);
-            if( n_dims > 0 ) {
-                llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp);
-                create_if_else(cond, [=]() {
-                    call_lfortran_free(free_fn);
-                }, [](){});
-            } else {
-                // TODO: Handle Struct, Class types
-                //  LCOMPILERS_ASSERT(false);
-            }
+            deallocate_variable(v);
         }
     }
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
-        llvm::Function* free_fn = _Deallocate();
         for( size_t i = 0; i < x.n_vars; i++ ) {
             const ASR::expr_t* tmp_expr = x.m_vars[i];
             ASR::symbol_t* curr_obj = nullptr;
@@ -1603,8 +1615,7 @@ public:
             }
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                     symbol_get_past_external(curr_obj));
-            fetch_var(v);
-            call_lfortran_free(free_fn);
+            deallocate_variable(v);
         }
     }
 
@@ -3859,7 +3870,6 @@ public:
         generate_function(x);
         dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
         dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
-
         // Finalize the debug info.
         if (compiler_options.emit_debug_info) DBuilder->finalize();
         current_scope = current_scope_copy;
@@ -4763,6 +4773,7 @@ public:
                 if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
                     ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
                     if (asr_target->m_storage == ASR::storage_typeType::Allocatable) {
+                        target = llvm_utils->create_gep(target, 0);
                         tmp = lfortran_str_copy(target, value);
                         return;
                     }
@@ -5484,6 +5495,9 @@ public:
         }
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::AllocaInst *parg = builder->CreateAlloca(character_type, nullptr);
+        if (ASRUtils::is_allocatable(x.m_arg) && has_allocate_struct(ASRUtils::expr_type(x.m_arg))) {
+            tmp = llvm_utils->create_gep(tmp, 0);
+        }
         builder->CreateStore(tmp, parg);
         tmp = lfortran_str_len(parg);
     }
@@ -6381,6 +6395,9 @@ public:
             }
             case (ASR::cast_kindType::CharacterToLogical) : {
                 llvm::AllocaInst *parg = builder->CreateAlloca(character_type, nullptr);
+                if (ASRUtils::is_allocatable(x.m_arg) && has_allocate_struct(ASRUtils::expr_type(x.m_arg))) {
+                    tmp = llvm_utils->create_gep(tmp, 0);
+                }
                 builder->CreateStore(tmp, parg);
                 tmp = builder->CreateICmpNE(lfortran_str_len(parg), builder->getInt32(0));
                 break;
@@ -7813,7 +7830,12 @@ public:
                 if (func_name == "len") {
                     args = convert_call_args(x, is_method);
                     LCOMPILERS_ASSERT(args.size() == 3)
-                    tmp = lfortran_str_len(args[0]);
+                    if (ASRUtils::is_allocatable(x.m_args[0].m_value)) {
+                        tmp = llvm_utils->create_gep(args[0], 0);
+                    } else {
+                        tmp = args[0];
+                    }
+                    tmp = lfortran_str_len(tmp);
                     return;
                 } else if (func_name == "command_argument_count") {
                     llvm::Function *fn = module->getFunction("_lpython_get_argc");
