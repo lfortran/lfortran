@@ -89,6 +89,29 @@ std::string get_kokkos_dir()
     throw LCompilers::LCompilersException("LFORTRAN_KOKKOS_DIR is not defined");
 }
 
+int visualize_json(std::string &astr_data_json, LCompilers::Platform os) {
+    using namespace LCompilers;
+    std::string file_loc = LCompilers::LFortran::generate_visualize_html(astr_data_json);
+    std::string open_cmd = "";
+    switch (os) {
+        case Linux: open_cmd = "xdg-open"; break;
+        case Windows: open_cmd = "start"; break;
+        case macOS_Intel:
+        case macOS_ARM: open_cmd = "open"; break;
+        default:
+            std::cerr << "Unsupported Platform " << pf2s(os) <<std::endl;
+            std::cerr << "Please open file " << file_loc << " manually" <<std::endl;
+            return 11;
+    }
+    std::string cmd = open_cmd + " " + file_loc;
+    int err = system(cmd.data());
+    if (err) {
+        std::cout << "The command '" + cmd + "' failed." << std::endl;
+        return 11;
+    }
+    return 0;
+}
+
 #ifdef HAVE_LFORTRAN_LLVM
 
 void section(const std::string &s)
@@ -461,6 +484,9 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
     LCompilers::Result<std::string> r = fe.get_ast(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
+        if (compiler_options.visualize) {
+            return visualize_json(r.result, compiler_options.platform);
+        }
         std::cout << r.result << std::endl;
         return 0;
     } else {
@@ -635,6 +661,9 @@ int emit_asr(const std::string &infile,
             compiler_options.use_colors) << std::endl;
     } else if (compiler_options.json) {
         std::cout << LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
+    } else if (compiler_options.visualize) {
+        std::string astr_data_json = LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules);
+        return visualize_json(astr_data_json, compiler_options.platform);
     } else {
         std::cout << LCompilers::LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 with_intrinsic_modules) << std::endl;
@@ -1653,6 +1682,7 @@ int main(int argc, char *argv[])
         app.add_flag("--indent", compiler_options.indent, "Indented print ASR/AST");
         app.add_flag("--tree", compiler_options.tree, "Tree structure print ASR/AST");
         app.add_flag("--json", compiler_options.json, "Print ASR/AST Json format");
+        app.add_flag("--visualize", compiler_options.visualize, "Print ASR/AST Visualization");
         app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
         app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
         app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
@@ -1721,16 +1751,7 @@ int main(int argc, char *argv[])
         if (arg_version) {
             std::string version = LFORTRAN_VERSION;
             std::cout << "LFortran version: " << version << std::endl;
-            std::cout << "Platform: ";
-            switch (compiler_options.platform) {
-                case (LCompilers::Platform::Linux) : std::cout << "Linux"; break;
-                case (LCompilers::Platform::macOS_Intel) : std::cout << "macOS Intel"; break;
-                case (LCompilers::Platform::macOS_ARM) : std::cout << "macOS ARM"; break;
-                case (LCompilers::Platform::Windows) : std::cout << "Windows"; break;
-                case (LCompilers::Platform::FreeBSD) : std::cout << "FreeBSD"; break;
-                case (LCompilers::Platform::OpenBSD) : std::cout << "OpenBSD"; break;
-            }
-            std::cout << std::endl;
+            std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM
             std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
 #endif

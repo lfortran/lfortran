@@ -171,7 +171,7 @@ Result<std::string> FortranEvaluator::get_ast(const std::string &code,
     if (ast.ok) {
         if (compiler_options.tree) {
             return LFortran::pickle_tree(*ast.result, compiler_options.use_colors);
-        } else if (compiler_options.json) {
+        } else if (compiler_options.json || compiler_options.visualize) {
             return LFortran::pickle_json(*ast.result, lm);
         }
         return LFortran::pickle(*ast.result, compiler_options.use_colors,
