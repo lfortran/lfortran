@@ -7900,6 +7900,16 @@ public:
                     builder->CreateCall(fn, args);
                     tmp = CreateLoad(result);
                     return;
+                } else if (func_name == "c_associated") {
+                    if (ASR::is_a<ASR::Var_t>(*x.m_args[0].m_value)) {
+                        ASR::ttype_t *type = ASRUtils::expr_type(x.m_args[0].m_value);
+                        if (ASR::is_a<ASR::CPtr_t>(*type)) {
+                            tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+                        } else {
+                            tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                        }
+                        return;
+                    }
                 } else if (func_name == "is_iostat_eor") {
                     // TODO: handle iostat while submitting a PR
                     tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
