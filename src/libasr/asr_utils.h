@@ -3337,8 +3337,9 @@ static inline bool is_allocatable(ASR::expr_t* expr) {
     switch( expr->type ) {
         case ASR::exprType::Var: {
             return is_allocatable(ASR::down_cast<ASR::Var_t>(expr)->m_v);
-        }
-        default: {
+        } case ASR::exprType::StringSection: {
+            return is_allocatable(ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
+        } default: {
             throw LCompilersException("Not yet supported: ASR::exprType::" + std::to_string(expr->type));
         }
     }
