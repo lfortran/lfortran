@@ -7900,6 +7900,10 @@ public:
                     builder->CreateCall(fn, args);
                     tmp = CreateLoad(result);
                     return;
+                } else if (func_name == "is_iostat_eor") {
+                    // TODO: handle iostat while submitting a PR
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                    return;
                 }
                 if( ASRUtils::get_FunctionType(s)->m_deftype == ASR::deftypeType::Interface ) {
                     throw CodeGenError("Intrinsic '" + func_name + "' not implemented yet and compile time value is not available.");
