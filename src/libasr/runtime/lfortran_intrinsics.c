@@ -1325,6 +1325,15 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     fflush(unit_to_file[unit_num]);
 }
 
+LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
+{
+    if( !is_unit_to_file_init || unit_to_file[unit_num] == NULL ) {
+        printf("Specified UNIT %d in REWIND is not created or connected.\n", unit_num);
+        exit(1);
+    }
+    rewind(unit_to_file[unit_num]);
+}
+
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
