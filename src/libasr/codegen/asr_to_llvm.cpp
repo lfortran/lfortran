@@ -40,6 +40,7 @@
 #include <llvm/IR/DIBuilder.h>
 
 #include <libasr/asr.h>
+#include <lfortran/pickle.h>
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/pass/pass_manager.h>
@@ -7535,7 +7536,14 @@ public:
         bool is_method = false;
         if (x.m_dt) {
             is_method = true;
-            ASR::Variable_t *caller = EXPR2VAR(x.m_dt);
+            ASR::Variable_t *caller;
+            if (ASR::is_a<ASR::Var_t>(*x.m_dt)) {
+                caller = EXPR2VAR(x.m_dt);
+            } else {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt))
+                ASR::symbol_t *s = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt)->m_m;
+                caller = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(s));
+            }
             std::uint32_t h = get_hash((ASR::asr_t*)caller);
             llvm::Value* dt = llvm_symtab[h];
             ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_pointer(
