@@ -3326,6 +3326,9 @@ static inline bool is_allocatable(ASR::symbol_t* symbol) {
             return (ASR::down_cast<ASR::Variable_t>(symbol)->m_storage ==
                     ASR::storage_typeType::Allocatable);
         }
+        case ASR::symbolType::ExternalSymbol: {
+            return is_allocatable(ASRUtils::symbol_get_past_external(symbol));
+        }
         default: {
             throw LCompilersException("Not yet supported: ASR::symbolType::" + std::to_string(symbol->type));
         }
@@ -3339,6 +3342,11 @@ static inline bool is_allocatable(ASR::expr_t* expr) {
             return is_allocatable(ASR::down_cast<ASR::Var_t>(expr)->m_v);
         } case ASR::exprType::StringSection: {
             return is_allocatable(ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
+        } case ASR::exprType::StructInstanceMember: {
+            return is_allocatable(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+        } case ASR::exprType::LogicalConstant:
+          case ASR::exprType::FunctionCall: {
+            return false;
         } default: {
             throw LCompilersException("Not yet supported: ASR::exprType::" + std::to_string(expr->type));
         }

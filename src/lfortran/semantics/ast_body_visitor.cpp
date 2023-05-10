@@ -1004,7 +1004,8 @@ public:
                 new_arg.m_dims = dims_vec.p;
                 new_arg.n_dims = dims_vec.size();
                 alloc_args_vec.push_back(al, new_arg);
-            } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ) {
+            } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ||
+                       ASR::is_a<ASR::StructInstanceMember_t>(*tmp_stmt) ) {
                 new_arg.m_a = tmp_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;

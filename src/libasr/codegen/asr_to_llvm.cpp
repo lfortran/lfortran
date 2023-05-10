@@ -49,6 +49,8 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 
+// #include "../../lfortran/pickle.h"
+
 #if LLVM_VERSION_MAJOR >= 11
 #    define FIXED_VECTOR_TYPE llvm::FixedVectorType
 #else
@@ -170,7 +172,7 @@ public:
     llvm::StructType *complex_type_4, *complex_type_8;
     llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
     llvm::PointerType *character_type;
-    llvm::StructType *allocatable_character_type;
+    llvm::StructType *allocatable_character_type, *allocatable_int32_type;
     llvm::PointerType *list_type;
     std::vector<std::string> struct_type_stack;
 
@@ -782,7 +784,7 @@ public:
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
-                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(member->m_type, member->m_abi);
+                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(member->m_type, member->m_abi, member->m_storage);
                 member_types.push_back(llvm_mem_type);
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
@@ -1341,6 +1343,9 @@ public:
         allocatable_character_type = llvm::StructType::create(context,
                                         {character_type, llvm::Type::getInt1Ty(context)},
                                         "i8_malloc");
+        allocatable_int32_type = llvm::StructType::create(context,
+                                        {llvm::Type::getInt32Ty(context), llvm::Type::getInt1Ty(context)},
+                                        "i32_malloc");
         list_type = llvm::Type::getInt8PtrTy(context);
 
         llvm::Type* bound_arg = static_cast<llvm::Type*>(arr_descr->get_dimension_descriptor_type(true));
@@ -1412,7 +1417,8 @@ public:
     bool has_allocate_struct(ASR::ttype_t* t) {
         bool res = (ASRUtils::is_character(*t) ||
                     ASR::is_a<ASR::Class_t>(*t) ||
-                    ASR::is_a<ASR::Struct_t>(*t));
+                    ASR::is_a<ASR::Struct_t>(*t) ||
+                    ASR::is_a<ASR::Integer_t>(*t));
         return res;
     }
 
@@ -1421,19 +1427,30 @@ public:
             ASR::alloc_arg_t curr_arg = x.m_args[i];
             ASR::symbol_t* tmp_sym = nullptr;
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
+            llvm::Value *x_arr_ = nullptr, *x_arr = nullptr;
+            ASR::ttype_t* curr_arg_m_a_type = nullptr;
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 tmp_sym = tmp_var->m_v;
+                curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
+                std::uint32_t h = get_hash((ASR::asr_t*)tmp_sym);
+                LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+                x_arr_ = llvm_symtab[h];
+                x_arr = x_arr_;
+            } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                visit_expr(*tmp_expr);
+                x_arr_ = tmp;
+                x_arr = x_arr_;
+                ptr_loads = ptr_loads_copy;
+                curr_arg_m_a_type = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr)->m_type;
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
                                     std::to_string(tmp_expr->type),
                                     tmp_expr->base.loc);
             }
-            std::uint32_t h = get_hash((ASR::asr_t*)tmp_sym);
-            LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
-            llvm::Value* x_arr_ = llvm_symtab[h];
-            llvm::Value* x_arr = x_arr_;
-            ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
+
             int n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
             if ( ASRUtils::is_allocatable(tmp_expr) &&
                     has_allocate_struct(ASRUtils::expr_type(tmp_expr)) && n_dims == 0) {
@@ -1464,6 +1481,7 @@ public:
                     builder->CreateStore(builder->CreateBitCast(x_arr, character_type), target);
                     std::vector<llvm::Value*> args = {target, malloc_size};
                     builder->CreateCall(fn, args);
+                } else if( ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ) {
                 } else {
                     LCOMPILERS_ASSERT(false);
                 }
@@ -2891,6 +2909,17 @@ public:
                     }
                 } else {
                     llvm_type = getIntType(a_kind);
+                    if( m_storage == ASR::storage_typeType::Allocatable ) {
+                        switch( a_kind ) {
+                            case 4: {
+                                llvm_type = allocatable_int32_type;
+                                break;
+                            }
+                            default: {
+                                throw LCompilersException("Kind " + std::to_string(a_kind) + " not yet supported");
+                            }
+                        }
+                    }
                 }
                 break;
             }
@@ -3139,8 +3168,9 @@ public:
         return llvm_type;
     }
 
-    inline llvm::Type* get_type_from_ttype_t_util(ASR::ttype_t* asr_type, ASR::abiType asr_abi=ASR::abiType::Source) {
-        ASR::storage_typeType m_storage_local = ASR::storage_typeType::Default;
+    inline llvm::Type* get_type_from_ttype_t_util(ASR::ttype_t* asr_type,
+        ASR::abiType asr_abi=ASR::abiType::Source,
+        ASR::storage_typeType m_storage_local=ASR::storage_typeType::Default) {
         bool is_array_type_local, is_malloc_array_type_local;
         bool is_list_local;
         ASR::dimension_t* m_dims_local;
@@ -5482,10 +5512,26 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        int64_t ptr_loads_copy = ptr_loads;
+        bool left_is_allocatable_variable = (ASRUtils::is_allocatable(x.m_left) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(x.m_left)));
+        bool right_is_allocatable_variable = (ASRUtils::is_allocatable(x.m_right) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(x.m_right)));
+        ptr_loads = 1 - left_is_allocatable_variable;
         this->visit_expr_wrapper(x.m_left, true);
         llvm::Value *left_val = tmp;
+        ptr_loads = 1 - right_is_allocatable_variable;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right_val = tmp;
+        ptr_loads = ptr_loads_copy;
+        if( left_is_allocatable_variable ) {
+            left_val = LLVM::CreateLoad(*builder,
+                llvm_utils->create_gep(left_val, 0));
+        }
+        if( right_is_allocatable_variable ) {
+            right_val = LLVM::CreateLoad(*builder,
+                llvm_utils->create_gep(right_val, 0));
+        }
         tmp = lfortran_strop(left_val, right_val, "_lfortran_strcat");
     }
 
@@ -7342,6 +7388,16 @@ public:
                                 // at the beginning of the function to avoid
                                 // using alloca inside a loop, which would
                                 // run out of stack
+                                if( ASRUtils::is_allocatable(x.m_args[i].m_value)
+                                    && !ASRUtils::is_array(arg_type) ) {
+                                    if( ASR::is_a<ASR::Character_t>(*arg_type) ) {
+                                        value = llvm_utils->create_gep(value, 0);
+                                    } else {
+                                        throw LCompilersException("Cannot extract "
+                                            "data from allocatable struct of " +
+                                            std::to_string(arg_type->type));
+                                    }
+                                }
                                 if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) ||
                                     ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value))
                                         && value->getType()->isPointerTy()) {
