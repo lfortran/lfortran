@@ -1,0 +1,13 @@
+{
+    "basename": "asr-intent1-4e0feb8",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/intent1.f90",
+    "infile_hash": "d12d1e1612c16f772abbbbdc87df9a7c395c4065223d4a66508ac667",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-intent1-4e0feb8.stderr",
+    "stderr_hash": "4350f78ca55c871c699300a9e29e5191b4b7f4e8f9c1015704c2d88d",
+    "returncode": 2
+}

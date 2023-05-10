@@ -1,0 +1,13 @@
+{
+    "basename": "asr-fixed_form_goto_select-a0c3483",
+    "cmd": "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/fixed_form_goto_select.f",
+    "infile_hash": "acbe51b93b613a469a6a95e544f8bf2480ad5ea75d6f5e369dcceb9a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-fixed_form_goto_select-a0c3483.stdout",
+    "stdout_hash": "cd1dfcca1dd999eb2e6a1a763f2f6d3acbca31aff3bba9c05be44d9f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

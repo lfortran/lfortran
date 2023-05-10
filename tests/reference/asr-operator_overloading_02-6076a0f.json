@@ -1,0 +1,13 @@
+{
+    "basename": "asr-operator_overloading_02-6076a0f",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/operator_overloading_02.f90",
+    "infile_hash": "e1f3d47c37fd44d8d0237b32a0e66d10d90f45292373bd408590f10e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-operator_overloading_02-6076a0f.stdout",
+    "stdout_hash": "a8ba955833b381f539de1fcaadfa91bff38dc180a20d8e428bfca032",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_01_transfer-125156e",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/array_01_transfer.f90",
+    "infile_hash": "920caa9e18706045e10e552111ebbdee612fb11bdc829a77fcfa71ca",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-array_01_transfer-125156e.stdout",
+    "stdout_hash": "36aafa6fa57e956eeb0d74423c6cd16e18212cce90612fa7a6bb9153",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

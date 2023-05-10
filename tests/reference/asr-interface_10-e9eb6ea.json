@@ -1,0 +1,13 @@
+{
+    "basename": "asr-interface_10-e9eb6ea",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/interface_10.f90",
+    "infile_hash": "8465656b7ce46b783d3db81b21e7bd48594e95e99839534c7e50cad8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-interface_10-e9eb6ea.stdout",
+    "stdout_hash": "0ba094ec3b580156daf5de10d2d49a053149d6e6fc618e9f62425545",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
