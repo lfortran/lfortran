@@ -1,0 +1,13 @@
+{
+    "basename": "ast-fixedform_assign_minimal-c4142fa",
+    "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/fixedform_assign_minimal.f",
+    "infile_hash": "c859f6358c9852842503fc3e803177fd6c3f47e9c7cf4037bdf71919",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-fixedform_assign_minimal-c4142fa.stdout",
+    "stdout_hash": "4a650fd227b1aab209941c8244bc97327ec7aaf59da7e5ed476cbde5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

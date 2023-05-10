@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kwargs_02-1588831",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/kwargs_02.f90",
+    "infile_hash": "8d5322cf8bcf42b96ba5ad60e9410309159c7c0e999797cef4da7d6e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-kwargs_02-1588831.stdout",
+    "stdout_hash": "fd1c7c2a8386be34d7fd4f1d3b7ed889cb44f979cf9d536d433b707e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

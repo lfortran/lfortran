@@ -1,0 +1,13 @@
+{
+    "basename": "asr-sole_intrinsic-3e826bd",
+    "cmd": "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/sole_intrinsic.f",
+    "infile_hash": "eb8dafc3736c80b83b7cc0b62cbe2fce5882fac022c391b7514607ea",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-sole_intrinsic-3e826bd.stdout",
+    "stdout_hash": "0f88961c238d4bad53cab00d51f90704ef8547f616927c6b3a587e45",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

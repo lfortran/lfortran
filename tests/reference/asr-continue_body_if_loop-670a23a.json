@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_body_if_loop-670a23a",
+    "cmd": "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/continue_body_if_loop.f",
+    "infile_hash": "0b34e65df675e3b4009fe5659fbc93ca52002eb7781599ebb9fe7613",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-continue_body_if_loop-670a23a.stdout",
+    "stdout_hash": "2eabe3d2718b3f37f412c1d9137fa1c1fc89ee7827588e3d9471f97a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

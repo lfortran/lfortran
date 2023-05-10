@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit2-d78b357",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/implicit2.f90",
+    "infile_hash": "a67613a87d4efd0aec316a23fdcc5490e286f34fc588479924d36fae",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit2-d78b357.stderr",
+    "stderr_hash": "6a0c9f6fad4cbad2e56adede46f39283a8a953f87a2e9d5a3a74903b",
+    "returncode": 2
+}

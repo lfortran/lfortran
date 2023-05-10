@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit8-03c7a90",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/implicit8.f90",
+    "infile_hash": "5ab8320f5bd93962cbba1babe7f4f17779af2d5575f625095988f4d8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit8-03c7a90.stderr",
+    "stderr_hash": "925d4f27426737e7d4804bc2272728552d73d33d05b9fec668d36ee7",
+    "returncode": 2
+}

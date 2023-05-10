@@ -1,0 +1,13 @@
+{
+    "basename": "asr-issue532-4bdd3b3",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/issue532.f90",
+    "infile_hash": "75f4785bea0a877f7a902640ffcc5d276bd955349ff3df1639d6e6b7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-issue532-4bdd3b3.stdout",
+    "stdout_hash": "6b111174fca4a46f543c2134a7551d172a506d212232e1196601e1f2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
