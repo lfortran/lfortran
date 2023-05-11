@@ -1,4 +1,4 @@
-module fpm_strings
+module modules_48_fpm_strings
 implicit none
 
 type string_t
@@ -48,4 +48,59 @@ pure function fnv_1a_string_t(input, seed) result(hash)
 
 end function fnv_1a_string_t
 
+function is_fortran_name(line) result (lout)
+    character(len=*), parameter :: int = '0123456789'
+    character(len=*), parameter :: lower = 'abcdefghijklmnopqrstuvwxyz'
+    character(len=*), parameter :: upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    character(len=*), parameter :: allowed = upper // lower // int // '_'
+    character(len=*), intent(in) :: line
+    character(len=:), allocatable :: name
+    logical :: lout
+        name = trim(line)
+        if( len(name) /= 0 ) then
+            lout = .true. &
+             & .and. verify(name(1:1), lower//upper) == 0 &
+             & .and. verify(name, allowed) == 0 &
+             & .and. len(name) <= 63
+        else
+            lout = .false.
+        endif
+end function is_fortran_name
+
+function string_cat(strings, delim) result(cat)
+    type(string_t), intent(in) :: strings(:)
+    character(*), intent(in), optional :: delim
+    character(:), allocatable :: cat
+
+    integer :: i
+    character(:), allocatable :: delim_str
+
+    if (size(strings) < 1) then
+        cat = ''
+        return
+    end if
+
+    if (present(delim)) then
+        delim_str = delim
+    else
+        delim_str = ''
+    end if
+
+    cat = strings(1)%s
+    do i=2,size(strings)
+
+        cat = cat//delim_str//strings(i)%s
+
+    end do
+
+end function string_cat
+
 end module
+
+program modules_48
+use modules_48_fpm_strings
+implicit none
+
+print *, "running modules_48"
+
+end program

@@ -5881,6 +5881,8 @@ public:
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x.m_type)) {
             el_type = llvm::Type::getInt1Ty(context);
+        } else if (ASR::is_a<ASR::Character_t>(*x.m_type)) {
+            el_type = character_type;
         } else {
             throw CodeGenError("ConstArray type not supported yet");
         }
@@ -5928,6 +5930,9 @@ public:
             } else if (ASR::is_a<ASR::Logical_t>(*x.m_type)) {
                 ASR::LogicalConstant_t *cr = ASR::down_cast<ASR::LogicalConstant_t>(el);
                 llvm_val = llvm::ConstantInt::get(context, llvm::APInt(1, cr->m_value));
+            } else if (ASR::is_a<ASR::Character_t>(*x.m_type)) {
+                visit_expr(*el);
+                llvm_val = tmp;
             } else {
                 throw CodeGenError("ConstArray type not supported yet");
             }
