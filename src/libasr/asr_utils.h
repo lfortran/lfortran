@@ -3336,7 +3336,7 @@ static inline bool is_allocatable(ASR::symbol_t* symbol) {
     return false;
 }
 
-static inline bool is_allocatable(ASR::expr_t* expr) {
+static inline bool is_allocatable(ASR::expr_t* expr, bool return_false=false) {
     switch( expr->type ) {
         case ASR::exprType::Var: {
             return is_allocatable(ASR::down_cast<ASR::Var_t>(expr)->m_v);
@@ -3344,13 +3344,15 @@ static inline bool is_allocatable(ASR::expr_t* expr) {
             return is_allocatable(ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
         } case ASR::exprType::StructInstanceMember: {
             return is_allocatable(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
-        } case ASR::exprType::LogicalConstant:
-          case ASR::exprType::FunctionCall: {
-            return false;
+        } case ASR::exprType::ArrayItem: {
+            return is_allocatable(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
         } default: {
-            throw LCompilersException("Not yet supported: ASR::exprType::" + std::to_string(expr->type));
+            if( !return_false ) {
+                throw LCompilersException("Not yet supported: ASR::exprType::" + std::to_string(expr->type));
+            }
         }
     }
+    return false;
 }
 
 } // namespace ASRUtils

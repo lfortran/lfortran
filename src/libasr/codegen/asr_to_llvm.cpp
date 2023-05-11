@@ -173,6 +173,7 @@ public:
     llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
     llvm::PointerType *character_type;
     llvm::StructType *allocatable_character_type, *allocatable_int32_type;
+    llvm::StructType* allocatable_int64_type;
     llvm::PointerType *list_type;
     std::vector<std::string> struct_type_stack;
 
@@ -1346,6 +1347,9 @@ public:
         allocatable_int32_type = llvm::StructType::create(context,
                                         {llvm::Type::getInt32Ty(context), llvm::Type::getInt1Ty(context)},
                                         "i32_malloc");
+        allocatable_int64_type = llvm::StructType::create(context,
+                                        {llvm::Type::getInt64Ty(context), llvm::Type::getInt1Ty(context)},
+                                        "i64_malloc");
         list_type = llvm::Type::getInt8PtrTy(context);
 
         llvm::Type* bound_arg = static_cast<llvm::Type*>(arr_descr->get_dimension_descriptor_type(true));
@@ -1784,7 +1788,10 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1;
         this->visit_expr(*x.m_arg);
+        ptr_loads = ptr_loads_copy;
         llvm::Value *c = tmp;
         std::string runtime_func_name = "_lfortran_iachar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -1797,6 +1804,9 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
         tmp = builder->CreateCall(fn, {c});
+        if( ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8 ) {
+            tmp = builder->CreateSExt(tmp, getIntType(8));
+        }
     }
 
     void visit_ArrayAll(const ASR::ArrayAll_t &x) {
@@ -2149,8 +2159,11 @@ public:
             // TODO: Currently the string starts at the right location, but goes to the end of the original string.
             // We have to allocate a new string, copy it and add null termination.
 
-            tmp = builder->CreateAlloca(character_type, nullptr);
-            builder->CreateStore(p, tmp);
+            tmp = p;
+            if( ptr_loads == 0 ) {
+                tmp = builder->CreateAlloca(character_type, nullptr);
+                builder->CreateStore(p, tmp);
+            }
 
             //tmp = p;
         } else {
@@ -2728,7 +2741,9 @@ public:
             if (is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                         item.second);
-                visit_Variable(*v);
+                if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                    visit_Variable(*v);
+                }
             } else if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
@@ -2913,6 +2928,10 @@ public:
                         switch( a_kind ) {
                             case 4: {
                                 llvm_type = allocatable_int32_type;
+                                break;
+                            }
+                            case 8: {
+                                llvm_type = allocatable_int64_type;
                                 break;
                             }
                             default: {
@@ -7388,7 +7407,7 @@ public:
                                 // at the beginning of the function to avoid
                                 // using alloca inside a loop, which would
                                 // run out of stack
-                                if( ASRUtils::is_allocatable(x.m_args[i].m_value)
+                                if( ASRUtils::is_allocatable(x.m_args[i].m_value, true)
                                     && !ASRUtils::is_array(arg_type) ) {
                                     if( ASR::is_a<ASR::Character_t>(*arg_type) ) {
                                         value = llvm_utils->create_gep(value, 0);
