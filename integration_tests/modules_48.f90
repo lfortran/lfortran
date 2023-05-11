@@ -48,4 +48,24 @@ pure function fnv_1a_string_t(input, seed) result(hash)
 
 end function fnv_1a_string_t
 
+function is_fortran_name(line) result (lout)
+    character(len=*), parameter :: int = '0123456789'
+    character(len=*), parameter :: lower = 'abcdefghijklmnopqrstuvwxyz'
+    character(len=*), parameter :: upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    character(len=*), parameter :: allowed = upper // lower // int // '_'
+    character(len=*), intent(in) :: line
+    character(len=:), allocatable :: name
+    logical :: lout
+        name = trim(line)
+        print *, verify(name(1:1), lower//upper)
+        ! if( len(name) /= 0 ) then
+        !     lout = .true. &
+        !      & .and. verify(name(1:1), lower//upper) == 0 &
+        !      & .and. verify(name, allowed) == 0 &
+        !      & .and. len(name) <= 63
+        ! else
+        !     lout = .false.
+        ! endif
+end function is_fortran_name
+
 end module

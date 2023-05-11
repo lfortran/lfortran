@@ -1788,11 +1788,12 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 1;
+
         this->visit_expr(*x.m_arg);
-        ptr_loads = ptr_loads_copy;
         llvm::Value *c = tmp;
+        if( ASR::is_a<ASR::ArrayItem_t>(*x.m_arg) ) {
+            c = LLVM::CreateLoad(*builder, c);
+        }
         std::string runtime_func_name = "_lfortran_iachar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -2159,11 +2160,8 @@ public:
             // TODO: Currently the string starts at the right location, but goes to the end of the original string.
             // We have to allocate a new string, copy it and add null termination.
 
-            tmp = p;
-            if( ptr_loads == 0 ) {
-                tmp = builder->CreateAlloca(character_type, nullptr);
-                builder->CreateStore(p, tmp);
-            }
+            tmp = builder->CreateAlloca(character_type, nullptr);
+            builder->CreateStore(p, tmp);
 
             //tmp = p;
         } else {
@@ -5532,9 +5530,9 @@ public:
             return;
         }
         int64_t ptr_loads_copy = ptr_loads;
-        bool left_is_allocatable_variable = (ASRUtils::is_allocatable(x.m_left) &&
+        bool left_is_allocatable_variable = (ASRUtils::is_allocatable(x.m_left, true) &&
             !ASRUtils::is_array(ASRUtils::expr_type(x.m_left)));
-        bool right_is_allocatable_variable = (ASRUtils::is_allocatable(x.m_right) &&
+        bool right_is_allocatable_variable = (ASRUtils::is_allocatable(x.m_right, true) &&
             !ASRUtils::is_array(ASRUtils::expr_type(x.m_right)));
         ptr_loads = 1 - left_is_allocatable_variable;
         this->visit_expr_wrapper(x.m_left, true);
@@ -5604,9 +5602,18 @@ public:
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
-         }
+        }
+
+        bool is_allocatable = (ASRUtils::is_allocatable(x.m_arg, true) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(x.m_arg)));
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1 - is_allocatable;
         this->visit_expr_wrapper(x.m_arg, true);
+        ptr_loads = ptr_loads_copy;
         llvm::Value *str = tmp;
+        if( is_allocatable ) {
+            str = LLVM::CreateLoad(*builder, llvm_utils->create_gep(str, 0));
+        }
         llvm::Value *left, *right, *step;
         llvm::Value *left_present, *right_present;
         if (x.m_start) {
@@ -7119,6 +7126,9 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)arg);
                     if (llvm_symtab.find(h) != llvm_symtab.end()) {
                         tmp = llvm_symtab[h];
+                        if( arg->m_storage == ASR::storage_typeType::Allocatable ) {
+                            tmp = llvm_utils->create_gep(tmp, 0);
+                        }
                         bool is_data_only_array = false;
                         bool is_pointer_to_non_pointer = false;
                         if( orig_arg &&
@@ -7408,7 +7418,8 @@ public:
                                 // using alloca inside a loop, which would
                                 // run out of stack
                                 if( ASRUtils::is_allocatable(x.m_args[i].m_value, true)
-                                    && !ASRUtils::is_array(arg_type) ) {
+                                    && !ASRUtils::is_array(arg_type) &&
+                                    !ASR::is_a<ASR::StringSection_t>(*x.m_args[i].m_value) ) {
                                     if( ASR::is_a<ASR::Character_t>(*arg_type) ) {
                                         value = llvm_utils->create_gep(value, 0);
                                     } else {
@@ -7975,12 +7986,7 @@ public:
                 if (func_name == "len") {
                     args = convert_call_args(x, is_method);
                     LCOMPILERS_ASSERT(args.size() == 3)
-                    if (ASRUtils::is_allocatable(x.m_args[0].m_value)) {
-                        tmp = llvm_utils->create_gep(args[0], 0);
-                    } else {
-                        tmp = args[0];
-                    }
-                    tmp = lfortran_str_len(tmp);
+                    tmp = lfortran_str_len(args[0]);
                     return;
                 } else if (func_name == "command_argument_count") {
                     llvm::Function *fn = module->getFunction("_lpython_get_argc");
