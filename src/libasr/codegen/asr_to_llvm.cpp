@@ -1690,7 +1690,10 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1;
         this->visit_expr(*x.m_arg);
+        ptr_loads = ptr_loads_copy;
         llvm::Value *c = tmp;
         std::string runtime_func_name = "_lfortran_iachar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -1703,6 +1706,9 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
         tmp = builder->CreateCall(fn, {c});
+        if( ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8 ) {
+            tmp = builder->CreateSExt(tmp, getIntType(8));
+        }
     }
 
     void visit_ArrayAll(const ASR::ArrayAll_t &x) {
@@ -2049,8 +2055,11 @@ public:
             // TODO: Currently the string starts at the right location, but goes to the end of the original string.
             // We have to allocate a new string, copy it and add null termination.
 
-            tmp = builder->CreateAlloca(character_type, nullptr);
-            builder->CreateStore(p, tmp);
+            tmp = p;
+            if( ptr_loads == 0 ) {
+                tmp = builder->CreateAlloca(character_type, nullptr);
+                builder->CreateStore(p, tmp);
+            }
 
             //tmp = p;
         } else {
@@ -2618,7 +2627,9 @@ public:
             if (is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                         item.second);
-                visit_Variable(*v);
+                if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                    visit_Variable(*v);
+                }
             } else if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
