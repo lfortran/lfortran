@@ -95,4 +95,25 @@ function string_cat(strings,delim) result(cat)
 
 end function string_cat
 
+pure function replace(string, charset, target_char) result(res)
+    character(*), intent(in) :: string
+    character, intent(in) :: charset(:), target_char
+    character(len(string)) :: res
+    integer :: n
+    res = string
+    do n = 1, len(string)
+        ! TODO: To be fixed
+        if (any(string(n:n) == charset)) then
+            res(n:n) = target_char
+        end if
+    end do
+end function replace
+
+pure function to_fortran_name(string) result(res)
+    character(*), intent(in) :: string
+    character(len(string)) :: res
+    character, parameter :: SPECIAL_CHARACTERS(*) = ['-']
+    res = replace(string, SPECIAL_CHARACTERS, '_')
+end function to_fortran_name
+
 end module
