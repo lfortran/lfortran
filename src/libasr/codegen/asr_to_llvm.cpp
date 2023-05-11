@@ -4815,6 +4815,9 @@ public:
         if ( is_a<ASR::Character_t>(*expr_type(x.m_value)) ) {
             ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(expr_type(x.m_value));
             if (t->n_dims == 0) {
+                if( ASRUtils::is_allocatable(x.m_value, true) ) {
+                    value = LLVM::CreateLoad(*builder, llvm_utils->create_gep(value, 0));
+                }
                 if (lhs_is_string_arrayref && value->getType()->isPointerTy()) {
                     value = CreateLoad(value);
                 }
@@ -4946,9 +4949,10 @@ public:
 
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false) {
         this->visit_expr(*x);
-        if( x->type == ASR::exprType::ArrayItem ||
+        if( (x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
-            x->type == ASR::exprType::StructInstanceMember ) {
+            x->type == ASR::exprType::StructInstanceMember) &&
+            !ASRUtils::is_allocatable(x, true) ) {
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) ) {
                 tmp = CreateLoad(tmp);
