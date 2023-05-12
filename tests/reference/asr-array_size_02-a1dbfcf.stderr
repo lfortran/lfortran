@@ -1,5 +1,0 @@
-semantic error: dim has already been specified as a positional/keyword argument to size.
- --> tests/errors/array_size_02.f90:5:14
-  |
-5 |     size_a = size(a, 1, dim=1)
-  |              ^^^^^^^^^^^^^^^^^ 

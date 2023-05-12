@@ -1,5 +1,0 @@
-semantic error: The restriction argument func_arg_real should have a return value
-  --> tests/errors/template_error_03.f90:33:9
-   |
-33 |         instantiate add_t(real, func_arg_real), only: add_real => add_generic
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

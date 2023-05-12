@@ -1,5 +1,0 @@
-semantic error: Only Integer literals or expressions which reduce to constant Integer are accepted as kind parameters.
- --> tests/errors/array_size_05.f90:6:27
-  |
-6 |     size_a = size(a, kind=kindvar, dim=1)
-  |                           ^^^^^^^ 

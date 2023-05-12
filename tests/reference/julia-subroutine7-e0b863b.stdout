@@ -1,5 +1,0 @@
-function f(a::Base.RefValue{Int32}, b::Base.RefValue{Int32})
-    a[] = b[] + 1
-    b[] = a[] + 1
-end
-

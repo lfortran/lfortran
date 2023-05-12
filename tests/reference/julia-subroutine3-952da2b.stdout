@@ -1,6 +1,0 @@
-function f()::Int32
-    local f::Int32 = 0
-    f = 42
-    return f
-end
-
