@@ -1392,6 +1392,16 @@ var_type
     | KW_DOUBLE KW_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_TYPE "(" id ")" { $$ = ATTR_TYPE_NAME(Type, $3, @$); }
+    | KW_TYPE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Type, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
+    | KW_TYPE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Type, ATTR_TYPE_KIND(Real, $5, @$), @$); }
+    | KW_TYPE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Type, ATTR_TYPE_KIND(Complex, $5, @$), @$); }
+    | KW_TYPE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Type, ATTR_TYPE_KIND(Logical, $5, @$), @$); }
+    | KW_TYPE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Type, ATTR_TYPE_KIND(Character, $5, @$), @$); }
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }

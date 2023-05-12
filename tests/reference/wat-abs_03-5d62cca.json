@@ -1,0 +1,13 @@
+{
+    "basename": "wat-abs_03-5d62cca",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/abs_03.f90",
+    "infile_hash": "ffb5c4ae935fc9de02705f53a5f1fe41b7acf18c9371f871897b63f4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-abs_03-5d62cca.stdout",
+    "stdout_hash": "49e04589489c685761509502750dec0ed15e99c3404807e4466d6a5b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

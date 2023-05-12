@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <memory>
+#include <filesystem>
 
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
@@ -53,7 +54,7 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
 std::string token2text(const int token);
 
 std::string prescan(const std::string &s, LocationManager &lm,
-        bool fixed_form, const std::string &root_dir);
+        bool fixed_form, std::vector<std::filesystem::path> &include_dirs);
 
 } // namespace LCompilers::LFortran
 

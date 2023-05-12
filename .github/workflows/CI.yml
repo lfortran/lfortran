@@ -251,13 +251,17 @@ jobs:
         run: |
             git clone https://github.com/Pranavchiku/modern_minpack.git
             cd modern_minpack
-            git checkout w2
-            git checkout c0e0e6583b41573f54278469d6d58061fe6ea04b
+            git checkout w5
+            git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90
+            $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90
+            $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90
+            $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90
+            $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90
 
   fpm:
     name: Check fpm Compilation
@@ -489,7 +493,7 @@ jobs:
                 gfortran -fallow-argument-mismatch -ffree-line-length-none -c $file.f90 -o $file.o
                 #if [[ "$file" == *"minpack"* ]]; then
                 #    if [[ "$file" != *"dpmpar.f"* ]]; then
-                #        ../src/bin/lfortran --show-asr --no-color --fixed-form --implicit-typing --implicit-interface $file > $file.asr
+                #        ../src/bin/lfortran --show-asr --no-indent --no-color --fixed-form --implicit-typing --implicit-interface $file > $file.asr
                 #    fi
                 #fi
 

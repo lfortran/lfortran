@@ -28,6 +28,7 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
+    pass/where.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp
     pass/for_all.cpp

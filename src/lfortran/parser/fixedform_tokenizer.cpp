@@ -276,7 +276,9 @@ std::vector<std::string> declarators{
             "character",
             "logical",
             "bytes",
-            "data"
+            "data",
+            "type",
+            "class"
         };
 
 std::vector<std::string> lines{};
@@ -903,6 +905,11 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "selectrank(")) {
+            lex_selectrank(cur);
+            return true;
+        }
+
         if (is_function_call(cur)) {
             push_token_advance(cur, "call");
             tokenize_line(cur);
@@ -1242,6 +1249,18 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    void lex_selectrank(unsigned char *&cur) {
+        auto end = cur; next_line(end);
+        push_token_advance(cur, "select");
+        push_token_advance(cur, "rank");
+        tokenize_line(cur); // tokenize rest of line where `select rank` starts
+        while (!next_is(cur, "endselect\n")) {
+            tokenize_line(cur);
+        }
+        push_token_advance(cur, "endselect");
+        tokenize_line(cur);
+    }
+
     bool if_advance_or_terminate(unsigned char *&cur) {
         int64_t l = eat_label(cur);
         if (next_is(cur, "elseif")) {
@@ -1302,6 +1321,12 @@ struct FixedFormRecursiveDescent {
         }
         while(lex_body_statement(cur));
         eat_label(cur);
+        if (next_is(cur, "contains")) {
+            push_token_advance(cur, "contains");
+            push_token_no_advance(cur, "\n");
+            next_line(cur); // Does not generate any code?
+            while(lex_procedure(cur));
+        }
         if (next_is(cur, "endprogram")) {
             push_token_advance(cur, "endprogram");
             tokenize_line(cur);
@@ -1411,18 +1436,28 @@ struct FixedFormRecursiveDescent {
         return next_is(cur, "program");
     }
 
-
-    void lex_global_scope_item(unsigned char *&cur) {
-        // we can define a global assignment
-        unsigned char *nline = cur; next_line(nline);
-        // eat_label(cur);
-        std::vector<std::string> program_keywords{};
+    bool lex_procedure(unsigned char *&cur) {
         std::vector<std::string> subroutine_keywords{"recursive", "pure",
             "elemental"};
         std::vector<std::string> function_keywords{"recursive", "pure",
             "elemental",
             "real*8", "real", "character", "complex*16", "complex*8", "complex", "integer", "logical",
             "doubleprecision", "doublecomplex"};
+        if (is_declaration(cur, "subroutine", subroutine_keywords)) {
+            lex_subroutine(cur);
+            return true;
+        } else if (is_declaration(cur, "function", function_keywords)) {
+            lex_function(cur);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void lex_global_scope_item(unsigned char *&cur) {
+        // we can define a global assignment
+        unsigned char *nline = cur; next_line(nline);
+        // eat_label(cur);
 
         if (next_is(cur, "include")) {
             push_token_advance(cur, "include");
@@ -1430,10 +1465,8 @@ struct FixedFormRecursiveDescent {
         }
         if (is_program(cur)) {
             lex_program(cur, true);
-        } else if (is_declaration(cur, "subroutine", subroutine_keywords)) {
-            lex_subroutine(cur);
-        } else if (is_declaration(cur, "function", function_keywords)) {
-            lex_function(cur);
+        } else if (lex_procedure(cur)) {
+            return;
         } else if (next_is(cur, "blockdata")) {
             lex_block_data(cur);
         } else if (is_implicit_program(cur)) {

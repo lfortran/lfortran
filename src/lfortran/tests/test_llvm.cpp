@@ -370,13 +370,13 @@ end function)";
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(LCompilers::LFortran::parse(al, source,
         diagnostics));
     LCompilers::LFortran::AST::ast_t* ast = tu->m_items[0];
-    CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () None) [] [(f [] [] () None ())] ())] [(= 0 f 5 ())] [])");
+    CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () () None) [] [(f [] [] () None ())] ())] [(= 0 f 5 ())] [])");
 
     // AST -> ASR
     LCompilers::SymbolTable::reset_global_counter();
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options));
-    CHECK(LCompilers::LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f (FunctionType [] (Integer 4 []) Source Implementation () .false. .false. .false. .false. .false. [] [] .false.) [] [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Public .false. .false.)}) [])");
+    CHECK(LCompilers::LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4 []) () Source Public Required .false.)}) f (FunctionType [] (Integer 4 []) Source Implementation () .false. .false. .false. .false. .false. [] [] .false.) [] [] [(= (Var 2 f) (IntegerConstant 5 (Integer 4 [])) ())] (Var 2 f) Public .false. .false.)}) [])");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -413,12 +413,12 @@ end function)";
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(LCompilers::LFortran::parse(al, source,
         diagnostics));
     LCompilers::LFortran::AST::ast_t* ast = tu->m_items[0];
-    CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () None) [] [(f [] [] () None ())] ())] [(= 0 f 4 ())] [])");
+    CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () () None) [] [(f [] [] () None ())] ())] [(= 0 f 4 ())] [])");
 
     // AST -> ASR
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options));
-    CHECK(LCompilers::LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4 []) Source Public Required .false.)}) f (FunctionType [] (Integer 4 []) Source Implementation () .false. .false. .false. .false. .false. [] [] .false.) [] [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Public .false. .false.)}) [])");
+    CHECK(LCompilers::LFortran::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4 []) () Source Public Required .false.)}) f (FunctionType [] (Integer 4 []) Source Implementation () .false. .false. .false. .false. .false. [] [] .false.) [] [] [(= (Var 4 f) (IntegerConstant 4 (Integer 4 [])) ())] (Var 4 f) Public .false. .false.)}) [])");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -584,6 +584,46 @@ TEST_CASE("FortranEvaluator 6") {
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Semantic);
     diagnostics.diagnostics.clear();
+}
+
+TEST_CASE("FortranEvaluator 6 importing modules") {
+    CompilerOptions cu;
+    cu.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(module funcmod
+    implicit none
+
+    contains
+
+    function add(x,y)
+        real :: x, y
+        real :: add
+        add = x+y
+    end function add
+    function subtract(x,y)
+        real :: x, y
+        real :: subtract
+        subtract = x-y
+    end function subtract
+end module funcmod)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+
+    r = e.evaluate2("use funcmod, only : add, subtract");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+
+    r = e.evaluate2("add(2.0, 5.0)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(abs(r.result.f32 - 7.0) <= 1e-8 );
+
+    r = e.evaluate2("subtract(2.0, 5.0)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(abs(r.result.f32 - (-3.0)) <= 1e-8 );
 }
 
 // Tests passing the complex struct by reference

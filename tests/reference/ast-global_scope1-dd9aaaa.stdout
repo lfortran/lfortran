@@ -1,0 +1,19 @@
+(TranslationUnit
+    [(Declaration
+        (AttrType
+            TypeInteger
+            []
+            ()
+            ()
+            None
+        )
+        []
+        [(x
+        []
+        []
+        ()
+        None
+        ())]
+        ()
+    )]
+)

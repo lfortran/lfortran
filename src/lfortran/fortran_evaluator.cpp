@@ -171,7 +171,7 @@ Result<std::string> FortranEvaluator::get_ast(const std::string &code,
     if (ast.ok) {
         if (compiler_options.tree) {
             return LFortran::pickle_tree(*ast.result, compiler_options.use_colors);
-        } else if (compiler_options.json) {
+        } else if (compiler_options.json || compiler_options.visualize) {
             return LFortran::pickle_json(*ast.result, lm);
         }
         return LFortran::pickle(*ast.result, compiler_options.use_colors,
@@ -196,8 +196,12 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
-        tmp = LFortran::prescan(*code, lm, compiler_options.fixed_form,
-            parent_path(lm.files.back().in_filename));
+        std::vector<std::filesystem::path> include_dirs;
+        include_dirs.push_back(parent_path(lm.files.back().in_filename));
+        include_dirs.insert(include_dirs.end(),
+                            compiler_options.include_dirs.begin(),
+                            compiler_options.include_dirs.end());
+        tmp = LFortran::prescan(*code, lm, compiler_options.fixed_form, include_dirs);
         code = &tmp;
     }
     Result<LFortran::AST::TranslationUnit_t*>
@@ -392,7 +396,7 @@ Result<Vec<uint8_t>> FortranEvaluator::get_wasm(const std::string &code,
     Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
     symbol_table = old_symbol_table;
     if (asr.ok) {
-        return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics);
+        return asr_to_wasm_bytes_stream(*asr.result, al, diagnostics, compiler_options);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;

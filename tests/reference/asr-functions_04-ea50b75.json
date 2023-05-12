@@ -1,0 +1,13 @@
+{
+    "basename": "asr-functions_04-ea50b75",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/functions_04.f90",
+    "infile_hash": "237775308ca559439958719781b889f95d15c69eb4126ff69abe6fb2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-functions_04-ea50b75.stdout",
+    "stdout_hash": "5b21a0bcbf1416209b6780b6c820a5ed52e13ff8155e9f2f1bca2453",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

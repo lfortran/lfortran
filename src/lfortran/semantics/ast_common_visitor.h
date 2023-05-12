@@ -179,8 +179,25 @@ public:
             ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right)));
     }
+    size_t left_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(left));
+    size_t right_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(right));
+    ASR::dimension_t* result_shape = nullptr;
+    size_t result_dims = 0;
+    if( left_dims == 0 && right_dims == 0 ) {
+
+    } else if( left_dims == 0 ) {
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(right), result_shape);
+        result_dims = right_dims;
+    } else if( right_dims == 0 ) {
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(left), result_shape);
+        result_dims = left_dims;
+    } else {
+        LCOMPILERS_ASSERT(left_dims == right_dims);
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(left), result_shape);
+        result_dims = left_dims;
+    }
     ASR::ttype_t *type = ASRUtils::TYPE(
-        ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+        ASR::make_Logical_t(al, x.base.base.loc, 4, result_shape, result_dims));
 
     ASR::expr_t *value = nullptr;
 
@@ -634,6 +651,15 @@ struct TypeMissingData {
     ASR::ttype_t* type;
 };
 
+struct IntrinsicSignature {
+    std::vector<std::string> kwarg_names;
+    int positional_args, max_args;
+
+    IntrinsicSignature(std::vector<std::string> kwarg_names_,
+        int positional_args_, int max_args_): kwarg_names(kwarg_names_),
+        positional_args(positional_args_), max_args(max_args_) {}
+};
+
 template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
@@ -650,6 +676,12 @@ public:
         {AST::cmpopType::LtE, "~lte"},
         {AST::cmpopType::Gt, "~gt"},
         {AST::cmpopType::GtE, "~gte"}
+    };
+
+    std::map<std::string, std::vector<IntrinsicSignature>> name2signature = {
+        {"any", {IntrinsicSignature({"dim"}, 1, 2)}},
+        {"sum", {IntrinsicSignature({"dim", "mask"}, 1, 3),
+                 IntrinsicSignature({"mask"}, 1, 2)}},
     };
 
 
@@ -745,7 +777,7 @@ public:
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
             current_scope, s2c(al, var_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), intent, nullptr, nullptr,
-            ASR::storage_typeType::Default, type,
+            ASR::storage_typeType::Default, type, nullptr,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
         current_scope->add_symbol(var_name, v);
@@ -761,7 +793,7 @@ public:
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
             current_scope, s2c(al, var_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), intent, nullptr, nullptr,
-            ASR::storage_typeType::Default, type,
+            ASR::storage_typeType::Default, type, nullptr,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
         current_scope->add_symbol(var_name, v);
@@ -1203,7 +1235,7 @@ public:
                                         al, x.m_syms[i].loc, current_scope,
                                         x.m_syms[i].m_name, nullptr, 0, ASR::intentType::Local,
                                         init_expr, init_expr_value, ASR::storage_typeType::Parameter,
-                                        init_type, ASR::abiType::Source, ASR::accessType::Public,
+                                        init_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
                                         ASR::presenceType::Required, false));
                                     current_scope->add_symbol(x.m_syms[i].m_name, sym);
                                     enum_init_val++;
@@ -1424,7 +1456,9 @@ public:
                     }
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type);
                 }
-                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer, dims);
+                ASR::symbol_t *type_declaration;
+                ASR::ttype_t *type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
+                    dims, type_declaration);
                 current_variable_type_ = type;
 
                 ASR::expr_t* init_expr = nullptr;
@@ -1607,7 +1641,7 @@ public:
                         ASR::asr_t *v = ASR::make_Variable_t(al, s.loc, current_scope,
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
-                                storage_type, type, current_procedure_abi_type, s_access, s_presence,
+                                storage_type, type, type_declaration, current_procedure_abi_type, s_access, s_presence,
                                 value_attr);
                         current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                         if( is_derived_type ) {
@@ -1619,9 +1653,12 @@ public:
         }
     }
 
-    ASR::ttype_t* determine_type(const Location &loc, std::string& sym, AST::decl_attribute_t* decl_attribute, bool is_pointer, Vec<ASR::dimension_t>& dims){
+    ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
+            AST::decl_attribute_t* decl_attribute, bool is_pointer,
+            Vec<ASR::dimension_t>& dims, ASR::symbol_t *&type_declaration){
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type;
+        type_declaration = nullptr;
 
         int a_kind = 4;
         if (sym_type->m_type != AST::decl_typeType::TypeCharacter &&
@@ -1763,8 +1800,29 @@ public:
                     type));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
-            LCOMPILERS_ASSERT(sym_type->m_name);
+            if (sym_type->m_attr) {
+                return determine_type(loc, sym, sym_type->m_attr, is_pointer, dims, type_declaration);
+            }
+            if (!sym_type->m_name) {
+                throw SemanticError("Type must have a name", loc);
+            }
             std::string derived_type_name = to_lower(sym_type->m_name);
+            if (derived_type_name == "integer") {
+                sym_type->m_type = AST::decl_typeType::TypeInteger;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            } else if (derived_type_name == "real") {
+                sym_type->m_type = AST::decl_typeType::TypeReal;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            } else if (derived_type_name == "complex") {
+                sym_type->m_type = AST::decl_typeType::TypeComplex;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            } else if (derived_type_name == "logical") {
+                sym_type->m_type = AST::decl_typeType::TypeLogical;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            } else if (derived_type_name == "character") {
+                sym_type->m_type = AST::decl_typeType::TypeCharacter;
+                return determine_type(loc, sym, decl_attribute, is_pointer, dims, type_declaration);
+            }
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v) 
                   && ASR::is_a<ASR::TypeParameter_t>(*ASR::down_cast<ASR::Variable_t>(v)->m_type)) {
@@ -1825,6 +1883,7 @@ public:
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
             type = ASR::down_cast<ASR::Function_t>(v)->m_function_signature;
+            type_declaration = v;
         } else {
             throw SemanticError("Type not implemented yet.",
                     loc);
@@ -2061,6 +2120,13 @@ public:
                             r, args[0].m_step, char_type, arr_ref_val);
                 }
             }
+
+            for( size_t i = 0; i < n_args; i++ ) {
+                if( args.p[i].m_step != nullptr &&
+                    args.p[i].m_left == nullptr ) {
+                    args.p[i].m_left = ASRUtils::get_bound(v_Var, i + 1, "lbound", al);
+                }
+            }
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
         }
@@ -2087,7 +2153,9 @@ public:
         dims.reserve(al, 1);
         if (x.m_vartype != nullptr) {
             std::string sym = "";
-            type = determine_type(x.base.base.loc, sym, x.m_vartype, false, dims);
+            ASR::symbol_t *type_declaration;
+            type = determine_type(x.base.base.loc, sym, x.m_vartype, false,
+                dims, type_declaration);
         }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
@@ -2481,7 +2549,14 @@ public:
         if( ASRUtils::get_FunctionType(func)->m_elemental &&
             func->n_args == 1 &&
             ASRUtils::is_array(ASRUtils::expr_type(args[0].m_value)) ) {
-            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(args[0].m_value));
+            ASR::dimension_t* array_dims;
+            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(args[0].m_value), array_dims);
+            Vec<ASR::dimension_t> new_dims;
+            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+            return_type = ASRUtils::duplicate_type(al,
+                            ASRUtils::get_FunctionType(func)->m_return_var_type,
+                            &new_dims);
         } else {
             return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             return_type = handle_return_type(return_type, loc, args, func);
@@ -2663,7 +2738,7 @@ public:
     // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
     template <typename T>
     bool handle_intrinsic_node_args(const T& x,
-        std::vector<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
+        Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name,
         bool raise_error=true) {
         size_t total_args = x.n_args + x.n_keywords;
@@ -2672,19 +2747,21 @@ public:
                 return false;
             }
             throw SemanticError("Incorrect number of arguments "
-                                "passed to the " + intrinsic_name + " intrinsic."
+                                "passed to the " + intrinsic_name + " intrinsic. "
                                 "It accepts at least " + std::to_string(min_args) +
                                 " and at most " + std::to_string(max_args) + " arguments.",
                                 x.base.base.loc);
         }
 
+        args.reserve(al, max_args);
+
         for( size_t i = 0; i < max_args; i++ ) {
-            args.push_back(nullptr);
+            args.push_back(al, nullptr);
         }
 
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*x.m_args[i].m_end);
-            args[i] = ASRUtils::EXPR(tmp);
+            args.p[i] = ASRUtils::EXPR(tmp);
         }
 
         for( size_t i = 0; i < x.n_keywords; i++ ) {
@@ -2700,7 +2777,7 @@ public:
             }
         }
 
-        size_t offset = min_args;
+        int64_t offset = min_args;
         for( size_t i = 0; i < x.n_keywords; i++ ) {
             std::string curr_kwarg_name = to_lower(x.m_keywords[i].m_arg);
             auto it = std::find(kwarg_names.begin(), kwarg_names.end(),
@@ -2716,7 +2793,7 @@ public:
                                     x.base.base.loc);
             }
             this->visit_expr(*x.m_keywords[i].m_value);
-            args[kwarg_idx + offset] = ASRUtils::EXPR(tmp);
+            args.p[kwarg_idx + offset] = ASRUtils::EXPR(tmp);
         }
         return true;
     }
@@ -2738,7 +2815,7 @@ public:
 
     ASR::asr_t* create_Floor(const AST::FuncCallOrArray_t &x,
             ASR::ExternalSymbol_t* gp_ext, ASR::symbol_t* v) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "floor");
         ASR::expr_t* kind = args[1];
@@ -2766,7 +2843,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, bound_name);
         ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
@@ -2784,7 +2861,7 @@ public:
     }
 
     ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, std::string("size"));
         ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
@@ -2832,7 +2909,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayTranspose(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names;
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("transpose"));
         ASR::expr_t *matrix = args[0];
@@ -2854,7 +2931,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayMatMul(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names;
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 2, std::string("matmul"));
         ASR::expr_t *matrix_a = args[0], *matrix_b = args[1];
@@ -2947,7 +3024,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayPack(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"vector"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "pack");
         ASR::expr_t *array = args[0], *mask = args[1], *vector = args[2];
@@ -2970,7 +3047,7 @@ public:
         ASR::expr_t *array, *dim, *mask, *kind, *back;
         array = dim = mask = kind = back = nullptr;
 
-        std::vector<ASR::expr_t*> args_0, args_1;
+        Vec<ASR::expr_t*> args_0, args_1;
         std::vector<std::string> kwarg_names_0 = {"dim", "mask", "kind", "back"};
         std::vector<std::string> kwarg_names_1 = {"mask", "kind", "back"};
         // Try syntax MAXLOC(ARRAY, DIM [, MASK] [,KIND] [,BACK])
@@ -3053,7 +3130,7 @@ public:
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"size"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 3, "transfer");
         ASR::expr_t *source = args[0], *mold = args[1], *size = args[2];
@@ -3100,7 +3177,7 @@ public:
     }
 
     ASR::asr_t* create_Cmplx(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"y", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, "cmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1], *kind = args[2];
@@ -3140,7 +3217,7 @@ public:
     }
 
     ASR::asr_t* create_NullPointerConstant(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"mold"};
         handle_intrinsic_node_args(x, args, kwarg_names, 0, 1, "null");
         ASR::expr_t *mold_ = args[0];
@@ -3155,7 +3232,7 @@ public:
     }
 
     ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"tgt"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
@@ -3165,7 +3242,7 @@ public:
     }
 
     ASR::asr_t* create_DCmplx(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"y"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "dcmplx");
         ASR::expr_t *x_ = args[0], *y_ = args[1];
@@ -3201,7 +3278,7 @@ public:
     }
 
     ASR::asr_t* create_Ichar(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "ichar");
         ASR::expr_t *arg = args[0], *kind = args[1];
@@ -3223,7 +3300,7 @@ public:
     }
 
     ASR::asr_t* create_Iachar(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "iachar");
         ASR::expr_t *arg = args[0], *kind = args[1];
@@ -3245,7 +3322,7 @@ public:
     }
 
     ASR::asr_t* create_IntrinsicFunctionSqrt(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names;
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, "sqrt");
         ASR::expr_t *arg = args[0];
@@ -3267,7 +3344,7 @@ public:
         ASR::ttype_t *type;
         string = nullptr, set = nullptr, back = nullptr;
         type = nullptr, kind = nullptr;
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"back", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 2, 4, func_name);
         string = args[0], set = args[1], back = args[2], kind = args[3];
@@ -3313,7 +3390,7 @@ public:
     }
 
     ASR::asr_t* create_ArrayAll(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"dim"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "all");
         ASR::expr_t *mask = args[0], *dim = args[1];
@@ -3347,6 +3424,13 @@ public:
         return ASR::make_ArrayAll_t(al, x.base.base.loc, mask, dim, type, value);
     }
 
+    std::vector<IntrinsicSignature> get_intrinsic_signature(std::string& var_name) {
+        if( name2signature.find(var_name) == name2signature.end() ) {
+            return {IntrinsicSignature({}, 1, 1)};
+        }
+        return name2signature[var_name];
+    }
+
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
                                      bool& is_function) {
         std::string var_name = to_lower(x.m_func);
@@ -3355,9 +3439,25 @@ public:
             ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
             is_function = false;
             if( ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
+                std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
+                Vec<ASR::expr_t*> args;
+                bool signature_matched = false;
+                for( auto& signature: signatures ) {
+                    signature_matched = handle_intrinsic_node_args(
+                        x, args, signature.kwarg_names,
+                        signature.positional_args, signature.max_args,
+                        var_name, false);
+                    if( signature_matched ) {
+                        break ;
+                    }
+                    args.n = 0;
+                }
+                if( !signature_matched ) {
+                    throw SemanticError("No matching signature found for intrinsic " + var_name,
+                                        x.base.base.loc);
+                }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicFunctionRegistry::get_create_function(var_name);
-                Vec<ASR::expr_t*> args = visit_expr_list(x.m_args, x.n_args);
                 tmp = create_func(al, x.base.base.loc, args,
                     [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
             } else if( var_name == "size" ) {
@@ -3405,7 +3505,7 @@ public:
     }
 
     ASR::asr_t* create_PointerToCptr(const AST::FuncCallOrArray_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
@@ -3516,7 +3616,7 @@ public:
                     ASR::make_Variable_t(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), variable_dependencies_vec.p,
                     variable_dependencies_vec.size(), ASRUtils::intent_unspecified,
-                    nullptr, nullptr, ASR::storage_typeType::Default, var_type,
+                    nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr,
                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_symbol(arg_name, v);
@@ -3535,7 +3635,7 @@ public:
             ASR::asr_t *return_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type,
+                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
                 ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));

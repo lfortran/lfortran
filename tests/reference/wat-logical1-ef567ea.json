@@ -1,0 +1,13 @@
+{
+    "basename": "wat-logical1-ef567ea",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/logical1.f90",
+    "infile_hash": "d0f4b064d238380619d6802ebc84c91c684869a8ffb6d4fc807bf2d9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-logical1-ef567ea.stdout",
+    "stdout_hash": "868640140488fb7ead2429513aedd7725e113cdf92f872bccdf38d37",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

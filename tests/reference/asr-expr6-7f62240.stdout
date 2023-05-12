@@ -1,0 +1,18 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            
+        })
+    [(IntegerBinOp
+        (IntegerConstant 5 (Integer 4 []))
+        Add
+        (IntegerConstant 3 (Integer 4 []))
+        (Integer 4 [])
+        (IntegerConstant 8 (Integer 4 []))
+    )
+    (RealConstant
+        5.300000
+        (Real 4 [])
+    )]
+)

@@ -1,0 +1,535 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            operator_overloading_01:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            bin_add:
+                                (ExternalSymbol
+                                    5
+                                    bin_add
+                                    2 bin_add
+                                    operator_overloading_01_overload_asterisk_m
+                                    []
+                                    bin_add
+                                    Public
+                                ),
+                            f:
+                                (Variable
+                                    5
+                                    f
+                                    []
+                                    Local
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4 [])
+                                    )
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4 [])
+                                    )
+                                    Parameter
+                                    (Logical 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            logical_and:
+                                (ExternalSymbol
+                                    5
+                                    logical_and
+                                    2 logical_and
+                                    operator_overloading_01_overload_asterisk_m
+                                    []
+                                    logical_and
+                                    Public
+                                ),
+                            t:
+                                (Variable
+                                    5
+                                    t
+                                    []
+                                    Local
+                                    (LogicalConstant
+                                        .true.
+                                        (Logical 4 [])
+                                    )
+                                    (LogicalConstant
+                                        .true.
+                                        (Logical 4 [])
+                                    )
+                                    Parameter
+                                    (Logical 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ~add:
+                                (ExternalSymbol
+                                    5
+                                    ~add
+                                    2 ~add
+                                    operator_overloading_01_overload_asterisk_m
+                                    []
+                                    ~add
+                                    Public
+                                ),
+                            ~mul:
+                                (ExternalSymbol
+                                    5
+                                    ~mul
+                                    2 ~mul
+                                    operator_overloading_01_overload_asterisk_m
+                                    []
+                                    ~mul
+                                    Public
+                                )
+                        })
+                    operator_overloading_01
+                    [operator_overloading_01_overload_asterisk_m]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "T*T:"
+                            (Character 1 4 () [])
+                        )
+                        (OverloadedBinOp
+                            (Var 5 t)
+                            Mul
+                            (Var 5 t)
+                            (Logical 4 [])
+                            ()
+                            (FunctionCall
+                                5 logical_and
+                                5 ~mul
+                                [((Var 5 t))
+                                ((Var 5 t))]
+                                (Logical 4 [])
+                                ()
+                                ()
+                            )
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "T*F:"
+                            (Character 1 4 () [])
+                        )
+                        (OverloadedBinOp
+                            (Var 5 t)
+                            Mul
+                            (Var 5 f)
+                            (Logical 4 [])
+                            ()
+                            (FunctionCall
+                                5 logical_and
+                                5 ~mul
+                                [((Var 5 t))
+                                ((Var 5 f))]
+                                (Logical 4 [])
+                                ()
+                                ()
+                            )
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "F*T:"
+                            (Character 1 4 () [])
+                        )
+                        (OverloadedBinOp
+                            (Var 5 f)
+                            Mul
+                            (Var 5 t)
+                            (Logical 4 [])
+                            ()
+                            (FunctionCall
+                                5 logical_and
+                                5 ~mul
+                                [((Var 5 f))
+                                ((Var 5 t))]
+                                (Logical 4 [])
+                                ()
+                                ()
+                            )
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "F*F:"
+                            (Character 1 4 () [])
+                        )
+                        (OverloadedBinOp
+                            (Var 5 f)
+                            Mul
+                            (Var 5 f)
+                            (Logical 4 [])
+                            ()
+                            (FunctionCall
+                                5 logical_and
+                                5 ~mul
+                                [((Var 5 f))
+                                ((Var 5 f))]
+                                (Logical 4 [])
+                                ()
+                                ()
+                            )
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "T+T:"
+                            (Character 1 4 () [])
+                        )
+                        (OverloadedBinOp
+                            (Var 5 t)
+                            Add
+                            (Var 5 t)
+                            (Logical 4 [])
+                            ()
+                            (FunctionCall
+                                5 bin_add
+                                5 ~add
+                                [((Var 5 t))
+                                ((Var 5 t))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            )
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "T+F:"
+                            (Character 1 4 () [])
+                        )
+                        (OverloadedBinOp
+                            (Var 5 t)
+                            Add
+                            (Var 5 f)
+                            (Logical 4 [])
+                            ()
+                            (FunctionCall
+                                5 bin_add
+                                5 ~add
+                                [((Var 5 t))
+                                ((Var 5 f))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            )
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "F+T:"
+                            (Character 1 4 () [])
+                        )
+                        (OverloadedBinOp
+                            (Var 5 f)
+                            Add
+                            (Var 5 t)
+                            (Logical 4 [])
+                            ()
+                            (FunctionCall
+                                5 bin_add
+                                5 ~add
+                                [((Var 5 f))
+                                ((Var 5 t))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            )
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "F+F:"
+                            (Character 1 4 () [])
+                        )
+                        (OverloadedBinOp
+                            (Var 5 f)
+                            Add
+                            (Var 5 f)
+                            (Logical 4 [])
+                            ()
+                            (FunctionCall
+                                5 bin_add
+                                5 ~add
+                                [((Var 5 f))
+                                ((Var 5 f))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            )
+                        )]
+                        ()
+                        ()
+                    )]
+                ),
+            operator_overloading_01_overload_asterisk_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            bin_add:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            bin_add:
+                                                (Variable
+                                                    4
+                                                    bin_add
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            log1:
+                                                (Variable
+                                                    4
+                                                    log1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            log2:
+                                                (Variable
+                                                    4
+                                                    log2
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    bin_add
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Logical 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 log1)
+                                    (Var 4 log2)]
+                                    [(If
+                                        (LogicalBinOp
+                                            (Var 4 log1)
+                                            And
+                                            (Var 4 log2)
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        [(=
+                                            (Var 4 bin_add)
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            ()
+                                        )]
+                                        [(If
+                                            (LogicalBinOp
+                                                (LogicalNot
+                                                    (Var 4 log1)
+                                                    (Logical 4 [])
+                                                    ()
+                                                )
+                                                And
+                                                (LogicalNot
+                                                    (Var 4 log2)
+                                                    (Logical 4 [])
+                                                    ()
+                                                )
+                                                (Logical 4 [])
+                                                ()
+                                            )
+                                            [(=
+                                                (Var 4 bin_add)
+                                                (IntegerConstant 0 (Integer 4 []))
+                                                ()
+                                            )]
+                                            [(=
+                                                (Var 4 bin_add)
+                                                (IntegerConstant 1 (Integer 4 []))
+                                                ()
+                                            )]
+                                        )]
+                                    )]
+                                    (Var 4 bin_add)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            logical_and:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            log1:
+                                                (Variable
+                                                    3
+                                                    log1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            log2:
+                                                (Variable
+                                                    3
+                                                    log2
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            logical_and:
+                                                (Variable
+                                                    3
+                                                    logical_and
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    logical_and
+                                    (FunctionType
+                                        [(Logical 4 [])
+                                        (Logical 4 [])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 log1)
+                                    (Var 3 log2)]
+                                    [(=
+                                        (Var 3 logical_and)
+                                        (LogicalBinOp
+                                            (Var 3 log1)
+                                            And
+                                            (Var 3 log2)
+                                            (Logical 4 [])
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 3 logical_and)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            ~add:
+                                (CustomOperator
+                                    2
+                                    ~add
+                                    [2 bin_add]
+                                    Public
+                                ),
+                            ~mul:
+                                (CustomOperator
+                                    2
+                                    ~mul
+                                    [2 logical_and]
+                                    Public
+                                )
+                        })
+                    operator_overloading_01_overload_asterisk_m
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

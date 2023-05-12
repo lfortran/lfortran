@@ -286,19 +286,31 @@ bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines)
 
 void process_include(std::string& out, const std::string& s,
                      LocationManager& lm, size_t& pos, bool fixed_form,
-                     const std::string &root_dir)
+                     std::vector<std::filesystem::path> &include_dirs)
 {
     std::string include_filename;
     parse_string(include_filename, s, pos, false);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
+
+    bool file_found = false;
+    std::string include = "";
     if (is_relative_path(include_filename)) {
-        include_filename = join_paths({root_dir, include_filename});
+        for (auto &path:include_dirs) {
+            std::string filepath = join_paths({path.generic_string(), include_filename});
+            file_found = read_file(filepath, include);
+            if (file_found) {
+                include_filename = filepath;
+                break;
+            }
+        }
+    } else {
+        file_found = read_file(include_filename, include);
     }
 
-    std::string include;
-    if (!read_file(include_filename, include)) {
+    if (!file_found) {
         throw LCompilersException("Include file '" + include_filename
-            + "' cannot be opened");
+            + "' not found. If an include path "
+            "is available, please use the `-I` option to specify it.");
     }
 
     LocationManager lm_tmp;
@@ -307,7 +319,7 @@ void process_include(std::string& out, const std::string& s,
         fl.in_filename = include_filename;
         lm_tmp.files.push_back(fl);
     }
-    include = prescan(include, lm_tmp, fixed_form, root_dir);
+    include = prescan(include, lm_tmp, fixed_form, include_dirs);
 
     // Possible it goes here
     // lm.files.back().out_start.push_back(out.size());
@@ -333,7 +345,7 @@ bool is_include(const std::string &s, uint32_t pos) {
 }
 
 std::string prescan(const std::string &s, LocationManager &lm,
-        bool fixed_form, const std::string &root_dir)
+        bool fixed_form, std::vector<std::filesystem::path> &include_dirs)
 {
     if (fixed_form) {
         // `pos` is the position in the original code `s`
@@ -424,7 +436,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     while (pos < s.size() && s[pos] == ' ') pos++;
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
                         process_include(out, s, lm, pos, fixed_form,
-                            root_dir);
+                            include_dirs);
                     }
                     break;
                 }
@@ -452,7 +464,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
-                process_include(out, s, lm, pos, fixed_form, root_dir);
+                process_include(out, s, lm, pos, fixed_form, include_dirs);
             }
             newline = false;
             if (s[pos] == '!') in_comment = true;

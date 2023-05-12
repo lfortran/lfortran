@@ -1,0 +1,77 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            redeclare1:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            k:
+                                (Variable
+                                    2
+                                    k
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            piv:
+                                (Variable
+                                    2
+                                    piv
+                                    [k]
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (Var 2 k))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    redeclare1
+                    (FunctionType
+                        [(Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                        (FunctionParam
+                            1
+                            (Integer 4 [])
+                            ()
+                        ))])
+                        (Integer 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 piv)
+                    (Var 2 k)]
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

@@ -1,0 +1,70 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            array_02_transfer:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            m:
+                                (Variable
+                                    2
+                                    m
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 7 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    array_02_transfer
+                    []
+                    [(=
+                        (Var 2 m)
+                        (ArrayConstant
+                            [(IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4 []))]
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 7 (Integer 4 [])))])
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(BitCast
+                            (Var 2 m)
+                            (ArrayConstant
+                                [(RealConstant
+                                    1.000000
+                                    (Real 4 [])
+                                )]
+                                (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4 [])))])
+                                ColMajor
+                            )
+                            ()
+                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 64 (Integer 4 [])))])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

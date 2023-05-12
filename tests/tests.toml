@@ -750,6 +750,10 @@ filename = "array12.f90"
 asr = true
 
 [[test]]
+filename = "array13.f90"
+pass = "init_expr"
+
+[[test]]
 filename = "../integration_tests/arrays_01.f90"
 cpp = true
 asr = true
@@ -1410,6 +1414,8 @@ ast = true
 [[test]]
 filename = "../integration_tests/where_01.f90"
 ast = true
+asr = true
+pass = "where"
 
 [[test]]
 filename = "../integration_tests/forallloop_01.f90"
@@ -1913,6 +1919,10 @@ extrafiles = "../integration_tests/modules_33_module1.f90, ../integration_tests/
 filename = "../integration_tests/modules_34.f90"
 asr = true
 extrafiles = "../integration_tests/modules_34_module1a.f90, ../integration_tests/modules_34_module1.f90, ../integration_tests/modules_34_module2.f90, ../integration_tests/modules_34_module3.f90"
+
+[[test]]
+filename = "../integration_tests/modules_36.f90"
+llvm = true
 
 [[test]]
 filename = "dependency_test_01.f90"
@@ -2710,6 +2720,10 @@ filename = "errors/arithmetic_if1.f90"
 asr = true
 
 [[test]]
+filename = "errors/assign_01.f90"
+asr = true
+
+[[test]]
 filename = "fixed_form_if_variations.f"
 ast = true
 asr = true
@@ -2805,6 +2819,10 @@ ast = true
 
 [[test]]
 filename = "fixed_form/crlf1.f"
+ast = true
+
+[[test]]
+filename = "fixed_form/contains1.f"
 ast = true
 
 [[test]]
@@ -3052,3 +3070,18 @@ asr_implicit_typing = true
 [[test]]
 filename = "errors/implicit_typing3.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "../integration_tests/where_02.f90"
+asr = true
+pass = "where"
+
+[[test]]
+filename = "../integration_tests/where_03.f90"
+asr = true
+pass = "where"
+
+[[test]]
+filename = "../integration_tests/where_04.f90"
+asr = true
+pass = "where"

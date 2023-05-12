@@ -1,0 +1,747 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            1_point:
+                (ExternalSymbol
+                    1
+                    1_point
+                    2 point
+                    derived_type_collection
+                    []
+                    point
+                    Public
+                ),
+            derived_type_collection:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            point:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    3
+                                                    y
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    point
+                                    []
+                                    [x
+                                    y]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    derived_type_collection
+                    []
+                    .false.
+                    .false.
+                ),
+            select_type_02:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            1_color_point_color:
+                                (ExternalSymbol
+                                    4
+                                    1_color_point_color
+                                    6 color
+                                    color_point
+                                    []
+                                    color
+                                    Public
+                                ),
+                            1_point_3d_z:
+                                (ExternalSymbol
+                                    4
+                                    1_point_3d_z
+                                    5 z
+                                    point_3d
+                                    []
+                                    z
+                                    Public
+                                ),
+                            1_point_x:
+                                (ExternalSymbol
+                                    4
+                                    1_point_x
+                                    3 x
+                                    1_point
+                                    []
+                                    x
+                                    Public
+                                ),
+                            1_point_y:
+                                (ExternalSymbol
+                                    4
+                                    1_point_y
+                                    3 y
+                                    1_point
+                                    []
+                                    y
+                                    Public
+                                ),
+                            color_point:
+                                (StructType
+                                    (SymbolTable
+                                        6
+                                        {
+                                            color:
+                                                (Variable
+                                                    6
+                                                    color
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    color_point
+                                    []
+                                    [color]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    4 point
+                                ),
+                            cp:
+                                (Variable
+                                    4
+                                    cp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        4 color_point
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            p:
+                                (Variable
+                                    4
+                                    p
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        4 point
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            p3d:
+                                (Variable
+                                    4
+                                    p3d
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        4 point_3d
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            p_or_cp:
+                                (Variable
+                                    4
+                                    p_or_cp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Class
+                                            4 point
+                                            []
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            point:
+                                (ExternalSymbol
+                                    4
+                                    point
+                                    2 point
+                                    derived_type_collection
+                                    []
+                                    point
+                                    Public
+                                ),
+                            point_3d:
+                                (StructType
+                                    (SymbolTable
+                                        5
+                                        {
+                                            z:
+                                                (Variable
+                                                    5
+                                                    z
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    point_3d
+                                    []
+                                    [z]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    4 point
+                                ),
+                            ~select_type_block_:
+                                (Block
+                                    (SymbolTable
+                                        7
+                                        {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_point_x
+                                                    3 x
+                                                    1_point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_point_y
+                                                    3 y
+                                                    1_point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
+                                            an:
+                                                (Variable
+                                                    7
+                                                    an
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Class
+                                                            4 point
+                                                            []
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~select_type_block_
+                                    [(=>
+                                        (Var 7 an)
+                                        (Var 4 p_or_cp)
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "point: "
+                                            (Character 1 7 () [])
+                                        )
+                                        (StructInstanceMember
+                                            (Var 7 an)
+                                            7 1_point_x
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        (StructInstanceMember
+                                            (Var 7 an)
+                                            7 1_point_y
+                                            (Real 4 [])
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                ),
+                            ~select_type_block_1:
+                                (Block
+                                    (SymbolTable
+                                        8
+                                        {
+                                            1_color_point_color:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_color_point_color
+                                                    6 color
+                                                    color_point
+                                                    []
+                                                    color
+                                                    Public
+                                                ),
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_point_x
+                                                    3 x
+                                                    1_point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_point_y
+                                                    3 y
+                                                    1_point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
+                                            an:
+                                                (Variable
+                                                    8
+                                                    an
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Class
+                                                            4 point
+                                                            []
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~select_type_block_1
+                                    [(=>
+                                        (Var 8 an)
+                                        (Var 4 p_or_cp)
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "color_point: "
+                                            (Character 1 13 () [])
+                                        )
+                                        (StructInstanceMember
+                                            (Var 8 an)
+                                            8 1_point_x
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        (StructInstanceMember
+                                            (Var 8 an)
+                                            8 1_point_y
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        (StructInstanceMember
+                                            (Var 8 an)
+                                            8 1_color_point_color
+                                            (Integer 4 [])
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                ),
+                            ~select_type_block_2:
+                                (Block
+                                    (SymbolTable
+                                        9
+                                        {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_point_x
+                                                    3 x
+                                                    1_point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_point_y
+                                                    3 y
+                                                    1_point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
+                                            an:
+                                                (Variable
+                                                    9
+                                                    an
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Class
+                                                            4 point
+                                                            []
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~select_type_block_2
+                                    [(=>
+                                        (Var 9 an)
+                                        (Var 4 p_or_cp)
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "point: "
+                                            (Character 1 7 () [])
+                                        )
+                                        (StructInstanceMember
+                                            (Var 9 an)
+                                            9 1_point_x
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        (StructInstanceMember
+                                            (Var 9 an)
+                                            9 1_point_y
+                                            (Real 4 [])
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                ),
+                            ~select_type_block_3:
+                                (Block
+                                    (SymbolTable
+                                        10
+                                        {
+                                            1_point_3d_z:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_point_3d_z
+                                                    5 z
+                                                    point_3d
+                                                    []
+                                                    z
+                                                    Public
+                                                ),
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_point_x
+                                                    3 x
+                                                    1_point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_point_y
+                                                    3 y
+                                                    1_point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
+                                            an:
+                                                (Variable
+                                                    10
+                                                    an
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Class
+                                                            4 point
+                                                            []
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~select_type_block_3
+                                    [(=>
+                                        (Var 10 an)
+                                        (Var 4 p_or_cp)
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "point3d: "
+                                            (Character 1 9 () [])
+                                        )
+                                        (StructInstanceMember
+                                            (Var 10 an)
+                                            10 1_point_x
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        (StructInstanceMember
+                                            (Var 10 an)
+                                            10 1_point_y
+                                            (Real 4 [])
+                                            ()
+                                        )
+                                        (StructInstanceMember
+                                            (Var 10 an)
+                                            10 1_point_3d_z
+                                            (Real 4 [])
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                )
+                        })
+                    select_type_02
+                    [derived_type_collection]
+                    [(=
+                        (StructInstanceMember
+                            (Var 4 p)
+                            4 1_point_x
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 4 p)
+                            4 1_point_y
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            2.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 4 p3d)
+                            4 1_point_x
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            3.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 4 p3d)
+                            4 1_point_y
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            4.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 4 p3d)
+                            4 1_point_3d_z
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            5.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 4 cp)
+                            4 1_point_x
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            6.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 4 cp)
+                            4 1_point_y
+                            (Real 4 [])
+                            ()
+                        )
+                        (RealConstant
+                            7.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 4 cp)
+                            4 1_color_point_color
+                            (Integer 4 [])
+                            ()
+                        )
+                        (IntegerConstant 8 (Integer 4 []))
+                        ()
+                    )
+                    (=>
+                        (Var 4 p_or_cp)
+                        (Var 4 cp)
+                    )
+                    (SelectType
+                        (Var 4 p_or_cp)
+                        [(ClassStmt
+                            4 point
+                            [(BlockCall
+                                -1
+                                4 ~select_type_block_
+                            )]
+                        )
+                        (TypeStmtName
+                            4 color_point
+                            [(BlockCall
+                                -1
+                                4 ~select_type_block_1
+                            )]
+                        )]
+                        []
+                    )
+                    (SelectType
+                        (Var 4 p_or_cp)
+                        [(ClassStmt
+                            4 point
+                            [(BlockCall
+                                -1
+                                4 ~select_type_block_2
+                            )]
+                        )
+                        (TypeStmtName
+                            4 point_3d
+                            [(BlockCall
+                                -1
+                                4 ~select_type_block_3
+                            )]
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

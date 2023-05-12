@@ -156,6 +156,15 @@ public:
                         if( expr->type == ASR::exprType::FunctionCall ) {
                             char_type->m_len_expr = expr;
                             char_type->m_len = -3;
+                            if( data->sym_type == (int64_t) ASR::symbolType::Function ) {
+                                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                                    ASR::down_cast<ASR::symbol_t>(data->scope->asr_owner));
+                                ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
+                                if( func_type->m_return_var_type ) {
+                                    ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
+                                    func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(data->type);
+                                }
+                            }
                         }
                         break;
                     }
@@ -680,7 +689,7 @@ public:
                     throw SemanticError("Implicit return type not supported yet", loc);
                 }
             }
-            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, AST::symbolType::None);
+            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, AST::symbolType::None);
             AST::decl_attribute_t* r_attr = AST::down_cast<AST::decl_attribute_t>(r_ast);
             r = AST::down_cast<AST::AttrType_t>(r_attr);
         }
@@ -884,7 +893,7 @@ public:
             return_var = ASR::make_Variable_t(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type,
+                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
                 current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
@@ -1013,8 +1022,9 @@ public:
             current_requirement_type_parameters.push_back(tp);
             tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
                 s2c(al, to_lower(x.m_name)), nullptr, 0, ASRUtils::intent_in,
-                nullptr, nullptr, ASR::storage_typeType::Default, ASRUtils::TYPE(tp),
-                ASR::abiType::Source, dflt_access, ASR::presenceType::Required, false);
+                nullptr, nullptr, ASR::storage_typeType::Default, 
+                ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, 
+                dflt_access, ASR::presenceType::Required, false);
             current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
             is_derived_type = false;
             return;
@@ -1892,14 +1902,14 @@ public:
         char *msym_cc = msym_c.c_str(al);
         current_module_dependencies.push_back(al, msym_cc);
 
-        ASR::symbol_t *t = current_scope->parent->resolve_symbol(msym);
+        ASR::symbol_t *t = current_scope->resolve_symbol(msym);
         if (!t) {
             LCompilers::PassOptions pass_options;
             pass_options.runtime_library_dir = compiler_options.runtime_library_dir;
             pass_options.mod_files_dir = compiler_options.mod_files_dir;
             pass_options.include_dirs = compiler_options.include_dirs;
 
-            SymbolTable *tu_symtab = current_scope->parent;
+            SymbolTable *tu_symtab = current_scope;
             while (tu_symtab->parent != nullptr) {
                 tu_symtab = tu_symtab->parent;
             }
@@ -2125,9 +2135,11 @@ public:
                         tp->base.base.loc, s2c(al, name), tp->m_dims, tp->n_dims));
                 }
                 ASR::asr_t* new_v = ASR::make_Variable_t(al, v->base.base.loc,
-                    current_scope, s2c(al, name), v->m_dependencies, v->n_dependencies,
-                    v->m_intent, v->m_symbolic_value, v->m_value, v->m_storage,
-                    t, v->m_abi, v->m_access, v->m_presence, v->m_value_attr);
+                    current_scope, s2c(al, name), v->m_dependencies,
+                    v->n_dependencies, v->m_intent,
+                    v->m_symbolic_value, v->m_value, v->m_storage, t,
+                    v->m_type_declaration, v->m_abi, v->m_access,
+                    v->m_presence, v->m_value_attr);
                 return ASR::down_cast<ASR::symbol_t>(new_v);
             }
             case ASR::symbolType::Function: {
@@ -2158,6 +2170,7 @@ public:
                     ASR::expr_t *value = nullptr;
                     ASR::storage_typeType storage_type = param_var->m_storage;
                     ASR::abiType abi_type = param_var->m_abi;
+                    ASR::symbol_t *type_decl = nullptr;
                     ASR::accessType s_access = param_var->m_access;
                     ASR::presenceType s_presence = param_var->m_presence;
                     bool value_attr = param_var->m_value_attr;
@@ -2169,7 +2182,7 @@ public:
                         s2c(al, var_name), variable_dependencies_vec.p, 
                         variable_dependencies_vec.size(),
                         s_intent, init_expr, value, storage_type, param_type,
-                        abi_type, s_access, s_presence, value_attr);     
+                        type_decl, abi_type, s_access, s_presence, value_attr);     
 
                     new_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));    
                     ASR::symbol_t* var = new_scope->get_symbol(var_name);
@@ -2199,8 +2212,9 @@ public:
                         variable_dependencies_vec.size(),
                         return_var->m_intent, nullptr, nullptr,
                         return_var->m_storage, return_type,
-                        return_var->m_abi, return_var->m_access,
-                        return_var->m_presence, return_var->m_value_attr);
+                        return_var->m_type_declaration, return_var->m_abi,
+                        return_var->m_access, return_var->m_presence, 
+                        return_var->m_value_attr);
                     new_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(new_return_var));
                     new_return_var_ref = ASRUtils::EXPR(ASR::make_Var_t(al, f->base.base.loc,
                         new_scope->get_symbol(return_var_name)));

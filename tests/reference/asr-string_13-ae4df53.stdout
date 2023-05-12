@@ -1,0 +1,141 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            string_13:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            ia0:
+                                (Variable
+                                    2
+                                    ia0
+                                    []
+                                    Local
+                                    (Iachar
+                                        (StringConstant
+                                            "0"
+                                            (Character 1 1 () [])
+                                        )
+                                        (Integer 4 [])
+                                        (IntegerConstant 48 (Integer 4 []))
+                                    )
+                                    (IntegerConstant 48 (Integer 4 []))
+                                    Parameter
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ia5:
+                                (Variable
+                                    2
+                                    ia5
+                                    []
+                                    Local
+                                    (Iachar
+                                        (StringConstant
+                                            "5"
+                                            (Character 1 1 () [])
+                                        )
+                                        (Integer 4 [])
+                                        (IntegerConstant 53 (Integer 4 []))
+                                    )
+                                    (IntegerConstant 53 (Integer 4 []))
+                                    Parameter
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ia9:
+                                (Variable
+                                    2
+                                    ia9
+                                    []
+                                    Local
+                                    (Iachar
+                                        (StringConstant
+                                            "9"
+                                            (Character 1 1 () [])
+                                        )
+                                        (Integer 4 [])
+                                        (IntegerConstant 57 (Integer 4 []))
+                                    )
+                                    (IntegerConstant 57 (Integer 4 []))
+                                    Parameter
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    string_13
+                    []
+                    [(If
+                        (IntegerCompare
+                            (Var 2 ia0)
+                            NotEq
+                            (IntegerConstant 48 (Integer 4 []))
+                            (Logical 4 [])
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 ia5)
+                            NotEq
+                            (IntegerConstant 53 (Integer 4 []))
+                            (Logical 4 [])
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 ia9)
+                            NotEq
+                            (IntegerConstant 57 (Integer 4 []))
+                            (Logical 4 [])
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        ()
+                        [(Var 2 ia0)
+                        (Var 2 ia5)
+                        (Var 2 ia9)]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

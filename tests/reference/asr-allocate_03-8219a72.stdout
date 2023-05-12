@@ -1,0 +1,515 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            allocate_03:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Integer 4 [(()
+                                    ())
+                                    (()
+                                    ())
+                                    (()
+                                    ())])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            c:
+                                                (Variable
+                                                    3
+                                                    c
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Integer 4 [(()
+                                                    ())
+                                                    (()
+                                                    ())
+                                                    (()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 c)]
+                                    [(Allocate
+                                        [((Var 3 c)
+                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4 [])))
+                                        ((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4 [])))
+                                        ((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4 [])))])]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (Var 3 c)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())]
+                                            (Integer 4 [])
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 99 (Integer 4 []))
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            g:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            r:
+                                                (Variable
+                                                    4
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Integer 4 [(()
+                                                    ())
+                                                    (()
+                                                    ())
+                                                    (()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    g
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [f]
+                                    [(Var 4 x)]
+                                    [(Print
+                                        ()
+                                        [(ArrayItem
+                                            (Var 4 x)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())]
+                                            (Integer 4 [])
+                                            ColMajor
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 4 x)]
+                                    )
+                                    (SubroutineCall
+                                        2 f
+                                        ()
+                                        [((Var 4 x))]
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(ArrayItem
+                                            (Var 4 x)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())]
+                                            (Integer 4 [])
+                                            ColMajor
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (Var 4 x)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())]
+                                            (Integer 4 [])
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 8 (Integer 4 []))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 4 r)
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        ()
+                                    )]
+                                    (Var 4 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            h:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            c:
+                                                (Variable
+                                                    5
+                                                    c
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Integer 4 [(()
+                                                    ())
+                                                    (()
+                                                    ())
+                                                    (()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    h
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())
+                                        (()
+                                        ())
+                                        (()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [f]
+                                    [(Var 5 c)]
+                                    [(Print
+                                        ()
+                                        [(ArrayItem
+                                            (Var 5 c)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())]
+                                            (Integer 4 [])
+                                            ColMajor
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 5 c)]
+                                    )
+                                    (SubroutineCall
+                                        2 f
+                                        ()
+                                        [((Var 5 c))]
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(ArrayItem
+                                            (Var 5 c)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())]
+                                            (Integer 4 [])
+                                            ColMajor
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (Var 5 c)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            ())]
+                                            (Integer 4 [])
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 8 (Integer 4 []))
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            r:
+                                (Variable
+                                    2
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            stat:
+                                (Variable
+                                    2
+                                    stat
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    allocate_03
+                    []
+                    [(=
+                        (Var 2 stat)
+                        (IntegerConstant 1 (Integer 4 []))
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 c)
+                        [((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 [])))
+                        ((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 [])))
+                        ((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 [])))])]
+                        (Var 2 stat)
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 stat)
+                            NotEq
+                            (IntegerConstant 0 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 c)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Integer 4 [])
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 3 (Integer 4 []))
+                        ()
+                    )
+                    (ImplicitDeallocate
+                        [(Var 2 c)]
+                    )
+                    (SubroutineCall
+                        2 h
+                        ()
+                        [((Var 2 c))]
+                        ()
+                    )
+                    (=
+                        (Var 2 r)
+                        (FunctionCall
+                            2 g
+                            ()
+                            [((Var 2 c))]
+                            (Integer 4 [])
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(ArrayItem
+                            (Var 2 c)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Integer 4 [])
+                            ColMajor
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (ImplicitDeallocate
+                        [(Var 2 c)]
+                    )]
+                )
+        })
+    []
+)

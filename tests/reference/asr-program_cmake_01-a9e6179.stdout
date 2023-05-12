@@ -1,0 +1,26 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            testfortran:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    testfortran
+                    []
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "Hello"
+                            (Character 1 5 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

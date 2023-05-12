@@ -1,0 +1,13 @@
+{
+    "basename": "asr_indent-subroutine1-41f648b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/subroutine1.f90",
+    "infile_hash": "e209c22328b423e75d6801f3c0ef19bc120936196435dff2cb19df31",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_indent-subroutine1-41f648b.stdout",
+    "stdout_hash": "1e5ec7d0e40e1d5027133044b121d39eb40063c9f000bdc2754971e4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

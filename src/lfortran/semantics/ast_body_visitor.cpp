@@ -632,6 +632,7 @@ public:
                         ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
                             s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
                             ASR::storage_typeType::Default, ASRUtils::duplicate_type(al, ltype),
+                            nullptr,
                             ASR::abiType::Source, ASR::accessType::Private,
                             ASR::presenceType::Required, false);
                         current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
@@ -671,7 +672,7 @@ public:
                     ASR::asr_t *return_v = ASR::make_Variable_t(al, x.base.base.loc,
                         current_scope, s2c(al, "ret"), nullptr, 0,
                         ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, ltype), ASR::abiType::Source,
+                        ASRUtils::duplicate_type(al, ltype), nullptr, ASR::abiType::Source,
                         ASR::accessType::Private, ASR::presenceType::Required, false);
                     current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
                     ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -899,7 +900,7 @@ public:
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type);
             ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, new_scope,
                                                  name_c, variable_dependencies_vec.p, variable_dependencies_vec.size(),
-                                                 ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type,
+                                                 ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type, nullptr,
                                                  ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required,
                                                  false);
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
@@ -1247,7 +1248,7 @@ public:
                 assoc_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
                     al, x.base.base.loc, current_scope, x.m_assoc_name,
                     nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default, nullptr, ASR::abiType::Source,
+                    ASR::storage_typeType::Default, nullptr, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(std::string(x.m_assoc_name), assoc_sym);
                 assoc_variable = ASR::down_cast<ASR::Variable_t>(assoc_sym);
@@ -1348,9 +1349,11 @@ public:
                         Vec<ASR::dimension_t> m_dims;
                         m_dims.reserve(al, 1);
                         std::string assoc_variable_name = std::string(assoc_variable->m_name);
+                        ASR::symbol_t *type_declaration;
                         selector_type = determine_type(type_stmt_type->base.base.loc,
                                                        assoc_variable_name,
-                                                       type_stmt_type->m_vartype, false, m_dims);
+                                                       type_stmt_type->m_vartype, false, m_dims,
+                                                       type_declaration);
                         SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
@@ -1455,6 +1458,10 @@ public:
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
+    }
+
+    void visit_Use(const AST::Use_t& /* x */) {
+        // handled in symbol table visitor
     }
 
     void visit_Program(const AST::Program_t &x) {
@@ -1632,7 +1639,7 @@ public:
             ASR::asr_t* a_variable = ASR::make_Variable_t(al, x.base.base.loc, current_scope, a_var_name_f.c_str(al),
                                                             variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                             ASR::intentType::Local, nullptr, nullptr,
-                                                            ASR::storage_typeType::Default, int32_type,
+                                                            ASR::storage_typeType::Default, int32_type, nullptr,
                                                             ASR::abiType::Source, ASR::Public, ASR::presenceType::Optional, false);
             current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(a_variable));
             sym = ASR::down_cast<ASR::symbol_t>(a_variable);
@@ -1728,7 +1735,7 @@ public:
                 current_scope, s2c(al, arg_name),
                 variable_dependencies_vec.p, variable_dependencies_vec.size(),
                 ASRUtils::intent_in, nullptr, nullptr,
-                ASR::storage_typeType::Default, ASRUtils::expr_type(end),
+                ASR::storage_typeType::Default, ASRUtils::expr_type(end), nullptr,
                 ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
@@ -1764,7 +1771,7 @@ public:
             current_scope, s2c(al, return_var_name),
             variable_dependencies_vec.p, variable_dependencies_vec.size(),
             ASRUtils::intent_return_var, nullptr, nullptr,
-            ASR::storage_typeType::Default, type,
+            ASR::storage_typeType::Default, type, nullptr,
             ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
             false);
         current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
@@ -1828,9 +1835,16 @@ public:
             }
             if (sym->type == ASR::symbolType::Variable) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                ASR::intentType intent = v->m_intent;
-                if (intent == ASR::intentType::In) {
+                if (v->m_intent == ASR::intentType::In) {
                     throw SemanticError("Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`", target->base.loc);
+                }
+                if (v->m_storage == ASR::storage_typeType::Parameter) {
+                    throw SemanticError(diag::Diagnostic(
+                                "Cannot assign to a constant variable",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("assignment here", {x.base.base.loc}),
+                                    diag::Label("declared as constant", {v->base.base.loc}, false),
+                                }));
                 }
             }
         }
@@ -1904,7 +1918,7 @@ public:
     }
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
-        std::vector<ASR::expr_t*> args;
+        Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"shape"};
         handle_intrinsic_node_args<AST::SubroutineCall_t>(
             x, args, kwarg_names, 2, 3, std::string("c_f_ptr"));
@@ -2317,6 +2331,18 @@ public:
                 body_gt.size(), orelse_gt.p, orelse_gt.size())));
         tmp = ASR::make_If_t(al, x.base.base.loc, test_lt, body.p,
                 body.size(), orelse.p, orelse.size());
+    }
+
+    void visit_Where(const AST::Where_t &x) {
+        visit_expr(*x.m_test);
+        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        transform_stmts(body, x.n_body, x.m_body);
+        Vec<ASR::stmt_t*> orelse;
+        orelse.reserve(al, x.n_orelse);
+        transform_stmts(orelse, x.n_orelse, x.m_orelse);
+        tmp = ASR::make_Where_t(al, x.base.base.loc, test, body.p, body.size(), orelse.p, orelse.size());
     }
 
     void visit_WhileLoop(const AST::WhileLoop_t &x) {

@@ -1,0 +1,19 @@
+semantic error: Number of arguments mismatch, restriction expects a function with 2 parameters, but a function with 3 parameters is provided
+  --> tests/errors/template_error_02.f90:34:9
+   |
+34 |         instantiate add_t(real, func_arg_real), only: add_real => add_generic
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ func_arg_real has 3 parameters
+   |
+28 |        real function func_arg_real(x, y, a) result(z)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+32 |    
+   | ...^ func_arg_real has 3 parameters
+   |
+ 8 |            function F(x, y) result(z)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+11 |            end function
+   | ...^^^^^^^^^^^^^^^^^^^^^ f has 2 parameters

@@ -12,13 +12,7 @@
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/wasm_assembler.h>
 
-#include <libasr/pass/do_loops.h>
-#include <libasr/pass/unused_functions.h>
-#include <libasr/pass/pass_array_by_data.h>
-#include <libasr/pass/print_arr.h>
-#include <libasr/pass/intrinsic_function.h>
-#include <libasr/exception.h>
-#include <libasr/asr_utils.h>
+#include <libasr/pass/pass_manager.h>
 
 #define INCLUDE_RUNTIME_FUNC(fn)                 \
     if (m_rt_func_used_idx[fn] == -1) {          \
@@ -81,7 +75,9 @@ enum RT_FUNCS {
     mul_c64 = 7,
     abs_c32 = 9,
     abs_c64 = 10,
-    NO_OF_RT_FUNCS = 11, // keep this as the last enumerator
+    equal_c32 = 11,
+    equal_c64 = 12,
+    NO_OF_RT_FUNCS = 13,
 };
 
 enum GLOBAL_VAR {
@@ -89,8 +85,10 @@ enum GLOBAL_VAR {
     tmp_reg_i32 = 1,
     tmp_reg_i64 = 2,
     tmp_reg_f32 = 3,
-    tmp_reg_f64 = 4,
-    GLOBAL_VARS_CNT = 5
+    tmp_reg2_f32 = 4,
+    tmp_reg_f64 = 5,
+    tmp_reg2_f64 = 6,
+    GLOBAL_VARS_CNT = 7
 };
 
 enum IMPORT_FUNC {
@@ -522,6 +520,38 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         });
     }
 
+    void emit_complex_equal_32() {
+        using namespace wasm;
+        m_wa.define_func({f32, f32, f32, f32}, {i32}, {}, "equal_c32", [&](){
+            m_wa.emit_local_get(0);
+            m_wa.emit_local_get(2);
+            m_wa.emit_f32_eq();
+
+            m_wa.emit_local_get(1);
+            m_wa.emit_local_get(3);
+            m_wa.emit_f32_eq();
+
+            m_wa.emit_i32_and();
+            m_wa.emit_return();
+        });
+    }
+
+    void emit_complex_equal_64() {
+        using namespace wasm;
+        m_wa.define_func({f64, f64, f64, f64}, {i32}, {}, "equal_c64", [&](){
+            m_wa.emit_local_get(0);
+            m_wa.emit_local_get(2);
+            m_wa.emit_f64_eq();
+
+            m_wa.emit_local_get(1);
+            m_wa.emit_local_get(3);
+            m_wa.emit_f64_eq();
+
+            m_wa.emit_i32_and();
+            m_wa.emit_return();
+        });
+    }
+
     void declare_global_var(ASR::Variable_t* v) {
         if (v->m_type->type == ASR::ttypeType::TypeParameter) {
             // Ignore type variables
@@ -629,7 +659,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_compiler_globals[tmp_reg_i32] = m_wa.declare_global_var(wasm::var_type::i32, 0);
         m_compiler_globals[tmp_reg_i64] = m_wa.declare_global_var(wasm::var_type::i64, 0);
         m_compiler_globals[tmp_reg_f32] = m_wa.declare_global_var(wasm::var_type::f32, 0);
+        m_compiler_globals[tmp_reg2_f32] = m_wa.declare_global_var(wasm::var_type::f32, 0);
         m_compiler_globals[tmp_reg_f64] = m_wa.declare_global_var(wasm::var_type::f64, 0);
+        m_compiler_globals[tmp_reg2_f64] = m_wa.declare_global_var(wasm::var_type::f64, 0);
 
         emit_string(" ");
         emit_string("\n");
@@ -653,6 +685,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_rt_funcs_map[mul_c64] = &ASRToWASMVisitor::emit_complex_mul_64;
         m_rt_funcs_map[abs_c32] = &ASRToWASMVisitor::emit_complex_abs_32;
         m_rt_funcs_map[abs_c64] = &ASRToWASMVisitor::emit_complex_abs_64;
+        m_rt_funcs_map[equal_c32] = &ASRToWASMVisitor::emit_complex_equal_32;
+        m_rt_funcs_map[equal_c64] = &ASRToWASMVisitor::emit_complex_equal_64;
 
         {
             // Pre-declare all functions first, then generate code
@@ -864,14 +898,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (m_var_idx_map.find(hash) != m_var_idx_map.end()) {
             uint32_t var_idx = m_var_idx_map[hash];
             m_wa.emit_local_get(var_idx);
-            if (ASRUtils::is_complex(*v->m_type)) {
+            if (ASRUtils::is_complex(*v->m_type) && !ASRUtils::is_array(v->m_type)) {
                 // get the imaginary part
                 m_wa.emit_local_get(var_idx + 1u);
             }
         } else if (m_global_var_idx_map.find(hash) != m_global_var_idx_map.end()) {
             uint32_t var_idx = m_global_var_idx_map[hash];
             m_wa.emit_global_get(var_idx);
-            if (ASRUtils::is_complex(*v->m_type)) {
+            if (ASRUtils::is_complex(*v->m_type) && !ASRUtils::is_array(v->m_type)) {
                 // get the imaginary part
                 m_wa.emit_global_get(var_idx + 1u);
             }
@@ -884,14 +918,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         uint64_t hash = get_hash((ASR::asr_t *)v);
         if (m_var_idx_map.find(hash) != m_var_idx_map.end()) {
             uint32_t var_idx = m_var_idx_map[hash];
-            if (ASRUtils::is_complex(*v->m_type)) {
+            if (ASRUtils::is_complex(*v->m_type) && !ASRUtils::is_array(v->m_type)) {
                 // set the imaginary part
                 m_wa.emit_local_set(var_idx + 1u);
             }
             m_wa.emit_local_set(var_idx);
         } else if (m_global_var_idx_map.find(hash) != m_global_var_idx_map.end()) {
             uint32_t var_idx = m_global_var_idx_map[hash];
-            if (ASRUtils::is_complex(*v->m_type)) {
+            if (ASRUtils::is_complex(*v->m_type) && !ASRUtils::is_array(v->m_type)) {
                 // set the imaginary part
                 m_wa.emit_global_set(var_idx + 1u);
             }
@@ -925,6 +959,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
                         m_wa.emit_i32_const(avail_mem_loc);
                         emit_var_set(v);
+
+                        if (v->m_type->type == ASR::ttypeType::Complex) {
+                            kind *= 2;
+                        }
                         avail_mem_loc += kind * total_array_size;
                     }
                 }
@@ -1134,6 +1172,41 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 }
                 break;
             }
+            case ASR::ttypeType::Complex: {
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_f32]); // complex part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg2_f32]); // real part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]); // location
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg2_f32]); // real part
+                        m_wa.emit_f32_store(wasm::mem_align::b8, 0);
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_f32]); // complex part
+                        m_wa.emit_f32_store(wasm::mem_align::b8, kind);
+                        break;
+                    case 8:
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_f64]); // complex part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg2_f64]); // real part
+                        m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]); // location
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg2_f64]); // real part
+                        m_wa.emit_f64_store(wasm::mem_align::b8, 0);
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_f64]); // complex part
+                        m_wa.emit_f64_store(wasm::mem_align::b8, kind);
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryStore: Unsupported Complex kind");
+                }
+                kind *= 2;
+                break;
+            }
             default: {
                 throw CodeGenError("MemoryStore: Type " +
                                    ASRUtils::type_to_str(ttype) +
@@ -1196,6 +1269,29 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     default:
                         throw CodeGenError(
                             "MemoryLoad: Unsupported Character kind");
+                }
+                break;
+            }
+            case ASR::ttypeType::Complex: {
+                m_wa.emit_global_set(m_compiler_globals[tmp_reg_i32]); // location
+                switch (kind) {
+                    case 4:
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_f32_load(wasm::mem_align::b8, 0); // real part
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_f32_load(wasm::mem_align::b8, kind); // complex part
+                        break;
+                    case 8:
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_f64_load(wasm::mem_align::b8, 0); // real part
+
+                        m_wa.emit_global_get(m_compiler_globals[tmp_reg_i32]); // location
+                        m_wa.emit_f64_load(wasm::mem_align::b8, kind); // complex part
+                        break;
+                    default:
+                        throw CodeGenError(
+                            "MemoryLoad: Unsupported Complex kind");
                 }
                 break;
             }
@@ -1767,6 +1863,53 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void handle_complex_compare(const ASR::ComplexCompare_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        this->visit_expr(*x.m_left);
+        this->visit_expr(*x.m_right);
+        int a_kind = get_kind_from_operands(x);
+        if (a_kind == 4) {
+            INCLUDE_RUNTIME_FUNC(equal_c32);
+            switch (x.m_op) {
+                case (ASR::cmpopType::Eq): {
+                    m_wa.emit_call(m_rt_func_used_idx[equal_c32]);
+                    break;
+                }
+                case (ASR::cmpopType::NotEq): {
+                    m_wa.emit_call(m_rt_func_used_idx[equal_c32]);
+                    m_wa.emit_i32_const(1);
+                    m_wa.emit_i32_xor();
+                    break;
+                }
+                default:
+                    throw CodeGenError(
+                        "handle_complex_compare: Kind 4: Unhandled switch case");
+            }
+        } else if (a_kind == 8) {
+            INCLUDE_RUNTIME_FUNC(equal_c64);
+            switch (x.m_op) {
+                case (ASR::cmpopType::Eq): {
+                    m_wa.emit_call(m_rt_func_used_idx[equal_c64]);
+                    break;
+                }
+                case (ASR::cmpopType::NotEq): {
+                    m_wa.emit_call(m_rt_func_used_idx[equal_c64]);
+                    m_wa.emit_i32_const(1);
+                    m_wa.emit_i32_xor();
+                    break;
+                }
+                default:
+                    throw CodeGenError(
+                        "handle_complex_compare: Kind 8: Unhandled switch case");
+            }
+        } else {
+            throw CodeGenError("RealCompare: kind 4 and 8 supported only");
+        }
+    }
+
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
         handle_integer_compare(x);
     }
@@ -1775,8 +1918,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         handle_real_compare(x);
     }
 
-    void visit_ComplexCompare(const ASR::ComplexCompare_t & /*x*/) {
-        throw CodeGenError("Complex Types not yet supported");
+    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+        handle_complex_compare(x);
     }
 
     void visit_LogicalCompare(const ASR::LogicalCompare_t &x) {
@@ -1910,6 +2053,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 diag.codegen_warning_label("/* FIXME right index */",
                                            {x.base.base.loc}, "");
             }
+        }
+        if (ttype->type == ASR::ttypeType::Complex) {
+            kind *= 2;
         }
         m_wa.emit_i32_const(kind);
         m_wa.emit_i32_mul();
@@ -2892,16 +3038,19 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
 Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
                                               Allocator &al,
-                                              diag::Diagnostics &diagnostics) {
+                                              diag::Diagnostics &diagnostics,
+                                              CompilerOptions &co) {
     ASRToWASMVisitor v(al, diagnostics);
 
     LCompilers::PassOptions pass_options;
-    pass_array_by_data(al, asr, pass_options);
-    pass_replace_print_arr(al, asr, pass_options);
-    pass_replace_do_loops(al, asr, pass_options);
-    pass_replace_intrinsic_function(al, asr, pass_options);
     pass_options.always_run = true;
-    pass_unused_functions(al, asr, pass_options);
+    pass_options.verbose = co.verbose;
+    std::vector<std::string> passes = {"pass_array_by_data", "array_op",
+                "implied_do_loops", "print_arr", "do_loops", "select_case",
+                "intrinsic_function", "unused_functions"};
+    LCompilers::PassManager pass_manager;
+    pass_manager.apply_passes(al, &asr, passes, pass_options, diagnostics);
+
 
 #ifdef SHOW_ASR
     std::cout << LCompilers::LFortran::pickle(asr, false /* use colors */, true /* indent */,
@@ -2920,12 +3069,12 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 
 Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
                         const std::string &filename, bool time_report,
-                        diag::Diagnostics &diagnostics) {
+                        diag::Diagnostics &diagnostics, CompilerOptions &co) {
     int time_visit_asr = 0;
     int time_save = 0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics);
+    Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics, co);
     auto t2 = std::chrono::high_resolution_clock::now();
     time_visit_asr =
         std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-program3-557dbe8",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/program3.f90",
+    "infile_hash": "f5e4a3f2a2a6f406171d0aa3895b5d7342c4d87b73ffede073827f34",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-program3-557dbe8.stdout",
+    "stdout_hash": "f230cee96d2db3ef751c166059f8b8ada9b459672d3bb9b64bf1fe34",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

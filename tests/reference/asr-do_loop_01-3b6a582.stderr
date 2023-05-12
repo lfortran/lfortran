@@ -1,0 +1,5 @@
+semantic error: Assignment to loop variable `i` is not allowed
+ --> tests/errors/do_loop_01.f90:7:7
+  |
+7 |       i = j + 1
+  |       ^ 

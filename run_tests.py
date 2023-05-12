@@ -69,7 +69,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "transform_optional_argument_functions",
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
-                        "pass_array_by_data"] and
+                        "pass_array_by_data", "init_expr", "where"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
@@ -90,7 +90,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "ast",
-                "lfortran --indent --fixed-form --show-ast --no-color {infile} -o {outfile}",
+                "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -99,7 +99,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "ast",
-                "lfortran --indent --show-ast --no-color {infile} -o {outfile}",
+                "lfortran --show-ast --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -107,7 +107,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "ast_indent",
-            "lfortran --show-ast --indent --no-color {infile} -o {outfile}",
+            "lfortran --show-ast --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -115,7 +115,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "ast_json",
-            "lfortran --show-ast --json {infile} -o {outfile}",
+            "lfortran --show-ast --no-indent --json {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -125,7 +125,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "ast_no_prescan",
-            "lfortran --indent --no-prescan --show-ast --no-color {infile} -o {outfile}",
+            "lfortran --no-prescan --show-ast --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -136,7 +136,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "ast_f90",
-                "lfortran --fixed-form --show-ast-f90 --no-color {infile}",
+                "lfortran --fixed-form --show-ast-f90 --no-indent --no-color {infile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -145,7 +145,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "ast_f90",
-                "lfortran --show-ast-f90 --no-color {infile}",
+                "lfortran --show-ast-f90 --no-indent --no-color {infile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -164,7 +164,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "asr",
-                "lfortran --indent --fixed-form --show-asr --no-color {infile} -o {outfile}",
+                "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -188,14 +188,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 run_test(
                     filename,
                     "asr",
-                    "lfortran --indent --show-asr --no-color {infile} -o {outfile}",
+                    "lfortran --show-asr --no-color {infile} -o {outfile}",
                     filename,
                     update_reference,
                     extra_args)
 
                 if pass_ is not None:
                     cmd = "lfortran --pass=" + pass_ + \
-                        " --indent --show-asr --no-color {infile} -o {outfile}"
+                        " --show-asr --no-color {infile} -o {outfile}"
                     pass_ = pass_.replace(",", "_")
                     run_test(filename, "pass_{}".format(pass_), cmd,
                             filename, update_reference, extra_args)
@@ -206,7 +206,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr",
-            "lfortran --indent --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+            "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -227,7 +227,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr",
-            "lfortran --indent --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+            "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -237,7 +237,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "asr",
-                "lfortran --indent --fixed-form --implicit-interface --show-asr --no-color {infile} -o {outfile}",
+                "lfortran --fixed-form --implicit-interface --show-asr --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -245,7 +245,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             run_test(
                 filename,
                 "asr",
-                "lfortran --indent --show-asr --implicit-interface --no-color {infile} -o {outfile}",
+                "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
                 filename,
                 update_reference,
                 extra_args)
@@ -254,7 +254,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_preprocess",
-            "lfortran --indent --cpp --show-asr --no-color {infile} -o {outfile}",
+            "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -263,7 +263,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_indent",
-            "lfortran --show-asr --indent --no-color {infile} -o {outfile}",
+            "lfortran --show-asr --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -272,7 +272,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_json",
-            "lfortran --show-asr --json {infile} -o {outfile}",
+            "lfortran --show-asr --no-indent --json {infile} -o {outfile}",
             filename,
             update_reference,
             extra_args)
@@ -281,7 +281,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "mod_to_asr",
-            "lfortran mod --show-asr --no-color {infile}",
+            "lfortran mod --show-asr --no-indent --no-color {infile}",
             filename,
             update_reference)
 
@@ -290,7 +290,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         if is_cumulative_pass:
             cmd += "--cumulative "
         cmd += "--pass=" + pass_ + \
-            " --indent --show-asr --no-color {infile} -o {outfile}"
+            " --show-asr --no-color {infile} -o {outfile}"
         pass_ = pass_.replace(",", "_")
         run_test(filename, "pass_{}".format(pass_), cmd,
                  filename, update_reference, extra_args)

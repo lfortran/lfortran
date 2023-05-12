@@ -6,7 +6,7 @@ maxdepth: 1
 ---
 Block.md
 ExternalSymbol.md
-variable.md
+Variable.md
 program.md
 symbol.md
 ```

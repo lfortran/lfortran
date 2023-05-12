@@ -103,7 +103,8 @@ symbol
     | UnionType(symbol_table symtab, identifier name, identifier* dependencies,
         identifier* members, abi abi, access access, symbol? parent)
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
-        intent intent, expr? symbolic_value, expr? value, storage_type storage, ttype type,
+        intent intent, expr? symbolic_value, expr? value, storage_type storage,
+        ttype type, symbol? type_declaration,
         abi abi, access access, presence presence, bool value_attr)
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
     | ClassProcedure(symbol_table parent_symtab, identifier name, identifier? self_argument,
@@ -278,6 +279,7 @@ expr
     | DictLen(expr arg, ttype type, expr? value)
 
     | Var(symbol v)
+    | FunctionParam(int param_number, ttype type, expr? value) --- used in types
 
     | ArrayConstant(expr* args, ttype type, arraystorage storage_format)
     | ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value)
@@ -363,10 +365,9 @@ ttype
     | Const(ttype type)
     | CPtr()
     | TypeParameter(identifier param, dimension* dims)
-    | FunctionType(ttype* arg_types, ttype? return_var_type,
-        abi abi, deftype deftype, string? bindc_name, bool elemental,
-        bool pure, bool module, bool inline, bool static,
-        bool is_restriction)
+    | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
+        deftype deftype, string? bindc_name, bool elemental, bool pure,
+        bool module, bool inline, bool static, bool is_restriction)
 
 restriction_arg = RestrictionArg(identifier restriction_name, symbol restriction_func)
 

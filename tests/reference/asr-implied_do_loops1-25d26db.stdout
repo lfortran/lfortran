@@ -1,0 +1,147 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            implied_do_loop1:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    [j]
+                                    Local
+                                    (ArrayConstant
+                                        [(ImpliedDoLoop
+                                            [(Var 2 j)]
+                                            (Var 2 j)
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 10 (Integer 4 []))
+                                            ()
+                                            (Integer 4 [])
+                                            ()
+                                        )]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4 [])))])
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        [(ImpliedDoLoop
+                                            [(Var 2 j)]
+                                            (Var 2 j)
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 10 (Integer 4 []))
+                                            ()
+                                            (Integer 4 [])
+                                            ()
+                                        )]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4 [])))])
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            j:
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            s:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    s
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(Print
+                                        ()
+                                        [(ImpliedDoLoop
+                                            [(Var 2 j)]
+                                            (Var 2 j)
+                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 3 (Integer 4 []))
+                                            ()
+                                            (Integer 4 [])
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    implied_do_loop1
+                    []
+                    [(SubroutineCall
+                        2 s
+                        ()
+                        []
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(ImpliedDoLoop
+                            [(ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (Var 2 j)
+                                ())]
+                                (Integer 4 [])
+                                ColMajor
+                                ()
+                            )]
+                            (Var 2 j)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 10 (Integer 4 []))
+                            ()
+                            (Integer 4 [])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

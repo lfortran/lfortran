@@ -1,6 +1,7 @@
 #include <chrono>
 #include <iostream>
 #include <stdlib.h>
+#include <filesystem>
 
 #define CLI11_HAS_FILESYSTEM 0
 #include <bin/CLI11.hpp>
@@ -28,6 +29,7 @@
 #include <libasr/pass/class_constructor.h>
 #include <libasr/pass/arr_slice.h>
 #include <libasr/pass/print_arr.h>
+#include <libasr/pass/where.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/flip_sign.h>
 #include <libasr/pass/div_to_mul.h>
@@ -61,18 +63,6 @@ enum Backend {
     llvm, cpp, x86, wasm
 };
 
-std::string remove_extension(const std::string& filename) {
-    size_t lastdot = filename.find_last_of(".");
-    if (lastdot == std::string::npos) return filename;
-    return filename.substr(0, lastdot);
-}
-
-std::string remove_path(const std::string& filename) {
-    size_t lastslash = filename.find_last_of("/");
-    if (lastslash == std::string::npos) return filename;
-    return filename.substr(lastslash+1);
-}
-
 std::string read_file(const std::string &filename)
 {
     std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary
@@ -97,6 +87,29 @@ std::string get_kokkos_dir()
     std::cerr << "(https://github.com/kokkos/kokkos). Please define the LFORTRAN_KOKKOS_DIR" << std::endl;
     std::cerr << "environment variable to point to the Kokkos installation." << std::endl;
     throw LCompilers::LCompilersException("LFORTRAN_KOKKOS_DIR is not defined");
+}
+
+int visualize_json(std::string &astr_data_json, LCompilers::Platform os) {
+    using namespace LCompilers;
+    std::string file_loc = LCompilers::LFortran::generate_visualize_html(astr_data_json);
+    std::string open_cmd = "";
+    switch (os) {
+        case Linux: open_cmd = "xdg-open"; break;
+        case Windows: open_cmd = "start"; break;
+        case macOS_Intel:
+        case macOS_ARM: open_cmd = "open"; break;
+        default:
+            std::cerr << "Unsupported Platform " << pf2s(os) <<std::endl;
+            std::cerr << "Please open file " << file_loc << " manually" <<std::endl;
+            return 11;
+    }
+    std::string cmd = open_cmd + " " + file_loc;
+    int err = system(cmd.data());
+    if (err) {
+        std::cout << "The command '" + cmd + "' failed." << std::endl;
+        return 11;
+    }
+    return 0;
 }
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -397,8 +410,14 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+
+    std::vector<std::filesystem::path> include_dirs;
+    include_dirs.push_back(LCompilers::parent_path(lm.files.back().in_filename));
+    include_dirs.insert(include_dirs.end(),
+                          compiler_options.include_dirs.begin(),
+                          compiler_options.include_dirs.end());
     std::string prescan = LCompilers::LFortran::prescan(input, lm,
-        compiler_options.fixed_form, LCompilers::parent_path(lm.files.back().in_filename));
+        compiler_options.fixed_form, include_dirs);
     std::cout << prescan << std::endl;
     return 0;
 }
@@ -419,8 +438,13 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
         lm.files.push_back(fl);
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
+        std::vector<std::filesystem::path> include_dirs;
+        include_dirs.push_back(LCompilers::parent_path(lm.files.back().in_filename));
+        include_dirs.insert(include_dirs.end(),
+                            compiler_options.include_dirs.begin(),
+                            compiler_options.include_dirs.end());
         input = LCompilers::LFortran::prescan(input, lm,
-            compiler_options.fixed_form, LCompilers::parent_path(infile));
+            compiler_options.fixed_form, include_dirs);
     }
     auto res = LCompilers::LFortran::tokens(al, input, diagnostics, &stypes, &locations,
         compiler_options.fixed_form);
@@ -460,6 +484,9 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
     LCompilers::Result<std::string> r = fe.get_ast(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
+        if (compiler_options.visualize) {
+            return visualize_json(r.result, compiler_options.platform);
+        }
         std::cout << r.result << std::endl;
         return 0;
     } else {
@@ -634,6 +661,9 @@ int emit_asr(const std::string &infile,
             compiler_options.use_colors) << std::endl;
     } else if (compiler_options.json) {
         std::cout << LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules) << std::endl;
+    } else if (compiler_options.visualize) {
+        std::string astr_data_json = LCompilers::LFortran::pickle_json(*asr, lm, with_intrinsic_modules);
+        return visualize_json(astr_data_json, compiler_options.platform);
     } else {
         std::cout << LCompilers::LFortran::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 with_intrinsic_modules) << std::endl;
@@ -1090,7 +1120,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<int>
-            result = LCompilers::asr_to_wasm(*asr, al, outfile, time_report, diagnostics);
+            result = LCompilers::asr_to_wasm(*asr, al, outfile, time_report, diagnostics, compiler_options);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_asr_to_wasm = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1588,6 +1618,7 @@ int main(int argc, char *argv[])
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;
+        bool arg_no_indent = false;
         bool arg_no_prescan = false;
         bool show_llvm = false;
         bool show_cpp = false;
@@ -1632,7 +1663,7 @@ int main(int argc, char *argv[])
         app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", arg_l, "Link library option");
         app.add_option("-L", arg_L, "Library path option");
-        app.add_option("-I", compiler_options.include_dirs, "Include path");
+        app.add_option("-I", compiler_options.include_dirs, "Include path")->allow_extra_args(false);
         app.add_option("-J", compiler_options.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
@@ -1649,9 +1680,10 @@ int main(int argc, char *argv[])
         app.add_flag("--with-intrinsic-mods", with_intrinsic_modules, "Show intrinsic modules in ASR");
         app.add_flag("--show-ast-f90", show_ast_f90, "Show Fortran from AST for the given file and exit");
         app.add_flag("--no-color", arg_no_color, "Turn off colored AST/ASR");
-        app.add_flag("--indent", compiler_options.indent, "Indented print ASR/AST");
+        app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
         app.add_flag("--tree", compiler_options.tree, "Tree structure print ASR/AST");
         app.add_flag("--json", compiler_options.json, "Print ASR/AST Json format");
+        app.add_flag("--visualize", compiler_options.visualize, "Print ASR/AST Visualization");
         app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
         app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
         app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
@@ -1720,16 +1752,7 @@ int main(int argc, char *argv[])
         if (arg_version) {
             std::string version = LFORTRAN_VERSION;
             std::cout << "LFortran version: " << version << std::endl;
-            std::cout << "Platform: ";
-            switch (compiler_options.platform) {
-                case (LCompilers::Platform::Linux) : std::cout << "Linux"; break;
-                case (LCompilers::Platform::macOS_Intel) : std::cout << "macOS Intel"; break;
-                case (LCompilers::Platform::macOS_ARM) : std::cout << "macOS ARM"; break;
-                case (LCompilers::Platform::Windows) : std::cout << "Windows"; break;
-                case (LCompilers::Platform::FreeBSD) : std::cout << "FreeBSD"; break;
-                case (LCompilers::Platform::OpenBSD) : std::cout << "OpenBSD"; break;
-            }
-            std::cout << std::endl;
+            std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM
             std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
 #endif
@@ -1747,6 +1770,7 @@ int main(int argc, char *argv[])
         }
 
         compiler_options.use_colors = !arg_no_color;
+        compiler_options.indent = !arg_no_indent;
         compiler_options.prescan = !arg_no_prescan;
 
         if (fmt) {
@@ -1816,29 +1840,27 @@ int main(int argc, char *argv[])
             throw LCompilers::LCompilersException("File does not exist: " + arg_file);
 
         std::string outfile;
-        std::string basename;
-        basename = remove_extension(arg_file);
-        basename = remove_path(basename);
+        std::filesystem::path basename = std::filesystem::path(arg_file).filename();
         if (compiler_options.arg_o.size() > 0) {
             outfile = compiler_options.arg_o;
         } else if (arg_S) {
-            outfile = basename + ".s";
+            outfile = basename.replace_extension(".s").string();
         } else if (arg_c) {
-            outfile = basename + ".o";
+            outfile = basename.replace_extension(".o").string();
         } else if (show_prescan) {
-            outfile = basename + ".prescan";
+            outfile = basename.replace_extension(".prescan").string();
         } else if (show_tokens) {
-            outfile = basename + ".tokens";
+            outfile = basename.replace_extension(".tokens").string();
         } else if (show_ast) {
-            outfile = basename + ".ast";
+            outfile = basename.replace_extension(".ast").string();
         } else if (show_asr) {
-            outfile = basename + ".asr";
+            outfile = basename.replace_extension(".asr").string();
         } else if (show_llvm) {
-            outfile = basename + ".ll";
+            outfile = basename.replace_extension(".ll").string();
         } else if (show_wat) {
-            outfile = basename + ".wat";
+            outfile = basename.replace_extension(".wat").string();
         } else if (show_julia) {
-            outfile = basename + ".jl";
+            outfile = basename.replace_extension(".jl").string();
         } else {
             outfile = "a.out";
         }

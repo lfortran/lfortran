@@ -1,0 +1,202 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            nested_05:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            b:
+                                (ExternalSymbol
+                                    5
+                                    b
+                                    2 b
+                                    nested_05_a
+                                    []
+                                    b
+                                    Public
+                                )
+                        })
+                    nested_05
+                    [nested_05_a]
+                    [(SubroutineCall
+                        5 b
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            nested_05_a:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            b:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            c:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            
+                                                        })
+                                                    c
+                                                    (FunctionType
+                                                        []
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    []
+                                                    [(Print
+                                                        ()
+                                                        [(Var 3 x)]
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (Print
+                                                        ()
+                                                        [(Var 3 y)]
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 3 x)
+                                                        (IntegerConstant 4 (Integer 4 []))
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 3 y)
+                                                        (RealConstant
+                                                            3.500000
+                                                            (Real 4 [])
+                                                        )
+                                                        ()
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    3
+                                                    y
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    b
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [c]
+                                    []
+                                    [(=
+                                        (Var 3 x)
+                                        (IntegerConstant 6 (Integer 4 []))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 3 y)
+                                        (RealConstant
+                                            5.500000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 3 x)]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 3 y)]
+                                        ()
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        3 c
+                                        ()
+                                        []
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 3 x)]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 3 y)]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                )
+                        })
+                    nested_05_a
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
