@@ -1204,6 +1204,11 @@ public:
                                     // TODO
                                     throw SemanticError("Attribute declaration not "
                                         "supported yet", x.base.base.loc);
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrSave) {
+                                    // TODO
+                                    throw SemanticError("Save attribute not "
+                                        "supported yet", x.base.base.loc);
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrEnumerator) {
                                     ASR::symbol_t *sym;
                                     ASR::ttype_t *init_type = ASRUtils::TYPE(
