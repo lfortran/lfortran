@@ -369,8 +369,6 @@ ttype
         deftype deftype, string? bindc_name, bool elemental, bool pure,
         bool module, bool inline, bool static, bool is_restriction)
 
-restriction_arg = RestrictionArg(identifier restriction_name, symbol restriction_func)
-
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 
 logicalbinop = And | Or | Xor | NEqv | Eqv
