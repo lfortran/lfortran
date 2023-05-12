@@ -211,7 +211,12 @@ class ArraySectionVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArraySe
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);
             }
-    }
+        }
+
+        void visit_Associate(const ASR::Associate_t& /*x*/) {
+            // Associating a slice to a pointer array
+            // should happen only in the backends.
+        }
 
 };
 
