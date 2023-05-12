@@ -1440,30 +1440,26 @@ static inline bool is_logical(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Logical_t>(*type_get_past_pointer(&x));
 }
 
-static inline bool is_generic(ASR::ttype_t &x) {
+static inline bool is_type_parameter(ASR::ttype_t &x) {
     switch (x.type) {
         case ASR::ttypeType::List: {
             ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(type_get_past_pointer(&x));
-            return is_generic(*list_type->m_type);
+            return is_type_parameter(*list_type->m_type);
         }
         default : return ASR::is_a<ASR::TypeParameter_t>(*type_get_past_pointer(&x));
     }
 }
 
-static inline bool is_generic_function(ASR::symbol_t *x) {
+static inline bool is_template_function(ASR::symbol_t *x) {
     ASR::symbol_t* x2 = symbol_get_past_external(x);
     switch (x2->type) {
         case ASR::symbolType::Function: {
-            ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(x2);
-            ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(func_sym);
-            bool has_type_param = false;
-            for (size_t i=0; i<func_type->n_arg_types; i++) {
-                ASR::ttype_t* arg_type = func_type->m_arg_types[i];
-                if (is_generic(*arg_type)) {
-                    has_type_param = true;
-                }
+            const SymbolTable* parent_symtab = symbol_parent_symtab(x2);
+            if (ASR::is_a<ASR::symbol_t>(*parent_symtab->asr_owner)) {
+                ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(parent_symtab->asr_owner);
+                return ASR::is_a<ASR::Template_t>(*parent_sym);
             }
-            return has_type_param && !func_type->m_is_restriction;
+            return false;
         }
         default: return false;
     }

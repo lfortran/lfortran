@@ -248,7 +248,7 @@ public:
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
         if (ASRUtils::is_restriction_function(name)) {
             name = rt_subs[call_name];
-        } else if (ASRUtils::is_generic_function(name)) {
+        } else if (ASRUtils::is_template_function(name)) {
             std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name);
             ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(name2);

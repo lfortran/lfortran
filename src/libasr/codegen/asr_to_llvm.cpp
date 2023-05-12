@@ -1319,9 +1319,7 @@ public:
         // Generate function prototypes
         for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
-                if (ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(item.second))->n_type_params == 0) {
-                    visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
-                }
+                visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
             }
         }
         prototype_only = false;
@@ -1341,9 +1339,7 @@ public:
         // Then do all the procedures
         for (auto &item : x.m_global_scope->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
-                if (ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(item.second))->n_type_params == 0) {
-                    visit_symbol(*item.second);
-                }
+                visit_symbol(*item.second);
             }
         }
 
@@ -2585,9 +2581,7 @@ public:
             } else if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
-                if (ASRUtils::get_FunctionType(v)->n_type_params == 0) {
-                    instantiate_function(*v);
-                }
+                instantiate_function(*v);
             } else if (is_a<ASR::EnumType_t>(*item.second)) {
                 ASR::EnumType_t *et = down_cast<ASR::EnumType_t>(item.second);
                 visit_EnumType(*et);
@@ -2613,9 +2607,7 @@ public:
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
-                if (ASRUtils::get_FunctionType(v)->n_type_params == 0) {
-                    instantiate_function(*v);
-                }
+                instantiate_function(*v);
             }
         }
         visit_procedures(x);
@@ -4024,9 +4016,7 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(s)->n_type_params == 0) {
-                    visit_Function(*s);
-                }
+                visit_Function(*s);
             }
         }
     }

@@ -3988,7 +3988,7 @@ public:
         ASR::expr_t **conversion_cand = &left;
         ASR::ttype_t *source_type = left_type;
         ASR::ttype_t *dest_type = right_type;
-        if(!ASRUtils::is_generic(*left_type) && !ASRUtils::is_generic(*right_type)){
+        if(!ASRUtils::is_type_parameter(*left_type) && !ASRUtils::is_type_parameter(*right_type)){
             ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
                                                     right_type, conversion_cand,
                                                     &source_type, &dest_type);

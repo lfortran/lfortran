@@ -685,9 +685,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *s =
                     ASR::down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(s)->n_type_params == 0) {
-                    this->visit_Function(*s);
-                }
+                this->visit_Function(*s);
             }
         }
     }
