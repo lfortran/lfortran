@@ -1,0 +1,74 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@__lcompilers_created__nested_context__closuretest_z = global i32 0
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
+
+define i32 @add_z(i32* %x) {
+.entry:
+  %y = alloca i32, align 4
+  %0 = load i32, i32* %x, align 4
+  %1 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  %2 = add i32 %0, %1
+  store i32 %2, i32* %y, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  %3 = load i32, i32* %y, align 4
+  ret i32 %3
+}
+
+define i32 @apply(i32 (i32*)* %fun, i32* %x) {
+.entry:
+  %y = alloca i32, align 4
+  %0 = call i32 %fun(i32* %x)
+  store i32 %0, i32* %y, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  %1 = load i32, i32* %y, align 4
+  ret i32 %1
+}
+
+declare i32 @fun(i32*)
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %call_arg_value = alloca i32, align 4
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  %z = alloca i32, align 4
+  %2 = load i32, i32* %z, align 4
+  store i32 %2, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 0, i32* %z, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %loop.body, %.entry
+  %3 = load i32, i32* %z, align 4
+  %4 = add i32 %3, 1
+  %5 = icmp sle i32 %4, 10
+  br i1 %5, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %6 = load i32, i32* %z, align 4
+  %7 = add i32 %6, 1
+  store i32 %7, i32* %z, align 4
+  %8 = load i32, i32* %z, align 4
+  store i32 %8, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 1, i32* %call_arg_value, align 4
+  %9 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %10 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %10, i32* %z, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  %11 = load i32, i32* @__lcompilers_created__nested_context__closuretest_z, align 4
+  store i32 %11, i32* %z, align 4
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)
+
+declare void @_lfortran_printf(i8*, ...)

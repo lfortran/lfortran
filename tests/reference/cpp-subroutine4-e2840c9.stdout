@@ -1,0 +1,42 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cassert>
+#include <cmath>
+#include <complex>
+#include <Kokkos_Core.hpp>
+#include <lfortran_intrinsics.h>
+
+template <typename T>
+Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
+{
+    Kokkos::View<T*> r("r", v.size());
+    for (size_t i=0; i < v.size(); i++) {
+        r(i) = v[i];
+    }
+    return r;
+}
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+
+template <typename T0, typename T1, typename T2>
+void triad(T0* a, T1* b, float scalar, T2* c);
+
+// Implementations
+
+template <typename T0, typename T1, typename T2>
+void triad(T0* a, T1* b, float scalar, T2* c)
+{
+    int32_t i;
+    int32_t n;
+    n = a->data->extent(0);
+    Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i) {
+        c->data->operator[](i - c->dims[0].lower_bound) = a->data->operator[](i - a->dims[0].lower_bound) + scalar*b->data->operator[](i - b->dims[0].lower_bound);
+    });
+}
+

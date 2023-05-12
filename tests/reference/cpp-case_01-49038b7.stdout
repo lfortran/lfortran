@@ -1,0 +1,77 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cassert>
+#include <cmath>
+#include <complex>
+#include <Kokkos_Core.hpp>
+#include <lfortran_intrinsics.h>
+
+template <typename T>
+Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
+{
+    Kokkos::View<T*> r("r", v.size());
+    for (size_t i=0; i < v.size(); i++) {
+        r(i) = v[i];
+    }
+    return r;
+}
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+namespace {
+}
+
+// Implementations
+namespace {
+
+void main2() {
+    int32_t i;
+    int32_t out;
+    i = 4;
+    if (i == 1) {
+        out = 10;
+        std::cout << "1" << std::endl;
+    }
+    else if (i == 2) {
+        out = 20;
+        std::cout << "2" << std::endl;
+    }
+    else if (i == 3) {
+        out = 30;
+        std::cout << "3" << std::endl;
+    }
+    else if (i == 4) {
+        out = 40;
+        std::cout << "4" << std::endl;
+    }
+    if (out != 40) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+    if (i == 1) {
+        out = 11;
+        std::cout << "1" << std::endl;
+    }
+    else if (i == 2 || i == 3 || i == 4) {
+        out = 22;
+        std::cout << "2,3,4" << std::endl;
+    }
+    if (out != 22) {
+        std::cerr << "ERROR STOP" << std::endl;
+        exit(1);
+    }
+}
+
+}
+int main(int argc, char* argv[])
+{
+    Kokkos::initialize(argc, argv);
+    main2();
+    Kokkos::finalize();
+    return 0;
+}

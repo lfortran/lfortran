@@ -1,0 +1,18 @@
+function g()
+    local i::Int32 = 0
+    local x::Int32 = 0
+    x = 1
+    for i ∈ 1:10
+        x = x * i
+    end
+end
+
+function h()
+    local i::Int32 = 0
+    local x::Int32 = 0
+    x = 1
+    for i ∈ 1:10
+        x = i * x
+    end
+end
+
