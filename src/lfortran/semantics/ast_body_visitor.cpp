@@ -690,7 +690,7 @@ public:
                         nullptr, 0, args.p, 2, body.p, 1, return_expr,
                         ASR::abiType::Source, ASR::accessType::Public,
                         ASR::deftypeType::Implementation, nullptr, false, true,
-                        false, false, false, nullptr, 0, nullptr, 0, false, false, true);
+                        false, false, false, false, false, true);
 
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
@@ -1600,9 +1600,6 @@ public:
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
-        ASR::FunctionType_t* v_func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
-        v_func_type->m_restrictions = nullptr;
-        v_func_type->n_restrictions = 0;
 
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
@@ -1804,8 +1801,8 @@ public:
             /* n_body */ body.size(),
             /* a_return_var */ to_return,
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
-            nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
-            /* n_type_parameters */ 0, nullptr, 0, false, false, false);
+            nullptr, false, false, false, false, false,
+            false, false, false);
         parent_scope->overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }

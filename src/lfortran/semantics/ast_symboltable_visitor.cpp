@@ -614,8 +614,7 @@ public:
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
             is_pure, is_module, false, false, false,
-            /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
-            /* n_type_parameters */ params.size(), nullptr, 0, is_requirement,
+            is_requirement,
             false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -983,8 +982,7 @@ public:
             /* a_return_var */ ASRUtils::EXPR(return_var_ref),
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, false, false, false, false,
-            /* a_type_parameters */ (params.size() > 0) ? params.p : nullptr,
-            /* n_type_parameters */ params.size(), nullptr, 0, is_requirement,
+            is_requirement,
             false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -2212,8 +2210,7 @@ public:
                     new_scope, s2c(al, name), f->m_dependencies, f->n_dependencies, args.p, 
                     args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi, f->m_access, 
                     ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental, ftype->m_pure, 
-                    ftype->m_module, ftype->m_inline, ftype->m_static, ftype->m_type_params, 
-                    ftype->n_type_params, ftype->m_restrictions, ftype->n_restrictions, 
+                    ftype->m_module, ftype->m_inline, ftype->m_static,
                     ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free);
                 return ASR::down_cast<ASR::symbol_t>(new_f);
             }

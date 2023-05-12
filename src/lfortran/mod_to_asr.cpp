@@ -294,7 +294,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                     nullptr, // return var
                     ASR::abiType::GFortranModule, ASR::Public,
                     ASR::Interface, nullptr, false, false, false,
-                    false, false, nullptr, 0, nullptr, 0, false,
+                    false, false, false,
                     false, false);
                 s.p.proc = down_cast<ASR::symbol_t>(asr);
                 std::string sym_name = s.name;

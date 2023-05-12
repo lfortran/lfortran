@@ -53,9 +53,8 @@ class CreateFunctionFromSubroutine: public PassUtils::PassVisitor<CreateFunction
                 a_args.p, a_args.size(), s->m_body, s->n_body, nullptr,
                 s_func_type->m_abi, s->m_access, s_func_type->m_deftype,
                 nullptr, false, false, false, s_func_type->m_inline,
-                s_func_type->m_static, s_func_type->m_type_params,
-                s_func_type->n_type_params, s_func_type->m_restrictions,
-                s_func_type->n_restrictions, s_func_type->m_is_restriction,
+                s_func_type->m_static,
+                s_func_type->m_is_restriction,
                 s->m_deterministic, s->m_side_effect_free);
             ASR::symbol_t* s_sub = ASR::down_cast<ASR::symbol_t>(s_sub_asr);
             return s_sub;

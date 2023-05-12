@@ -3554,8 +3554,8 @@ public:
             /* n_body */ 0,
             /* a_return_var */ to_return,
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
-            nullptr, false, false, false, false, false, /* a_type_parameters */ nullptr,
-            /* n_type_parameters */ 0, nullptr, 0, false, false, false);
+            nullptr, false, false, false, false, false,
+            false, false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }

@@ -65,7 +65,7 @@ namespace UnaryIntrinsicFunction {
     symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n,        \
     ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var)), ASR::abiType::abi,    \
     ASR::accessType::Public, ASR::deftypeType::deftype, bindc_name, false,      \
-    false, false, false, false, nullptr, 0, nullptr, 0, false, false, false));
+    false, false, false, false, false, false, false));
 
 static inline ASR::expr_t* instantiate_functions(Allocator &al,
         const Location &loc, SymbolTable *global_scope, std::string new_name,

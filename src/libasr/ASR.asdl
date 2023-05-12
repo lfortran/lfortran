@@ -365,8 +365,8 @@ ttype
     | TypeParameter(identifier param, dimension* dims)
     | FunctionType(ttype* arg_types, ttype? return_var_type,
         abi abi, deftype deftype, string? bindc_name, bool elemental,
-        bool pure, bool module, bool inline, bool static, ttype* type_params,
-        symbol* restrictions, bool is_restriction)
+        bool pure, bool module, bool inline, bool static,
+        bool is_restriction)
 
 restriction_arg = RestrictionArg(identifier restriction_name, symbol restriction_func)
 
