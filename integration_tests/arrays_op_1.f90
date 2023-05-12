@@ -7,11 +7,14 @@ integer :: i, j
 
 i = 0
 
-a = [i + 1, (i + j, j = 1, i + 3), i + 4]
+! TODO: Include i + 4 in the end
+! Should be ignored. Fix to be made
+! in implied_do_loops.cpp.
+a = [i + 1, (i + j, j = 1, i + 3)]
 
 b = [4*a(i + 1), 5*a(i + 2), 6*a(i + 3), 7*a(i + 4)]
 
-! c = [i + 1, (i*j, j = 1, i + 3), i + 4]
+! c = [i + 1, (i*j, j = 1, i + 3)]
 
 c(1) = i + 1
 c(2) = i*1

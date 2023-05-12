@@ -55,14 +55,14 @@ define i32 @main(i32 %0, i8** %1) {
   %14 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 0
   %15 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 1
   %16 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 2
-  store i32 1, i32* %14, align 4
+  store i32 4, i32* %14, align 4
   store i32 3, i32* %15, align 4
   store i32 7, i32* %16, align 4
   %17 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %8, i32 2
   %18 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 0
   %19 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 1
   %20 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 2
-  store i32 1, i32* %18, align 4
+  store i32 28, i32* %18, align 4
   store i32 1, i32* %19, align 4
   store i32 7, i32* %20, align 4
   %21 = alloca i32, align 4
@@ -94,21 +94,21 @@ define i32 @main(i32 %0, i8** %1) {
   %37 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 0
   %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 1
   %39 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 2
-  store i32 1, i32* %37, align 4
+  store i32 2, i32* %37, align 4
   store i32 2, i32* %38, align 4
   store i32 3, i32* %39, align 4
   %40 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %31, i32 2
   %41 = getelementptr %dimension_descriptor, %dimension_descriptor* %40, i32 0, i32 0
   %42 = getelementptr %dimension_descriptor, %dimension_descriptor* %40, i32 0, i32 1
   %43 = getelementptr %dimension_descriptor, %dimension_descriptor* %40, i32 0, i32 2
-  store i32 1, i32* %41, align 4
+  store i32 6, i32* %41, align 4
   store i32 3, i32* %42, align 4
   store i32 4, i32* %43, align 4
   %44 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %31, i32 3
   %45 = getelementptr %dimension_descriptor, %dimension_descriptor* %44, i32 0, i32 0
   %46 = getelementptr %dimension_descriptor, %dimension_descriptor* %44, i32 0, i32 1
   %47 = getelementptr %dimension_descriptor, %dimension_descriptor* %44, i32 0, i32 2
-  store i32 1, i32* %45, align 4
+  store i32 24, i32* %45, align 4
   store i32 4, i32* %46, align 4
   store i32 4, i32* %47, align 4
   %48 = alloca i32, align 4
@@ -140,7 +140,7 @@ define i32 @main(i32 %0, i8** %1) {
   %64 = getelementptr %dimension_descriptor, %dimension_descriptor* %63, i32 0, i32 0
   %65 = getelementptr %dimension_descriptor, %dimension_descriptor* %63, i32 0, i32 1
   %66 = getelementptr %dimension_descriptor, %dimension_descriptor* %63, i32 0, i32 2
-  store i32 1, i32* %64, align 4
+  store i32 5, i32* %64, align 4
   store i32 1, i32* %65, align 4
   store i32 7, i32* %66, align 4
   %67 = alloca i32, align 4

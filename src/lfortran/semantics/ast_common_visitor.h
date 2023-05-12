@@ -2144,6 +2144,13 @@ public:
                             r, args[0].m_step, char_type, arr_ref_val);
                 }
             }
+
+            for( size_t i = 0; i < n_args; i++ ) {
+                if( args.p[i].m_step != nullptr &&
+                    args.p[i].m_left == nullptr ) {
+                    args.p[i].m_left = ASRUtils::get_bound(v_Var, i + 1, "lbound", al);
+                }
+            }
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
         }

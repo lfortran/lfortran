@@ -804,6 +804,7 @@ RUN(NAME array_op_01 LABELS gfortran llvm wasm)
 RUN(NAME array_op_02 LABELS gfortran llvm wasm)
 RUN(NAME array_op_03 LABELS gfortran llvm wasm)
 RUN(NAME array_op_04 LABELS gfortran llvm)
+RUN(NAME array_slice_01 LABELS gfortran llvm)
 
 RUN(NAME declaration_01 LABELS gfortran llvm)
 

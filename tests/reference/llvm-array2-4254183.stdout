@@ -132,7 +132,7 @@ define i32 @main(i32 %0, i8** %1) {
   %74 = getelementptr %dimension_descriptor, %dimension_descriptor* %73, i32 0, i32 0
   %75 = getelementptr %dimension_descriptor, %dimension_descriptor* %73, i32 0, i32 1
   %76 = getelementptr %dimension_descriptor, %dimension_descriptor* %73, i32 0, i32 2
-  store i32 1, i32* %74, align 4
+  store i32 2, i32* %74, align 4
   store i32 1, i32* %75, align 4
   store i32 3, i32* %76, align 4
   %77 = alloca i32, align 4
@@ -164,7 +164,7 @@ define i32 @main(i32 %0, i8** %1) {
   %93 = getelementptr %dimension_descriptor, %dimension_descriptor* %92, i32 0, i32 0
   %94 = getelementptr %dimension_descriptor, %dimension_descriptor* %92, i32 0, i32 1
   %95 = getelementptr %dimension_descriptor, %dimension_descriptor* %92, i32 0, i32 2
-  store i32 1, i32* %93, align 4
+  store i32 3, i32* %93, align 4
   store i32 1, i32* %94, align 4
   store i32 4, i32* %95, align 4
   %96 = alloca i32, align 4
@@ -196,7 +196,7 @@ define i32 @main(i32 %0, i8** %1) {
   %112 = getelementptr %dimension_descriptor, %dimension_descriptor* %111, i32 0, i32 0
   %113 = getelementptr %dimension_descriptor, %dimension_descriptor* %111, i32 0, i32 1
   %114 = getelementptr %dimension_descriptor, %dimension_descriptor* %111, i32 0, i32 2
-  store i32 1, i32* %112, align 4
+  store i32 5, i32* %112, align 4
   store i32 1, i32* %113, align 4
   store i32 2, i32* %114, align 4
   %115 = alloca i32, align 4
@@ -228,14 +228,14 @@ define i32 @main(i32 %0, i8** %1) {
   %131 = getelementptr %dimension_descriptor, %dimension_descriptor* %130, i32 0, i32 0
   %132 = getelementptr %dimension_descriptor, %dimension_descriptor* %130, i32 0, i32 1
   %133 = getelementptr %dimension_descriptor, %dimension_descriptor* %130, i32 0, i32 2
-  store i32 1, i32* %131, align 4
+  store i32 2, i32* %131, align 4
   store i32 1, i32* %132, align 4
   store i32 3, i32* %133, align 4
   %134 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %125, i32 2
   %135 = getelementptr %dimension_descriptor, %dimension_descriptor* %134, i32 0, i32 0
   %136 = getelementptr %dimension_descriptor, %dimension_descriptor* %134, i32 0, i32 1
   %137 = getelementptr %dimension_descriptor, %dimension_descriptor* %134, i32 0, i32 2
-  store i32 1, i32* %135, align 4
+  store i32 6, i32* %135, align 4
   store i32 1, i32* %136, align 4
   store i32 4, i32* %137, align 4
   %138 = alloca i32, align 4
@@ -267,14 +267,14 @@ define i32 @main(i32 %0, i8** %1) {
   %154 = getelementptr %dimension_descriptor, %dimension_descriptor* %153, i32 0, i32 0
   %155 = getelementptr %dimension_descriptor, %dimension_descriptor* %153, i32 0, i32 1
   %156 = getelementptr %dimension_descriptor, %dimension_descriptor* %153, i32 0, i32 2
-  store i32 1, i32* %154, align 4
+  store i32 3, i32* %154, align 4
   store i32 1, i32* %155, align 4
   store i32 4, i32* %156, align 4
   %157 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %148, i32 2
   %158 = getelementptr %dimension_descriptor, %dimension_descriptor* %157, i32 0, i32 0
   %159 = getelementptr %dimension_descriptor, %dimension_descriptor* %157, i32 0, i32 1
   %160 = getelementptr %dimension_descriptor, %dimension_descriptor* %157, i32 0, i32 2
-  store i32 1, i32* %158, align 4
+  store i32 12, i32* %158, align 4
   store i32 1, i32* %159, align 4
   store i32 3, i32* %160, align 4
   %161 = alloca i32, align 4
@@ -306,14 +306,14 @@ define i32 @main(i32 %0, i8** %1) {
   %177 = getelementptr %dimension_descriptor, %dimension_descriptor* %176, i32 0, i32 0
   %178 = getelementptr %dimension_descriptor, %dimension_descriptor* %176, i32 0, i32 1
   %179 = getelementptr %dimension_descriptor, %dimension_descriptor* %176, i32 0, i32 2
-  store i32 1, i32* %177, align 4
+  store i32 5, i32* %177, align 4
   store i32 1, i32* %178, align 4
   store i32 2, i32* %179, align 4
   %180 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %171, i32 2
   %181 = getelementptr %dimension_descriptor, %dimension_descriptor* %180, i32 0, i32 0
   %182 = getelementptr %dimension_descriptor, %dimension_descriptor* %180, i32 0, i32 1
   %183 = getelementptr %dimension_descriptor, %dimension_descriptor* %180, i32 0, i32 2
-  store i32 1, i32* %181, align 4
+  store i32 10, i32* %181, align 4
   store i32 1, i32* %182, align 4
   store i32 2, i32* %183, align 4
   %184 = alloca i32, align 4
