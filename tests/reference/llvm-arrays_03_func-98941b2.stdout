@@ -103,30 +103,32 @@ loop.body:                                        ; preds = %loop.head
   %26 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 1
   %27 = load i32, i32* %26, align 4
   %28 = sub i32 %22, %27
-  %29 = mul i32 1, %28
-  %30 = add i32 0, %29
-  %31 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 2
-  %32 = load i32, i32* %31, align 4
-  %33 = mul i32 1, %32
-  %34 = getelementptr %array, %array* %x, i32 0, i32 0
-  %35 = load i32*, i32** %34, align 8
-  %36 = getelementptr inbounds i32, i32* %35, i32 %30
-  %37 = load i32, i32* %i, align 4
-  store i32 %37, i32* %36, align 4
+  %29 = getelementptr %dimension_descriptor, %dimension_descriptor* %25, i32 0, i32 0
+  %30 = load i32, i32* %29, align 4
+  %31 = mul i32 %30, %28
+  %32 = add i32 0, %31
+  %33 = getelementptr %array, %array* %x, i32 0, i32 1
+  %34 = load i32, i32* %33, align 4
+  %35 = add i32 %32, %34
+  %36 = getelementptr %array, %array* %x, i32 0, i32 0
+  %37 = load i32*, i32** %36, align 8
+  %38 = getelementptr inbounds i32, i32* %37, i32 %35
+  %39 = load i32, i32* %i, align 4
+  store i32 %39, i32* %38, align 4
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
-  %38 = getelementptr %array, %array* %x, i32 0, i32 0
-  %39 = load i32*, i32** %38, align 8
+  %40 = getelementptr %array, %array* %x, i32 0, i32 0
+  %41 = load i32*, i32** %40, align 8
   store i32 1, i32* %call_arg_value, align 4
   store i32 10, i32* %call_arg_value1, align 4
-  %40 = call i32 @mysum_a(i32* %39, i32* %call_arg_value, i32* %call_arg_value1)
-  store i32 %40, i32* %s, align 4
-  %41 = load i32, i32* %s, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %41, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
-  %42 = load i32, i32* %s, align 4
-  %43 = icmp ne i32 %42, 55
-  br i1 %43, label %then, label %else
+  %42 = call i32 @mysum_a(i32* %41, i32* %call_arg_value, i32* %call_arg_value1)
+  store i32 %42, i32* %s, align 4
+  %43 = load i32, i32* %s, align 4
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %43, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %44 = load i32, i32* %s, align 4
+  %45 = icmp ne i32 %44, 55
+  br i1 %45, label %then, label %else
 
 then:                                             ; preds = %loop.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @3, i32 0, i32 0))
