@@ -2462,6 +2462,33 @@ static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
     return false;
 }
 
+static inline ASR::intentType symbol_intent(const ASR::symbol_t *f)
+{
+    switch( f->type ) {
+        case ASR::symbolType::Variable: {
+            return ASR::down_cast<ASR::Variable_t>(f)->m_intent;
+        }
+        default: {
+            throw LCompilersException("Cannot return intent of, " +
+                                    std::to_string(f->type) + " symbol.");
+        }
+    }
+    return ASR::intentType::Unspecified;
+}
+
+static inline ASR::intentType expr_intent(ASR::expr_t* expr) {
+    switch( expr->type ) {
+        case ASR::exprType::Var: {
+            return ASRUtils::symbol_intent(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        }
+        default: {
+            throw LCompilersException("Cannot extract intent of ASR::exprType::" +
+                std::to_string(expr->type));
+        }
+    }
+    return ASR::intentType::Unspecified;
+}
+
 static inline bool is_data_only_array(ASR::ttype_t* type, ASR::abiType abi) {
     ASR::dimension_t* m_dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
