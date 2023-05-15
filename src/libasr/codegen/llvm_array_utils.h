@@ -173,6 +173,13 @@ namespace LCompilers {
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank) = 0;
 
+                virtual
+                void fill_descriptor_for_array_section_data_only(
+                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value** lbs, llvm::Value** ubs,
+                    llvm::Value** ds, llvm::Value** non_sliced_indices,
+                    llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
+
                 /*
                 * Returns the llvm::Type* associated with the
                 * dimension descriptor used by the current class.
@@ -382,6 +389,13 @@ namespace LCompilers {
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank);
+
+                virtual
+                void fill_descriptor_for_array_section_data_only(
+                    llvm::Value* value_desc, llvm::Value* target,
+                    llvm::Value** lbs, llvm::Value** ubs,
+                    llvm::Value** ds, llvm::Value** non_sliced_indices,
+                    llvm::Value** llvm_diminfo, int value_rank, int target_rank);
 
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
