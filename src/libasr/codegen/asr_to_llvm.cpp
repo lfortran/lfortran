@@ -4309,9 +4309,28 @@ public:
         llvm::Value* target_dim_des_val = builder0.CreateAlloca(arr_descr->get_dimension_descriptor_type(false),
             llvm::ConstantInt::get(getIntType(4), llvm::APInt(32, target_rank)));
         builder->CreateStore(target_dim_des_val, target_dim_des_ptr);
-        arr_descr->fill_descriptor_for_array_section(value_desc, target,
-            lbs.p, ubs.p, ds.p, non_sliced_indices.p,
-            array_section->n_args, target_rank);
+        ASR::ttype_t* array_type = ASRUtils::expr_type(array_section->m_v);
+        if( ASRUtils::is_data_only_array(array_type, ASR::abiType::Source) &&
+            ASRUtils::expr_intent(array_section->m_v) != ASR::intentType::Local ) {
+            ASR::dimension_t* m_dims = nullptr;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+            LCOMPILERS_ASSERT(n_dims == value_rank);
+            Vec<llvm::Value*> llvm_diminfo;
+            llvm_diminfo.reserve(al, value_rank * 2);
+            for( int i = 0; i < value_rank; i++ ) {
+                visit_expr_wrapper(m_dims[i].m_start, true);
+                llvm_diminfo.push_back(al, tmp);
+                visit_expr_wrapper(m_dims[i].m_length, true);
+                llvm_diminfo.push_back(al, tmp);
+            }
+            arr_descr->fill_descriptor_for_array_section_data_only(value_desc, target,
+                lbs.p, ubs.p, ds.p, non_sliced_indices.p,
+                llvm_diminfo.p, value_rank, target_rank);
+        } else {
+            arr_descr->fill_descriptor_for_array_section(value_desc, target,
+                lbs.p, ubs.p, ds.p, non_sliced_indices.p,
+                array_section->n_args, target_rank);
+        }
         builder->CreateStore(target, target_desc);
     }
 
