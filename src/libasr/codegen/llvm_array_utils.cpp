@@ -396,8 +396,9 @@ namespace LCompilers {
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             int value_rank, int target_rank) {
-            builder->CreateStore(LLVM::CreateLoad(*builder, get_pointer_to_data(value_desc)),
-                                 get_pointer_to_data(target));
+            llvm::Value* value_desc_data = LLVM::CreateLoad(*builder, get_pointer_to_data(value_desc));
+            llvm::Value* target_data = get_pointer_to_data(target);
+            builder->CreateStore(value_desc_data, target_data);
 
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
