@@ -428,8 +428,9 @@ namespace LCompilers {
                                               );
                     llvm::Value* value_dim_des = llvm_utils->create_ptr_gep(value_dim_des_array, i);
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
-                    builder->CreateStore(get_stride(value_dim_des, true),
-                                         get_stride(target_dim_des, false));
+                    llvm::Value* value_stride = get_stride(value_dim_des, true);
+                    llvm::Value* target_stride = get_stride(target_dim_des, false);
+                    builder->CreateStore(value_stride, target_stride);
                     builder->CreateStore(lbs[i],
                                          get_lower_bound(target_dim_des, false));
                     builder->CreateStore(dim_length,
