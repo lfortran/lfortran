@@ -380,6 +380,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             }
         }
 
+        op_dims = result_dims.p;
+        op_n_dims = result_dims.size();
+
         switch( class_type ) {
             case ASR::exprType::RealCompare:
             case ASR::exprType::ComplexCompare:
@@ -389,6 +392,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             4, result_dims.p, result_dims.size()));
             }
             default: {
+                if( allocate ) {
+                    op_type = ASRUtils::type_get_past_pointer(op_type);
+                }
                 return ASRUtils::duplicate_type(al, op_type, &result_dims);
             }
         }
@@ -417,9 +423,14 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             op_n_dims = x_dims.size();
         }
 
+        ASR::ttype_t* x_m_type = x->m_type;
+        if( !ASR::is_a<ASR::Pointer_t>(*x_m_type) ) {
+            x_m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, x_m_type));
+        }
+
         ASR::expr_t* array_section_pointer = PassUtils::create_var(
             result_counter, "_array_section_pointer_", loc,
-            x->m_type, al, current_scope);
+            x_m_type, al, current_scope);
         result_counter += 1;
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, array_section_pointer, *current_expr)));

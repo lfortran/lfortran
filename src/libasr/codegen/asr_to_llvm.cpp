@@ -1375,7 +1375,8 @@ public:
             llvm::Value* x_arr = llvm_symtab[h];
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::symbol_type(tmp_sym);
             ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
-                curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
+                ASRUtils::type_get_past_pointer(curr_arg_m_a_type),
+                curr_arg_m_a_type->base.loc);
             if (ASRUtils::is_character(*curr_arg_m_a_type)) {
                 int dims = ASR::down_cast<ASR::Character_t>(curr_arg_m_a_type)->n_dims;
                 if (dims == 0) {
