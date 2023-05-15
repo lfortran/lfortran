@@ -600,7 +600,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             Vec<ASR::stmt_t*> doloop_body;
             std::vector<int> loop_var_indices;
             int result_rank = PassUtils::get_rank(result_var);
-            std::cout<<"result_rank: "<<result_rank<<" "<<n_dims<<" "<<rank_left<<" "<<rank_right<<std::endl;
             create_do_loop(loc, n_dims, result_rank, idx_vars,
                 loop_vars, idx_vars_value, loop_var_indices, doloop_body,
                 op_expr, 2, [=, &arr_expr, &idx_vars, &idx_vars_value, &doloop_body]() {
