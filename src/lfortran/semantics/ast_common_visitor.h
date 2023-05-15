@@ -2900,6 +2900,7 @@ public:
                     " is invalid. Rank of the array, " +
                     std::to_string(v_Var_n_dims), x.base.base.loc);
             }
+            const_dim = const_dim - 1;
             if( v_Var_dims[const_dim].m_start && v_Var_dims[const_dim].m_length ) {
                 ASR::expr_t* v_Var_start = ASRUtils::expr_value(v_Var_dims[const_dim].m_start);
                 ASR::expr_t* v_Var_length = ASRUtils::expr_value(v_Var_dims[const_dim].m_length);
