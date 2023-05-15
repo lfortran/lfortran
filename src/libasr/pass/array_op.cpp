@@ -402,7 +402,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         ASR::expr_t* i32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0))));
         for( size_t i = 0; i < x->n_args; i++ ) {
-            if( x->m_args[i].m_step == nullptr ) {
+            if( x->m_args[i].m_step != nullptr ) {
                 ASR::dimension_t x_dim;
                 x_dim.loc = loc;
                 x_dim.m_start = x->m_args[i].m_left;
@@ -600,6 +600,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             Vec<ASR::stmt_t*> doloop_body;
             std::vector<int> loop_var_indices;
             int result_rank = PassUtils::get_rank(result_var);
+            std::cout<<"result_rank: "<<result_rank<<" "<<n_dims<<" "<<rank_left<<" "<<rank_right<<std::endl;
             create_do_loop(loc, n_dims, result_rank, idx_vars,
                 loop_vars, idx_vars_value, loop_var_indices, doloop_body,
                 op_expr, 2, [=, &arr_expr, &idx_vars, &idx_vars_value, &doloop_body]() {
@@ -1271,6 +1272,10 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             }
 
             visit_AssignmentUtil(x);
+        }
+
+        void visit_Associate(const ASR::Associate_t& /*x*/) {
+
         }
 
 };
