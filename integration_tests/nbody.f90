@@ -78,7 +78,7 @@ program nbody
 
     ! call getarg(1, argv)
     ! read (argv,*) num
-    num = 1000
+    num = 50000000
 
     call offsetMomentum(1, v, mass)
     e = energy(x, v, mass)
@@ -92,7 +92,7 @@ program nbody
     e = energy(x, v, mass)
     ! workaround
     print *, e
-    if (abs(e + 0.16908760523460617) > 1e-8) error stop
+    if (abs(e + 0.16908313397888824) > 1e-8) error stop
 
     contains
 

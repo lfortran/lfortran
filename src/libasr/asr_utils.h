@@ -3347,8 +3347,44 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
     if( bound == "ubound" ) {
         bound_type = ASR::arrayboundType::UBound;
     }
+    ASR::expr_t* bound_value = nullptr;
+    ASR::dimension_t* arr_dims = nullptr;
+    int arr_n_dims = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(arr_expr), arr_dims);
+    if( dim > arr_n_dims || dim < 1) {
+        throw LCompilersException("Dimension " + std::to_string(dim) +
+            " is invalid. Rank of the array, " + std::to_string(arr_n_dims));
+    }
+    dim = dim - 1;
+    if( arr_dims[dim].m_start && arr_dims[dim].m_length ) {
+        ASR::expr_t* arr_start = ASRUtils::expr_value(arr_dims[dim].m_start);
+        ASR::expr_t* arr_length = ASRUtils::expr_value(arr_dims[dim].m_length);
+        if( bound_type == ASR::arrayboundType::LBound &&
+            ASRUtils::is_value_constant(arr_start) ) {
+            int64_t const_lbound = -1;
+            if( !ASRUtils::extract_value(arr_start, const_lbound) ) {
+                LCOMPILERS_ASSERT(false);
+            }
+            bound_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, arr_expr->base.loc, const_lbound, int32_type));
+        } else if( bound_type == ASR::arrayboundType::UBound &&
+            ASRUtils::is_value_constant(arr_start) &&
+            ASRUtils::is_value_constant(arr_length) ) {
+            int64_t const_lbound = -1;
+            if( !ASRUtils::extract_value(arr_start, const_lbound) ) {
+                LCOMPILERS_ASSERT(false);
+            }
+            int64_t const_length = -1;
+            if( !ASRUtils::extract_value(arr_length, const_length) ) {
+                LCOMPILERS_ASSERT(false);
+            }
+            bound_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, arr_expr->base.loc,
+                            const_lbound + const_length - 1, int32_type));
+        }
+    }
     return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, arr_expr->base.loc, arr_expr, dim_expr,
-                int32_type, bound_type, nullptr));
+                int32_type, bound_type, bound_value));
 }
 
 static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,

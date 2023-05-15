@@ -366,7 +366,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         bool& allocate) {
 
         Vec<ASR::dimension_t> result_dims;
-        if( ASRUtils::is_fixed_size_array(dims, n_dims) ) {
+        bool is_fixed_size_array = ASRUtils::is_fixed_size_array(dims, n_dims);
+        if( is_fixed_size_array ) {
             result_dims.from_pointer_n(dims, n_dims);
         } else {
             allocate = true;
@@ -392,7 +393,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             4, result_dims.p, result_dims.size()));
             }
             default: {
-                if( allocate ) {
+                if( allocate || is_fixed_size_array ) {
                     op_type = ASRUtils::type_get_past_pointer(op_type);
                 }
                 return ASRUtils::duplicate_type(al, op_type, &result_dims);
@@ -407,14 +408,45 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* i32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0))));
+        Vec<ASR::dimension_t> empty_dims;
+        empty_dims.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
             if( x->m_args[i].m_step != nullptr ) {
+
+                ASR::dimension_t empty_dim;
+                empty_dim.loc = loc;
+                empty_dim.m_start = nullptr;
+                empty_dim.m_length = nullptr;
+                empty_dims.push_back(al, empty_dim);
+
                 ASR::dimension_t x_dim;
                 x_dim.loc = loc;
                 x_dim.m_start = x->m_args[i].m_left;
+                ASR::expr_t* start_value = ASRUtils::expr_value(x_dim.m_start);
+                ASR::expr_t* end_value = ASRUtils::expr_value(x->m_args[i].m_right);
+                ASR::expr_t* step_value = ASRUtils::expr_value(x->m_args[i].m_step);
+                ASR::expr_t* length_value = nullptr;
+                if( ASRUtils::is_value_constant(start_value) &&
+                    ASRUtils::is_value_constant(end_value) &&
+                    ASRUtils::is_value_constant(step_value) ) {
+                    int64_t const_start = -1;
+                    if( !ASRUtils::extract_value(start_value, const_start) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    int64_t const_end = -1;
+                    if( !ASRUtils::extract_value(end_value, const_end) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    int64_t const_step = -1;
+                    if( !ASRUtils::extract_value(step_value, const_step) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    length_value = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t,
+                        ((const_end - const_start)/const_step) + 1, 4, loc);
+                }
                 x_dim.m_length = builder.ElementalAdd(builder.ElementalDiv(
                     builder.ElementalSub(x->m_args[i].m_right, x->m_args[i].m_left, loc),
-                    x->m_args[i].m_step, loc), i32_one, loc);
+                    x->m_args[i].m_step, loc), i32_one, loc, length_value);
                 x_dims.push_back(al, x_dim);
             }
         }
@@ -423,10 +455,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             op_n_dims = x_dims.size();
         }
 
-        ASR::ttype_t* x_m_type = x->m_type;
-        if( !ASR::is_a<ASR::Pointer_t>(*x_m_type) ) {
-            x_m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, x_m_type));
-        }
+        ASR::ttype_t* x_m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+            ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_pointer(x->m_type), &empty_dims)));
 
         ASR::expr_t* array_section_pointer = PassUtils::create_var(
             result_counter, "_array_section_pointer_", loc,
