@@ -677,6 +677,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             doloop_body.push_back(al, assign);
         });
         *current_expr = result_var;
+        if( op_expr == &(x->base) ) {
+            op_dims = nullptr;
+            op_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(*current_expr), op_dims);
+        }
         result_var = nullptr;
         use_custom_loop_params = false;
     }
@@ -733,6 +738,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 result_counter += 1;
             }
             *current_expr = result_var;
+            if( op_expr == &(x->base) ) {
+                op_dims = nullptr;
+                op_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(*current_expr), op_dims);
+            }
 
             Vec<ASR::expr_t*> idx_vars, loop_vars;
             std::vector<int> loop_var_indices;
@@ -876,6 +886,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             result_counter += 1;
         }
         *current_expr = result_var;
+        if( op_expr == &(x->base) ) {
+            op_dims = nullptr;
+            op_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(*current_expr), op_dims);
+        }
 
         Vec<ASR::expr_t*> idx_vars, loop_vars;
         std::vector<int> loop_var_indices;
@@ -956,6 +971,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             } else {
                 *current_expr = result_var_;
             }
+            if( op_expr == &(x->base) ) {
+                op_dims = nullptr;
+                op_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(*current_expr), op_dims);
+            }
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, x->n_args + 1);
             for( size_t i = 0; i < x->n_args; i++ ) {
@@ -1021,6 +1041,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 result_counter += 1;
             }
             *current_expr = result_var;
+            if( op_expr == &(x->base) ) {
+                op_dims = nullptr;
+                op_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(*current_expr), op_dims);
+            }
 
             Vec<ASR::expr_t*> idx_vars, loop_vars;
             std::vector<int> loop_var_indices;
