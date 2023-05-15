@@ -1968,9 +1968,10 @@ public:
                 m_end = ASRUtils::EXPR(tmp);
                 ai.loc = m_end->base.loc;
             } else {
-                if( ASR::is_a<ASR::Character_t>(*ASRUtils::symbol_type(v)) ) {
+                if( ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)))) {
                     ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(
-                                                    ASRUtils::symbol_type(v));
+                                                    ASRUtils::type_get_past_pointer(
+                                                        ASRUtils::symbol_type(v)));
                     bool is_comp_time_value = false;
                     if( char_type->m_len_expr &&
                         ASRUtils::expr_value(char_type->m_len_expr) ) {
