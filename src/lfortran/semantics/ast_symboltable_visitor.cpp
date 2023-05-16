@@ -504,7 +504,12 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
-            current_procedure_args.push_back(to_lower(arg));
+            if (arg) {
+                current_procedure_args.push_back(to_lower(arg));
+            } else {
+                throw SemanticError("Alternate returns are not implemented yet",
+                    x.m_args[i].loc);
+            }
         }
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
