@@ -686,6 +686,7 @@ public:
 
 
     ASR::asr_t *tmp;
+    std::vector<ASR::asr_t *> tmp_vec;
     Allocator &al;
     CompilerOptions &compiler_options;
     SymbolTable *current_scope;
@@ -1975,9 +1976,10 @@ public:
                 m_end = ASRUtils::EXPR(tmp);
                 ai.loc = m_end->base.loc;
             } else {
-                if( ASR::is_a<ASR::Character_t>(*ASRUtils::symbol_type(v)) ) {
+                if( ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)))) {
                     ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(
-                                                    ASRUtils::symbol_type(v));
+                                                    ASRUtils::type_get_past_pointer(
+                                                        ASRUtils::symbol_type(v)));
                     bool is_comp_time_value = false;
                     if( char_type->m_len_expr &&
                         ASRUtils::expr_value(char_type->m_len_expr) ) {
@@ -2892,8 +2894,51 @@ public:
         int64_t kind_const = handle_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
                                             kind_const, nullptr, 0));
+        ASR::expr_t* bound_value = nullptr;
+        ASR::expr_t* dim_value = ASRUtils::expr_value(dim);
+        if( ASRUtils::is_value_constant(dim_value) ) {
+            int64_t const_dim = -1;
+            if( !ASRUtils::extract_value(dim_value, const_dim) ) {
+                LCOMPILERS_ASSERT(false);
+            }
+            ASR::dimension_t* v_Var_dims = nullptr;
+            int v_Var_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(v_Var), v_Var_dims);
+            if( const_dim > v_Var_n_dims || const_dim < 1) {
+                throw SemanticError("Dimension " + std::to_string(const_dim) +
+                    " is invalid. Rank of the array, " +
+                    std::to_string(v_Var_n_dims), x.base.base.loc);
+            }
+            const_dim = const_dim - 1;
+            if( v_Var_dims[const_dim].m_start && v_Var_dims[const_dim].m_length ) {
+                ASR::expr_t* v_Var_start = ASRUtils::expr_value(v_Var_dims[const_dim].m_start);
+                ASR::expr_t* v_Var_length = ASRUtils::expr_value(v_Var_dims[const_dim].m_length);
+                if( bound == ASR::arrayboundType::LBound &&
+                    ASRUtils::is_value_constant(v_Var_start) ) {
+                    int64_t const_lbound = -1;
+                    if( !ASRUtils::extract_value(v_Var_start, const_lbound) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    bound_value = make_ConstantWithType(make_IntegerConstant_t,
+                                    const_lbound, type, x.base.base.loc);
+                } else if( bound == ASR::arrayboundType::UBound &&
+                ASRUtils::is_value_constant(v_Var_start) &&
+                ASRUtils::is_value_constant(v_Var_length) ) {
+                    int64_t const_lbound = -1;
+                    if( !ASRUtils::extract_value(v_Var_start, const_lbound) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    int64_t const_length = -1;
+                    if( !ASRUtils::extract_value(v_Var_length, const_length) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    bound_value = make_ConstantWithType(make_IntegerConstant_t,
+                                    const_lbound + const_length - 1, type, x.base.base.loc);
+                }
+            }
+        }
         return ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim, type,
-                                      bound, nullptr);
+                                      bound, bound_value);
     }
 
     ASR::asr_t* create_ArraySize(const AST::FuncCallOrArray_t& x) {
