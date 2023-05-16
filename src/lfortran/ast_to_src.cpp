@@ -1862,6 +1862,9 @@ public:
             if (x.m_args[i].m_end) {
                 this->visit_expr(*x.m_args[i].m_end);
                 r.append(s);
+            } else if (x.m_args[i].m_label > 0) {
+                r += "*";
+                r.append(std::to_string(x.m_args[i].m_label));
             } else {
                 r += ":";
             }
@@ -3953,7 +3956,11 @@ public:
     }
 
     void visit_arg(const arg_t &x) {
-        s = std::string(x.m_arg);
+        if (x.m_arg) {
+            s = std::string(x.m_arg);
+        } else {
+            s = "*";
+        }
     }
 
     void visit_keyword(const keyword_t &x) {

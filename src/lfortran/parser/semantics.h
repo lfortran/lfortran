@@ -514,7 +514,7 @@ static inline VarType* VARTYPE4_(Allocator &al,
 #define VARTYPE4(s, k, l) VARTYPE4_(p.m_a, s, k, l)
 
 static inline FnArg* DIM1(Allocator &al, Location &l,
-    expr_t *a, expr_t *b, expr_t *c)
+    expr_t *a, expr_t *b, expr_t *c, int64_t label)
 {
     FnArg *s = al.allocate<FnArg>();
     s->keyword = false;
@@ -522,6 +522,7 @@ static inline FnArg* DIM1(Allocator &al, Location &l,
     s->arg.m_start = a;
     s->arg.m_end = b;
     s->arg.m_step = c;
+    s->arg.m_label = label;
     return s;
 }
 
@@ -619,7 +620,11 @@ static inline arg_t* ARGS(Allocator &al, Location &l,
     arg_t *a = al.allocate<arg_t>(args.size());
     for (size_t i=0; i < args.size(); i++) {
         a[i].loc = l;
-        a[i].m_arg = name2char(args.p[i]);
+        if (args.p[i]) {
+            a[i].m_arg = name2char(args.p[i]);
+        } else {
+            a[i].m_arg = nullptr;
+        }
     }
     return a;
 }
@@ -1606,15 +1611,16 @@ void add_ws_warning(const Location &loc,
 #define VAR_SYM_DECL6(id, a, e, l)   DECL3(p.m_a, id, &a, EXPR(e))
 #define VAR_SYM_DECL7(l)             DECL2c(p.m_a, l)
 
-#define ARRAY_COMP_DECL_0i0(a,l)     DIM1(p.m_a, l, nullptr, EXPR(a), nullptr)
-#define ARRAY_COMP_DECL_001(l)       DIM1(p.m_a, l, nullptr, nullptr, EXPR(INT1(l)))
-#define ARRAY_COMP_DECL_a01(a,l)     DIM1(p.m_a, l, EXPR(a), nullptr, EXPR(INT1(l)))
-#define ARRAY_COMP_DECL_0b1(b,l)     DIM1(p.m_a, l, nullptr, EXPR(b), EXPR(INT1(l)))
-#define ARRAY_COMP_DECL_ab1(a,b,l)   DIM1(p.m_a, l, EXPR(a), EXPR(b), EXPR(INT1(l)))
-#define ARRAY_COMP_DECL_00c(c,l)     DIM1(p.m_a, l, nullptr, nullptr, EXPR(c))
-#define ARRAY_COMP_DECL_a0c(a,c,l)   DIM1(p.m_a, l, EXPR(a), nullptr, EXPR(c))
-#define ARRAY_COMP_DECL_0bc(b,c,l)   DIM1(p.m_a, l, nullptr, EXPR(b), EXPR(c))
-#define ARRAY_COMP_DECL_abc(a,b,c,l) DIM1(p.m_a, l, EXPR(a), EXPR(b), EXPR(c))
+#define ARRAY_COMP_DECL_0i0(a,l)     DIM1(p.m_a, l, nullptr, EXPR(a), nullptr, 0)
+#define ARRAY_COMP_DECL_001(l)       DIM1(p.m_a, l, nullptr, nullptr, EXPR(INT1(l)), 0)
+#define ARRAY_COMP_DECL_a01(a,l)     DIM1(p.m_a, l, EXPR(a), nullptr, EXPR(INT1(l)), 0)
+#define ARRAY_COMP_DECL_0b1(b,l)     DIM1(p.m_a, l, nullptr, EXPR(b), EXPR(INT1(l)), 0)
+#define ARRAY_COMP_DECL_ab1(a,b,l)   DIM1(p.m_a, l, EXPR(a), EXPR(b), EXPR(INT1(l)), 0)
+#define ARRAY_COMP_DECL_00c(c,l)     DIM1(p.m_a, l, nullptr, nullptr, EXPR(c), 0)
+#define ARRAY_COMP_DECL_a0c(a,c,l)   DIM1(p.m_a, l, EXPR(a), nullptr, EXPR(c), 0)
+#define ARRAY_COMP_DECL_0bc(b,c,l)   DIM1(p.m_a, l, nullptr, EXPR(b), EXPR(c), 0)
+#define ARRAY_COMP_DECL_abc(a,b,c,l) DIM1(p.m_a, l, EXPR(a), EXPR(b), EXPR(c), 0)
+#define ARRAY_COMP_DECL_label(x, l)   DIM1(p.m_a, l, nullptr, nullptr, nullptr, x.int_n.n);
 
 #define ARRAY_COMP_DECL1k(id, a, l)   DIM1k(p.m_a, l, id, EXPR(INT1(l)), EXPR(a))
 
