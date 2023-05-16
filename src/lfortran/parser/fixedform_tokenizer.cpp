@@ -889,6 +889,39 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    bool lex_common_block(unsigned char *&cur) {
+        push_token_advance(cur, "common");
+        int num_slash = 0;
+        while(!next_is_eol(cur)) {
+            // check if it is a "/"
+            if (*cur == '/') {
+                if (num_slash >= 2 ) {
+                    unsigned char *end = cur;
+                    // tokenize uptil here
+                    tokenize_until(end);
+                    if (*(cur-1) != ',') {
+                        YYSTYPE y2;
+                        Location loc;
+                        auto token = 271;
+                        tokens.push_back(token);
+                        std::string tk{","};
+                        y2.string.from_str(m_a, tk);
+                        stypes.push_back(y2);
+                        locations.push_back(loc);
+                    }
+                    t.cur = cur;
+                    num_slash = 1;
+                } else {
+                    num_slash++;
+                }
+            }
+            cur++;
+        }
+        cur++;
+        tokenize_until(cur);
+        return true;
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         int64_t l = eat_label(cur);
         if (lex_declaration(cur)) {
@@ -951,9 +984,7 @@ struct FixedFormRecursiveDescent {
         }
 
         if (next_is(cur, "common")) {
-            push_token_advance(cur, "common");
-            tokenize_line(cur);
-            return true;
+            return lex_common_block(cur);
         }
 
         if (next_is(cur, "save")) {
