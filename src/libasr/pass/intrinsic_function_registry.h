@@ -79,18 +79,46 @@ class ASRBuilder {
         ASRUtils::TYPE(ASR::make_Logical_t( \
             al, loc, 4, nullptr, 0)), nullptr)); \
 
-    #define create_ElementalBinOp(OpType, BinOpName, OpName) case ASR::ttypeType::OpType: { \
+    #define create_ElementalBinOp(OpType, BinOpName, OpName, value) case ASR::ttypeType::OpType: { \
         return ASRUtils::EXPR(ASR::BinOpName(al, loc, \
                 left, ASR::binopType::OpName, right, \
-                ASRUtils::expr_type(left), nullptr)); \
+                ASRUtils::expr_type(left), value)); \
     } \
 
     ASR::expr_t* ElementalAdd(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc) {
+        const Location& loc, ASR::expr_t* value=nullptr) {
         switch (ASRUtils::expr_type(left)->type) {
-            create_ElementalBinOp(Real, make_RealBinOp_t, Add)
-            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Add)
-            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Add)
+            create_ElementalBinOp(Real, make_RealBinOp_t, Add, value)
+            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Add, value)
+            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Add, value)
+            default: {
+                throw LCompilersException("Expression type, " +
+                                          std::to_string(left->type) +
+                                          " not yet supported");
+            }
+        }
+    }
+
+    ASR::expr_t* ElementalSub(ASR::expr_t* left, ASR::expr_t* right,
+        const Location& loc, ASR::expr_t* value=nullptr) {
+        switch (ASRUtils::expr_type(left)->type) {
+            create_ElementalBinOp(Real, make_RealBinOp_t, Sub, value)
+            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Sub, value)
+            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Sub, value)
+            default: {
+                throw LCompilersException("Expression type, " +
+                                          std::to_string(left->type) +
+                                          " not yet supported");
+            }
+        }
+    }
+
+    ASR::expr_t* ElementalDiv(ASR::expr_t* left, ASR::expr_t* right,
+        const Location& loc, ASR::expr_t* value=nullptr) {
+        switch (ASRUtils::expr_type(left)->type) {
+            create_ElementalBinOp(Real, make_RealBinOp_t, Div, value)
+            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Div, value)
+            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Div, value)
             default: {
                 throw LCompilersException("Expression type, " +
                                           std::to_string(left->type) +
@@ -100,11 +128,11 @@ class ASRBuilder {
     }
 
     ASR::expr_t* ElementalPow(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc) {
+        const Location& loc, ASR::expr_t* value=nullptr) {
         switch (ASRUtils::expr_type(left)->type) {
-            create_ElementalBinOp(Real, make_RealBinOp_t, Pow)
-            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Pow)
-            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Pow)
+            create_ElementalBinOp(Real, make_RealBinOp_t, Pow, value)
+            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Pow, value)
+            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Pow, value)
             default: {
                 throw LCompilersException("Expression type, " +
                                           std::to_string(left->type) +

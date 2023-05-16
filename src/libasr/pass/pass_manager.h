@@ -195,7 +195,7 @@ namespace LCompilers {
                 "class_constructor",
                 "implied_do_loops",
                 "pass_list_expr",
-                "arr_slice",
+                // "arr_slice",
                 "subroutine_from_function",
                 "where",
                 "array_op",
