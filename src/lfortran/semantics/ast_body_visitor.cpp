@@ -110,6 +110,11 @@ public:
                     }
                 }
                 body.push_back(al, tmp_stmt);
+            } else if (!tmp_vec.empty()) {
+                for(auto &x: tmp_vec) {
+                    body.push_back(al, ASRUtils::STMT(x));
+                }
+                tmp_vec.clear();
             }
             // To avoid last statement to be entered twice once we exit this node
             tmp = nullptr;
@@ -127,6 +132,11 @@ public:
             visit_ast(*x.m_items[i]);
             if (tmp) {
                 items.push_back(al, tmp);
+            } else if (!tmp_vec.empty()) {
+                for (auto &t: tmp_vec) {
+                    items.push_back(al, t);
+                }
+                tmp_vec.clear();
             }
         }
         unit->m_items = items.p;
@@ -1824,6 +1834,7 @@ public:
         this->visit_expr(*x.m_value);
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
+        bool is_allocatable = false;
         if (target->type == ASR::exprType::Var) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
             ASR::symbol_t *sym = var->m_v;
@@ -1834,7 +1845,9 @@ public:
             }
             if (sym->type == ASR::symbolType::Variable) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                if (v->m_intent == ASR::intentType::In) {
+                is_allocatable = v->m_storage == ASR::storage_typeType::Allocatable;
+                ASR::intentType intent = v->m_intent;
+                if (intent == ASR::intentType::In) {
                     throw SemanticError("Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`", target->base.loc);
                 }
                 if (v->m_storage == ASR::storage_typeType::Parameter) {
@@ -1912,8 +1925,25 @@ public:
                 }
             }
         }
+        if (ASR::is_a<ASR::ArrayConstant_t>(*value) && is_allocatable) {
+            ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            Vec<ASR::alloc_arg_t> vec_alloc;
+            vec_alloc.reserve(al, 1);
+            ASR::alloc_arg_t alloc_arg;
+            alloc_arg.loc = ac->base.base.loc;
+            alloc_arg.m_a = target;
+            alloc_arg.n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ac->m_type, alloc_arg.m_dims);
+            vec_alloc.push_back(al, alloc_arg);
+            tmp_vec.push_back(ASR::make_Allocate_t(al, ac->base.base.loc,
+                vec_alloc.p, 1, nullptr, nullptr, nullptr));
+            tmp_vec.push_back(ASR::make_Assignment_t(al, x.base.base.loc, target,
+                value, overloaded_stmt));
+            tmp = nullptr;
+            return;
+        }
         tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
-                                     overloaded_stmt);
+                                     overloaded_stmt);;
     }
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
@@ -2490,6 +2520,7 @@ public:
 
         ASR::stmt_t* assign_stmt;
         this->visit_stmt(*x.m_assign);
+        LCOMPILERS_ASSERT(tmp) // TODO Handle constant array
         assign_stmt = ASRUtils::STMT(tmp);
         ASR::do_loop_head_t head;
         head.m_v = var;

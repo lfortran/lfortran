@@ -137,7 +137,14 @@
                                                 (Var 3 strings_a)
                                                 ()
                                             )]
-                                            []
+                                            [(Allocate
+                                                [((Var 3 strings)
+                                                [((IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 0 (Integer 4 [])))])]
+                                                ()
+                                                ()
+                                                ()
+                                            )]
                                         )]
                                         []
                                     )
@@ -149,7 +156,14 @@
                                             (Logical 4 [])
                                             ()
                                         )
-                                        []
+                                        [(Allocate
+                                            [((Var 3 strings)
+                                            [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 0 (Integer 4 [])))])]
+                                            ()
+                                            ()
+                                            ()
+                                        )]
                                         []
                                     )
                                     (ImplicitDeallocate
