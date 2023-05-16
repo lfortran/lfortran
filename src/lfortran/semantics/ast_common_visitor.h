@@ -1202,7 +1202,14 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
                                     // TODO
-                                    throw SemanticError("Attribute declaration not "
+                                    throw SemanticError("External attribute declaration not "
+                                        "supported yet", x.base.base.loc);
+                                } else if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrCommon) {
+                                    // TODO:
+                                    // * store the variables in some local dictionary
+                                    // * At the end, insert it into global scope
+                                    throw SemanticError("Common attribute declaration not "
                                         "supported yet", x.base.base.loc);
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
