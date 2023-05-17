@@ -167,7 +167,8 @@ public:
             // nested procedure.
             if ( current_scope &&
                  v->m_parent_symtab->get_counter() != current_scope->get_counter() &&
-                 v->m_storage != ASR::storage_typeType::Parameter ) {
+                 (v->m_storage != ASR::storage_typeType::Parameter ||
+                  ASRUtils::is_array(v->m_type)) ) {
                 nesting_map[par_func_sym].insert(x.m_v);
             }
         }
