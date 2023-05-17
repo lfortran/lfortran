@@ -3090,3 +3090,7 @@ pass = "where"
 filename = "../integration_tests/where_04.f90"
 asr = true
 pass = "where"
+
+[[test]]
+filename = "common2.f"
+ast = true
