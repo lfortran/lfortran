@@ -119,6 +119,14 @@
                                                         )
                                                         ()
                                                     )
+                                                    (Allocate
+                                                        [((Var 9 build_dirs)
+                                                        [((IntegerConstant 1 (Integer 4 []))
+                                                        (IntegerConstant 2 (Integer 4 [])))])]
+                                                        ()
+                                                        ()
+                                                        ()
+                                                    )
                                                     (=
                                                         (Var 9 build_dirs)
                                                         (ArrayConstant
