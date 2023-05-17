@@ -889,36 +889,47 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
-    bool lex_common_block(unsigned char *&cur) {
-        push_token_advance(cur, "common");
-        int num_slash = 0;
+    void lex_common_block_part(unsigned char *&cur) {
+        // tokenize / block_1 / a, b
+        bool first_slash = true;
         while(!next_is_eol(cur)) {
-            // check if it is a "/"
-            if (*cur == '/') {
-                if (num_slash >= 2 ) {
-                    unsigned char *end = cur;
-                    // tokenize uptil here
-                    tokenize_until(end);
-                    if (*(cur-1) != ',') {
-                        YYSTYPE y2;
-                        Location loc;
-                        auto token = 271;
-                        tokens.push_back(token);
-                        std::string tk{","};
-                        y2.string.from_str(m_a, tk);
-                        stypes.push_back(y2);
-                        locations.push_back(loc);
-                    }
-                    t.cur = cur;
-                    num_slash = 1;
-                } else {
-                    num_slash++;
-                }
+            if (*(cur+1) == '/' && !first_slash) {
+                if (*cur != ',') {
+                    cur+=1;
+                } 
+                unsigned char *end = cur;
+                // tokenize uptil here
+                tokenize_until(end);
+                t.cur = cur;
+                break;
+            } else if (*(cur+1) == '/') {
+                first_slash = false;
             }
             cur++;
         }
-        cur++;
+        if (next_is_eol(cur)) {
+            tokenize_until(cur);
+            t.cur = cur;
+        }
+    }
+
+    bool lex_common_block(unsigned char *&cur) {
+        push_token_advance(cur, "common");
+        while(*cur == '/') {
+            lex_common_block_part(cur);
+            // handle an optional comma
+            if(*cur == '\n') {
+                break;
+            }
+            push_token_no_advance(cur, "comma");
+            if (*cur == ',') {
+                cur++;
+                t.cur = cur;
+            }
+        }
+        next_line(cur);
         tokenize_until(cur);
+        LCOMPILERS_ASSERT(*(t.cur-1) == '\n');
         return true;
     }
 
