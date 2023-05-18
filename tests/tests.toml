@@ -2656,6 +2656,12 @@ asr = true
 pass = "pass_array_by_data,transform_optional_argument_functions"
 
 [[test]]
+filename = "../integration_tests/modules_44.f90"
+asr = true
+extrafiles = "../integration_tests/modules_44_module.f90"
+pass = "pass_array_by_data"
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 
