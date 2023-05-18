@@ -48,6 +48,8 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 
+#include "../../lfortran/pickle.h"
+
 #if LLVM_VERSION_MAJOR >= 11
 #    define FIXED_VECTOR_TYPE llvm::FixedVectorType
 #else
@@ -4423,6 +4425,9 @@ public:
             } else {
                 bool is_value_data_only_array = ASRUtils::is_data_only_array(
                     asr_value->m_type, asr_value->m_abi);
+                if( ASR::is_a<ASR::Pointer_t>(*asr_value->m_type) ) {
+                    llvm_value = LLVM::CreateLoad(*builder, llvm_value);
+                }
                 if( is_value_data_only_array &&
                     asr_value->m_intent != ASR::intentType::Local ) {
                     ASR::ttype_t* target_type = ASRUtils::type_get_past_pointer(asr_target->m_type);

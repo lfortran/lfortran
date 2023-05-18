@@ -290,7 +290,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         }
                     }
                 }
-                if( ASRUtils::is_array(var_type) ) {
+                if( ASRUtils::is_array(var_type) &&
+                    !ASR::is_a<ASR::Pointer_t>(*var_type) ) {
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
                 }
@@ -481,7 +482,8 @@ public:
                         LCOMPILERS_ASSERT(sym_ != nullptr);
                         ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
                         ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
-                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) ) {
+                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) ||
+                            ASR::is_a<ASR::Pointer_t>(*ASRUtils::symbol_type(sym)) ) {
                             ASR::stmt_t *associate = ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc,
                                                         target, val));
                             body.push_back(al, associate);
