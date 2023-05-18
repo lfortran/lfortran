@@ -480,6 +480,8 @@ public:
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
+        create_common_modules(x.base.base.loc);
+        mark_common_blocks_as_declared();
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
@@ -646,6 +648,8 @@ public:
         }
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
+        create_common_modules(x.base.base.loc);
+        mark_common_blocks_as_declared();
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -1009,6 +1013,8 @@ public:
         }
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
+        create_common_modules(x.base.base.loc);
+        mark_common_blocks_as_declared();
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
