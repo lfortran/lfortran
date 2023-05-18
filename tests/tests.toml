@@ -3094,3 +3094,9 @@ pass = "where"
 [[test]]
 filename = "common2.f"
 ast = true
+asr = true
+
+[[test]]
+filename = "common3.f"
+ast = true
+asr = true
