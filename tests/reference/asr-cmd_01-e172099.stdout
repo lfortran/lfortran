@@ -130,7 +130,9 @@
                         2 get_command_argument
                         ()
                         [((Var 2 i))
-                        ((Var 2 arg))]
+                        ((Var 2 arg))
+                        (())
+                        (())]
                         ()
                     )
                     (Print

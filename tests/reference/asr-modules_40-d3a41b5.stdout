@@ -162,7 +162,8 @@
                                                             [(SubroutineCall
                                                                 5 resize
                                                                 ()
-                                                                [((Var 6 stack))]
+                                                                [((Var 6 stack))
+                                                                (())]
                                                                 ()
                                                             )]
                                                             []

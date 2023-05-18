@@ -133,7 +133,8 @@
                                                     4 1_string_type_raw
                                                     (Character 1 -2 () [])
                                                     ()
-                                                ))]
+                                                ))
+                                                (())]
                                                 (Integer 4 [])
                                                 ()
                                                 ()

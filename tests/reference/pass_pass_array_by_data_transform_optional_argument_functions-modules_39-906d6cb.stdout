@@ -103,12 +103,12 @@
                                             ))
                                             (())
                                             ((LogicalConstant
-                                                .true.
+                                                .false.
                                                 (Logical 4 [])
                                             ))
                                             (())
                                             ((LogicalConstant
-                                                .true.
+                                                .false.
                                                 (Logical 4 [])
                                             ))
                                             (())

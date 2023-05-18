@@ -77,7 +77,8 @@
                                 93
                                 Binary
                                 ()
-                            ))]
+                            ))
+                            (())]
                             (Integer 4 [])
                             (IntegerConstant 93 (Integer 4 []))
                             ()
@@ -93,7 +94,8 @@
                                 1255
                                 Octal
                                 ()
-                            ))]
+                            ))
+                            (())]
                             (Integer 4 [])
                             (IntegerConstant 1255 (Integer 4 []))
                             ()
@@ -109,7 +111,8 @@
                                 2748
                                 Hex
                                 ()
-                            ))]
+                            ))
+                            (())]
                             (Integer 4 [])
                             (IntegerConstant 2748 (Integer 4 []))
                             ()

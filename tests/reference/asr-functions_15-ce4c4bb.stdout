@@ -268,7 +268,7 @@
                         [(FunctionCall
                             4 f
                             ()
-                            []
+                            [(())]
                             (Logical 4 [])
                             ()
                             ()

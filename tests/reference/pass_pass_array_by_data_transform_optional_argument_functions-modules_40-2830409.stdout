@@ -165,7 +165,7 @@
                                                                 [((Var 6 stack))
                                                                 (())
                                                                 ((LogicalConstant
-                                                                    .true.
+                                                                    .false.
                                                                     (Logical 4 [])
                                                                 ))]
                                                                 ()

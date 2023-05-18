@@ -1,4 +1,4 @@
-module fpm_manifest_profile
+module modules_45_fpm_manifest_profile
 implicit none
 
     type :: file_scope_flag
@@ -54,4 +54,21 @@ contains
         profindex = profindex + 1
     end subroutine get_flags
 
-end module fpm_manifest_profile
+end module modules_45_fpm_manifest_profile
+
+program modules_45
+use modules_45_fpm_manifest_profile
+implicit none
+
+character(len=:), allocatable :: profile_name, compiler_name
+integer :: os_type, profindex
+logical :: os_valid
+type(profile_config_t), allocatable :: profiles(:)
+
+allocate(character(len=40) :: profile_name)
+allocate(character(len=40) :: compiler_name)
+allocate(profiles(5))
+call get_flags(profile_name, compiler_name, os_type, &
+               profiles, profindex, os_valid)
+
+end program
