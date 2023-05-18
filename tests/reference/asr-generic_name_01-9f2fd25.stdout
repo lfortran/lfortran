@@ -2,16 +2,6 @@
     (SymbolTable
         1
         {
-            1_complextype:
-                (ExternalSymbol
-                    1
-                    1_complextype
-                    2 complextype
-                    complex_module
-                    []
-                    complextype
-                    Public
-                ),
             complex_module:
                 (Module
                     (SymbolTable
@@ -494,7 +484,7 @@
                                     6
                                     1_complextype_i
                                     3 i
-                                    1_complextype
+                                    complextype
                                     []
                                     i
                                     Public
@@ -504,7 +494,7 @@
                                     6
                                     1_complextype_r
                                     3 r
-                                    1_complextype
+                                    complextype
                                     []
                                     r
                                     Public

@@ -2,26 +2,6 @@
     (SymbolTable
         1
         {
-            1_rectangle:
-                (ExternalSymbol
-                    1
-                    1_rectangle
-                    2 rectangle
-                    shape_mod
-                    []
-                    rectangle
-                    Public
-                ),
-            1_shape:
-                (ExternalSymbol
-                    1
-                    1_shape
-                    2 shape
-                    shape_mod
-                    []
-                    shape
-                    Public
-                ),
             derived_types_08:
                 (Program
                     (SymbolTable
@@ -42,7 +22,7 @@
                                     6
                                     1_rectangle_length
                                     4 length
-                                    1_rectangle
+                                    rectangle
                                     []
                                     length
                                     Public
@@ -52,7 +32,7 @@
                                     6
                                     1_rectangle_width
                                     4 width
-                                    1_rectangle
+                                    rectangle
                                     []
                                     width
                                     Public
@@ -62,7 +42,7 @@
                                     6
                                     1_shape_color
                                     3 color
-                                    1_shape
+                                    shape
                                     []
                                     color
                                     Public
@@ -72,7 +52,7 @@
                                     6
                                     1_shape_filled
                                     3 filled
-                                    1_shape
+                                    shape
                                     []
                                     filled
                                     Public
@@ -82,7 +62,7 @@
                                     6
                                     1_shape_x
                                     3 x
-                                    1_shape
+                                    shape
                                     []
                                     x
                                     Public
@@ -92,7 +72,7 @@
                                     6
                                     1_shape_y
                                     3 y
-                                    1_shape
+                                    shape
                                     []
                                     y
                                     Public

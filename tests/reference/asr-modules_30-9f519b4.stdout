@@ -219,16 +219,6 @@
                     (SymbolTable
                         2
                         {
-                            1_package_config_t:
-                                (ExternalSymbol
-                                    2
-                                    1_package_config_t
-                                    4 package_config_t
-                                    fpm_manifest_package_modules_30
-                                    []
-                                    package_config_t
-                                    Public
-                                ),
                             default_executable:
                                 (ExternalSymbol
                                     2
@@ -269,7 +259,7 @@
                                                     10
                                                     1_package_config_t_executable
                                                     5 executable
-                                                    1_package_config_t
+                                                    package_config_t
                                                     []
                                                     executable
                                                     Public
@@ -279,7 +269,7 @@
                                                     10
                                                     1_package_config_t_name
                                                     5 name
-                                                    1_package_config_t
+                                                    package_config_t
                                                     []
                                                     name
                                                     Public

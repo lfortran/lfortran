@@ -2,16 +2,6 @@
     (SymbolTable
         1
         {
-            1_t_1:
-                (ExternalSymbol
-                    1
-                    1_t_1
-                    2 t_1
-                    module_1
-                    []
-                    t_1
-                    Public
-                ),
             module_1:
                 (Module
                     (SymbolTable
@@ -349,7 +339,7 @@
                                     6
                                     1_t_1_i
                                     3 i
-                                    1_t_1
+                                    t_1
                                     []
                                     i
                                     Public

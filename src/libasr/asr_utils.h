@@ -2454,9 +2454,6 @@ static inline bool is_dimension_empty(ASR::dimension_t& dim) {
 }
 
 static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
-    if( n == 0 ) {
-        return true;
-    }
     for( size_t i = 0; i < n; i++ ) {
         if( is_dimension_empty(dims[i]) ) {
             return true;
@@ -2495,6 +2492,9 @@ static inline ASR::intentType expr_intent(ASR::expr_t* expr) {
 static inline bool is_data_only_array(ASR::ttype_t* type, ASR::abiType abi) {
     ASR::dimension_t* m_dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+    if( n_dims == 0 ) {
+        return false;
+    }
     return (abi == ASR::abiType::BindC || !ASRUtils::is_dimension_empty(m_dims, n_dims));
 }
 
@@ -2534,7 +2534,8 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
     std::string v_name = ASRUtils::symbol_name(v);
     std::string struct_t_name = ASRUtils::symbol_name(struct_t);
     std::string struct_ext_name = struct_t_name;
-    if( scope->resolve_symbol(struct_t_name) != struct_t ) {
+    if( ASRUtils::symbol_get_past_external(
+            scope->resolve_symbol(struct_t_name)) != struct_t ) {
         struct_ext_name = "1_" + struct_ext_name;
     }
     if( scope->resolve_symbol(struct_ext_name) == nullptr ) {
@@ -3328,7 +3329,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
         // The following if check determines whether the i-th argument
         // can be called by just passing the data pointer and
         // dimensional information spearately via extra arguments.
-        if( ASRUtils::is_dimension_empty(dims, n_dims) &&
+        if( n_dims > 0 && ASRUtils::is_dimension_empty(dims, n_dims) &&
             (argi->m_intent == ASRUtils::intent_in ||
              argi->m_intent == ASRUtils::intent_out ||
              argi->m_intent == ASRUtils::intent_inout) &&

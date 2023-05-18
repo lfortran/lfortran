@@ -167,16 +167,6 @@
                     (SymbolTable
                         2
                         {
-                            1_enum_type:
-                                (ExternalSymbol
-                                    2
-                                    1_enum_type
-                                    4 enum_type
-                                    derived_types_14_module
-                                    []
-                                    enum_type
-                                    Public
-                                ),
                             check:
                                 (Function
                                     (SymbolTable
@@ -266,7 +256,7 @@
                                                     6
                                                     1_enum_type_boolean
                                                     5 boolean
-                                                    1_enum_type
+                                                    enum_type
                                                     []
                                                     boolean
                                                     Public
@@ -276,7 +266,7 @@
                                                     6
                                                     1_enum_type_datetime
                                                     5 datetime
-                                                    1_enum_type
+                                                    enum_type
                                                     []
                                                     datetime
                                                     Public
@@ -286,7 +276,7 @@
                                                     6
                                                     1_enum_type_float
                                                     5 float
-                                                    1_enum_type
+                                                    enum_type
                                                     []
                                                     float
                                                     Public
@@ -296,7 +286,7 @@
                                                     6
                                                     1_enum_type_int
                                                     5 int
-                                                    1_enum_type
+                                                    enum_type
                                                     []
                                                     int
                                                     Public
@@ -306,7 +296,7 @@
                                                     6
                                                     1_enum_type_invalid
                                                     5 invalid
-                                                    1_enum_type
+                                                    enum_type
                                                     []
                                                     invalid
                                                     Public
@@ -316,7 +306,7 @@
                                                     6
                                                     1_enum_type_string
                                                     5 string
-                                                    1_enum_type
+                                                    enum_type
                                                     []
                                                     string
                                                     Public

@@ -2,16 +2,6 @@
     (SymbolTable
         1
         {
-            1_fpm_run_settings:
-                (ExternalSymbol
-                    1
-                    1_fpm_run_settings
-                    2 fpm_run_settings
-                    fpm_command_line
-                    []
-                    fpm_run_settings
-                    Public
-                ),
             derived_types_16:
                 (Program
                     (SymbolTable
@@ -22,7 +12,7 @@
                                     5
                                     1_fpm_run_settings_bool
                                     3 bool
-                                    1_fpm_run_settings
+                                    fpm_run_settings
                                     []
                                     bool
                                     Public
@@ -32,7 +22,7 @@
                                     5
                                     1_fpm_run_settings_float
                                     3 float
-                                    1_fpm_run_settings
+                                    fpm_run_settings
                                     []
                                     float
                                     Public
@@ -42,7 +32,7 @@
                                     5
                                     1_fpm_run_settings_int
                                     3 int
-                                    1_fpm_run_settings
+                                    fpm_run_settings
                                     []
                                     int
                                     Public

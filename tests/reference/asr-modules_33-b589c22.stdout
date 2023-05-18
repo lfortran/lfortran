@@ -900,16 +900,6 @@
                     (SymbolTable
                         4
                         {
-                            1_fpm_model_t:
-                                (ExternalSymbol
-                                    4
-                                    1_fpm_model_t
-                                    17 fpm_model_t
-                                    fpm_model_modules_33
-                                    []
-                                    fpm_model_t
-                                    Public
-                                ),
                             build_model:
                                 (Function
                                     (SymbolTable
@@ -950,7 +940,7 @@
                                                     5
                                                     1_fpm_model_t_deps
                                                     18 deps
-                                                    1_fpm_model_t
+                                                    fpm_model_t
                                                     []
                                                     deps
                                                     Public

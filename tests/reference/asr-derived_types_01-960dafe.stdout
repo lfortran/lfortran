@@ -2,16 +2,6 @@
     (SymbolTable
         1
         {
-            1_x:
-                (ExternalSymbol
-                    1
-                    1_x
-                    2 x
-                    derived_types_01_m_01
-                    []
-                    x
-                    Public
-                ),
             1_y:
                 (ExternalSymbol
                     1
@@ -20,16 +10,6 @@
                     derived_types_01_m_01
                     []
                     y
-                    Public
-                ),
-            1_z:
-                (ExternalSymbol
-                    1
-                    1_z
-                    6 z
-                    derived_types_01_m_02
-                    []
-                    z
                     Public
                 ),
             derived_types_01:
@@ -42,7 +22,7 @@
                                     8
                                     1_x_i
                                     3 i
-                                    1_x
+                                    x
                                     []
                                     i
                                     Public
@@ -52,7 +32,7 @@
                                     8
                                     1_x_r
                                     3 r
-                                    1_x
+                                    x
                                     []
                                     r
                                     Public
@@ -72,7 +52,7 @@
                                     8
                                     1_z_k
                                     7 k
-                                    1_z
+                                    z
                                     []
                                     k
                                     Public
@@ -82,7 +62,7 @@
                                     8
                                     1_z_l
                                     7 l
-                                    1_z
+                                    z
                                     []
                                     l
                                     Public

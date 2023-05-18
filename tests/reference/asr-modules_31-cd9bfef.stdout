@@ -17,16 +17,6 @@
                                     dependency_config_t
                                     Public
                                 ),
-                            1_dependency_tree_t:
-                                (ExternalSymbol
-                                    4
-                                    1_dependency_tree_t
-                                    9 dependency_tree_t
-                                    fpm_dependency_modules_31
-                                    []
-                                    dependency_tree_t
-                                    Public
-                                ),
                             cmd_update:
                                 (Function
                                     (SymbolTable
@@ -47,7 +37,7 @@
                                                     7
                                                     1_dependency_tree_t_dep
                                                     12 dep
-                                                    1_dependency_tree_t
+                                                    dependency_tree_t
                                                     []
                                                     dep
                                                     Public

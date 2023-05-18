@@ -2,16 +2,6 @@
     (SymbolTable
         1
         {
-            1_point:
-                (ExternalSymbol
-                    1
-                    1_point
-                    2 point
-                    derived_type_collection
-                    []
-                    point
-                    Public
-                ),
             derived_type_collection:
                 (Module
                     (SymbolTable
@@ -102,7 +92,7 @@
                                     4
                                     1_point_x
                                     3 x
-                                    1_point
+                                    point
                                     []
                                     x
                                     Public
@@ -112,7 +102,7 @@
                                     4
                                     1_point_y
                                     3 y
-                                    1_point
+                                    point
                                     []
                                     y
                                     Public
@@ -279,7 +269,7 @@
                                                     7
                                                     1_point_x
                                                     3 x
-                                                    1_point
+                                                    point
                                                     []
                                                     x
                                                     Public
@@ -289,7 +279,7 @@
                                                     7
                                                     1_point_y
                                                     3 y
-                                                    1_point
+                                                    point
                                                     []
                                                     y
                                                     Public
@@ -363,7 +353,7 @@
                                                     8
                                                     1_point_x
                                                     3 x
-                                                    1_point
+                                                    point
                                                     []
                                                     x
                                                     Public
@@ -373,7 +363,7 @@
                                                     8
                                                     1_point_y
                                                     3 y
-                                                    1_point
+                                                    point
                                                     []
                                                     y
                                                     Public
@@ -443,7 +433,7 @@
                                                     9
                                                     1_point_x
                                                     3 x
-                                                    1_point
+                                                    point
                                                     []
                                                     x
                                                     Public
@@ -453,7 +443,7 @@
                                                     9
                                                     1_point_y
                                                     3 y
-                                                    1_point
+                                                    point
                                                     []
                                                     y
                                                     Public
@@ -527,7 +517,7 @@
                                                     10
                                                     1_point_x
                                                     3 x
-                                                    1_point
+                                                    point
                                                     []
                                                     x
                                                     Public
@@ -537,7 +527,7 @@
                                                     10
                                                     1_point_y
                                                     3 y
-                                                    1_point
+                                                    point
                                                     []
                                                     y
                                                     Public

@@ -48,8 +48,6 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 
-#include "../../lfortran/pickle.h"
-
 #if LLVM_VERSION_MAJOR >= 11
 #    define FIXED_VECTOR_TYPE llvm::FixedVectorType
 #else
