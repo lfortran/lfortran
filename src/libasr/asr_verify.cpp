@@ -139,11 +139,17 @@ public:
             "The X::m_symtab::asr_owner must point to X");
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
+        require(x.m_name, "Program name is required");
+        if (x.n_dependencies > 0) {
+            require(x.m_dependencies,
+            std::string(x.m_name) + "::m_dependencies is required");
+        }
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
         for (size_t i=0; i<x.n_body; i++) {
+            LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
         }
         current_symtab = parent_symtab;
@@ -170,6 +176,30 @@ public:
             visit_stmt(*x.m_body[i]);
         }
         current_symtab = parent_symtab;
+    }
+
+    void visit_GenericProcedure(const GenericProcedure_t& x) {
+        require(x.m_name != nullptr,
+            "GenericProcedure::m_name cannot be nullptr");
+        std::string gen_name = x.m_name;
+        require(x.m_parent_symtab != nullptr,
+            gen_name + "::m_parent_symtab cannot be nullptr");
+        for (size_t i=0; i < x.n_procs; i++) {
+            // They are already visited so just check the nullptr
+            LCOMPILERS_ASSERT(x.m_procs[i]);
+        }
+    }
+
+    void visit_CustomOperator(const CustomOperator_t& x) {
+        require(x.m_name != nullptr,
+            "CustomOperator::m_name cannot be nullptr");
+        std::string cus_name = x.m_name;
+        require(x.m_parent_symtab != nullptr,
+            cus_name + "::m_parent_symtab cannot be nullptr");
+        for (size_t i=0; i < x.n_procs; i++) {
+            // They are already visited so just check the nullptr
+            LCOMPILERS_ASSERT(x.m_procs[i]);
+        }
     }
 
     void visit_Block(const Block_t& x) {
@@ -239,6 +269,7 @@ public:
             "Module::m_symtab->counter must be unique");
         require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
             "The X::m_symtab::asr_owner must point to X");
+        require(x.m_name, "Module name is required");
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
@@ -345,14 +376,21 @@ public:
             "Function::m_symtab->counter must be unique");
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
+        require(x.m_name, "Function name is required");
+        std::string func_name = x.m_name;
+        require(x.m_function_signature,
+                    "Type signature is required for `" + func_name + "`");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
+            LCOMPILERS_ASSERT(a.second);
             this->visit_symbol(*a.second);
         }
         for (size_t i=0; i<x.n_args; i++) {
+            LCOMPILERS_ASSERT(x.m_args[i]);
             visit_expr(*x.m_args[i]);
         }
         for (size_t i=0; i<x.n_body; i++) {
+            LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
         }
         if (x.m_return_var) {
@@ -388,6 +426,8 @@ public:
     void visit_UserDefinedType(const T &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
+        require(x.m_name != nullptr,
+            "The StructType::m_name cannot be nullptr");
         require(x.m_symtab != nullptr,
             "The StructType::m_symtab cannot be nullptr");
         require(x.m_symtab->parent == parent_symtab,
