@@ -1,0 +1,13 @@
+{
+    "basename": "ast-common3-8955ceb",
+    "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/common3.f",
+    "infile_hash": "33bdfb2a8407869c74ac4e969ef306972ce768ef659860bd1efaf650",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-common3-8955ceb.stdout",
+    "stdout_hash": "6ad62fe894d9b5fe8c3f1936c0c54e5c6356a235102669110d194e05",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
