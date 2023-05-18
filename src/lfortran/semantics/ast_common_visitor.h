@@ -1150,9 +1150,6 @@ public:
                     current_scope = parent_scope;
                 }
             }
-
-            // clear common block dictionary
-            // common_block_dictionary.clear();
         }
     }
 
@@ -1274,14 +1271,11 @@ public:
                                         "supported yet", x.base.base.loc);
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrCommon) {
-                                    // TODO:
-                                    // * store the variables in some local dictionary
-                                    // * At the end, insert it into global scope
                                     common_block_name = sym;
 
                                     // populate common_block_dictionary
 
-                                    // if common_block_dictionary already contains the common_block_name
+                                    // if common_block_dictionary do not contain the common_block_name
                                     if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()) {
                                         // create a new common_block pair
                                         std::vector<ASR::expr_t*> common_block_variables;
@@ -1293,13 +1287,28 @@ public:
                                     } else {
                                         // check if it has been already declared in any other program
                                         if (!common_block_dictionary[common_block_name].first) {
-                                            i++;
-                                            s = x.m_syms[i];
-                                            while(i<x.n_syms && !s.m_name) {
-                                                i++;
-                                                s = x.m_syms[i];
+                                            // already declared in some other program, verify the order of variables
+                                            std::vector<ASR::expr_t*> common_block_variables = common_block_dictionary[common_block_name].second;
+                                            if (common_block_variables.size() != x.n_syms) {
+                                                throw SemanticError("The order of variables in common block must be same in all programs",
+                                                    x.base.base.loc);
+                                            } else {
+                                                for (auto expr: common_block_dictionary[common_block_name].second) {
+                                                    ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(expr);
+                                                    char* var_name = var_->m_name;
+                                                    s = x.m_syms[i];
+                                                    AST::expr_t* expr_ = s.m_initializer;
+                                                    this->visit_expr(*expr_);
+                                                    ASR::Variable_t* var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                                                    char* var_name_ = var__->m_name;
+                                                    if (strcmp(var_name, var_name_) != 0) {
+                                                        throw SemanticError("The order of variables in common block must be same in all programs",
+                                                            x.base.base.loc);
+                                                    }
+                                                    i++;
+                                                }
+                                                i-=1;
                                             }
-                                            i-=1;
                                         } else {
                                             AST::expr_t* expr = s.m_initializer;
                                             this->visit_expr(*expr);
