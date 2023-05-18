@@ -13,11 +13,13 @@ subroutine prune_build_targets()
     modules_used(1)%i = 0
     call collect_used_modules()
     print *, modules_used(1)%i
+    if( modules_used(1)%i /= 2 ) error stop
 
     contains
 
     recursive subroutine collect_used_modules()
 
+        modules_used(1)%i = 2
         modules_used = [modules_used(1)]
 
     end subroutine collect_used_modules

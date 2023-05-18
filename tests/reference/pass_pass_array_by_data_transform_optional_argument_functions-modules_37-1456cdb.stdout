@@ -92,7 +92,19 @@
                                                     [(=
                                                         (Var 12 target)
                                                         (StructInstanceMember
-                                                            (Var 9 targets)
+                                                            (ArrayItem
+                                                                (Var 9 targets)
+                                                                [(()
+                                                                (Var 9 i)
+                                                                ())]
+                                                                (Struct
+                                                                    2 build_target_ptr
+                                                                    [(()
+                                                                    ())]
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
                                                             9 1_build_target_ptr_ptr
                                                             (Pointer
                                                                 (Struct
