@@ -170,13 +170,14 @@ public:
     llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
     llvm::PointerType *character_type;
     llvm::PointerType *list_type;
+    std::vector<std::string> struct_type_stack;
 
     std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>> arr_arg_type_cache;
 
     std::map<std::string, std::pair<llvm::Type*, llvm::Type*>> fname2arg_type;
 
     // Maps for containing information regarding derived types
-    std::map<std::string, llvm::StructType*> name2dertype;
+    std::map<std::string, llvm::StructType*> name2dertype, name2dercontext;
     std::map<std::string, std::string> dertype2parent;
     std::map<std::string, std::map<std::string, int>> name2memidx;
 
@@ -728,12 +729,44 @@ public:
         return llvm_mem_type;
     }
 
+    void createStructContext(ASR::StructType_t* der_type) {
+        std::string der_type_name = std::string(der_type->m_name);
+        if (name2dercontext.find(der_type_name) == name2dercontext.end() ) {
+            llvm::StructType* der_type_llvm = llvm::StructType::create(context,
+                                {},
+                                der_type_name,
+                                der_type->m_is_packed);
+            name2dercontext[der_type_name] = der_type_llvm;
+            if( der_type->m_parent != nullptr ) {
+                ASR::StructType_t *par_der_type = ASR::down_cast<ASR::StructType_t>(
+                                                        symbol_get_past_external(der_type->m_parent));
+                createStructContext(par_der_type);
+            }
+            for( size_t i = 0; i < der_type->n_members; i++ ) {
+                std::string member_name = der_type->m_members[i];
+                ASR::symbol_t* sym = der_type->m_symtab->get_symbol(member_name);
+                if (ASR::is_a<ASR::StructType_t>(*sym)) {
+                    ASR::StructType_t *d_type = ASR::down_cast<ASR::StructType_t>(sym);
+                    createStructContext(d_type);
+                }
+            }
+        }
+    }
+
     llvm::Type* getStructType(ASR::StructType_t* der_type, bool is_pointer=false) {
         std::string der_type_name = std::string(der_type->m_name);
-        llvm::StructType* der_type_llvm;
-        if( name2dertype.find(der_type_name) != name2dertype.end() ) {
-            der_type_llvm = name2dertype[der_type_name];
+        createStructContext(der_type);
+        if (std::find(struct_type_stack.begin(), struct_type_stack.end(),
+                        der_type_name) != struct_type_stack.end()) {
+            LCOMPILERS_ASSERT(name2dercontext.find(der_type_name) != name2dercontext.end());
+            return name2dercontext[der_type_name];
+        }
+        struct_type_stack.push_back(der_type_name);
+        llvm::StructType** der_type_llvm;
+        if (name2dertype.find(der_type_name) != name2dertype.end() ) {
+            der_type_llvm = &name2dertype[der_type_name];
         } else {
+            der_type_llvm = &name2dercontext[der_type_name];
             std::vector<llvm::Type*> member_types;
             int member_idx = 0;
             if( der_type->m_parent != nullptr ) {
@@ -744,7 +777,6 @@ public:
                 dertype2parent[der_type_name] = std::string(par_der_type->m_name);
                 member_idx += 1;
             }
-
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
@@ -753,32 +785,32 @@ public:
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
-            der_type_llvm = llvm::StructType::create(context,
-                                member_types,
-                                der_type_name,
-                                der_type->m_is_packed);
-            name2dertype[der_type_name] = der_type_llvm;
+            (*der_type_llvm)->setBody(member_types);
+            name2dertype[der_type_name] = *der_type_llvm;
         }
-        if( is_pointer ) {
-            return der_type_llvm->getPointerTo();
+        struct_type_stack.pop_back();
+        if ( is_pointer ) {
+            return (*der_type_llvm)->getPointerTo();
         }
-        return (llvm::Type*) der_type_llvm;
+        return (llvm::Type*) *der_type_llvm;
     }
 
     llvm::Type* getStructType(ASR::ttype_t* _type, bool is_pointer=false) {
+        ASR::StructType_t* der_type;
         if( ASR::is_a<ASR::Struct_t>(*_type) ) {
             ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(_type);
             ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
-            ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(der_sym);
-            return getStructType(der_type, is_pointer);
+            der_type = ASR::down_cast<ASR::StructType_t>(der_sym);
         } else if( ASR::is_a<ASR::Class_t>(*_type) ) {
             ASR::Class_t* der = ASR::down_cast<ASR::Class_t>(_type);
             ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_class_type);
-            ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(der_sym);
-            return getStructType(der_type, is_pointer);
+            der_type = ASR::down_cast<ASR::StructType_t>(der_sym);
+        } else {
+            LCOMPILERS_ASSERT(false);
         }
-        LCOMPILERS_ASSERT(false);
-        return nullptr;
+        llvm::Type* type = getStructType(der_type, is_pointer);
+        LCOMPILERS_ASSERT(type != nullptr);
+        return type;
     }
 
     llvm::Type* getUnionType(ASR::UnionType_t* union_type, bool is_pointer=false) {
@@ -4671,7 +4703,8 @@ public:
                     *ASR::down_cast<ASR::Pointer_t>(asr_target->m_type)->m_type)) {
                 target = CreateLoad(target);
             }
-            if( arr_descr->is_array(ASRUtils::get_contained_type(asr_target_type)) ) {
+            ASR::ttype_t *cont_type = ASRUtils::get_contained_type(asr_target_type);
+            if (ASRUtils::is_array(cont_type) && arr_descr->is_array(cont_type) ) {
                 if( asr_target->m_type->type ==
                     ASR::ttypeType::Character) {
                     target = CreateLoad(arr_descr->get_pointer_to_data(target));
