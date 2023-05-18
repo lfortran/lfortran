@@ -1,6 +1,5 @@
-module fpm_sources
+module modules_43_fpm_sources
 implicit none
-private
 
 type srcfile_t
     character(:), allocatable :: file_name
@@ -13,8 +12,10 @@ contains
 subroutine add_sources_from_dir(sources)
     type(srcfile_t), allocatable, intent(inout), target :: sources(:)
 
-    logical :: exclude_source(:)
+    logical :: exclude_source(10)
     type(srcfile_t), allocatable :: dir_sources(:)
+
+    allocate(dir_sources(1))
 
     if (.not. allocated(sources)) then
         sources = pack(dir_sources, .not. exclude_source)
@@ -24,4 +25,14 @@ subroutine add_sources_from_dir(sources)
 
 end subroutine add_sources_from_dir
 
-end module fpm_sources
+end module modules_43_fpm_sources
+
+program modules_43
+use modules_43_fpm_sources
+implicit none
+
+type(srcfile_t), allocatable, target :: sources(:)
+allocate(sources(1))
+call add_sources_from_dir(sources)
+
+end program modules_43
