@@ -1,0 +1,5 @@
+semantic error: The order of variables in common block must be same in all programs
+ --> tests/errors/common1.f:8:13
+  |
+8 |             common / block_1 / a, b, c
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
