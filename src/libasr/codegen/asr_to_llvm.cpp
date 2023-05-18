@@ -4703,7 +4703,8 @@ public:
                     *ASR::down_cast<ASR::Pointer_t>(asr_target->m_type)->m_type)) {
                 target = CreateLoad(target);
             }
-            if( arr_descr->is_array(ASRUtils::get_contained_type(asr_target_type)) ) {
+            ASR::ttype_t *cont_type = ASRUtils::get_contained_type(asr_target_type);
+            if (ASRUtils::is_array(cont_type) && arr_descr->is_array(cont_type) ) {
                 if( asr_target->m_type->type ==
                     ASR::ttypeType::Character) {
                     target = CreateLoad(arr_descr->get_pointer_to_data(target));
