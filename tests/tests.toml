@@ -3100,3 +3100,7 @@ asr = true
 filename = "common3.f"
 ast = true
 asr = true
+
+[[test]]
+filename = "errors/common1.f"
+asr = true
