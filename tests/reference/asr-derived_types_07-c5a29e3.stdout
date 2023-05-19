@@ -551,16 +551,6 @@
                     (SymbolTable
                         6
                         {
-                            1_toml_value:
-                                (ExternalSymbol
-                                    6
-                                    1_toml_value
-                                    2 toml_value
-                                    tomlf_type_value
-                                    []
-                                    toml_value
-                                    Public
-                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
@@ -581,7 +571,7 @@
                                                     8
                                                     1_toml_value_key
                                                     3 key
-                                                    1_toml_value
+                                                    toml_value
                                                     []
                                                     key
                                                     Public

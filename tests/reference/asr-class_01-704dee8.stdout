@@ -2,16 +2,6 @@
     (SymbolTable
         1
         {
-            1_circle:
-                (ExternalSymbol
-                    1
-                    1_circle
-                    2 circle
-                    class_circle1
-                    []
-                    circle
-                    Public
-                ),
             circle_test:
                 (Program
                     (SymbolTable
@@ -22,7 +12,7 @@
                                     6
                                     1_circle_radius
                                     3 radius
-                                    1_circle
+                                    circle
                                     []
                                     radius
                                     Public

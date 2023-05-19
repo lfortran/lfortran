@@ -122,16 +122,6 @@
                     (SymbolTable
                         4
                         {
-                            1_package_config_t:
-                                (ExternalSymbol
-                                    4
-                                    1_package_config_t
-                                    15 package_config_t
-                                    fpm_manifest_package_modules_34
-                                    []
-                                    package_config_t
-                                    Public
-                                ),
                             build_model:
                                 (Function
                                     (SymbolTable
@@ -147,7 +137,7 @@
                                                                     6
                                                                     1_package_config_t_version
                                                                     16 version
-                                                                    1_package_config_t
+                                                                    package_config_t
                                                                     []
                                                                     version
                                                                     Public

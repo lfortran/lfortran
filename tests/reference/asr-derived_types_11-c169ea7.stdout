@@ -2,16 +2,6 @@
     (SymbolTable
         1
         {
-            1_y:
-                (ExternalSymbol
-                    1
-                    1_y
-                    2 y
-                    derived_types_11
-                    []
-                    y
-                    Public
-                ),
             derived_types_11:
                 (Module
                     (SymbolTable
@@ -146,7 +136,7 @@
                                     4
                                     1_y_backslash
                                     3 backslash
-                                    1_y
+                                    y
                                     []
                                     backslash
                                     Public

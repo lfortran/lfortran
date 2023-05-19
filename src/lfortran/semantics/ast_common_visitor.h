@@ -2670,7 +2670,8 @@ public:
     }
 
     ASR::asr_t* resolve_variable2(const Location &loc, const std::string &var_name,
-            const std::string &dt_name, SymbolTable*& scope) {
+            const std::string &dt_name, SymbolTable*& scope,
+            AST::fnarg_t* struct_m_args=nullptr, size_t struct_n_args=0) {
         ASR::symbol_t *v = scope->resolve_symbol(dt_name);
         if (!v) {
             throw SemanticError("Variable '" + dt_name + "' not declared", loc);
@@ -2712,6 +2713,23 @@ public:
             }
             if( member != nullptr ) {
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                if( struct_n_args > 0 ) {
+                    Vec<ASR::array_index_t> indices;
+                    indices.reserve(al, struct_n_args);
+                    for( size_t i = 0; i < struct_n_args; i++ ) {
+                        LCOMPILERS_ASSERT(struct_m_args[i].m_step == nullptr);
+                        this->visit_expr(*struct_m_args[i].m_end);
+                        ASR::array_index_t index;
+                        index.loc = struct_m_args->loc;
+                        index.m_left = nullptr;
+                        index.m_right = ASRUtils::EXPR(tmp);
+                        index.m_step = nullptr;
+                        indices.push_back(al, index);
+                    }
+                    v_var = ASR::make_ArrayItem_t(al, v_var->loc, ASRUtils::EXPR(v_var),
+                                indices.p, indices.size(), v_variable->m_type,
+                                ASR::arraystorageType::ColMajor, nullptr);
+                }
                 return ASRUtils::getStructInstanceMember_t(al, loc, v_var, v, member, current_scope);
             } else {
                 throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
@@ -4909,7 +4927,8 @@ public:
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;
                 tmp = this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope);
+                    to_lower(x_m_member[0].m_name), scope,
+                    x_m_member->m_args, x_m_member->n_args);
             }
         } else {
             SymbolTable* scope = current_scope;

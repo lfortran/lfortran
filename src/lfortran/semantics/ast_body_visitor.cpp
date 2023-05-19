@@ -894,7 +894,10 @@ public:
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*(tmp_var->m_v)));
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
                 tmp_storage = variable->m_storage;
-                tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc, variable->m_type));
+                tmp_type = variable->m_type;
+                if( !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
+                    tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc, tmp_type));
+                }
                 create_associate_stmt = true;
             }
             std::string name = to_lower(x.m_syms[i].m_name);
