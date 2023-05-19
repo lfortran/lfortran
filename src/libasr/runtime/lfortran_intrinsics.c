@@ -1293,7 +1293,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     }
 
     // Presently we just consider write append mode.
-    status = "r+";
+    status = "a+";
     FILE *fd;
     fd = fopen(f_name, status);
     if (!fd)
