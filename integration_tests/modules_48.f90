@@ -64,7 +64,7 @@ function is_fortran_name(line) result (lout)
              & .and. len(name) <= 63
         else
             lout = .false.
-        endif
+        end if
 end function is_fortran_name
 
 function string_cat(strings, delim) result(cat)

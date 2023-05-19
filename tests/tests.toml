@@ -2667,6 +2667,10 @@ extrafiles = "../integration_tests/modules_44_module.f90"
 pass = "pass_array_by_data"
 
 [[test]]
+filename = "../integration_tests/modules_48.f90"
+asr = true
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 
