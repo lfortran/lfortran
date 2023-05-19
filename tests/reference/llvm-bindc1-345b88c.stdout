@@ -1,9 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@c_null_ptr = external global void*
-
 declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
 
 define i32 @main(i32 %0, i8** %1) {

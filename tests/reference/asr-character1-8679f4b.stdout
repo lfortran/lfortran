@@ -44,13 +44,10 @@
                     [(Var 2 mess)]
                     [(Print
                         ()
-                        [(ArrayItem
+                        [(StringItem
                             (Var 2 mess)
-                            [(()
                             (IntegerConstant 1 (Integer 4 []))
-                            ())]
                             (Character 1 1 () [])
-                            ColMajor
                             ()
                         )]
                         ()

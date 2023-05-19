@@ -1177,18 +1177,21 @@ public:
         return builder->CreateCall(fn, {str, idx1, idx2, step, left_present, right_present});
     }
 
-    llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src) {
+    llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src, bool is_allocatable=false) {
         std::string runtime_func_name = "_lfortran_strcpy";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                      llvm::Type::getVoidTy(context), {
-                        character_type->getPointerTo(), character_type
+                        character_type->getPointerTo(), character_type,
+                        llvm::Type::getInt8Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        return builder->CreateCall(fn, {dest, src});
+        llvm::Value* free_string = llvm::ConstantInt::get(
+            llvm::Type::getInt8Ty(context), llvm::APInt(8, is_allocatable));
+        return builder->CreateCall(fn, {dest, src, free_string});
     }
 
     llvm::Value* lfortran_type_to_str(llvm::Value* arg, llvm::Type* value_type, std::string type, int value_kind) {
@@ -2101,9 +2104,6 @@ public:
                                                 && (is_bindc_array ||
                                                 (v && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(&(v->base))) ) ),
                                                 llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
-            if( ptr_loads > 0 && ASR::is_a<ASR::Character_t>(*x_mv_type) ) {
-                tmp = LLVM::CreateLoad(*builder, tmp);
-            }
         }
     }
 
@@ -4758,7 +4758,9 @@ public:
                     value = CreateLoad(value);
                 }
                 if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-                    tmp = lfortran_str_copy(target, value);
+                    ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
+                    tmp = lfortran_str_copy(target, value,
+                        asr_target->m_storage == ASR::storage_typeType::Allocatable);
                     return;
                 }
             }
@@ -5154,29 +5156,59 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
+        bool is_single_char = (ASR::is_a<ASR::StringItem_t>(*x.m_left) &&
+                               ASR::is_a<ASR::StringItem_t>(*x.m_right));
+        if( is_single_char ) {
+            left = LLVM::CreateLoad(*builder, left);
+            right = LLVM::CreateLoad(*builder, right);
+        }
         std::string fn;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpEQ(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_eq";
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpNE(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_noteq";
                 break;
             }
             case (ASR::cmpopType::Gt) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpSGT(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_gt";
                 break;
             }
             case (ASR::cmpopType::GtE) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpSGE(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_gte";
                 break;
             }
             case (ASR::cmpopType::Lt) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpSLT(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_lt";
                 break;
             }
             case (ASR::cmpopType::LtE) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpSLE(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_lte";
                 break;
             }
