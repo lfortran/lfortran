@@ -6606,6 +6606,56 @@ public:
         tmp = builder->CreateCall(fn, {unit_val, f_name, status});
     }
 
+    void visit_FileInquire(const ASR::FileInquire_t &x) {
+        llvm::Value *exist_val = nullptr, *f_name = nullptr;
+
+        if (x.m_file) {
+            this->visit_expr_wrapper(x.m_file, true);
+            f_name = tmp;
+        } else {
+            f_name = llvm::Constant::getNullValue(character_type);
+        }
+        if (x.m_exist) {
+            int ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_exist, true);
+            exist_val = tmp;
+            ptr_loads = ptr_loads_copy;
+        } else {
+            exist_val = builder->CreateAlloca(
+                            llvm::Type::getInt1Ty(context), nullptr);
+        }
+        std::string runtime_func_name = "_lfortran_inquire";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        character_type,
+                        llvm::Type::getInt1Ty(context)->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        tmp = builder->CreateCall(fn, {f_name, exist_val});
+    }
+
+    void visit_Flush(const ASR::Flush_t& x) {
+        std::string runtime_func_name = "_lfortran_flush";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        llvm::Value *unit_val = nullptr;
+        this->visit_expr_wrapper(x.m_unit, true);
+        unit_val = tmp;
+        builder->CreateCall(fn, {unit_val});
+    }
+
     void visit_FileClose(const ASR::FileClose_t &x) {
         llvm::Value *unit_val = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);

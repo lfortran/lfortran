@@ -1304,6 +1304,25 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     return (int64_t)fd;
 }
 
+LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists) {
+    FILE *fp = fopen(f_name, "r");
+    if (fp != NULL) {
+        *exists = true;
+        fclose(fp); // close the file
+        return;
+    }
+    *exists = false;
+}
+
+LFORTRAN_API void _lfortran_flush(int32_t unit_num)
+{
+    if( !is_unit_to_file_init || unit_to_file[unit_num] == NULL ) {
+        printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
+        exit(1);
+    }
+    fflush(unit_to_file[unit_num]);
+}
+
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
