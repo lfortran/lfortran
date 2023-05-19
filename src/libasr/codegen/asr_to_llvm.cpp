@@ -2101,6 +2101,9 @@ public:
                                                 && (is_bindc_array ||
                                                 (v && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(&(v->base))) ) ),
                                                 llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
+            if( ptr_loads > 0 && ASR::is_a<ASR::Character_t>(*x_mv_type) ) {
+                tmp = LLVM::CreateLoad(*builder, tmp);
+            }
         }
     }
 
@@ -4663,6 +4666,7 @@ public:
         uint32_t h;
         bool lhs_is_string_arrayref = false;
         if( x.m_target->type == ASR::exprType::ArrayItem ||
+            x.m_target->type == ASR::exprType::StringItem ||
             x.m_target->type == ASR::exprType::ArraySection ||
             x.m_target->type == ASR::exprType::StructInstanceMember ||
             x.m_target->type == ASR::exprType::ListItem ||
@@ -4679,6 +4683,17 @@ public:
                         ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(asr_target->m_type);
                         if (t->n_dims == 0) {
                             target = CreateLoad(target);
+                            lhs_is_string_arrayref = true;
+                        }
+                    }
+                }
+            } else if( ASR::is_a<ASR::StringItem_t>(*x.m_target) ) {
+                ASR::StringItem_t *asr_target0 = ASR::down_cast<ASR::StringItem_t>(x.m_target);
+                if (is_a<ASR::Var_t>(*asr_target0->m_arg)) {
+                    ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_arg);
+                    if ( is_a<ASR::Character_t>(*asr_target->m_type) ) {
+                        ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(asr_target->m_type);
+                        if (t->n_dims == 0) {
                             lhs_is_string_arrayref = true;
                         }
                     }
@@ -4743,11 +4758,8 @@ public:
                     value = CreateLoad(value);
                 }
                 if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-                    ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
-                    if (asr_target->m_storage == ASR::storage_typeType::Allocatable) {
-                        tmp = lfortran_str_copy(target, value);
-                        return;
-                    }
+                    tmp = lfortran_str_copy(target, value);
+                    return;
                 }
             }
         }
@@ -5496,7 +5508,13 @@ public:
         llvm::Value *idx = tmp;
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *str = tmp;
-        tmp = lfortran_str_item(str, idx);
+        if( is_assignment_target ) {
+            idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            std::vector<llvm::Value*> idx_vec = {idx};
+            tmp = CreateGEP(str, idx_vec);
+        } else {
+            tmp = lfortran_str_item(str, idx);
+        }
     }
 
     void visit_StringSection(const ASR::StringSection_t& x) {
@@ -7016,7 +7034,8 @@ public:
                         ASR::dimension_t* dims_arg = nullptr;
                         size_t n_arg = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims_arg);
                         if( ASRUtils::is_arg_dummy(arg->m_intent) &&
-                            !ASRUtils::is_dimension_empty(dims_arg, n_arg) ) {
+                            !ASRUtils::is_dimension_empty(dims_arg, n_arg) &&
+                            n_arg > 0 ) {
                             is_data_only_array = true;
                         }
 
@@ -7029,7 +7048,7 @@ public:
                             n = ASRUtils::extract_dimensions_from_ttype(orig_arg->m_type, dims);
                             if( !ASRUtils::is_abstract_class_type( ASRUtils::type_get_past_pointer(orig_arg->m_type) ) ) {
                                 tmp = arr_descr->convert_to_argument(tmp, arg->m_type, new_arr_type,
-                                                                    (!ASRUtils::is_dimension_empty(dims, n)));
+                                                                    (!ASRUtils::is_dimension_empty(dims, n) && n > 0));
                             }
                         } else if (x_abi == ASR::abiType::Source && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
                                 if (arg->m_intent == intent_local) {

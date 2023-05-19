@@ -1976,7 +1976,7 @@ public:
                 m_end = ASRUtils::EXPR(tmp);
                 ai.loc = m_end->base.loc;
             } else {
-                if( ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)))) {
+                if( ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v))) ) {
                     ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(
                                                     ASRUtils::type_get_past_pointer(
                                                         ASRUtils::symbol_type(v)));
@@ -2123,8 +2123,13 @@ public:
                     }
                 }
             }
-            return ASR::make_ArrayItem_t(al, loc,
-                v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
+            if( ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v))) ) {
+                return ASR::make_StringItem_t(al, loc,
+                    v_Var, args.p[0].m_right, type, arr_ref_val);
+            } else {
+                return ASR::make_ArrayItem_t(al, loc,
+                    v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
+            }
         } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
             if (ASR::is_a<ASR::Pointer_t>(*v_type)) {

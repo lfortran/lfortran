@@ -3530,7 +3530,6 @@ static inline void require_impl(bool cond, const std::string &error_msg,
     }
 }
 
-<<<<<<< HEAD
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims) {
     Vec<ASR::dimension_t> dims;
     dims.reserve(al, n_dims);
@@ -3539,22 +3538,6 @@ static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimensi
         ASR::expr_t* start = m_dims[i].m_start;
         if( start != nullptr ) {
             start = expr_duplicator.duplicate_expr(start);
-=======
-static inline bool is_allocatable(ASR::expr_t* expr, bool return_false=false) {
-    switch( expr->type ) {
-        case ASR::exprType::Var: {
-            return is_allocatable(ASR::down_cast<ASR::Var_t>(expr)->m_v);
-        } case ASR::exprType::StringSection: {
-            return is_allocatable(ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
-        } case ASR::exprType::StructInstanceMember: {
-            return is_allocatable(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
-        } case ASR::exprType::ArrayItem: {
-            return is_allocatable(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
-        } default: {
-            if( !return_false ) {
-                throw LCompilersException("Not yet supported: ASR::exprType::" + std::to_string(expr->type));
-            }
->>>>>>> 716930f62 (Respect array item in struct instance member)
         }
         ASR::expr_t* length = m_dims[i].m_length;
         if( length != nullptr ) {
@@ -3565,11 +3548,7 @@ static inline bool is_allocatable(ASR::expr_t* expr, bool return_false=false) {
         t.m_length = length;
         dims.push_back(al, t);
     }
-<<<<<<< HEAD
     return dims.p;
-=======
-    return false;
->>>>>>> 716930f62 (Respect array item in struct instance member)
 }
 
 
