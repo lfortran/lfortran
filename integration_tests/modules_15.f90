@@ -9,6 +9,7 @@ use modules_15b, only: &
     f_int_intarray_star, f_int_floatarray_star, f_int_doublearray_star, &
     sub_int_intarray, sub_int_floatarray, sub_int_doublearray, &
     f_int_float_complex, f_int_double_complex, &
+    f_int_float_complex2, f_int_double_complex2, &
     sub_int_float_complex, sub_int_double_complex, &
     f_int_float_complex_value, f_int_double_complex_value, &
     sub_int_float_complex_value, sub_int_double_complex_value, &
@@ -19,6 +20,7 @@ use modules_15b, only: &
     call_fortran_i32, call_fortran_i64, &
     call_fortran_f32, call_fortran_f64, &
     call_fortran_i32_value, call_fortran_i64_value, &
+    call_fortran_i32_value2, call_fortran_i64_value2, &
     call_fortran_f32_value, call_fortran_f64_value
 implicit none
 integer :: i, a, n, I32(3)
@@ -56,6 +58,9 @@ if (i /= 8) error stop
 a = 3
 c32 = (5._sp, 7._sp)
 i = f_int_float_complex(a, c32)
+print *, i
+if (i /= 15) error stop
+i = f_int_float_complex2(a, c32)
 print *, i
 if (i /= 15) error stop
 
@@ -97,6 +102,9 @@ if (abs(real(c64,dp) - 10) > 1e-10_dp) error stop
 a = 3
 c64 = (5._dp, 7._dp)
 i = f_int_double_complex(a, c64)
+print *, i
+if (i /= 15) error stop
+i = f_int_double_complex2(a, c64)
 print *, i
 if (i /= 15) error stop
 
@@ -235,6 +243,10 @@ in32 = 5
 in32 = call_fortran_i32_value(in32)
 print *, in32
 if (in32 /= 7) error stop
+in32 = 5
+in32 = call_fortran_i32_value2(in32)
+print *, in32
+if (in32 /= 7) error stop
 
 in64 = 5
 in64 = call_fortran_i64(in64)
@@ -243,6 +255,10 @@ if (in64 /= 7) error stop
 
 in64 = 5
 in64 = call_fortran_i64_value(in64)
+print *, in64
+if (in64 /= 7) error stop
+in64 = 5
+in64 = call_fortran_i64_value2(in64)
 print *, in64
 if (in64 /= 7) error stop
 
