@@ -36,7 +36,9 @@ interface
             bind(c, name="f_int_float_complex")
     import :: c_int, c_float
     integer(c_int), intent(in) :: a
-    complex(c_float_complex), intent(in) :: b
+    ! GFortran doesn't seem to support c_float_complex
+    !complex(c_float_complex), intent(in) :: b
+    complex(c_float), intent(in) :: b
     end function
 
     ! int f_int_double_complex(int *a, double_complex_t *b)
@@ -44,7 +46,9 @@ interface
             bind(c, name="f_int_double_complex")
     import :: c_int, c_double
     integer(c_int), intent(in) :: a
-    complex(c_double_complex), intent(in) :: b
+    ! GFortran doesn't seem to support c_double_complex
+    !complex(c_double_complex), intent(in) :: b
+    complex(c_double), intent(in) :: b
     end function
 
     ! int f_int_float_complex_value(int a, float_complex_t b)
