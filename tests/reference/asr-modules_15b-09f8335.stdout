@@ -31,6 +31,16 @@
                                     c_double
                                     Public
                                 ),
+                            c_double_complex:
+                                (ExternalSymbol
+                                    2
+                                    c_double_complex
+                                    4 c_double_complex
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_double_complex
+                                    Public
+                                ),
                             c_float:
                                 (ExternalSymbol
                                     2
@@ -41,6 +51,16 @@
                                     c_float
                                     Public
                                 ),
+                            c_float_complex:
+                                (ExternalSymbol
+                                    2
+                                    c_float_complex
+                                    4 c_float_complex
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_float_complex
+                                    Public
+                                ),
                             c_int:
                                 (ExternalSymbol
                                     2
@@ -49,6 +69,26 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
+                                    Public
+                                ),
+                            c_int32_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int32_t
+                                    4 c_int32_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int32_t
+                                    Public
+                                ),
+                            c_int64_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int64_t
+                                    4 c_int64_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int64_t
                                     Public
                                 ),
                             c_long_long:
@@ -74,11 +114,11 @@
                             call_fortran_f32:
                                 (Function
                                     (SymbolTable
-                                        70
+                                        74
                                         {
                                             i:
                                                 (Variable
-                                                    70
+                                                    74
                                                     i
                                                     []
                                                     In
@@ -94,7 +134,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    70
+                                                    74
                                                     r
                                                     []
                                                     ReturnVar
@@ -126,9 +166,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 70 i)]
+                                    [(Var 74 i)]
                                     []
-                                    (Var 70 r)
+                                    (Var 74 r)
                                     Public
                                     .false.
                                     .false.
@@ -136,11 +176,11 @@
                             call_fortran_f32_value:
                                 (Function
                                     (SymbolTable
-                                        71
+                                        75
                                         {
                                             i:
                                                 (Variable
-                                                    71
+                                                    75
                                                     i
                                                     []
                                                     In
@@ -156,7 +196,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    71
+                                                    75
                                                     r
                                                     []
                                                     ReturnVar
@@ -188,9 +228,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 71 i)]
+                                    [(Var 75 i)]
                                     []
-                                    (Var 71 r)
+                                    (Var 75 r)
                                     Public
                                     .false.
                                     .false.
@@ -198,11 +238,11 @@
                             call_fortran_f64:
                                 (Function
                                     (SymbolTable
-                                        72
+                                        76
                                         {
                                             i:
                                                 (Variable
-                                                    72
+                                                    76
                                                     i
                                                     []
                                                     In
@@ -218,7 +258,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    72
+                                                    76
                                                     r
                                                     []
                                                     ReturnVar
@@ -250,9 +290,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 72 i)]
+                                    [(Var 76 i)]
                                     []
-                                    (Var 72 r)
+                                    (Var 76 r)
                                     Public
                                     .false.
                                     .false.
@@ -260,11 +300,11 @@
                             call_fortran_f64_value:
                                 (Function
                                     (SymbolTable
-                                        73
+                                        77
                                         {
                                             i:
                                                 (Variable
-                                                    73
+                                                    77
                                                     i
                                                     []
                                                     In
@@ -280,7 +320,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    73
+                                                    77
                                                     r
                                                     []
                                                     ReturnVar
@@ -312,9 +352,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 73 i)]
+                                    [(Var 77 i)]
                                     []
-                                    (Var 73 r)
+                                    (Var 77 r)
                                     Public
                                     .false.
                                     .false.
@@ -322,11 +362,11 @@
                             call_fortran_i32:
                                 (Function
                                     (SymbolTable
-                                        66
+                                        68
                                         {
                                             i:
                                                 (Variable
-                                                    66
+                                                    68
                                                     i
                                                     []
                                                     In
@@ -342,7 +382,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    66
+                                                    68
                                                     r
                                                     []
                                                     ReturnVar
@@ -374,9 +414,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 66 i)]
+                                    [(Var 68 i)]
                                     []
-                                    (Var 66 r)
+                                    (Var 68 r)
                                     Public
                                     .false.
                                     .false.
@@ -384,11 +424,11 @@
                             call_fortran_i32_value:
                                 (Function
                                     (SymbolTable
-                                        67
+                                        69
                                         {
                                             i:
                                                 (Variable
-                                                    67
+                                                    69
                                                     i
                                                     []
                                                     In
@@ -404,7 +444,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    67
+                                                    69
                                                     r
                                                     []
                                                     ReturnVar
@@ -436,9 +476,71 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 67 i)]
+                                    [(Var 69 i)]
                                     []
-                                    (Var 67 r)
+                                    (Var 69 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            call_fortran_i32_value2:
+                                (Function
+                                    (SymbolTable
+                                        70
+                                        {
+                                            i:
+                                                (Variable
+                                                    70
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    70
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    call_fortran_i32_value2
+                                    (FunctionType
+                                        [(Integer 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        "call_fortran_i32_value"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 70 i)]
+                                    []
+                                    (Var 70 r)
                                     Public
                                     .false.
                                     .false.
@@ -446,11 +548,11 @@
                             call_fortran_i64:
                                 (Function
                                     (SymbolTable
-                                        68
+                                        71
                                         {
                                             i:
                                                 (Variable
-                                                    68
+                                                    71
                                                     i
                                                     []
                                                     In
@@ -466,7 +568,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    68
+                                                    71
                                                     r
                                                     []
                                                     ReturnVar
@@ -498,9 +600,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 68 i)]
+                                    [(Var 71 i)]
                                     []
-                                    (Var 68 r)
+                                    (Var 71 r)
                                     Public
                                     .false.
                                     .false.
@@ -508,11 +610,11 @@
                             call_fortran_i64_value:
                                 (Function
                                     (SymbolTable
-                                        69
+                                        72
                                         {
                                             i:
                                                 (Variable
-                                                    69
+                                                    72
                                                     i
                                                     []
                                                     In
@@ -528,7 +630,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    69
+                                                    72
                                                     r
                                                     []
                                                     ReturnVar
@@ -560,9 +662,71 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 69 i)]
+                                    [(Var 72 i)]
                                     []
-                                    (Var 69 r)
+                                    (Var 72 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            call_fortran_i64_value2:
+                                (Function
+                                    (SymbolTable
+                                        73
+                                        {
+                                            i:
+                                                (Variable
+                                                    73
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    73
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    call_fortran_i64_value2
+                                    (FunctionType
+                                        [(Integer 8 [])]
+                                        (Integer 8 [])
+                                        BindC
+                                        Interface
+                                        "call_fortran_i64_value"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 73 i)]
+                                    []
+                                    (Var 73 r)
                                     Public
                                     .false.
                                     .false.
@@ -570,11 +734,11 @@
                             f_double_complex_value_return:
                                 (Function
                                     (SymbolTable
-                                        43
+                                        45
                                         {
                                             b:
                                                 (Variable
-                                                    43
+                                                    45
                                                     b
                                                     []
                                                     In
@@ -590,7 +754,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    43
+                                                    45
                                                     r
                                                     []
                                                     ReturnVar
@@ -622,9 +786,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 43 b)]
+                                    [(Var 45 b)]
                                     []
-                                    (Var 43 r)
+                                    (Var 45 r)
                                     Public
                                     .false.
                                     .false.
@@ -632,11 +796,11 @@
                             f_float_complex_value_return:
                                 (Function
                                     (SymbolTable
-                                        42
+                                        44
                                         {
                                             b:
                                                 (Variable
-                                                    42
+                                                    44
                                                     b
                                                     []
                                                     In
@@ -652,7 +816,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    42
+                                                    44
                                                     r
                                                     []
                                                     ReturnVar
@@ -684,9 +848,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 42 b)]
+                                    [(Var 44 b)]
                                     []
-                                    (Var 42 r)
+                                    (Var 44 r)
                                     Public
                                     .false.
                                     .false.
@@ -851,7 +1015,7 @@
                                     .false.
                                     .false.
                                 ),
-                            f_int_double_complex_value:
+                            f_int_double_complex2:
                                 (Function
                                     (SymbolTable
                                         41
@@ -870,7 +1034,7 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -886,11 +1050,91 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
                                                     41
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f_int_double_complex2
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 8 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        "f_int_double_complex"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 41 a)
+                                    (Var 41 b)]
+                                    []
+                                    (Var 41 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            f_int_double_complex_value:
+                                (Function
+                                    (SymbolTable
+                                        43
+                                        {
+                                            a:
+                                                (Variable
+                                                    43
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    43
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 8 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    43
                                                     r
                                                     []
                                                     ReturnVar
@@ -923,10 +1167,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 41 a)
-                                    (Var 41 b)]
+                                    [(Var 43 a)
+                                    (Var 43 b)]
                                     []
-                                    (Var 41 r)
+                                    (Var 43 r)
                                     Public
                                     .false.
                                     .false.
@@ -934,11 +1178,11 @@
                             f_int_double_value:
                                 (Function
                                     (SymbolTable
-                                        45
+                                        47
                                         {
                                             a:
                                                 (Variable
-                                                    45
+                                                    47
                                                     a
                                                     []
                                                     In
@@ -954,7 +1198,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    45
+                                                    47
                                                     b
                                                     []
                                                     In
@@ -970,7 +1214,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    45
+                                                    47
                                                     r
                                                     []
                                                     ReturnVar
@@ -1003,10 +1247,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 45 a)
-                                    (Var 45 b)]
+                                    [(Var 47 a)
+                                    (Var 47 b)]
                                     []
-                                    (Var 45 r)
+                                    (Var 47 r)
                                     Public
                                     .false.
                                     .false.
@@ -1014,11 +1258,11 @@
                             f_int_double_value_name:
                                 (Function
                                     (SymbolTable
-                                        52
+                                        54
                                         {
                                             a:
                                                 (Variable
-                                                    52
+                                                    54
                                                     a
                                                     []
                                                     In
@@ -1034,7 +1278,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    52
+                                                    54
                                                     b
                                                     []
                                                     In
@@ -1050,7 +1294,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    52
+                                                    54
                                                     r
                                                     []
                                                     ReturnVar
@@ -1083,10 +1327,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 52 a)
-                                    (Var 52 b)]
+                                    [(Var 54 a)
+                                    (Var 54 b)]
                                     []
-                                    (Var 52 r)
+                                    (Var 54 r)
                                     Public
                                     .false.
                                     .false.
@@ -1094,11 +1338,11 @@
                             f_int_doublearray:
                                 (Function
                                     (SymbolTable
-                                        48
+                                        50
                                         {
                                             b:
                                                 (Variable
-                                                    48
+                                                    50
                                                     b
                                                     [n]
                                                     In
@@ -1106,7 +1350,7 @@
                                                     ()
                                                     Default
                                                     (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 48 n))])
+                                                    (Var 50 n))])
                                                     ()
                                                     BindC
                                                     Public
@@ -1115,7 +1359,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    48
+                                                    50
                                                     n
                                                     []
                                                     In
@@ -1131,7 +1375,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    48
+                                                    50
                                                     r
                                                     []
                                                     ReturnVar
@@ -1169,10 +1413,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 48 n)
-                                    (Var 48 b)]
+                                    [(Var 50 n)
+                                    (Var 50 b)]
                                     []
-                                    (Var 48 r)
+                                    (Var 50 r)
                                     Public
                                     .false.
                                     .false.
@@ -1180,11 +1424,11 @@
                             f_int_doublearray_star:
                                 (Function
                                     (SymbolTable
-                                        51
+                                        53
                                         {
                                             b:
                                                 (Variable
-                                                    51
+                                                    53
                                                     b
                                                     []
                                                     In
@@ -1201,7 +1445,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    51
+                                                    53
                                                     n
                                                     []
                                                     In
@@ -1217,7 +1461,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    51
+                                                    53
                                                     r
                                                     []
                                                     ReturnVar
@@ -1251,10 +1495,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 51 n)
-                                    (Var 51 b)]
+                                    [(Var 53 n)
+                                    (Var 53 b)]
                                     []
-                                    (Var 51 r)
+                                    (Var 53 r)
                                     Public
                                     .false.
                                     .false.
@@ -1419,7 +1663,7 @@
                                     .false.
                                     .false.
                                 ),
-                            f_int_float_complex_value:
+                            f_int_float_complex2:
                                 (Function
                                     (SymbolTable
                                         40
@@ -1438,7 +1682,7 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1454,11 +1698,91 @@
                                                     BindC
                                                     Public
                                                     Required
-                                                    .true.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
                                                     40
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f_int_float_complex2
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Complex 4 [])]
+                                        (Integer 4 [])
+                                        BindC
+                                        Interface
+                                        "f_int_float_complex"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 40 a)
+                                    (Var 40 b)]
+                                    []
+                                    (Var 40 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                ),
+                            f_int_float_complex_value:
+                                (Function
+                                    (SymbolTable
+                                        42
+                                        {
+                                            a:
+                                                (Variable
+                                                    42
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    42
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    42
                                                     r
                                                     []
                                                     ReturnVar
@@ -1491,10 +1815,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 40 a)
-                                    (Var 40 b)]
+                                    [(Var 42 a)
+                                    (Var 42 b)]
                                     []
-                                    (Var 40 r)
+                                    (Var 42 r)
                                     Public
                                     .false.
                                     .false.
@@ -1502,11 +1826,11 @@
                             f_int_float_value:
                                 (Function
                                     (SymbolTable
-                                        44
+                                        46
                                         {
                                             a:
                                                 (Variable
-                                                    44
+                                                    46
                                                     a
                                                     []
                                                     In
@@ -1522,7 +1846,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    44
+                                                    46
                                                     b
                                                     []
                                                     In
@@ -1538,7 +1862,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    44
+                                                    46
                                                     r
                                                     []
                                                     ReturnVar
@@ -1571,10 +1895,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 44 a)
-                                    (Var 44 b)]
+                                    [(Var 46 a)
+                                    (Var 46 b)]
                                     []
-                                    (Var 44 r)
+                                    (Var 46 r)
                                     Public
                                     .false.
                                     .false.
@@ -1582,11 +1906,11 @@
                             f_int_floatarray:
                                 (Function
                                     (SymbolTable
-                                        47
+                                        49
                                         {
                                             b:
                                                 (Variable
-                                                    47
+                                                    49
                                                     b
                                                     [n]
                                                     In
@@ -1594,7 +1918,7 @@
                                                     ()
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 47 n))])
+                                                    (Var 49 n))])
                                                     ()
                                                     BindC
                                                     Public
@@ -1603,7 +1927,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    47
+                                                    49
                                                     n
                                                     []
                                                     In
@@ -1619,7 +1943,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    47
+                                                    49
                                                     r
                                                     []
                                                     ReturnVar
@@ -1657,10 +1981,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 47 n)
-                                    (Var 47 b)]
+                                    [(Var 49 n)
+                                    (Var 49 b)]
                                     []
-                                    (Var 47 r)
+                                    (Var 49 r)
                                     Public
                                     .false.
                                     .false.
@@ -1668,11 +1992,11 @@
                             f_int_floatarray_star:
                                 (Function
                                     (SymbolTable
-                                        50
+                                        52
                                         {
                                             b:
                                                 (Variable
-                                                    50
+                                                    52
                                                     b
                                                     []
                                                     In
@@ -1689,7 +2013,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    50
+                                                    52
                                                     n
                                                     []
                                                     In
@@ -1705,7 +2029,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    50
+                                                    52
                                                     r
                                                     []
                                                     ReturnVar
@@ -1739,10 +2063,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 50 n)
-                                    (Var 50 b)]
+                                    [(Var 52 n)
+                                    (Var 52 b)]
                                     []
-                                    (Var 50 r)
+                                    (Var 52 r)
                                     Public
                                     .false.
                                     .false.
@@ -1750,11 +2074,11 @@
                             f_int_intarray:
                                 (Function
                                     (SymbolTable
-                                        46
+                                        48
                                         {
                                             b:
                                                 (Variable
-                                                    46
+                                                    48
                                                     b
                                                     [n]
                                                     In
@@ -1762,7 +2086,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 46 n))])
+                                                    (Var 48 n))])
                                                     ()
                                                     BindC
                                                     Public
@@ -1771,7 +2095,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    46
+                                                    48
                                                     n
                                                     []
                                                     In
@@ -1787,7 +2111,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    46
+                                                    48
                                                     r
                                                     []
                                                     ReturnVar
@@ -1825,10 +2149,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 46 n)
-                                    (Var 46 b)]
+                                    [(Var 48 n)
+                                    (Var 48 b)]
                                     []
-                                    (Var 46 r)
+                                    (Var 48 r)
                                     Public
                                     .false.
                                     .false.
@@ -1836,11 +2160,11 @@
                             f_int_intarray_star:
                                 (Function
                                     (SymbolTable
-                                        49
+                                        51
                                         {
                                             b:
                                                 (Variable
-                                                    49
+                                                    51
                                                     b
                                                     []
                                                     In
@@ -1857,7 +2181,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    49
+                                                    51
                                                     n
                                                     []
                                                     In
@@ -1873,7 +2197,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    49
+                                                    51
                                                     r
                                                     []
                                                     ReturnVar
@@ -1907,10 +2231,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 49 n)
-                                    (Var 49 b)]
+                                    [(Var 51 n)
+                                    (Var 51 b)]
                                     []
-                                    (Var 49 r)
+                                    (Var 51 r)
                                     Public
                                     .false.
                                     .false.
@@ -1918,11 +2242,11 @@
                             f_string:
                                 (Function
                                     (SymbolTable
-                                        74
+                                        78
                                         {
                                             r:
                                                 (Variable
-                                                    74
+                                                    78
                                                     r
                                                     []
                                                     ReturnVar
@@ -1938,7 +2262,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    74
+                                                    78
                                                     s
                                                     []
                                                     In
@@ -1970,14 +2294,14 @@
                                         .false.
                                     )
                                     [f_string0]
-                                    [(Var 74 s)]
+                                    [(Var 78 s)]
                                     [(=
-                                        (Var 74 r)
+                                        (Var 78 r)
                                         (FunctionCall
                                             2 f_string0
                                             ()
                                             [((StringConcat
-                                                (Var 74 s)
+                                                (Var 78 s)
                                                 (Var 2 c_null_char)
                                                 (Character 1 0 () [])
                                                 ()
@@ -1988,7 +2312,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 74 r)
+                                    (Var 78 r)
                                     Public
                                     .false.
                                     .false.
@@ -1996,11 +2320,11 @@
                             f_string0:
                                 (Function
                                     (SymbolTable
-                                        65
+                                        67
                                         {
                                             r:
                                                 (Variable
-                                                    65
+                                                    67
                                                     r
                                                     []
                                                     ReturnVar
@@ -2016,7 +2340,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    65
+                                                    67
                                                     s
                                                     []
                                                     In
@@ -2048,9 +2372,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 65 s)]
+                                    [(Var 67 s)]
                                     []
-                                    (Var 65 r)
+                                    (Var 67 r)
                                     Public
                                     .false.
                                     .false.
@@ -2058,11 +2382,11 @@
                             fortran_f32:
                                 (Function
                                     (SymbolTable
-                                        79
+                                        83
                                         {
                                             i:
                                                 (Variable
-                                                    79
+                                                    83
                                                     i
                                                     []
                                                     In
@@ -2078,7 +2402,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    79
+                                                    83
                                                     r
                                                     []
                                                     ReturnVar
@@ -2110,11 +2434,11 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 79 i)]
+                                    [(Var 83 i)]
                                     [(=
-                                        (Var 79 r)
+                                        (Var 83 r)
                                         (RealBinOp
-                                            (Var 79 i)
+                                            (Var 83 i)
                                             Add
                                             (RealConstant
                                                 2.300000
@@ -2125,7 +2449,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 79 r)
+                                    (Var 83 r)
                                     Public
                                     .false.
                                     .false.
@@ -2133,11 +2457,11 @@
                             fortran_f32_value:
                                 (Function
                                     (SymbolTable
-                                        80
+                                        84
                                         {
                                             i:
                                                 (Variable
-                                                    80
+                                                    84
                                                     i
                                                     []
                                                     In
@@ -2153,7 +2477,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    80
+                                                    84
                                                     r
                                                     []
                                                     ReturnVar
@@ -2185,11 +2509,11 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 80 i)]
+                                    [(Var 84 i)]
                                     [(=
-                                        (Var 80 r)
+                                        (Var 84 r)
                                         (RealBinOp
-                                            (Var 80 i)
+                                            (Var 84 i)
                                             Add
                                             (RealConstant
                                                 2.300000
@@ -2200,7 +2524,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 80 r)
+                                    (Var 84 r)
                                     Public
                                     .false.
                                     .false.
@@ -2208,11 +2532,11 @@
                             fortran_f64:
                                 (Function
                                     (SymbolTable
-                                        81
+                                        85
                                         {
                                             i:
                                                 (Variable
-                                                    81
+                                                    85
                                                     i
                                                     []
                                                     In
@@ -2228,7 +2552,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    81
+                                                    85
                                                     r
                                                     []
                                                     ReturnVar
@@ -2260,11 +2584,11 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 81 i)]
+                                    [(Var 85 i)]
                                     [(=
-                                        (Var 81 r)
+                                        (Var 85 r)
                                         (RealBinOp
-                                            (Var 81 i)
+                                            (Var 85 i)
                                             Add
                                             (RealConstant
                                                 2.300000
@@ -2275,7 +2599,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 81 r)
+                                    (Var 85 r)
                                     Public
                                     .false.
                                     .false.
@@ -2283,11 +2607,11 @@
                             fortran_f64_value:
                                 (Function
                                     (SymbolTable
-                                        82
+                                        86
                                         {
                                             i:
                                                 (Variable
-                                                    82
+                                                    86
                                                     i
                                                     []
                                                     In
@@ -2303,7 +2627,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    82
+                                                    86
                                                     r
                                                     []
                                                     ReturnVar
@@ -2335,11 +2659,11 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 82 i)]
+                                    [(Var 86 i)]
                                     [(=
-                                        (Var 82 r)
+                                        (Var 86 r)
                                         (RealBinOp
-                                            (Var 82 i)
+                                            (Var 86 i)
                                             Add
                                             (RealConstant
                                                 2.300000
@@ -2350,7 +2674,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 82 r)
+                                    (Var 86 r)
                                     Public
                                     .false.
                                     .false.
@@ -2358,11 +2682,11 @@
                             fortran_i32:
                                 (Function
                                     (SymbolTable
-                                        75
+                                        79
                                         {
                                             i:
                                                 (Variable
-                                                    75
+                                                    79
                                                     i
                                                     []
                                                     In
@@ -2378,7 +2702,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    75
+                                                    79
                                                     r
                                                     []
                                                     ReturnVar
@@ -2410,11 +2734,11 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 75 i)]
+                                    [(Var 79 i)]
                                     [(=
-                                        (Var 75 r)
+                                        (Var 79 r)
                                         (IntegerBinOp
-                                            (Var 75 i)
+                                            (Var 79 i)
                                             Add
                                             (IntegerConstant 2 (Integer 4 []))
                                             (Integer 4 [])
@@ -2422,7 +2746,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 75 r)
+                                    (Var 79 r)
                                     Public
                                     .false.
                                     .false.
@@ -2430,11 +2754,11 @@
                             fortran_i32_value:
                                 (Function
                                     (SymbolTable
-                                        76
+                                        80
                                         {
                                             i:
                                                 (Variable
-                                                    76
+                                                    80
                                                     i
                                                     []
                                                     In
@@ -2450,7 +2774,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    76
+                                                    80
                                                     r
                                                     []
                                                     ReturnVar
@@ -2482,11 +2806,11 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 76 i)]
+                                    [(Var 80 i)]
                                     [(=
-                                        (Var 76 r)
+                                        (Var 80 r)
                                         (IntegerBinOp
-                                            (Var 76 i)
+                                            (Var 80 i)
                                             Add
                                             (IntegerConstant 2 (Integer 4 []))
                                             (Integer 4 [])
@@ -2494,7 +2818,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 76 r)
+                                    (Var 80 r)
                                     Public
                                     .false.
                                     .false.
@@ -2502,11 +2826,11 @@
                             fortran_i64:
                                 (Function
                                     (SymbolTable
-                                        77
+                                        81
                                         {
                                             i:
                                                 (Variable
-                                                    77
+                                                    81
                                                     i
                                                     []
                                                     In
@@ -2522,7 +2846,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    77
+                                                    81
                                                     r
                                                     []
                                                     ReturnVar
@@ -2554,11 +2878,11 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 77 i)]
+                                    [(Var 81 i)]
                                     [(=
-                                        (Var 77 r)
+                                        (Var 81 r)
                                         (IntegerBinOp
-                                            (Var 77 i)
+                                            (Var 81 i)
                                             Add
                                             (Cast
                                                 (IntegerConstant 2 (Integer 4 []))
@@ -2571,7 +2895,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 77 r)
+                                    (Var 81 r)
                                     Public
                                     .false.
                                     .false.
@@ -2579,11 +2903,11 @@
                             fortran_i64_value:
                                 (Function
                                     (SymbolTable
-                                        78
+                                        82
                                         {
                                             i:
                                                 (Variable
-                                                    78
+                                                    82
                                                     i
                                                     []
                                                     In
@@ -2599,7 +2923,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    78
+                                                    82
                                                     r
                                                     []
                                                     ReturnVar
@@ -2631,11 +2955,11 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 78 i)]
+                                    [(Var 82 i)]
                                     [(=
-                                        (Var 78 r)
+                                        (Var 82 r)
                                         (IntegerBinOp
-                                            (Var 78 i)
+                                            (Var 82 i)
                                             Add
                                             (Cast
                                                 (IntegerConstant 2 (Integer 4 []))
@@ -2648,7 +2972,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 78 r)
+                                    (Var 82 r)
                                     Public
                                     .false.
                                     .false.
@@ -2656,11 +2980,11 @@
                             sub_int_double:
                                 (Function
                                     (SymbolTable
-                                        54
+                                        56
                                         {
                                             a:
                                                 (Variable
-                                                    54
+                                                    56
                                                     a
                                                     []
                                                     In
@@ -2676,7 +3000,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    54
+                                                    56
                                                     b
                                                     []
                                                     In
@@ -2692,7 +3016,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    54
+                                                    56
                                                     r
                                                     []
                                                     Out
@@ -2726,9 +3050,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 54 a)
-                                    (Var 54 b)
-                                    (Var 54 r)]
+                                    [(Var 56 a)
+                                    (Var 56 b)
+                                    (Var 56 r)]
                                     []
                                     ()
                                     Public
@@ -2738,11 +3062,11 @@
                             sub_int_double_complex:
                                 (Function
                                     (SymbolTable
-                                        56
+                                        58
                                         {
                                             a:
                                                 (Variable
-                                                    56
+                                                    58
                                                     a
                                                     []
                                                     In
@@ -2758,7 +3082,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    56
+                                                    58
                                                     b
                                                     []
                                                     In
@@ -2774,7 +3098,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    56
+                                                    58
                                                     r
                                                     []
                                                     Out
@@ -2808,9 +3132,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 56 a)
-                                    (Var 56 b)
-                                    (Var 56 r)]
+                                    [(Var 58 a)
+                                    (Var 58 b)
+                                    (Var 58 r)]
                                     []
                                     ()
                                     Public
@@ -2820,11 +3144,11 @@
                             sub_int_double_complex_value:
                                 (Function
                                     (SymbolTable
-                                        60
+                                        62
                                         {
                                             a:
                                                 (Variable
-                                                    60
+                                                    62
                                                     a
                                                     []
                                                     In
@@ -2840,7 +3164,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    60
+                                                    62
                                                     b
                                                     []
                                                     In
@@ -2856,7 +3180,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    60
+                                                    62
                                                     r
                                                     []
                                                     Out
@@ -2890,9 +3214,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 60 a)
-                                    (Var 60 b)
-                                    (Var 60 r)]
+                                    [(Var 62 a)
+                                    (Var 62 b)
+                                    (Var 62 r)]
                                     []
                                     ()
                                     Public
@@ -2902,11 +3226,11 @@
                             sub_int_double_value:
                                 (Function
                                     (SymbolTable
-                                        58
+                                        60
                                         {
                                             a:
                                                 (Variable
-                                                    58
+                                                    60
                                                     a
                                                     []
                                                     In
@@ -2922,7 +3246,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    58
+                                                    60
                                                     b
                                                     []
                                                     In
@@ -2938,7 +3262,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    58
+                                                    60
                                                     r
                                                     []
                                                     Out
@@ -2972,9 +3296,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 58 a)
-                                    (Var 58 b)
-                                    (Var 58 r)]
+                                    [(Var 60 a)
+                                    (Var 60 b)
+                                    (Var 60 r)]
                                     []
                                     ()
                                     Public
@@ -2984,11 +3308,11 @@
                             sub_int_double_value_name:
                                 (Function
                                     (SymbolTable
-                                        64
+                                        66
                                         {
                                             a:
                                                 (Variable
-                                                    64
+                                                    66
                                                     a
                                                     []
                                                     In
@@ -3004,7 +3328,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    64
+                                                    66
                                                     b
                                                     []
                                                     In
@@ -3020,7 +3344,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    64
+                                                    66
                                                     r
                                                     []
                                                     Out
@@ -3054,9 +3378,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 64 a)
-                                    (Var 64 b)
-                                    (Var 64 r)]
+                                    [(Var 66 a)
+                                    (Var 66 b)
+                                    (Var 66 r)]
                                     []
                                     ()
                                     Public
@@ -3066,11 +3390,11 @@
                             sub_int_doublearray:
                                 (Function
                                     (SymbolTable
-                                        63
+                                        65
                                         {
                                             b:
                                                 (Variable
-                                                    63
+                                                    65
                                                     b
                                                     [n]
                                                     In
@@ -3078,7 +3402,7 @@
                                                     ()
                                                     Default
                                                     (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 63 n))])
+                                                    (Var 65 n))])
                                                     ()
                                                     BindC
                                                     Public
@@ -3087,7 +3411,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    63
+                                                    65
                                                     n
                                                     []
                                                     In
@@ -3103,7 +3427,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    63
+                                                    65
                                                     r
                                                     []
                                                     Out
@@ -3142,9 +3466,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 63 n)
-                                    (Var 63 b)
-                                    (Var 63 r)]
+                                    [(Var 65 n)
+                                    (Var 65 b)
+                                    (Var 65 r)]
                                     []
                                     ()
                                     Public
@@ -3154,11 +3478,11 @@
                             sub_int_float:
                                 (Function
                                     (SymbolTable
-                                        53
+                                        55
                                         {
                                             a:
                                                 (Variable
-                                                    53
+                                                    55
                                                     a
                                                     []
                                                     In
@@ -3174,7 +3498,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    53
+                                                    55
                                                     b
                                                     []
                                                     In
@@ -3190,7 +3514,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    53
+                                                    55
                                                     r
                                                     []
                                                     Out
@@ -3224,9 +3548,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 53 a)
-                                    (Var 53 b)
-                                    (Var 53 r)]
+                                    [(Var 55 a)
+                                    (Var 55 b)
+                                    (Var 55 r)]
                                     []
                                     ()
                                     Public
@@ -3236,11 +3560,11 @@
                             sub_int_float_complex:
                                 (Function
                                     (SymbolTable
-                                        55
+                                        57
                                         {
                                             a:
                                                 (Variable
-                                                    55
+                                                    57
                                                     a
                                                     []
                                                     In
@@ -3256,7 +3580,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    55
+                                                    57
                                                     b
                                                     []
                                                     In
@@ -3272,7 +3596,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    55
+                                                    57
                                                     r
                                                     []
                                                     Out
@@ -3306,9 +3630,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 55 a)
-                                    (Var 55 b)
-                                    (Var 55 r)]
+                                    [(Var 57 a)
+                                    (Var 57 b)
+                                    (Var 57 r)]
                                     []
                                     ()
                                     Public
@@ -3318,11 +3642,11 @@
                             sub_int_float_complex_value:
                                 (Function
                                     (SymbolTable
-                                        59
+                                        61
                                         {
                                             a:
                                                 (Variable
-                                                    59
+                                                    61
                                                     a
                                                     []
                                                     In
@@ -3338,7 +3662,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    59
+                                                    61
                                                     b
                                                     []
                                                     In
@@ -3354,7 +3678,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    59
+                                                    61
                                                     r
                                                     []
                                                     Out
@@ -3388,9 +3712,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 59 a)
-                                    (Var 59 b)
-                                    (Var 59 r)]
+                                    [(Var 61 a)
+                                    (Var 61 b)
+                                    (Var 61 r)]
                                     []
                                     ()
                                     Public
@@ -3400,11 +3724,11 @@
                             sub_int_float_value:
                                 (Function
                                     (SymbolTable
-                                        57
+                                        59
                                         {
                                             a:
                                                 (Variable
-                                                    57
+                                                    59
                                                     a
                                                     []
                                                     In
@@ -3420,7 +3744,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    57
+                                                    59
                                                     b
                                                     []
                                                     In
@@ -3436,7 +3760,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    57
+                                                    59
                                                     r
                                                     []
                                                     Out
@@ -3470,9 +3794,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 57 a)
-                                    (Var 57 b)
-                                    (Var 57 r)]
+                                    [(Var 59 a)
+                                    (Var 59 b)
+                                    (Var 59 r)]
                                     []
                                     ()
                                     Public
@@ -3482,11 +3806,11 @@
                             sub_int_floatarray:
                                 (Function
                                     (SymbolTable
-                                        62
+                                        64
                                         {
                                             b:
                                                 (Variable
-                                                    62
+                                                    64
                                                     b
                                                     [n]
                                                     In
@@ -3494,7 +3818,7 @@
                                                     ()
                                                     Default
                                                     (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 62 n))])
+                                                    (Var 64 n))])
                                                     ()
                                                     BindC
                                                     Public
@@ -3503,7 +3827,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    62
+                                                    64
                                                     n
                                                     []
                                                     In
@@ -3519,7 +3843,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    62
+                                                    64
                                                     r
                                                     []
                                                     Out
@@ -3558,9 +3882,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 62 n)
-                                    (Var 62 b)
-                                    (Var 62 r)]
+                                    [(Var 64 n)
+                                    (Var 64 b)
+                                    (Var 64 r)]
                                     []
                                     ()
                                     Public
@@ -3570,11 +3894,11 @@
                             sub_int_intarray:
                                 (Function
                                     (SymbolTable
-                                        61
+                                        63
                                         {
                                             b:
                                                 (Variable
-                                                    61
+                                                    63
                                                     b
                                                     [n]
                                                     In
@@ -3582,7 +3906,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 61 n))])
+                                                    (Var 63 n))])
                                                     ()
                                                     BindC
                                                     Public
@@ -3591,7 +3915,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    61
+                                                    63
                                                     n
                                                     []
                                                     In
@@ -3607,7 +3931,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    61
+                                                    63
                                                     r
                                                     []
                                                     Out
@@ -3646,9 +3970,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 61 n)
-                                    (Var 61 b)
-                                    (Var 61 r)]
+                                    [(Var 63 n)
+                                    (Var 63 b)
+                                    (Var 63 r)]
                                     []
                                     ()
                                     Public
