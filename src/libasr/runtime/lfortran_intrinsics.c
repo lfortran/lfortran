@@ -1314,15 +1314,6 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists) {
     *exists = false;
 }
 
-LFORTRAN_API void _lfortran_flush(int32_t unit_num)
-{
-    if( !is_unit_to_file_init || unit_to_file[unit_num] == NULL ) {
-        printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
-        exit(1);
-    }
-    fflush(unit_to_file[unit_num]);
-}
-
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
@@ -1337,6 +1328,24 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
         exit(1);
     }
     fread(p, sizeof(int32_t), 1, unit_to_file[unit_num]);
+}
+
+LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        *p = (char*)malloc(16);
+        FILE *fp = fdopen(0, "r+");
+        fread(*p, sizeof(char), 16, fp);
+        fclose(fp);
+        return;
+    }
+    if (!unit_to_file[unit_num]) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+    *p = (char*)malloc(16);
+    fread(*p, sizeof(char), 16, unit_to_file[unit_num]);
 }
 
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)

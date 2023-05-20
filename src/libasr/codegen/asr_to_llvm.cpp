@@ -6545,8 +6545,22 @@ public:
                         llvm::Function::ExternalLinkage, runtime_func_name, *module);
             }
             return fn;
+        } else if (ASR::is_a<ASR::Character_t>(*type)) {
+            std::string runtime_func_name = "_lfortran_read_char";
+            llvm::Function *fn = module->getFunction(runtime_func_name);
+            if (!fn) {
+                llvm::FunctionType *function_type = llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(context), {
+                            character_type->getPointerTo(),
+                            llvm::Type::getInt32Ty(context)
+                        }, false);
+                fn = llvm::Function::Create(function_type,
+                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+            }
+            return fn;
         } else {
-            throw CodeGenError("Read function not implemented");
+            std::string s_type = ASRUtils::type_to_str(type);
+            throw CodeGenError("Read function not implemented for: " + s_type);
         }
     }
 
