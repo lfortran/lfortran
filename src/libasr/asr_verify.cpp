@@ -72,23 +72,23 @@ public:
                 ASR::symbol_t *sym2 = s->get_symbol(sym_name);
                 if (sym2) {
                     if (sym2 == sym) {
-                        // The symbol table was found and the symbol `sym` is in
-                        // it
+                        // The symbol table was found and the symbol `sym` is in it
                         return true;
                     } else {
-                        // The symbol table was found and the symbol in it
-                        // shares the name, but is not equal to `sym`
+                        diagnostics.message_label("ASR verify: The symbol table was found and the symbol in it shares the name, but is not equal to `sym`",
+                        {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
                         return false;
                     }
                 } else {
-                    // The symbol table was found, but the symbol `sym` is not
-                    // in it
+                    diagnostics.message_label("ASR verify: The symbol table was found, but the symbol `sym` is not in it",
+                        {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
                     return false;
                 }
             }
             s = s->parent;
         }
-        // The symbol table was not found in the scope of `symtab`.
+        diagnostics.message_label("ASR verify: The symbol table was not found in the scope of `symtab`.",
+                        {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
         return false;
     }
 
