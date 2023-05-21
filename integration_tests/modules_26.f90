@@ -1,10 +1,6 @@
 module modern_minpack
     implicit none
 contains
-    ! ASR::FunctionType of fdjac1 will contain
-    ! n1 which is present in scope of fcn1
-    ! Instead ASR::FunctionType of fdjac1
-    ! should contain FunctionParam(fcn1, 2)
     subroutine fdjac1(fcn1)
         implicit none
         interface

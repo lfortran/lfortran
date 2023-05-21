@@ -1177,18 +1177,21 @@ public:
         return builder->CreateCall(fn, {str, idx1, idx2, step, left_present, right_present});
     }
 
-    llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src) {
+    llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src, bool is_allocatable=false) {
         std::string runtime_func_name = "_lfortran_strcpy";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                      llvm::Type::getVoidTy(context), {
-                        character_type->getPointerTo(), character_type
+                        character_type->getPointerTo(), character_type,
+                        llvm::Type::getInt8Ty(context)
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        return builder->CreateCall(fn, {dest, src});
+        llvm::Value* free_string = llvm::ConstantInt::get(
+            llvm::Type::getInt8Ty(context), llvm::APInt(8, is_allocatable));
+        return builder->CreateCall(fn, {dest, src, free_string});
     }
 
     llvm::Value* lfortran_type_to_str(llvm::Value* arg, llvm::Type* value_type, std::string type, int value_kind) {
@@ -1690,7 +1693,10 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 1;
         this->visit_expr(*x.m_arg);
+        ptr_loads = ptr_loads_copy;
         llvm::Value *c = tmp;
         std::string runtime_func_name = "_lfortran_iachar";
         llvm::Function *fn = module->getFunction(runtime_func_name);
@@ -1703,6 +1709,9 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
         tmp = builder->CreateCall(fn, {c});
+        if( ASRUtils::extract_kind_from_ttype_t(x.m_type) == 8 ) {
+            tmp = builder->CreateSExt(tmp, getIntType(8));
+        }
     }
 
     void visit_ArrayAll(const ASR::ArrayAll_t &x) {
@@ -2049,8 +2058,11 @@ public:
             // TODO: Currently the string starts at the right location, but goes to the end of the original string.
             // We have to allocate a new string, copy it and add null termination.
 
-            tmp = builder->CreateAlloca(character_type, nullptr);
-            builder->CreateStore(p, tmp);
+            tmp = p;
+            if( ptr_loads == 0 ) {
+                tmp = builder->CreateAlloca(character_type, nullptr);
+                builder->CreateStore(p, tmp);
+            }
 
             //tmp = p;
         } else {
@@ -2618,7 +2630,9 @@ public:
             if (is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                         item.second);
-                visit_Variable(*v);
+                if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                    visit_Variable(*v);
+                }
             } else if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
@@ -4652,6 +4666,7 @@ public:
         uint32_t h;
         bool lhs_is_string_arrayref = false;
         if( x.m_target->type == ASR::exprType::ArrayItem ||
+            x.m_target->type == ASR::exprType::StringItem ||
             x.m_target->type == ASR::exprType::ArraySection ||
             x.m_target->type == ASR::exprType::StructInstanceMember ||
             x.m_target->type == ASR::exprType::ListItem ||
@@ -4668,6 +4683,17 @@ public:
                         ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(asr_target->m_type);
                         if (t->n_dims == 0) {
                             target = CreateLoad(target);
+                            lhs_is_string_arrayref = true;
+                        }
+                    }
+                }
+            } else if( ASR::is_a<ASR::StringItem_t>(*x.m_target) ) {
+                ASR::StringItem_t *asr_target0 = ASR::down_cast<ASR::StringItem_t>(x.m_target);
+                if (is_a<ASR::Var_t>(*asr_target0->m_arg)) {
+                    ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(asr_target0->m_arg);
+                    if ( is_a<ASR::Character_t>(*asr_target->m_type) ) {
+                        ASR::Character_t *t = ASR::down_cast<ASR::Character_t>(asr_target->m_type);
+                        if (t->n_dims == 0) {
                             lhs_is_string_arrayref = true;
                         }
                     }
@@ -4733,10 +4759,9 @@ public:
                 }
                 if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
                     ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
-                    if (asr_target->m_storage == ASR::storage_typeType::Allocatable) {
-                        tmp = lfortran_str_copy(target, value);
-                        return;
-                    }
+                    tmp = lfortran_str_copy(target, value,
+                        asr_target->m_storage == ASR::storage_typeType::Allocatable);
+                    return;
                 }
             }
         }
@@ -5131,29 +5156,59 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
+        bool is_single_char = (ASR::is_a<ASR::StringItem_t>(*x.m_left) &&
+                               ASR::is_a<ASR::StringItem_t>(*x.m_right));
+        if( is_single_char ) {
+            left = LLVM::CreateLoad(*builder, left);
+            right = LLVM::CreateLoad(*builder, right);
+        }
         std::string fn;
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpEQ(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_eq";
                 break;
             }
             case (ASR::cmpopType::NotEq) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpNE(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_noteq";
                 break;
             }
             case (ASR::cmpopType::Gt) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpSGT(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_gt";
                 break;
             }
             case (ASR::cmpopType::GtE) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpSGE(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_gte";
                 break;
             }
             case (ASR::cmpopType::Lt) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpSLT(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_lt";
                 break;
             }
             case (ASR::cmpopType::LtE) : {
+                if( is_single_char ) {
+                    tmp = builder->CreateICmpSLE(left, right);
+                    return ;
+                }
                 fn = "_lpython_str_compare_lte";
                 break;
             }
@@ -5485,7 +5540,13 @@ public:
         llvm::Value *idx = tmp;
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::Value *str = tmp;
-        tmp = lfortran_str_item(str, idx);
+        if( is_assignment_target ) {
+            idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+            std::vector<llvm::Value*> idx_vec = {idx};
+            tmp = CreateGEP(str, idx_vec);
+        } else {
+            tmp = lfortran_str_item(str, idx);
+        }
     }
 
     void visit_StringSection(const ASR::StringSection_t& x) {
@@ -5870,6 +5931,8 @@ public:
             }
         } else if (ASR::is_a<ASR::Logical_t>(*x.m_type)) {
             el_type = llvm::Type::getInt1Ty(context);
+        } else if (ASR::is_a<ASR::Character_t>(*x.m_type)) {
+            el_type = character_type;
         } else {
             throw CodeGenError("ConstArray type not supported yet");
         }
@@ -5917,6 +5980,9 @@ public:
             } else if (ASR::is_a<ASR::Logical_t>(*x.m_type)) {
                 ASR::LogicalConstant_t *cr = ASR::down_cast<ASR::LogicalConstant_t>(el);
                 llvm_val = llvm::ConstantInt::get(context, llvm::APInt(1, cr->m_value));
+            } else if (ASR::is_a<ASR::Character_t>(*x.m_type)) {
+                visit_expr(*el);
+                llvm_val = tmp;
             } else {
                 throw CodeGenError("ConstArray type not supported yet");
             }
@@ -7000,7 +7066,8 @@ public:
                         ASR::dimension_t* dims_arg = nullptr;
                         size_t n_arg = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims_arg);
                         if( ASRUtils::is_arg_dummy(arg->m_intent) &&
-                            !ASRUtils::is_dimension_empty(dims_arg, n_arg) ) {
+                            !ASRUtils::is_dimension_empty(dims_arg, n_arg) &&
+                            n_arg > 0 ) {
                             is_data_only_array = true;
                         }
 
@@ -7013,7 +7080,7 @@ public:
                             n = ASRUtils::extract_dimensions_from_ttype(orig_arg->m_type, dims);
                             if( !ASRUtils::is_abstract_class_type( ASRUtils::type_get_past_pointer(orig_arg->m_type) ) ) {
                                 tmp = arr_descr->convert_to_argument(tmp, arg->m_type, new_arr_type,
-                                                                    (!ASRUtils::is_dimension_empty(dims, n)));
+                                                                    (!ASRUtils::is_dimension_empty(dims, n) && n > 0));
                             }
                         } else if (x_abi == ASR::abiType::Source && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
                                 if (arg->m_intent == intent_local) {

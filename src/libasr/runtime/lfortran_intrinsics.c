@@ -689,9 +689,9 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
 
 // strcpy -----------------------------------------------------------
 
-LFORTRAN_API void _lfortran_strcpy(char** x, char *y)
+LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
 {
-    if (*x) free((void *)*x);
+    if (*x && free_target) free((void *)*x);
     *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
     strcpy(*x, y);
 }

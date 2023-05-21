@@ -277,10 +277,7 @@ class EditProcedureVisitor: public ASR::ASRPassBaseWalkVisitor<EditProcedureVisi
             this->visit_symbol(*a.second);
         }
 
-        // See integration_tests/modules_26.f90
-        // for the reason of commenting out
-        // the following line
-        // visit_ttype(*x.m_function_signature);
+        visit_ttype(*x.m_function_signature);
 
         for (size_t i=0; i<x.n_args; i++) {
             visit_expr(*x.m_args[i]);

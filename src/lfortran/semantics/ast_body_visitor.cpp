@@ -1874,6 +1874,7 @@ public:
             target->type != ASR::exprType::ArrayItem &&
             target->type != ASR::exprType::ArraySection &&
             target->type != ASR::exprType::StringSection &&
+            target->type != ASR::exprType::StringItem &&
             target->type != ASR::exprType::StructInstanceMember )
         {
             throw SemanticError(
