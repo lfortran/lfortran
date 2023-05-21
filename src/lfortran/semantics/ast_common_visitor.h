@@ -3860,7 +3860,7 @@ public:
         if (compiler_options.implicit_interface
                 && ASR::is_a<ASR::Variable_t>(*v)
                 && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
-                && (!ASRUtils::is_character(*ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
+                && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
             // If implicit interface is allowed, we have to handle the
             // following case here:
             // real :: x
@@ -3873,6 +3873,20 @@ public:
             create_implicit_interface_function(x, var_name, true, old_type);
             v = current_scope->resolve_symbol(var_name);
             LCOMPILERS_ASSERT(v!=nullptr);
+
+            // Update arguments if the symbol belonged to a function
+            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                for (size_t i = 0; i < current_function->n_args; i++) {
+                    if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
+                        if (std::string(ASRUtils::symbol_name(var->m_v)) == var_name) {
+                            var->m_v = v;
+                        }
+                    }
+                }
+            }
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
