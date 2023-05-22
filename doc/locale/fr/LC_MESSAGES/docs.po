@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2022-09-09 16:18+0000\n"
+"PO-Revision-Date: 2023-05-23 16:51+0000\n"
 "Last-Translator: Vincent Magnin <vinmagpub@yahoo.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/fr/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.14.1-dev\n"
+"X-Generator: Weblate 4.18-dev\n"
 "Generated-By: Babel 2.10.3\n"
 
 #: ../../doc/src/ast_and_asr.ipynb:9
@@ -1015,7 +1015,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:1
 msgid "Installation"
-msgstr ""
+msgstr "Installer fpm"
 
 #: ../../doc/src/installation.md:3
 msgid "All the instructions below work on Linux, macOS and Windows."
