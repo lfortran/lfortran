@@ -34,8 +34,9 @@ public:
     std::vector<ASR::symbol_t*> do_loop_variables;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping),
+            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -1826,6 +1827,53 @@ public:
         current_scope = parent_scope;
     }
 
+    ASR::asr_t* create_StructInstanceMember(ASR::expr_t* target, ASR::Variable_t* target_var) {
+        uint64_t hash = get_hash((ASR::asr_t*) target_var);
+        std::string target_var_name = target_var->m_name;
+        SymbolTable* scope = target_var->m_parent_symtab;
+        if (common_variables_hash.find(hash) != common_variables_hash.end()) {
+            ASR::symbol_t* curr_struct = common_variables_hash[hash];
+            ASR::StructType_t *struct_type = ASR::down_cast<ASR::StructType_t>(curr_struct);
+            std::string ext_sym_name = std::string(struct_type->m_name);
+            std::string module_name = "file_common_block_" + std::string(struct_type->m_name);
+            ASR::symbol_t* ext_sym_struct = scope->resolve_symbol(ext_sym_name);
+            if (!ext_sym_struct) {
+                ext_sym_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope,
+                                                struct_type->m_name, curr_struct, s2c(al, module_name), nullptr, 0, struct_type->m_name, ASR::accessType::Public));
+                scope->add_symbol(ext_sym_name, ext_sym_struct);
+            }
+
+            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Struct_t(al, curr_struct->base.loc, ext_sym_struct, nullptr, 0));
+
+            std::string struct_var_name = "struct_instance_"+std::string(struct_type->m_name);
+            ASR::symbol_t* struct_var_sym = scope->resolve_symbol(struct_var_name);
+            if (!struct_var_sym) {
+                struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, target_var->base.base.loc, scope, s2c(al, struct_var_name), nullptr, 0,
+                                            ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                                            ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+                scope->add_symbol(struct_var_name, struct_var_sym);
+            }
+
+            ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_var_sym);
+            
+            std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+target_var_name;
+            ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
+            if (!member_sym) {
+
+                member_sym = ASR::down_cast<ASR::symbol_t>(make_ExternalSymbol_t(al, target_var->base.base.loc, scope, s2c(al, member_name),
+                                                        struct_type->m_symtab->resolve_symbol(target_var_name), s2c(al, ext_sym_name), nullptr, 0, s2c(al, target_var_name), ASR::accessType::Public));
+                scope->add_symbol(member_name, member_sym);
+            }
+
+            ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
+                member_sym, type, nullptr);
+
+            return new_target;
+        } else {
+            return nullptr;
+        }
+    }
+    
     void visit_Assignment(const AST::Assignment_t &x) {
         if (is_statement_function(x)) {
             create_statement_function(x);
@@ -1946,8 +1994,44 @@ public:
             tmp = nullptr;
             return;
         }
+        if (ASR::is_a<ASR::Var_t>(*target)) {
+            ASR::symbol_t* target_var_sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*(target_var_sym))) {
+                ASR::Variable_t* target_var = ASR::down_cast<ASR::Variable_t>(target_var_sym);
+                ASR::asr_t* new_target = create_StructInstanceMember(target, target_var);
+                if (new_target) {
+                    target = ASRUtils::EXPR(new_target);
+                }
+            }
+        }
+        if (ASR::is_a<ASR::Var_t>(*value)) {
+            ASR::symbol_t* value_var_sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*(value_var_sym))) {
+                ASR::Variable_t* value_var = ASR::down_cast<ASR::Variable_t>(value_var_sym);
+                ASR::asr_t* new_value = create_StructInstanceMember(value, value_var);
+                if (new_value) {
+                    value = ASRUtils::EXPR(new_value);
+                }
+            }
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*target)) {
+            ASR::ArrayItem_t* target_array_item = ASR::down_cast<ASR::ArrayItem_t>(target);
+            ASR::expr_t* target_array = target_array_item->m_v;
+            if (ASR::is_a<ASR::Var_t>(*target_array)) {
+                ASR::symbol_t* target_array_var_sym = ASR::down_cast<ASR::Var_t>(target_array)->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*(target_array_var_sym))) {
+                    ASR::Variable_t* target_array_var = ASR::down_cast<ASR::Variable_t>(target_array_var_sym);
+                    ASR::asr_t* new_target_array = create_StructInstanceMember(target_array, target_array_var);
+                    if (new_target_array) {
+                        target = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, target->base.loc, ASRUtils::EXPR(new_target_array), target_array_item->m_args,
+                                                target_array_item->n_args, target_array_item->m_type, target_array_item->m_storage_format, target_array_item->m_value));
+                        // ASR::down_cast<ASR::ArrayItem_t>(target)->m_v = ASRUtils::EXPR(new_target_array);
+                    }
+                }
+            }
+        }
         tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
-                                     overloaded_stmt);;
+                            overloaded_stmt);
     }
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
@@ -2784,9 +2868,10 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
         std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash);
     try {
         b.is_body_visitor = true;
         b.requirement_map = requirement_map;

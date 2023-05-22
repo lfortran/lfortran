@@ -733,6 +733,10 @@ public:
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
+
+    std::map<std::string, std::pair<bool,std::vector<ASR::expr_t*>>> common_block_dictionary;
+    std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
+
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
@@ -742,10 +746,11 @@ public:
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
-            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
+            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
-          current_variable_type_{nullptr} {
+          common_variables_hash{common_variables_hash}, current_variable_type_{nullptr} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -1098,6 +1103,61 @@ public:
         tmp = nullptr;
     }
 
+    void mark_common_blocks_as_declared() {
+        for(auto &it: common_block_dictionary) {
+            if(it.second.first) {
+                it.second.first = false;
+            }
+        }
+    }
+
+    ASR::symbol_t* create_common_module(Location loc, std::string common_block_name) {
+        std::string base_module_name = "file_common_block_";
+        std::string module_name = base_module_name + common_block_name;
+        SymbolTable *parent_scope = current_scope;
+        SymbolTable *global_scope = current_scope;
+        // get global scope
+        while(global_scope->parent) {
+            global_scope = global_scope->parent;
+        }
+        if(!global_scope->resolve_symbol(module_name)){
+            current_scope = al.make_new<SymbolTable>(global_scope);
+            Vec<char*> common_variables;
+            common_variables.reserve(al, 1);
+
+            // create a struct
+            SymbolTable* struct_scope = al.make_new<SymbolTable>(current_scope);
+            ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_StructType_t(al, loc, struct_scope, s2c(al,common_block_name),
+                                            nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, nullptr, nullptr));
+            current_scope->add_symbol(common_block_name, struct_symbol);
+            common_variables.push_back(al,s2c(al, common_block_name));
+
+            ASR::asr_t *tmp0 = ASR::make_Module_t(al, loc,
+                        /* a_symtab */ current_scope,
+                        /* a_name */ s2c(al, to_lower(module_name)),
+                        common_variables.p,
+                        1,
+                        false, false);
+            
+            ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
+            global_scope->add_symbol(to_lower(module_name), current_module_sym);
+            current_scope = parent_scope;
+            return struct_symbol;
+        } else {
+            ASR::symbol_t* current_module_sym = global_scope->resolve_symbol(module_name);
+            return ASR::down_cast<ASR::Module_t>(current_module_sym)->m_symtab->resolve_symbol(common_block_name);
+        }
+    }
+
+    void add_sym_to_struct(ASR::Variable_t* var_, SymbolTable* struct_scope) {
+        char* var_name = var_->m_name;
+        ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, var_->base.base.loc, struct_scope,
+                        var_->m_name, var_->m_dependencies, var_->n_dependencies, var_->m_intent,
+                        var_->m_symbolic_value, var_->m_value, var_->m_storage, var_->m_type, 
+                        var_->m_type_declaration, var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
+        struct_scope->add_symbol(var_name, var_sym_new);
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -1153,36 +1213,51 @@ public:
                     } else {
                         // Example:
                         // private :: x, y, z
+                        std::string common_block_name = "";
+                        ASR::symbol_t* common_block_struct_sym = nullptr;
+                        SymbolTable* struct_scope = nullptr;
                         for (size_t i=0; i<x.n_syms; i++) {
                             AST::var_sym_t &s = x.m_syms[i];
                             if (s.m_name == nullptr) {
-                                if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
-                                    // Operator Overloading Encountered
-                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                        sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                        overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-                                    } else {
-                                        overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-                                    }
-                                } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
-                                    // Assignment Overloading Encountered
-                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                        sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                        assgn[current_scope] = ASR::Public;
-                                    } else {
-                                        assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
-                                    }
-                                 } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
-                                    //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
-                                    // Custom Operator Overloading Encountered
-                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-                                        sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-                                        overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-                                    } else {
-                                        overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-                                    }
+                                if (sa->m_attr == AST::simple_attributeType
+                                        ::AttrCommon) {
+                                    // add to existing common_block pair
+                                    AST::expr_t* expr = s.m_initializer;
+                                    this->visit_expr(*expr);
+                                    ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                                    uint64_t hash = get_hash((ASR::asr_t*) var_);
+                                    common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
+                                    common_variables_hash[hash] = common_block_struct_sym;
+                                    add_sym_to_struct(var_, struct_scope);
                                 } else {
-                                    throw SemanticError("Attribute type not implemented yet.", x.base.base.loc);
+                                    if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
+                                        // Operator Overloading Encountered
+                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                            overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+                                        } else {
+                                            overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+                                        }
+                                    } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
+                                        // Assignment Overloading Encountered
+                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                            assgn[current_scope] = ASR::Public;
+                                        } else {
+                                            assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
+                                        }
+                                        } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
+                                        //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
+                                        // Custom Operator Overloading Encountered
+                                        if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                            sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                            overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+                                        } else {
+                                            overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+                                        }
+                                    } else {
+                                        throw SemanticError("Attribute type not implemented yet.", x.base.base.loc);
+                                    }
                                 }
                             } else {
                                 std::string sym = to_lower(s.m_name);
@@ -1207,11 +1282,65 @@ public:
                                         "supported yet", x.base.base.loc);
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrCommon) {
-                                    // TODO:
-                                    // * store the variables in some local dictionary
-                                    // * At the end, insert it into global scope
-                                    throw SemanticError("Common attribute declaration not "
-                                        "supported yet", x.base.base.loc);
+                                    common_block_name = sym;
+                                    common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
+                                    struct_scope = ASR::down_cast<ASR::StructType_t>(common_block_struct_sym)->m_symtab;
+                                    // populate common_block_dictionary
+                                    // if common_block_dictionary do not contain the common_block_name
+                                    if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()) {
+                                        // create a new common_block pair
+                                        std::vector<ASR::expr_t*> common_block_variables;
+                                        AST::expr_t* expr = s.m_initializer;
+                                        this->visit_expr(*expr);
+                                        ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                                        uint64_t hash = get_hash((ASR::asr_t*) var_);
+                                        common_block_variables.push_back(ASRUtils::EXPR(tmp));
+                                        common_block_dictionary[common_block_name].first = true;
+                                        common_block_dictionary[common_block_name].second = common_block_variables;
+                                        common_variables_hash[hash] = common_block_struct_sym;
+
+                                        // add variable to struct
+                                        add_sym_to_struct(var_, struct_scope);
+
+                                    } else {
+                                        // check if it has been already declared in any other program
+                                        if (!common_block_dictionary[common_block_name].first) {
+                                            // already declared in some other program, verify the order of variables
+                                            std::vector<ASR::expr_t*> common_block_variables = common_block_dictionary[common_block_name].second;
+                                            if (common_block_variables.size() != x.n_syms) {
+                                                throw SemanticError("The order of variables in common block must be same in all programs",
+                                                    x.base.base.loc);
+                                            } else {
+                                                for (auto &expr: common_block_dictionary[common_block_name].second) {
+                                                    ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(expr);
+                                                    char* var_name = var_->m_name;
+                                                    s = x.m_syms[i];
+                                                    AST::expr_t* expr_ = s.m_initializer;
+                                                    this->visit_expr(*expr_);
+                                                    ASR::Variable_t* var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                                                    char* var_name_ = var__->m_name;
+                                                    if (strcmp(var_name, var_name_) != 0) {
+                                                        throw SemanticError("The order of variables in common block must be same in all programs",
+                                                            x.base.base.loc);
+                                                    } else {
+                                                        uint64_t hash = get_hash((ASR::asr_t*) var__);
+                                                        common_variables_hash[hash] = common_block_struct_sym;
+                                                    }
+                                                    i++;
+                                                }
+                                                i-=1;
+                                            }
+                                        } else {
+                                            AST::expr_t* expr = s.m_initializer;
+                                            this->visit_expr(*expr);
+                                            ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                                            uint64_t hash = get_hash((ASR::asr_t*) var_);
+                                            common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
+                                            common_variables_hash[hash] = common_block_struct_sym;
+                                            // add variable to struct
+                                            add_sym_to_struct(var_, struct_scope);
+                                        }
+                                    }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
                                     // TODO

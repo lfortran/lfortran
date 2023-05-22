@@ -92,8 +92,9 @@ public:
     };
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
-        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping) {}
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
+      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -480,6 +481,7 @@ public:
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
+        mark_common_blocks_as_declared();
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
@@ -646,6 +648,7 @@ public:
         }
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
+        mark_common_blocks_as_declared();
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -1009,6 +1012,7 @@ public:
         }
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
+        mark_common_blocks_as_declared();
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -2175,9 +2179,10 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
         std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping);
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {
