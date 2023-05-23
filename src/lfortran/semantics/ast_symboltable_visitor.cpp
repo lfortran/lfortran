@@ -587,24 +587,6 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
-        Vec<ASR::ttype_t*> params;
-        if (is_requirement) {
-            params.reserve(al, current_requirement_type_parameters.size());
-            for (ASR::asr_t *tp: current_requirement_type_parameters) {
-                params.push_back(al, ASR::down_cast<ASR::ttype_t>(tp));
-            }
-        } else {
-            params.reserve(al, called_requirement.size());
-            /*
-            for (const auto &req: called_requirement) {
-                if (ASR::is_a<ASR::ttype_t>(*req.second)) {
-                    ASR::ttype_t *new_param = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::ttype_t>(req.second));
-                    params.push_back(al, new_param);
-                }
-            }
-            */
-        }
-
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -953,25 +935,6 @@ public:
                 AST::SimpleAttribute_t* simple_func_attr = AST::down_cast<AST::SimpleAttribute_t>(func_attr);
                 is_elemental = is_elemental || simple_func_attr->m_attr == AST::simple_attributeType::AttrElemental;
             }
-        }
-
-        Vec<ASR::ttype_t*> params;
-        if (is_requirement) {
-            params.reserve(al, current_requirement_type_parameters.size());
-            for (ASR::asr_t *tp: current_requirement_type_parameters) {
-                params.push_back(al, ASR::down_cast<ASR::ttype_t>(tp));
-            }
-        } else {
-            // TODO: build based on called requirement
-            params.reserve(al, called_requirement.size());
-            /*
-            for (const auto &req: called_requirement) {
-                if (ASR::is_a<ASR::ttype_t>(*req.second)) {
-                    ASR::ttype_t *new_param = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::ttype_t>(req.second));
-                    params.push_back(al, new_param);
-                }
-            }
-            */
         }
 
         SetChar func_deps;
@@ -2072,11 +2035,14 @@ public:
                 throw SemanticError("Parameter '" + std::string(x.m_namelist[i]) 
                     + "' was not declared", x.base.base.loc);
             }
-            std::string req_arg = req->m_args[i];
-            ASR::symbol_t *req_arg_sym = (req->m_symtab)->get_symbol(req_arg);
-            // TODO: inline this? convert into a static method?
-            ASR::symbol_t *temp_arg_sym = replace_symbol(req_arg_sym, temp_arg);
-            current_scope->add_symbol(temp_arg, temp_arg_sym);
+            ASR::symbol_t *temp_arg_sym = current_scope->resolve_symbol(temp_arg);
+            if (!temp_arg_sym) {
+                std::string req_arg = req->m_args[i];
+                ASR::symbol_t *req_arg_sym = (req->m_symtab)->get_symbol(req_arg);
+                // TODO: inline this? convert into a static method?
+                temp_arg_sym = replace_symbol(req_arg_sym, temp_arg);
+                current_scope->add_symbol(temp_arg, temp_arg_sym);
+            }
         }
     }
 

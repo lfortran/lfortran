@@ -535,21 +535,26 @@ public:
                 AST::UseSymbol_t* arg_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_args[i]);
                 std::string arg = to_lower(arg_symbol->m_remote_sym);
                 if (ASR::is_a<ASR::Variable_t>(*template_param)) {
-                    ASR::TypeParameter_t *type_param = ASR::down_cast<ASR::TypeParameter_t>(
-                        ASRUtils::symbol_type(template_param));
-                    ASR::ttype_t* type_arg;
-                    if (arg.compare("real") == 0) {
-                        type_arg = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-                    } else if (arg.compare("integer") == 0) {
-                        type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
-                    } else if (arg.compare("complex") == 0) {
-                        type_arg = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4, nullptr, 0));
+                    ASR::ttype_t *t = ASRUtils::symbol_type(template_param);
+                    if (ASRUtils::is_type_parameter(*t)) {
+                      ASR::TypeParameter_t *type_param = ASR::down_cast<ASR::TypeParameter_t>(
+                          ASRUtils::symbol_type(template_param));
+                      ASR::ttype_t* type_arg;
+                      if (arg.compare("real") == 0) {
+                          type_arg = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+                      } else if (arg.compare("integer") == 0) {
+                          type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                      } else if (arg.compare("complex") == 0) {
+                          type_arg = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4, nullptr, 0));
+                      } else {
+                          throw SemanticError(
+                              "The type " + arg + " is not yet handled for generic instantiation",
+                              x.base.base.loc);
+                      }
+                      subs[type_param->m_param] = type_arg;
                     } else {
-                        throw SemanticError(
-                            "The type " + arg + " is not yet handled for generic instantiation",
-                            x.base.base.loc);
+                      LCOMPILERS_ASSERT(false);
                     }
-                    subs[type_param->m_param] = type_arg;
                 } else if (ASR::is_a<ASR::Function_t>(*template_param)) {
                     ASR::Function_t* restriction = ASR::down_cast<ASR::Function_t>(template_param);
                     ASR::symbol_t *f_arg = current_scope->resolve_symbol(arg);
