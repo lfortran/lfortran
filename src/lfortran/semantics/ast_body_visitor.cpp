@@ -529,34 +529,42 @@ public:
         std::map<std::string, ASR::symbol_t*> restriction_subs;
 
         for (size_t i=0; i<x.n_args; i++) {
-            std::string template_arg = temp->m_args[i];
-            ASR::symbol_t* template_param = temp->m_symtab->get_symbol(template_arg);
+            std::string temp_arg = temp->m_args[i];
+            ASR::symbol_t* temp_param = temp->m_symtab->get_symbol(temp_arg);
             if (AST::is_a<AST::UseSymbol_t>(*x.m_args[i])) {
                 AST::UseSymbol_t* arg_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_args[i]);
                 std::string arg = to_lower(arg_symbol->m_remote_sym);
-                if (ASR::is_a<ASR::Variable_t>(*template_param)) {
-                    ASR::ttype_t *t = ASRUtils::symbol_type(template_param);
+                if (ASR::is_a<ASR::Variable_t>(*temp_param)) {
+                    ASR::ttype_t *t = ASRUtils::symbol_type(temp_param);
+                    ASR::ttype_t* s;
                     if (ASRUtils::is_type_parameter(*t)) {
-                      ASR::TypeParameter_t *type_param = ASR::down_cast<ASR::TypeParameter_t>(
-                          ASRUtils::symbol_type(template_param));
-                      ASR::ttype_t* type_arg;
-                      if (arg.compare("real") == 0) {
-                          type_arg = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-                      } else if (arg.compare("integer") == 0) {
-                          type_arg = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
-                      } else if (arg.compare("complex") == 0) {
-                          type_arg = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4, nullptr, 0));
-                      } else {
-                          throw SemanticError(
-                              "The type " + arg + " is not yet handled for generic instantiation",
-                              x.base.base.loc);
-                      }
-                      subs[type_param->m_param] = type_arg;
+                        ASR::TypeParameter_t *type_param = ASR::down_cast<ASR::TypeParameter_t>(
+                            ASRUtils::symbol_type(temp_param));
+                        if (arg.compare("real") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
+                        } else if (arg.compare("integer") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
+                        } else if (arg.compare("complex") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4, nullptr, 0));
+                        } else {
+                            throw SemanticError(
+                                "The type " + arg + " is not yet handled for generic instantiation",
+                                x.base.base.loc);
+                        }
+                        subs[type_param->m_param] = s;
                     } else {
-                      LCOMPILERS_ASSERT(false);
+                        // Type checking given arguments
+                        ASR::symbol_t *sym_arg = current_scope->resolve_symbol(arg);
+                        s = ASRUtils::symbol_type(sym_arg);
+                        if (!ASRUtils::check_equal_type(s, t)) {
+                            throw SemanticError(
+                                "The type of " + arg + " does not match the type of " + temp_arg,
+                                x.base.base.loc);
+                        }
+                        restriction_subs[temp_arg] = sym_arg;
                     }
-                } else if (ASR::is_a<ASR::Function_t>(*template_param)) {
-                    ASR::Function_t* restriction = ASR::down_cast<ASR::Function_t>(template_param);
+                } else if (ASR::is_a<ASR::Function_t>(*temp_param)) {
+                    ASR::Function_t* restriction = ASR::down_cast<ASR::Function_t>(temp_param);
                     ASR::symbol_t *f_arg = current_scope->resolve_symbol(arg);
                     if (!f_arg) {
                         throw SemanticError("The function argument " + arg + " is not found",
@@ -565,7 +573,7 @@ public:
                     ASR::symbol_t *f_arg2 = ASRUtils::symbol_get_past_external(f_arg);
                     if (!ASR::is_a<ASR::Function_t>(*f_arg2)) {
                         throw SemanticError(
-                            "The argument for " + template_arg + " must be a function",
+                            "The argument for " + temp_arg + " must be a function",
                             x.base.base.loc);
                     }
                     check_restriction(subs, restriction_subs, restriction, f_arg, x.base.base.loc);
@@ -596,7 +604,7 @@ public:
                 }
                 bool is_overloaded = ASRUtils::is_op_overloaded(op, op_name, current_scope);
                 bool found = false;
-                ASR::Function_t *restriction = ASR::down_cast<ASR::Function_t>(template_param);
+                ASR::Function_t *restriction = ASR::down_cast<ASR::Function_t>(temp_param);
                 std::string restriction_name = restriction->m_name;
                 // Check if an alias is defined for the operator
                 if (is_overloaded) {
@@ -1544,14 +1552,22 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
+        /*
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
                 visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
+        */
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
+        for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
+            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
+                visit_unit_decl2(*x.m_decl[i]);
+            is_Function = false;
+        }
         Vec<ASR::stmt_t*> body;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
