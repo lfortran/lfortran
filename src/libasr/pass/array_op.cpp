@@ -75,6 +75,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     Vec<ASR::expr_t*>& result_inc;
     ASR::dimension_t* op_dims; size_t op_n_dims;
     ASR::expr_t* op_expr;
+    std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
 
     public:
 
@@ -87,12 +88,14 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                    bool& apply_again_, bool& remove_original_statement_,
                    Vec<ASR::expr_t*>& result_lbound_,
                    Vec<ASR::expr_t*>& result_ubound_,
-                   Vec<ASR::expr_t*>& result_inc_) :
+                   Vec<ASR::expr_t*>& result_inc_,
+                   std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value_) :
     al(al_), pass_result(pass_result_),
     result_counter(0), use_custom_loop_params(use_custom_loop_params_),
     apply_again(apply_again_), remove_original_statement(remove_original_statement_),
     result_lbound(result_lbound_), result_ubound(result_ubound_),
-    result_inc(result_inc_), op_dims(nullptr), op_n_dims(0), op_expr(nullptr),
+    result_inc(result_inc_), op_dims(nullptr), op_n_dims(0),
+    op_expr(nullptr), resultvar2value(resultvar2value_),
     current_scope(nullptr), result_var(nullptr), result_type(nullptr) {}
 
     template <typename LOOP_BODY>
@@ -190,7 +193,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::ttype_t* current_expr_type = ASRUtils::expr_type(*current_expr);
             op_n_dims = ASRUtils::extract_dimensions_from_ttype(current_expr_type, op_dims);
         }
-        if( !(result_var != nullptr && PassUtils::is_array(result_var)) ) {
+        if( !(result_var != nullptr && PassUtils::is_array(result_var) &&
+              resultvar2value.find(result_var) != resultvar2value.end() &&
+              resultvar2value[result_var] == &(x->base)) ) {
             return ;
         }
 
@@ -274,7 +279,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     template <typename T>
     void replace_Constant(T* x) {
-        if( !(result_var != nullptr && PassUtils::is_array(result_var)) ) {
+        if( !(result_var != nullptr && PassUtils::is_array(result_var) &&
+              resultvar2value.find(result_var) != resultvar2value.end() &&
+              resultvar2value[result_var] == &(x->base)) ) {
             return ;
         }
 
@@ -320,6 +327,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             al, loc, left, (ASR::binopType)x->m_op,
                             right, x->m_type, nullptr));
 
+            case ASR::exprType::UnsignedIntegerBinOp:
+                return ASRUtils::EXPR(ASR::make_UnsignedIntegerBinOp_t(
+                            al, loc, left, (ASR::binopType)x->m_op,
+                            right, x->m_type, nullptr));
+
             case ASR::exprType::RealBinOp:
                 return ASRUtils::EXPR(ASR::make_RealBinOp_t(
                             al, loc, left, (ASR::binopType)x->m_op,
@@ -337,6 +349,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
             case ASR::exprType::IntegerCompare:
                 return ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                            al, loc, left, (ASR::cmpopType)x->m_op,
+                            right, x->m_type, nullptr));
+
+            case ASR::exprType::UnsignedIntegerCompare:
+                return ASRUtils::EXPR(ASR::make_UnsignedIntegerCompare_t(
                             al, loc, left, (ASR::cmpopType)x->m_op,
                             right, x->m_type, nullptr));
 
@@ -404,8 +421,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     void replace_ArraySection(ASR::ArraySection_t* x) {
         Vec<ASR::dimension_t> x_dims;
         x_dims.reserve(al, x->n_args);
-        ASRUtils::ASRBuilder builder(al);
         const Location& loc = x->base.base.loc;
+        ASRUtils::ASRBuilder builder(al, loc);
         ASR::expr_t* i32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0))));
         Vec<ASR::dimension_t> empty_dims;
@@ -837,6 +854,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_ArrayOpCommon(x, "_integer_bin_op_res");
     }
 
+    void replace_UnsignedIntegerBinOp(ASR::UnsignedIntegerBinOp_t* x) {
+        replace_ArrayOpCommon(x, "_unsigned_integer_bin_op_res");
+    }
+
     void replace_ComplexBinOp(ASR::ComplexBinOp_t* x) {
         replace_ArrayOpCommon<ASR::ComplexBinOp_t>(x, "_complex_bin_op_res");
     }
@@ -847,6 +868,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_IntegerCompare(ASR::IntegerCompare_t* x) {
         replace_ArrayOpCommon<ASR::IntegerCompare_t>(x, "_integer_comp_op_res");
+    }
+
+    void replace_UnsignedIntegerCompare(ASR::UnsignedIntegerCompare_t* x) {
+        replace_ArrayOpCommon<ASR::UnsignedIntegerCompare_t>(x, "_unsigned_integer_comp_op_res");
     }
 
     void replace_RealCompare(ASR::RealCompare_t* x) {
@@ -1152,6 +1177,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::expr_t*> result_lbound, result_ubound, result_inc;
         Vec<ASR::stmt_t*>* parent_body;
+        std::map<ASR::expr_t*, ASR::expr_t*> resultvar2value;
 
     public:
 
@@ -1162,7 +1188,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         remove_original_statement(false),
         replacer(al_, pass_result, use_custom_loop_params,
                  apply_again, remove_original_statement,
-                 result_lbound, result_ubound, result_inc),
+                 result_lbound, result_ubound, result_inc,
+                 resultvar2value),
         parent_body(nullptr), apply_again(false) {
             pass_result.n = 0;
             result_lbound.n = 0;
@@ -1294,6 +1321,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         inline void visit_AssignmentUtil(const ASR::Assignment_t& x) {
             ASR::expr_t** current_expr_copy_9 = current_expr;
             ASR::expr_t* original_value = x.m_value;
+            resultvar2value[replacer.result_var] = original_value;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             this->call_replacer();
             current_expr = current_expr_copy_9;

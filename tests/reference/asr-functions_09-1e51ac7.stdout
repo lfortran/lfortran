@@ -129,6 +129,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             simps38_weights_dp_use:
                                 (Function
@@ -190,6 +191,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     stdlib_quadrature_simps

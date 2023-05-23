@@ -2,16 +2,6 @@
     (SymbolTable
         1
         {
-            1_y:
-                (ExternalSymbol
-                    1
-                    1_y
-                    2 y
-                    derived_types_11
-                    []
-                    y
-                    Public
-                ),
             derived_types_11:
                 (Module
                     (SymbolTable
@@ -70,18 +60,18 @@
                                             2 1_y_backslash
                                             (Character 1 1 () [])
                                             (StringConstant
-                                                "\"
+                                                "\\"
                                                 (Character 1 1 () [])
                                             )
                                         )
                                         (Character 1 3 () [])
                                         (StringConstant
-                                            "lf\"
+                                            "lf\\"
                                             (Character 1 3 () [])
                                         )
                                     )
                                     (StringConstant
-                                        "lf\"
+                                        "lf\\"
                                         (Character 1 3 () [])
                                     )
                                     Save
@@ -104,11 +94,11 @@
                                                     []
                                                     Local
                                                     (StringConstant
-                                                        "\"
+                                                        "\\"
                                                         (Character 1 1 () [])
                                                     )
                                                     (StringConstant
-                                                        "\"
+                                                        "\\"
                                                         (Character 1 1 () [])
                                                     )
                                                     Save
@@ -146,7 +136,7 @@
                                     4
                                     1_y_backslash
                                     3 backslash
-                                    1_y
+                                    y
                                     []
                                     backslash
                                     Public
@@ -201,13 +191,13 @@
                                 4 1_y_backslash
                                 (Character 1 1 () [])
                                 (StringConstant
-                                    "\"
+                                    "\\"
                                     (Character 1 1 () [])
                                 )
                             )
                             NotEq
                             (StringConstant
-                                "\"
+                                "\\"
                                 (Character 1 1 () [])
                             )
                             (Logical 4 [])
@@ -226,7 +216,7 @@
                             (Var 4 x)
                             NotEq
                             (StringConstant
-                                "lf\"
+                                "lf\\"
                                 (Character 1 3 () [])
                             )
                             (Logical 4 [])

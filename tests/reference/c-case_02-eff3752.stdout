@@ -38,6 +38,7 @@ struct dimension_descriptor
 // Implementations
 int main(int argc, char* argv[])
 {
+    _lpython_set_argv(argc, argv);
     int32_t marks;
     int32_t out;
     marks = 81;

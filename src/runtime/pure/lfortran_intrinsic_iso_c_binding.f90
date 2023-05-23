@@ -5,12 +5,21 @@ type :: c_ptr
     integer ptr
 end type
 
+integer, parameter :: c_int8_t = 1
+integer, parameter :: c_int16_t = 2
+integer, parameter :: c_int32_t = 4
+integer, parameter :: c_int64_t = 8
 integer, parameter :: c_int = 4
+integer, parameter :: c_short = 2
 integer, parameter :: c_long = 4
 integer, parameter :: c_long_long = 8
 integer, parameter :: c_size_t = 8
 integer, parameter :: c_float = 4
 integer, parameter :: c_double = 8
+integer, parameter :: c_long_double = -1
+integer, parameter :: c_float_complex = 4
+integer, parameter :: c_double_complex = 8
+integer, parameter :: c_long_double_complex = -1
 integer, parameter :: c_bool = 4
 integer, parameter :: c_char = 1
 character(len=1), parameter :: c_null_char = char(0)

@@ -177,6 +177,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             add_real:
                                 (Function
@@ -269,6 +270,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f:
                                 (Function
@@ -389,6 +391,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t:
                                 (StructType
@@ -540,6 +543,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~add_intrinsic_real:
                                 (Function
@@ -630,6 +634,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    ()
                                 )
                         })
                     template_add_03_m

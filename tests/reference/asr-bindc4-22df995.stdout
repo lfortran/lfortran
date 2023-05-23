@@ -246,6 +246,7 @@
                         (Var 2 queries)
                         (Var 2 x)
                         (Var 2 newshape)
+                        ()
                     )
                     (Print
                         ()
@@ -335,6 +336,7 @@
                             (IntegerConstant 2 (Integer 4 [])))])
                             ColMajor
                         )
+                        ()
                     )
                     (Print
                         ()

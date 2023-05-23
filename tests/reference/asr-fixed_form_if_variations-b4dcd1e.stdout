@@ -52,6 +52,7 @@
                     Public
                     .false.
                     .false.
+                    ()
                 ),
             main:
                 (Program

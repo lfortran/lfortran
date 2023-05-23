@@ -122,6 +122,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             list_files:
                                 (Function
@@ -249,6 +250,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_t:
                                 (ExternalSymbol
@@ -378,6 +380,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             cptr:
                                                 (Variable
@@ -462,6 +465,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f_string_cptr_n:
                                 (Function
@@ -546,6 +550,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f_string~genericprocedure:
                                 (Function
@@ -610,6 +615,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_t:
                                 (StructType

@@ -149,6 +149,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             compare_less:
                                 (Function
@@ -241,6 +242,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             quicksort:
                                 (Function
@@ -667,6 +669,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             sort:
                                 (GenericProcedure
@@ -1036,6 +1039,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             swap:
                                 (Function
@@ -1130,6 +1134,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_key:
                                 (StructType

@@ -515,6 +515,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             specified:
                                 (ExternalSymbol
@@ -605,6 +606,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     m_cli2_20

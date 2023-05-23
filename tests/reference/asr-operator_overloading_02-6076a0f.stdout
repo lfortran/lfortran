@@ -167,6 +167,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             logical_gets_integer_use:
                                 (Function
@@ -241,6 +242,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~assign:
                                 (CustomOperator

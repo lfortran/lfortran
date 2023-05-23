@@ -211,6 +211,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             fpm_cmd_settings:
                                 (StructType
@@ -372,6 +373,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             warnwrite_data:
                                 (Function
@@ -473,6 +475,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     modules_44_module_fpm_filesystem

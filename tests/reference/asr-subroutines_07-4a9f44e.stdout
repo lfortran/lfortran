@@ -292,6 +292,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f_int:
                                 (GenericProcedure

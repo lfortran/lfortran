@@ -110,6 +110,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             len:
                                 (GenericProcedure
@@ -185,6 +186,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType
@@ -342,6 +344,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             compute_lps_use:
                                 (Function
@@ -436,6 +439,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             compute_lps_use1:
                                 (Function
@@ -544,6 +548,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             len:
                                 (ExternalSymbol
@@ -726,6 +731,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             padl_char_pad_with:
                                 (Function
@@ -912,6 +918,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             padl_string_default:
                                 (Function
@@ -1116,6 +1123,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             padl_string_pad_with:
                                 (Function
@@ -1335,6 +1343,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (ExternalSymbol

@@ -192,8 +192,8 @@ namespace LCompilers {
                 "nested_vars",
                 "global_stmts",
                 "init_expr",
-                "class_constructor",
                 "implied_do_loops",
+                "class_constructor",
                 "pass_list_expr",
                 // "arr_slice", TODO: Remove ``arr_slice.cpp`` completely
                 "subroutine_from_function",
@@ -216,8 +216,8 @@ namespace LCompilers {
             _with_optimization_passes = {
                 "global_stmts",
                 "init_expr",
-                "class_constructor",
                 "implied_do_loops",
+                "class_constructor",
                 "pass_array_by_data",
                 "arr_slice",
                 "subroutine_from_function",

@@ -299,6 +299,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     kokkos_program2

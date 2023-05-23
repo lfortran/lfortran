@@ -2,37 +2,27 @@
     (SymbolTable
         1
         {
-            1_t_1:
-                (ExternalSymbol
-                    1
-                    1_t_1
-                    2 t_1
-                    module_1
-                    []
-                    t_1
-                    Public
-                ),
-            1_t_2:
-                (ExternalSymbol
-                    1
-                    1_t_2
-                    2 t_2
-                    module_1
-                    []
-                    t_2
-                    Public
-                ),
             derived_types_10:
                 (Program
                     (SymbolTable
                         5
                         {
+                            1_t_1:
+                                (ExternalSymbol
+                                    5
+                                    1_t_1
+                                    2 t_1
+                                    module_1
+                                    []
+                                    t_1
+                                    Public
+                                ),
                             1_t_1_i:
                                 (ExternalSymbol
                                     5
                                     1_t_1_i
                                     3 i
-                                    1_t_1
+                                    t_1
                                     []
                                     i
                                     Public
@@ -42,7 +32,7 @@
                                     5
                                     1_t_2_r
                                     4 r
-                                    1_t_2
+                                    t_2
                                     []
                                     r
                                     Public
@@ -121,9 +111,9 @@
                     (=
                         (StructInstanceMember
                             (Var 5 type_2)
-                            1 1_t_1
+                            5 1_t_1
                             (Struct
-                                1 1_t_1
+                                5 1_t_1
                                 []
                             )
                             ()

@@ -621,6 +621,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_profile:
                                 (Function
@@ -841,6 +842,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             profile_config_t:
                                 (StructType

@@ -307,6 +307,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             msg_scalar:
                                 (Function
@@ -929,7 +930,7 @@
                                                                             ()
                                                                         )
                                                                         (StringConstant
-                                                                            "("(",1pg0,",",1pg0,")")"
+                                                                            "(\"(\",1pg0,\",\",1pg0,\")\")"
                                                                             (Character 1 23 () [])
                                                                         )
                                                                         ()
@@ -1076,6 +1077,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             sep:
                                                 (Variable
@@ -1421,6 +1423,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             str:
                                 (GenericProcedure

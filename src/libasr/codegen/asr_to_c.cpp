@@ -279,7 +279,7 @@ public:
             std::string dims;
             use_ref = use_ref && !is_array;
             if (ASRUtils::is_integer(*v_m_type)) {
-                headers.insert("inttypes");
+                headers.insert("inttypes.h");
                 ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(v_m_type);
                 std::string type_name = "int" + std::to_string(t->m_kind * 8) + "_t";
                 if( is_array ) {
@@ -294,6 +294,44 @@ public:
                         sub = type_name + " " + force_declare_name + dims;
                     } else {
                         std::string encoded_type_name = "i" + std::to_string(t->m_kind * 8);
+                        if( !force_declare ) {
+                            force_declare_name = std::string(v.m_name);
+                        }
+                        generate_array_decl(sub, force_declare_name, type_name, dims,
+                                            encoded_type_name, t->m_dims, t->n_dims,
+                                            use_ref, dummy,
+                                            (v.m_intent != ASRUtils::intent_in &&
+                                            v.m_intent != ASRUtils::intent_inout &&
+                                            v.m_intent != ASRUtils::intent_out &&
+                                            !is_struct_type_member) || force_declare,
+                                            is_fixed_size, false, v.m_abi);
+                    }
+                } else {
+                    bool is_fixed_size = true;
+                    std::string v_m_name = v.m_name;
+                    if( declare_as_constant ) {
+                        type_name = "const " + type_name;
+                        v_m_name = const_name;
+                    }
+                    dims = convert_dims_c(t->n_dims, t->m_dims, v_m_type, is_fixed_size);
+                    sub = format_type_c(dims, type_name, v_m_name, use_ref, dummy);
+                }
+            } else if (ASRUtils::is_unsigned_integer(*v_m_type)) {
+                headers.insert("inttypes.h");
+                ASR::UnsignedInteger_t *t = ASR::down_cast<ASR::UnsignedInteger_t>(v_m_type);
+                std::string type_name = "uint" + std::to_string(t->m_kind * 8) + "_t";
+                if( is_array ) {
+                    bool is_fixed_size = true;
+                    dims = convert_dims_c(t->n_dims, t->m_dims, v_m_type, is_fixed_size, true);
+                    bool is_struct_type_member = ASR::is_a<ASR::StructType_t>(
+                            *ASR::down_cast<ASR::symbol_t>(v.m_parent_symtab->asr_owner));
+                    if( is_fixed_size && is_struct_type_member ) {
+                        if( !force_declare ) {
+                            force_declare_name = std::string(v.m_name);
+                        }
+                        sub = type_name + " " + force_declare_name + dims;
+                    } else {
+                        std::string encoded_type_name = "u" + std::to_string(t->m_kind * 8);
                         if( !force_declare ) {
                             force_declare_name = std::string(v.m_name);
                         }
@@ -354,7 +392,7 @@ public:
                     sub = format_type_c(dims, type_name, v_m_name, use_ref, dummy);
                 }
             } else if (ASRUtils::is_complex(*v_m_type)) {
-                headers.insert("complex");
+                headers.insert("complex.h");
                 ASR::Complex_t *t = ASR::down_cast<ASR::Complex_t>(v_m_type);
                 std::string type_name = "float complex";
                 if (t->m_kind == 8) type_name = "double complex";
@@ -713,8 +751,11 @@ R"(
             }
         }
         std::string to_include = "";
-        for (auto s: headers) {
-            to_include += "#include <" + s + ".h>\n";
+        for (auto &s: headers) {
+            to_include += "#include <" + s + ">\n";
+        }
+        for (auto &s: user_headers) {
+            to_include += "#include \"" + s + "\"\n";
         }
         if( c_ds_api->get_func_decls().size() > 0 ) {
             array_types_decls += "\n" + c_ds_api->get_func_decls() + "\n";
@@ -828,6 +869,7 @@ R"(
         }
         src = contains
                 + "int main(int argc, char* argv[])\n{\n"
+                + indent1 + "_lpython_set_argv(argc, argv);\n"
                 + decl + body
                 + indent1 + "return 0;\n}\n";
         indentation_level -= 2;
@@ -1005,7 +1047,7 @@ R"(
     }
 
     void visit_ComplexConstant(const ASR::ComplexConstant_t &x) {
-        headers.insert("complex");
+        headers.insert("complex.h");
         std::string re = std::to_string(x.m_re);
         std::string im = std::to_string(x.m_im);
         src = "CMPLX(" + re + ", " + im + ")";
@@ -1048,20 +1090,31 @@ R"(
         std::string dest_src = std::move(src);
         src = "";
         std::string indent(indentation_level*indentation_spaces, ' ');
+        ASR::ArrayConstant_t* lower_bounds = nullptr;
+        if( x.m_lower_bounds ) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*x.m_lower_bounds));
+            lower_bounds = ASR::down_cast<ASR::ArrayConstant_t>(x.m_lower_bounds);
+        }
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_ptr)) ) {
             std::string dim_set_code = "";
             ASR::dimension_t* m_dims = nullptr;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_ptr), m_dims);
             dim_set_code = indent + dest_src + "->n_dims = " + std::to_string(n_dims) + ";\n";
             for( int i = 0; i < n_dims; i++ ) {
-                if( m_dims[i].m_start ) {
-                    visit_expr(*m_dims[i].m_start);
-                    dim_set_code += indent + dest_src + "->dims[" + std::to_string(i) + "].lower_bound = " + src + ";\n";
+                if( lower_bounds ) {
+                    visit_expr(*lower_bounds->m_args[i]);
+                } else {
+                    src = "0";
                 }
+                dim_set_code += indent + dest_src + "->dims[" +
+                    std::to_string(i) + "].lower_bound = " + src + ";\n";
                 if( m_dims[i].m_length ) {
                     visit_expr(*m_dims[i].m_length);
-                    dim_set_code += indent + dest_src + "->dims[" + std::to_string(i) + "].length = " + src + ";\n";
+                } else {
+                    src = "0";
                 }
+                dim_set_code += indent + dest_src + "->dims[" +
+                    std::to_string(i) + "].length = " + src + ";\n";
             }
             src.clear();
             src += dim_set_code;
@@ -1085,10 +1138,10 @@ R"(
         }
         for (size_t i=0; i<x.n_values; i++) {
             this->visit_expr(*x.m_values[i]);
-            if( ASRUtils::is_array(ASRUtils::expr_type(x.m_values[i])) ) {
+            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_values[i]);
+            if( ASRUtils::is_array(value_type) ) {
                 src += "->data";
             }
-            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_values[i]);
             if (value_type->type == ASR::ttypeType::List ||
                 value_type->type == ASR::ttypeType::Tuple) {
                 tmp_gen += "\"";
@@ -1196,7 +1249,7 @@ R"(
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t& x) {
         // TODO: Support and test for multi-dimensional array constants
-        headers.insert("stdarg");
+        headers.insert("stdarg.h");
         std::string array_const = "";
         for( size_t i = 0; i < x.n_args; i++ ) {
             visit_expr(*x.m_args[i]);

@@ -2,26 +2,6 @@
     (SymbolTable
         1
         {
-            1_employee:
-                (ExternalSymbol
-                    1
-                    1_employee
-                    2 employee
-                    hr
-                    []
-                    employee
-                    Public
-                ),
-            1_person:
-                (ExternalSymbol
-                    1
-                    1_person
-                    2 person
-                    hr
-                    []
-                    person
-                    Public
-                ),
             hr:
                 (Module
                     (SymbolTable
@@ -195,7 +175,7 @@
                                     5
                                     1_employee_department
                                     4 department
-                                    1_employee
+                                    employee
                                     []
                                     department
                                     Public
@@ -205,7 +185,7 @@
                                     5
                                     1_employee_hire_date
                                     4 hire_date
-                                    1_employee
+                                    employee
                                     []
                                     hire_date
                                     Public
@@ -215,7 +195,7 @@
                                     5
                                     1_employee_person
                                     4 person
-                                    1_employee
+                                    employee
                                     []
                                     person
                                     Public
@@ -225,7 +205,7 @@
                                     5
                                     1_person_birthyear
                                     3 birthyear
-                                    1_person
+                                    person
                                     []
                                     birthyear
                                     Public
@@ -235,7 +215,7 @@
                                     5
                                     1_person_first
                                     3 first
-                                    1_person
+                                    person
                                     []
                                     first
                                     Public
@@ -245,7 +225,7 @@
                                     5
                                     1_person_last
                                     3 last
-                                    1_person
+                                    person
                                     []
                                     last
                                     Public
@@ -255,7 +235,7 @@
                                     5
                                     1_person_sgender
                                     3 sgender
-                                    1_person
+                                    person
                                     []
                                     sgender
                                     Public

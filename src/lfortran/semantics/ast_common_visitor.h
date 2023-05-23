@@ -1961,6 +1961,7 @@ public:
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
+        ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v));
         for (size_t i=0; i<n_args; i++) {
             ASR::array_index_t ai;
             ai.loc = loc;
@@ -1976,7 +1977,7 @@ public:
                 m_end = ASRUtils::EXPR(tmp);
                 ai.loc = m_end->base.loc;
             } else {
-                if( ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)))) {
+                if( ASR::is_a<ASR::Character_t>(*root_v_type) ) {
                     ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(
                                                     ASRUtils::type_get_past_pointer(
                                                         ASRUtils::symbol_type(v)));
@@ -2123,8 +2124,14 @@ public:
                     }
                 }
             }
-            return ASR::make_ArrayItem_t(al, loc,
-                v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
+            if( ASR::is_a<ASR::Character_t>(*root_v_type) &&
+                !ASRUtils::is_array(root_v_type) ) {
+                return ASR::make_StringItem_t(al, loc,
+                    v_Var, args.p[0].m_right, type, arr_ref_val);
+            } else {
+                return ASR::make_ArrayItem_t(al, loc,
+                    v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
+            }
         } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
             if (ASR::is_a<ASR::Pointer_t>(*v_type)) {
@@ -2678,7 +2685,8 @@ public:
     }
 
     ASR::asr_t* resolve_variable2(const Location &loc, const std::string &var_name,
-            const std::string &dt_name, SymbolTable*& scope) {
+            const std::string &dt_name, SymbolTable*& scope,
+            AST::fnarg_t* struct_m_args=nullptr, size_t struct_n_args=0) {
         ASR::symbol_t *v = scope->resolve_symbol(dt_name);
         if (!v) {
             throw SemanticError("Variable '" + dt_name + "' not declared", loc);
@@ -2720,6 +2728,23 @@ public:
             }
             if( member != nullptr ) {
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                if( struct_n_args > 0 ) {
+                    Vec<ASR::array_index_t> indices;
+                    indices.reserve(al, struct_n_args);
+                    for( size_t i = 0; i < struct_n_args; i++ ) {
+                        LCOMPILERS_ASSERT(struct_m_args[i].m_step == nullptr);
+                        this->visit_expr(*struct_m_args[i].m_end);
+                        ASR::array_index_t index;
+                        index.loc = struct_m_args->loc;
+                        index.m_left = nullptr;
+                        index.m_right = ASRUtils::EXPR(tmp);
+                        index.m_step = nullptr;
+                        indices.push_back(al, index);
+                    }
+                    v_var = ASR::make_ArrayItem_t(al, v_var->loc, ASRUtils::EXPR(v_var),
+                                indices.p, indices.size(), v_variable->m_type,
+                                ASR::arraystorageType::ColMajor, nullptr);
+                }
                 return ASRUtils::getStructInstanceMember_t(al, loc, v_var, v, member, current_scope);
             } else {
                 throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
@@ -3547,8 +3572,13 @@ public:
                 }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicFunctionRegistry::get_create_function(var_name);
-                tmp = create_func(al, x.base.base.loc, args,
-                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                if( !ASRUtils::IntrinsicFunctionRegistry::is_input_type_supported(var_name, args) ) {
+                    is_function = true;
+                    return resolve_intrinsic_function(x.base.base.loc, var_name);
+                } else {
+                    tmp = create_func(al, x.base.base.loc, args,
+                            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                }
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
@@ -3843,7 +3873,7 @@ public:
         if (compiler_options.implicit_interface
                 && ASR::is_a<ASR::Variable_t>(*v)
                 && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
-                && (!ASRUtils::is_character(*ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
+                && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
             // If implicit interface is allowed, we have to handle the
             // following case here:
             // real :: x
@@ -3856,6 +3886,20 @@ public:
             create_implicit_interface_function(x, var_name, true, old_type);
             v = current_scope->resolve_symbol(var_name);
             LCOMPILERS_ASSERT(v!=nullptr);
+
+            // Update arguments if the symbol belonged to a function
+            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                for (size_t i = 0; i < current_function->n_args; i++) {
+                    if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
+                        if (std::string(ASRUtils::symbol_name(var->m_v)) == var_name) {
+                            var->m_v = v;
+                        }
+                    }
+                }
+            }
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
@@ -4918,7 +4962,8 @@ public:
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;
                 tmp = this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope);
+                    to_lower(x_m_member[0].m_name), scope,
+                    x_m_member->m_args, x_m_member->n_args);
             }
         } else {
             SymbolTable* scope = current_scope;

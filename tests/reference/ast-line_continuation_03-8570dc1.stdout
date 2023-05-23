@@ -16,10 +16,10 @@
                 [(EndOfLine)
                 (EndOfLine)
                 (Comment
-                    "! Here are the rules for & based on the § 6.3.2.4 ("Free form statement"
+                    "! Here are the rules for & based on the § 6.3.2.4 (\"Free form statement"
                 )
                 (Comment
-                    "! continuation") in Fortran 2018 standard."
+                    "! continuation\") in Fortran 2018 standard."
                 )
                 (EndOfLine)
                 (Comment

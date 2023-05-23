@@ -60,7 +60,7 @@
         )
         (Format
             10
-            "3x, "print""
+            "3x, \"print\""
             (TriviaNode
                 []
                 [(EndOfLine)

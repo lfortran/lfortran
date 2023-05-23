@@ -91,6 +91,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_ordered:
                                 (StructType
@@ -217,16 +218,6 @@
                     (SymbolTable
                         4
                         {
-                            1_toml_value:
-                                (ExternalSymbol
-                                    4
-                                    1_toml_value
-                                    9 toml_value
-                                    tomlf_type_value
-                                    []
-                                    toml_value
-                                    Public
-                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
@@ -267,7 +258,7 @@
                                                     6
                                                     1_toml_value_key
                                                     10 key
-                                                    1_toml_value
+                                                    toml_value
                                                     []
                                                     key
                                                     Public
@@ -396,6 +387,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new:
                                 (GenericProcedure
@@ -455,6 +447,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_array:
                                 (StructType
@@ -586,6 +579,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_value:
                                 (StructType
