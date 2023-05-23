@@ -7,66 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            cosh:
-                                (ExternalSymbol
-                                    2
-                                    cosh
-                                    4 cosh
-                                    lfortran_intrinsic_math
-                                    []
-                                    cosh
-                                    Private
-                                ),
-                            cosh@scosh:
-                                (ExternalSymbol
-                                    2
-                                    cosh@scosh
-                                    4 scosh
-                                    lfortran_intrinsic_math
-                                    []
-                                    scosh
-                                    Private
-                                ),
-                            sinh:
-                                (ExternalSymbol
-                                    2
-                                    sinh
-                                    4 sinh
-                                    lfortran_intrinsic_math
-                                    []
-                                    sinh
-                                    Private
-                                ),
-                            sinh@ssinh:
-                                (ExternalSymbol
-                                    2
-                                    sinh@ssinh
-                                    4 ssinh
-                                    lfortran_intrinsic_math
-                                    []
-                                    ssinh
-                                    Private
-                                ),
-                            tanh:
-                                (ExternalSymbol
-                                    2
-                                    tanh
-                                    4 tanh
-                                    lfortran_intrinsic_math
-                                    []
-                                    tanh
-                                    Private
-                                ),
-                            tanh@stanh:
-                                (ExternalSymbol
-                                    2
-                                    tanh@stanh
-                                    4 stanh
-                                    lfortran_intrinsic_math
-                                    []
-                                    stanh
-                                    Private
-                                ),
                             x:
                                 (Variable
                                     2
@@ -88,19 +28,18 @@
                     []
                     [(=
                         (Var 2 x)
-                        (FunctionCall
-                            2 sinh@ssinh
-                            2 sinh
-                            [((RealConstant
+                        (IntrinsicFunction
+                            Sinh
+                            [(RealConstant
                                 1.000000
                                 (Real 4 [])
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
                             (RealConstant
                                 1.175201
                                 (Real 4 [])
                             )
-                            ()
                         )
                         ()
                     )
@@ -112,19 +51,18 @@
                     )
                     (=
                         (Var 2 x)
-                        (FunctionCall
-                            2 cosh@scosh
-                            2 cosh
-                            [((RealConstant
+                        (IntrinsicFunction
+                            Cosh
+                            [(RealConstant
                                 1.000000
                                 (Real 4 [])
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
                             (RealConstant
                                 1.543081
                                 (Real 4 [])
                             )
-                            ()
                         )
                         ()
                     )
@@ -136,19 +74,18 @@
                     )
                     (=
                         (Var 2 x)
-                        (FunctionCall
-                            2 tanh@stanh
-                            2 tanh
-                            [((RealConstant
+                        (IntrinsicFunction
+                            Tanh
+                            [(RealConstant
                                 1.000000
                                 (Real 4 [])
-                            ))]
+                            )]
+                            0
                             (Real 4 [])
                             (RealConstant
                                 0.761594
                                 (Real 4 [])
                             )
-                            ()
                         )
                         ()
                     )
@@ -158,15 +95,7 @@
                         ()
                         ()
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

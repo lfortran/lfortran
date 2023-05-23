@@ -150,6 +150,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             maybe:
                                 (Function
@@ -292,6 +293,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType

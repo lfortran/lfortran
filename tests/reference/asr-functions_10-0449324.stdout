@@ -119,6 +119,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             merger32:
                                 (Function
@@ -223,6 +224,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             merger64:
                                 (Function
@@ -327,6 +329,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     kwarg_gp

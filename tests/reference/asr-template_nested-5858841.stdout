@@ -173,6 +173,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             add_generic:
                                 (Function
@@ -289,6 +290,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             add_real:
                                 (Function
@@ -381,6 +383,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             call_add_generic:
                                 (Function
@@ -497,6 +500,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f:
                                 (Function
@@ -598,6 +602,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             func_arg_real:
                                 (Function
@@ -688,6 +693,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t:
                                 (StructType
@@ -871,6 +877,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     template_nested_m

@@ -85,6 +85,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_integer_int32:
                                 (Function
@@ -153,6 +154,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_integer_int64:
                                 (Function
@@ -221,6 +223,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_logical_lk:
                                 (Function
@@ -289,6 +292,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType
@@ -410,6 +414,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_integer_int32:
                                 (Function
@@ -478,6 +483,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_integer_int64:
                                 (Function
@@ -546,6 +552,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_logical_lk:
                                 (Function
@@ -614,6 +621,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (ExternalSymbol

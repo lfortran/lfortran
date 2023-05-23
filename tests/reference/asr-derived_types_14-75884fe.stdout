@@ -235,6 +235,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             enum_type:
                                 (ExternalSymbol
@@ -486,6 +487,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_type:
                                 (ExternalSymbol

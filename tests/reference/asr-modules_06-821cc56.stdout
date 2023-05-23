@@ -69,6 +69,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             b:
                                 (ExternalSymbol
@@ -140,6 +141,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     modules_06_b

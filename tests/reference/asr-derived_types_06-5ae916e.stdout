@@ -75,6 +75,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     abstract_type

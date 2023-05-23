@@ -207,6 +207,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             add_real:
                                 (Function
@@ -299,6 +300,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f:
                                 (Function
@@ -400,6 +402,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             func_arg_int:
                                 (Function
@@ -490,6 +493,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             func_arg_real:
                                 (Function
@@ -580,6 +584,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t:
                                 (StructType
@@ -731,6 +736,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~add:
                                 (CustomOperator

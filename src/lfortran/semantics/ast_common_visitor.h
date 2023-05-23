@@ -3564,8 +3564,13 @@ public:
                 }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicFunctionRegistry::get_create_function(var_name);
-                tmp = create_func(al, x.base.base.loc, args,
-                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                if( !ASRUtils::IntrinsicFunctionRegistry::is_input_type_supported(var_name, args) ) {
+                    is_function = true;
+                    return resolve_intrinsic_function(x.base.base.loc, var_name);
+                } else {
+                    tmp = create_func(al, x.base.base.loc, args,
+                            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                }
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {

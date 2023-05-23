@@ -1973,6 +1973,7 @@ public:
                                 shape->base.loc);
         }
         ASR::dimension_t* shape_dims;
+        ASR::expr_t* lower_bounds = nullptr;
         if( shape ) {
             int shape_rank = ASRUtils::extract_dimensions_from_ttype(
                                 ASRUtils::expr_type(shape),
@@ -1983,8 +1984,30 @@ public:
                                     std::to_string(shape_rank),
                                     shape->base.loc);
             }
+
+            ASR::dimension_t* target_dims;
+            int target_n_dims = ASRUtils::extract_dimensions_from_ttype(fptr_type, target_dims);
+            if( target_n_dims > 0 ) {
+                Vec<ASR::expr_t*> lbs;
+                lbs.reserve(al, target_n_dims);
+                bool success = true;
+                for( int i = 0; i < target_n_dims; i++ ) {
+                    if( target_dims->m_length == nullptr ) {
+                        success = false;
+                        break;
+                    }
+                    lbs.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x.base.base.loc, 1, ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0)))));
+                }
+                if( success ) {
+                    lower_bounds = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al,
+                        x.base.base.loc, lbs.p, lbs.size(), ASRUtils::expr_type(lbs[0]),
+                        ASR::arraystorageType::RowMajor));
+                }
+            }
         }
-        return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape);
+        return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape, lower_bounds);
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {

@@ -106,6 +106,7 @@
                     Public
                     .false.
                     .false.
+                    ()
                 ),
             b:
                 (Function
@@ -161,6 +162,7 @@
                     Public
                     .false.
                     .false.
+                    ()
                 ),
             main:
                 (Program

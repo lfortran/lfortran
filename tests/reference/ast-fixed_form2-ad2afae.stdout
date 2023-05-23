@@ -83,7 +83,7 @@
                 "1"
             )
             (String
-                "1 "" ' 2 """" 3 ! also not comment finish string"
+                "1 \"\" ' 2 \"\"\"\" 3 ! also not comment finish string"
             )]
             ()
         )
@@ -94,7 +94,7 @@
                 "1"
             )
             (String
-                "1 '' " 2 '''' 3 ! also not comment finish string"
+                "1 '' \" 2 '''' 3 ! also not comment finish string"
             )]
             ()
         )]

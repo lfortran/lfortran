@@ -91,6 +91,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_ordered:
                                 (StructType
@@ -315,6 +316,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new:
                                 (GenericProcedure
@@ -374,6 +376,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_array:
                                 (StructType
@@ -505,6 +508,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_value:
                                 (StructType

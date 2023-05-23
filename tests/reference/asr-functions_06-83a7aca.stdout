@@ -273,6 +273,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             real_return:
                                 (Function
@@ -410,6 +411,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             trim_wrapper:
                                 (Function
@@ -540,6 +542,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     functions_06_m
