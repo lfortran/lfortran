@@ -156,7 +156,12 @@ public:
 
     ASR::asr_t* duplicate_Var(ASR::Var_t *x) {
         std::string sym_name = ASRUtils::symbol_name(x->m_v);
-        ASR::symbol_t *sym = current_scope->get_symbol(sym_name);
+        ASR::symbol_t *sym;
+        if (rt_subs.find(sym_name) != rt_subs.end()) {
+            sym = rt_subs[sym_name];
+        } else {
+            sym = current_scope->get_symbol(sym_name);
+        }
         return ASR::make_Var_t(al, x->base.base.loc, sym);
     }
 
