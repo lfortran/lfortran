@@ -357,6 +357,62 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             std::set<ASR::symbol_t*>& not_to_be_erased_):
         al(al_), v(v_), not_to_be_erased(not_to_be_erased_) {}
 
+        template <typename T>
+        void update_args_for_pass_arr_by_data_funcs_passed_as_callback(const T& x) {
+            bool args_updated = false;
+            Vec<ASR::call_arg_t> new_args;
+            new_args.reserve(al, x.n_args);
+            for ( size_t i = 0; i < x.n_args; i++ ) {
+                ASR::call_arg_t arg = x.m_args[i];
+                ASR::expr_t* expr = arg.m_value;
+                if (expr) {
+                    if (ASR::is_a<ASR::Var_t>(*expr)) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
+                        ASR::symbol_t* sym = var->m_v;
+                        if ( v.proc2newproc.find(sym) != v.proc2newproc.end() ) {
+                            ASR::symbol_t* new_var_sym = v.proc2newproc[sym].first;
+                            ASR::expr_t* new_var = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_var_sym));
+                            {
+                                // update exisiting arg
+                                arg.m_value = new_var;
+                                arg.loc = arg.loc;
+                            }
+                            args_updated = true;
+                        }
+                    }
+                }
+                new_args.push_back(al, arg);
+            }
+            if (args_updated) {
+                T&xx = const_cast<T&>(x);
+                xx.m_args = new_args.p;
+                xx.n_args = new_args.size();
+            }
+        }
+
+        Vec<ASR::call_arg_t> construct_new_args(size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
+            Vec<ASR::call_arg_t> new_args;
+            new_args.reserve(al, n_args);
+            for( size_t i = 0; i < n_args; i++ ) {
+                new_args.push_back(al, orig_args[i]);
+                if (orig_args[i].m_value == nullptr ||
+                    std::find(indices.begin(), indices.end(), i) == indices.end()) {
+                    continue;
+                }
+
+                Vec<ASR::expr_t*> dim_vars;
+                dim_vars.reserve(al, 2);
+                ASRUtils::get_dimensions(orig_args[i].m_value, dim_vars, al);
+                for( size_t j = 0; j < dim_vars.size(); j++ ) {
+                    ASR::call_arg_t dim_var;
+                    dim_var.loc = dim_vars[j]->base.loc;
+                    dim_var.m_value = dim_vars[j];
+                    new_args.push_back(al, dim_var);
+                }
+            }
+            return new_args;
+        }
+
         bool can_edit_call(ASR::call_arg_t* args, size_t n_args) {
             for ( size_t i = 0; i < n_args; i++ ) {
                 if( args[i].m_value &&
@@ -381,63 +437,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
 
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
-                bool args_updated = false;
-                Vec<ASR::call_arg_t> new_args;
-                new_args.reserve(al, x.n_args);
-                for ( size_t i = 0; i < x.n_args; i++ ) {
-                    ASR::call_arg_t arg = x.m_args[i];
-                    ASR::expr_t* expr = arg.m_value;
-                    bool use_original_arg = true;
-                    if (expr) {
-                        if (ASR::is_a<ASR::Var_t>(*expr)) {
-                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
-                            ASR::symbol_t* sym = var->m_v;
-                            if ( v.proc2newproc.find(sym) != v.proc2newproc.end() ) {
-                                ASR::symbol_t* new_var_sym = v.proc2newproc[sym].first;
-                                ASR::expr_t* new_var = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, new_var_sym));
-                                ASR::call_arg_t new_arg;
-                                new_arg.m_value = new_var;
-                                new_arg.loc = arg.loc;
-                                new_args.push_back(al, new_arg);
-                                args_updated = true;
-                                use_original_arg = false;
-                            }
-                        }
-                    }
-                    if( use_original_arg ) {
-                        new_args.push_back(al, arg);
-                    }
-                }
-                if (args_updated) {
-                    T&xx = const_cast<T&>(x);
-                    xx.m_args = new_args.p;
-                    xx.n_args = new_args.size();
-                }
-                return ;
+                update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
+                return;
             }
 
             ASR::symbol_t* new_func_sym = v.proc2newproc[subrout_sym].first;
             std::vector<size_t>& indices = v.proc2newproc[subrout_sym].second;
 
-            Vec<ASR::call_arg_t> new_args;
-            new_args.reserve(al, x.n_args);
-            for( size_t i = 0; i < x.n_args; i++ ) {
-                new_args.push_back(al, x.m_args[i]);
-                if( std::find(indices.begin(), indices.end(), i) == indices.end() ||
-                    x.m_args[i].m_value == nullptr ) {
-                    continue ;
-                }
-
-                Vec<ASR::expr_t*> dim_vars;
-                dim_vars.reserve(al, 2);
-                ASRUtils::get_dimensions(x.m_args[i].m_value, dim_vars, al);
-                for( size_t j = 0; j < dim_vars.size(); j++ ) {
-                    ASR::call_arg_t dim_var;
-                    dim_var.loc = dim_vars[j]->base.loc;
-                    dim_var.m_value = dim_vars[j];
-                    new_args.push_back(al, dim_var);
-                }
-            }
+            Vec<ASR::call_arg_t> new_args = construct_new_args(x.n_args, x.m_args, indices);
 
             {
                 ASR::Function_t* new_func_ = ASR::down_cast<ASR::Function_t>(new_func_sym);

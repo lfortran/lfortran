@@ -956,11 +956,15 @@ public:
     }
 
     void visit_Struct(const Struct_t &x) {
+        std::string symbol_owner = "global scope";
+        if( ASRUtils::get_asr_owner(x.m_derived_type) ) {
+            symbol_owner = ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type));
+        }
         require(symtab_in_scope(current_symtab, x.m_derived_type),
             "Struct::m_derived_type '" +
             std::string(ASRUtils::symbol_name(x.m_derived_type)) +
             "' cannot point outside of its symbol table, owner: " +
-            std::string(ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type))));
+            symbol_owner);
         for (size_t i=0; i<x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
         }
