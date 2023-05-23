@@ -90,21 +90,13 @@ loop.body6:                                       ; preds = %ifcont5
   %19 = load i32, i32* %pos, align 4
   %20 = load i8*, i8** %string_, align 8
   %21 = call i8* @_lfortran_str_item(i8* %20, i32 %19)
-  %22 = alloca i8*, align 8
-  store i8* %21, i8** %22, align 8
-  %23 = load i8*, i8** %22, align 8
-  %24 = load i32, i32* %j, align 4
-  %25 = load i8*, i8** %substring_, align 8
-  %26 = call i8* @_lfortran_str_item(i8* %25, i32 %24)
-  %27 = alloca i8*, align 8
-  store i8* %26, i8** %27, align 8
-  %28 = load i8*, i8** %27, align 8
-  %29 = alloca i8*, align 8
-  store i8* %23, i8** %29, align 8
-  %30 = alloca i8*, align 8
-  store i8* %28, i8** %30, align 8
-  %31 = call i1 @_lpython_str_compare_noteq(i8** %29, i8** %30)
-  br i1 %31, label %then7, label %else8
+  %22 = load i32, i32* %j, align 4
+  %23 = load i8*, i8** %substring_, align 8
+  %24 = call i8* @_lfortran_str_item(i8* %23, i32 %22)
+  %25 = load i8, i8* %21, align 1
+  %26 = load i8, i8* %24, align 1
+  %27 = icmp ne i8 %25, %26
+  br i1 %27, label %then7, label %else8
 
 then7:                                            ; preds = %loop.body6
   store i1 false, i1* %found, align 1
@@ -114,21 +106,21 @@ else8:                                            ; preds = %loop.body6
   br label %ifcont9
 
 ifcont9:                                          ; preds = %else8, %then7
-  %32 = load i32, i32* %k, align 4
-  %33 = add i32 %32, 1
-  store i32 %33, i32* %k, align 4
-  %34 = load i32, i32* %j, align 4
-  %35 = add i32 %34, 1
-  store i32 %35, i32* %j, align 4
+  %28 = load i32, i32* %k, align 4
+  %29 = add i32 %28, 1
+  store i32 %29, i32* %k, align 4
+  %30 = load i32, i32* %j, align 4
+  %31 = add i32 %30, 1
+  store i32 %31, i32* %j, align 4
   br label %loop.head1
 
 loop.end:                                         ; preds = %ifcont5
-  %36 = load i1, i1* %found, align 1
-  br i1 %36, label %then10, label %else11
+  %32 = load i1, i1* %found, align 1
+  br i1 %32, label %then10, label %else11
 
 then10:                                           ; preds = %loop.end
-  %37 = load i32, i32* %i, align 4
-  store i32 %37, i32* %idx, align 4
+  %33 = load i32, i32* %i, align 4
+  store i32 %33, i32* %idx, align 4
   store i1 false, i1* %found, align 1
   br label %ifcont12
 
@@ -137,24 +129,22 @@ else11:                                           ; preds = %loop.end
   br label %ifcont12
 
 ifcont12:                                         ; preds = %else11, %then10
-  %38 = load i32, i32* %i, align 4
-  %39 = add i32 %38, 1
-  store i32 %39, i32* %i, align 4
+  %34 = load i32, i32* %i, align 4
+  %35 = add i32 %34, 1
+  store i32 %35, i32* %i, align 4
   br label %loop.head
 
 loop.end13:                                       ; preds = %ifcont
   br label %return
 
 return:                                           ; preds = %loop.end13
-  %40 = load i32, i32* %idx, align 4
-  ret i32 %40
+  %36 = load i32, i32* %idx, align 4
+  ret i32 %36
 }
 
 declare i32 @_lfortran_str_len(i8**)
 
 declare i8* @_lfortran_str_item(i8*, i32)
-
-declare i1 @_lpython_str_compare_noteq(i8**, i8**)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -163,8 +153,8 @@ define i32 @main(i32 %0, i8** %1) {
   store i8* getelementptr inbounds ([31 x i8], [31 x i8]* @0, i32 0, i32 0), i8** %mystring, align 8
   %teststring = alloca i8*, align 8
   store i8* getelementptr inbounds ([11 x i8], [11 x i8]* @1, i32 0, i32 0), i8** %teststring, align 8
-  store i8* getelementptr inbounds ([15 x i8], [15 x i8]* @2, i32 0, i32 0), i8** %mystring, align 8
-  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8** %teststring, align 8
+  call void @_lfortran_strcpy(i8** %mystring, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @2, i32 0, i32 0), i8 0)
+  call void @_lfortran_strcpy(i8** %teststring, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8 0)
   %2 = call i32 @__module_lfortran_intrinsic_string_index(i8** %mystring, i8** %teststring)
   %3 = icmp eq i32 %2, 0
   br i1 %3, label %then, label %else
@@ -183,5 +173,7 @@ ifcont:                                           ; preds = %else, %then
 }
 
 declare void @_lpython_set_argv(i32, i8**)
+
+declare void @_lfortran_strcpy(i8**, i8*, i8)
 
 declare void @_lfortran_printf(i8*, ...)

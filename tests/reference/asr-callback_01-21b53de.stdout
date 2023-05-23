@@ -121,6 +121,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     cb
@@ -200,6 +201,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             foo:
                                 (Function
@@ -317,6 +319,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     foo
@@ -358,6 +361,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     callback_01

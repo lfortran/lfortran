@@ -110,6 +110,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             len:
                                 (GenericProcedure
@@ -185,6 +186,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType
@@ -277,7 +279,8 @@
                                                     (FunctionCall
                                                         7 len
                                                         ()
-                                                        [((Var 7 string))]
+                                                        [((Var 7 string))
+                                                        (())]
                                                         (Integer 4 [])
                                                         ()
                                                         ()
@@ -316,7 +319,8 @@
                                                 0
                                                 (Character 1 -1 () [])
                                                 ()
-                                            ))]
+                                            ))
+                                            (())]
                                             (Integer 4 [])
                                             ()
                                             ()
@@ -340,6 +344,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             compute_lps_use:
                                 (Function
@@ -418,7 +423,8 @@
                                             (FunctionCall
                                                 35 len
                                                 ()
-                                                [((Var 35 string))]
+                                                [((Var 35 string))
+                                                (())]
                                                 (Integer 4 [])
                                                 ()
                                                 ()
@@ -433,6 +439,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             compute_lps_use1:
                                 (Function
@@ -541,6 +548,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             len:
                                 (ExternalSymbol
@@ -623,7 +631,8 @@
                                                     (Character 1 -3 (FunctionCall
                                                         39 len
                                                         ()
-                                                        [((Var 39 string))]
+                                                        [((Var 39 string))
+                                                        (())]
                                                         (Integer 4 [])
                                                         ()
                                                         ()
@@ -662,7 +671,8 @@
                                                 0
                                                 (Character 1 -1 () [])
                                                 ()
-                                            ))]
+                                            ))
+                                            (())]
                                             (Integer 4 [])
                                             ()
                                             ()
@@ -701,7 +711,8 @@
                                                 [((FunctionCall
                                                     39 len
                                                     ()
-                                                    [((Var 39 string))]
+                                                    [((Var 39 string))
+                                                    (())]
                                                     (Integer 4 [])
                                                     ()
                                                     ()
@@ -720,6 +731,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             padl_char_pad_with:
                                 (Function
@@ -804,7 +816,8 @@
                                                         [((FunctionCall
                                                             40 len
                                                             ()
-                                                            [((Var 40 string))]
+                                                            [((Var 40 string))
+                                                            (())]
                                                             (Integer 4 [])
                                                             ()
                                                             ()
@@ -868,7 +881,8 @@
                                                     0
                                                     (Character 1 -1 () [])
                                                     ()
-                                                ))]
+                                                ))
+                                                (())]
                                                 (Integer 4 [])
                                                 ()
                                                 ()
@@ -904,6 +918,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             padl_string_default:
                                 (Function
@@ -1082,7 +1097,8 @@
                                                             ) [])
                                                             ()
                                                             ()
-                                                        ))]
+                                                        ))
+                                                        (())]
                                                         (Integer 4 [])
                                                         ()
                                                         ()
@@ -1107,6 +1123,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             padl_string_pad_with:
                                 (Function
@@ -1300,7 +1317,8 @@
                                                             ) [])
                                                             ()
                                                             ()
-                                                        ))]
+                                                        ))
+                                                        (())]
                                                         (Integer 4 [])
                                                         ()
                                                         ()
@@ -1325,6 +1343,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (ExternalSymbol

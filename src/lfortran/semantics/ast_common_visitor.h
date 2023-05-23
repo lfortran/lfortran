@@ -1961,6 +1961,7 @@ public:
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         }
+        ASR::ttype_t* root_v_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v));
         for (size_t i=0; i<n_args; i++) {
             ASR::array_index_t ai;
             ai.loc = loc;
@@ -1976,7 +1977,7 @@ public:
                 m_end = ASRUtils::EXPR(tmp);
                 ai.loc = m_end->base.loc;
             } else {
-                if( ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)))) {
+                if( ASR::is_a<ASR::Character_t>(*root_v_type) ) {
                     ASR::Character_t* char_type = ASR::down_cast<ASR::Character_t>(
                                                     ASRUtils::type_get_past_pointer(
                                                         ASRUtils::symbol_type(v)));
@@ -2123,8 +2124,14 @@ public:
                     }
                 }
             }
-            return ASR::make_ArrayItem_t(al, loc,
-                v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
+            if( ASR::is_a<ASR::Character_t>(*root_v_type) &&
+                !ASRUtils::is_array(root_v_type) ) {
+                return ASR::make_StringItem_t(al, loc,
+                    v_Var, args.p[0].m_right, type, arr_ref_val);
+            } else {
+                return ASR::make_ArrayItem_t(al, loc,
+                    v_Var, args.p, args.size(), type, ASR::arraystorageType::ColMajor, arr_ref_val);
+            }
         } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
             if (ASR::is_a<ASR::Pointer_t>(*v_type)) {
@@ -2425,6 +2432,7 @@ public:
         }
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASR::make_FunctionCall_t(al, loc,
             final_sym, v, args.p, args.size(), return_type,
             value, nullptr);
@@ -2481,6 +2489,7 @@ public:
         }
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr);
         return ASR::make_FunctionCall_t(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
                 v_expr);
@@ -2519,6 +2528,7 @@ public:
             }
             current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+            ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASR::make_FunctionCall_t(al, loc,
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr);
@@ -2566,12 +2576,14 @@ public:
             if (cp_s != nullptr) {
                 current_function_dependencies.push_back(al, ASRUtils::symbol_name(cp_s));
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
+                ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASR::make_FunctionCall_t(al, loc,
                     cp_s, v, args.p, args.size(), type,
                     nullptr, nullptr);
             } else {
                 current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
                 ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+                ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASR::make_FunctionCall_t(al, loc,
                     final_sym, v, args.p, args.size(), type,
                     nullptr, nullptr);
@@ -2622,6 +2634,7 @@ public:
             current_module_dependencies.push_back(al, v_module->m_name);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASR::make_FunctionCall_t(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr);
     }
@@ -2631,6 +2644,8 @@ public:
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::symbol_type(v));
         ASR::ttype_t *return_type = func->m_return_var_type;
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(v));
+        // TODO: Uncomment later
+        // ASRUtils::set_absent_optional_arguments_to_null(args, ASR::down_cast<ASR::Function_t>(v), al);
         return ASR::make_FunctionCall_t(al, loc, v, nullptr,
             args.p, args.size(), return_type, nullptr, nullptr);
     }
@@ -3557,8 +3572,13 @@ public:
                 }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicFunctionRegistry::get_create_function(var_name);
-                tmp = create_func(al, x.base.base.loc, args,
-                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                if( !ASRUtils::IntrinsicFunctionRegistry::is_input_type_supported(var_name, args) ) {
+                    is_function = true;
+                    return resolve_intrinsic_function(x.base.base.loc, var_name);
+                } else {
+                    tmp = create_func(al, x.base.base.loc, args,
+                            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
+                }
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
@@ -3853,7 +3873,7 @@ public:
         if (compiler_options.implicit_interface
                 && ASR::is_a<ASR::Variable_t>(*v)
                 && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
-                && (!ASRUtils::is_character(*ASR::down_cast<ASR::Variable_t>(v)->m_type))) {
+                && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
             // If implicit interface is allowed, we have to handle the
             // following case here:
             // real :: x
@@ -3866,6 +3886,20 @@ public:
             create_implicit_interface_function(x, var_name, true, old_type);
             v = current_scope->resolve_symbol(var_name);
             LCOMPILERS_ASSERT(v!=nullptr);
+
+            // Update arguments if the symbol belonged to a function
+            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                for (size_t i = 0; i < current_function->n_args; i++) {
+                    if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
+                        if (std::string(ASRUtils::symbol_name(var->m_v)) == var_name) {
+                            var->m_v = v;
+                        }
+                    }
+                }
+            }
         }
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
@@ -4458,6 +4492,7 @@ public:
                         }
                         current_function_dependencies.push_back(al, s2c(al, matched_func_name));
                         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+                        ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                         tmp = ASR::make_FunctionCall_t(al, x.base.base.loc,
                             a_name, sym, a_args.p, 2, return_type,
                             nullptr, nullptr);

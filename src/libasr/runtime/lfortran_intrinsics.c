@@ -10,6 +10,10 @@
 #include <limits.h>
 #include <ctype.h>
 
+#if defined(_MSC_VER)
+#  include <winsock2.h>
+#endif
+
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
 
@@ -689,9 +693,9 @@ LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
 
 // strcpy -----------------------------------------------------------
 
-LFORTRAN_API void _lfortran_strcpy(char** x, char *y)
+LFORTRAN_API void _lfortran_strcpy(char** x, char *y, int8_t free_target)
 {
-    if (*x) free((void *)*x);
+    if (*x && free_target) free((void *)*x);
     *x = (char*) malloc((strlen(y) + 1) * sizeof(char));
     strcpy(*x, y);
 }
@@ -790,24 +794,33 @@ LFORTRAN_API char* _lfortran_int_to_str8(int64_t num)
 LFORTRAN_API int32_t _lpython_bit_length1(int8_t num)
 {
     int32_t res = 0;
-    num = abs(num);
-    for(; num; num >>= 1, res++);
+    num = abs((int)num);
+    while (num > 0) {
+        num = num >> 1;
+        res++;
+    }
     return res;
 }
 
 LFORTRAN_API int32_t _lpython_bit_length2(int16_t num)
 {
     int32_t res = 0;
-    num = abs(num);
-    for(; num; num >>= 1, res++);
+    num = abs((int)num);
+    while (num > 0) {
+        num = num >> 1;
+        res++;
+    }
     return res;
 }
 
 LFORTRAN_API int32_t _lpython_bit_length4(int32_t num)
 {
     int32_t res = 0;
-    num = abs(num);
-    for(; num; num >>= 1, res++);
+    num = abs((int)num);
+    while (num > 0) {
+        num = num >> 1;
+        res++;
+    }
     return res;
 }
 
@@ -815,7 +828,10 @@ LFORTRAN_API int32_t _lpython_bit_length8(int64_t num)
 {
     int32_t res = 0;
     num = llabs(num);
-    for(; num; num >>= 1, res++);
+    while (num > 0) {
+        num = num >> 1;
+        res++;
+    }
     return res;
 }
 
@@ -1254,6 +1270,22 @@ LFORTRAN_API void _lfortran_i64sys_clock(
 #endif
 }
 
+LFORTRAN_API double _lfortran_time()
+{
+#if defined(_MSC_VER)
+    FILETIME ft;
+    ULARGE_INTEGER uli;
+    GetSystemTimeAsFileTime(&ft);
+    uli.LowPart = ft.dwLowDateTime;
+    uli.HighPart = ft.dwHighDateTime;
+    return (double)uli.QuadPart / 10000000.0 - 11644473600.0;
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+#endif
+}
+
 LFORTRAN_API void _lfortran_sp_rand_num(float *x) {
     srand(time(0));
     *x = rand() / (float) RAND_MAX;
@@ -1315,6 +1347,16 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     fflush(unit_to_file[unit_num]);
 }
 
+LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists) {
+    FILE *fp = fopen(f_name, "r");
+    if (fp != NULL) {
+        *exists = true;
+        fclose(fp); // close the file
+        return;
+    }
+    *exists = false;
+}
+
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
@@ -1329,6 +1371,24 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
         exit(1);
     }
     fread(p, sizeof(int32_t), 1, unit_to_file[unit_num]);
+}
+
+LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        *p = (char*)malloc(16);
+        FILE *fp = fdopen(0, "r+");
+        fread(*p, sizeof(char), 16, fp);
+        fclose(fp);
+        return;
+    }
+    if (!unit_to_file[unit_num]) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+    *p = (char*)malloc(16);
+    fread(*p, sizeof(char), 16, unit_to_file[unit_num]);
 }
 
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
@@ -1384,23 +1444,23 @@ LFORTRAN_API int32_t _lfortran_all(bool *mask, int32_t n) {
 }
 
 // Command line arguments
-int32_t argc;
-char **argv;
+int32_t _argc;
+char **_argv;
 
 LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]) {
-    argv = malloc(argc_1 * sizeof(char *));
+    _argv = malloc(argc_1 * sizeof(char *));
     for (size_t i = 0; i < argc_1; i++) {
-        argv[i] = strdup(argv_1[i]);
+        _argv[i] = strdup(argv_1[i]);
     }
-    argc = argc_1;
+    _argc = argc_1;
 }
 
 LFORTRAN_API int32_t _lpython_get_argc() {
-    return argc;
+    return _argc;
 }
 
 LFORTRAN_API char *_lpython_get_argv(int32_t index) {
-    return argv[index];
+    return _argv[index];
 }
 
 // << Command line arguments << ------------------------------------------------

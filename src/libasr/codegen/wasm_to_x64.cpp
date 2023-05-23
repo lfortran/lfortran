@@ -342,6 +342,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
     void visit_I32Ne() { visit_I64Ne(); }
 
     void visit_I32WrapI64() { } // empty, since i32's and i64's are considered similar currently.
+    void visit_I32TruncF64S() { visit_I64TruncF64S(); }
 
     void visit_I64Const(int64_t value) {
         m_a.asm_mov_r64_imm64(X64Reg::rax, labs((int64_t)value));
@@ -581,8 +582,6 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
     void visit_F32Sqrt() { visit_F64Sqrt(); }
 
     void gen_x64_bytes() {
-        emit_elf64_header(m_a);
-
         // declare compile-time strings
         std::string base_memory = "    "; /* in wasm backend, memory starts after 4 bytes*/
         for (uint32_t i = 0; i < data_segments.size(); i++) {
@@ -592,7 +591,6 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
 
         NO_OF_IMPORTS = imports.size();
 
-        m_a.align_by_byte(0x1000);
         m_a.add_label("text_segment_start");
         for (uint32_t idx = 0; idx < type_indices.size(); idx++) {
             m_a.add_label(exports[idx + 1].name);
@@ -616,9 +614,9 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             emit_double_const(m_a, d.first, d.second);
         }
 
+        m_a.align_by_byte(0x1000);
         m_a.add_label("text_segment_end");
 
-        m_a.align_by_byte(0x1000);
         m_a.add_label("data_segment_start");
         for (auto &s : label_to_str) {
             emit_data_string(m_a, s.first, s.second);
@@ -647,8 +645,6 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             }
         }
         m_a.add_label("data_segment_end");
-
-        emit_elf64_footer(m_a);
     }
 };
 
@@ -700,7 +696,7 @@ Result<int> wasm_to_x64(Vec<uint8_t> &wasm_bytes, Allocator &al,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        m_a.save_binary(filename);
+        m_a.save_binary64(filename);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_save =
             std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
@@ -708,7 +704,7 @@ Result<int> wasm_to_x64(Vec<uint8_t> &wasm_bytes, Allocator &al,
     }
 
     //! Helpful for debugging
-    // std::cout << x64_visitor.m_a.get_asm() << std::endl;
+    // std::cout << x64_visitor.m_a.get_asm64() << std::endl;
 
     if (time_report) {
         std::cout << "Codegen Time report:" << std::endl;

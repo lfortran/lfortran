@@ -307,6 +307,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             msg_scalar:
                                 (Function
@@ -929,7 +930,7 @@
                                                                             ()
                                                                         )
                                                                         (StringConstant
-                                                                            "("(",1pg0,",",1pg0,")")"
+                                                                            "(\"(\",1pg0,\",\",1pg0,\")\")"
                                                                             (Character 1 23 () [])
                                                                         )
                                                                         ()
@@ -1076,6 +1077,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             sep:
                                                 (Variable
@@ -1219,7 +1221,8 @@
                                                 (FunctionCall
                                                     3 len
                                                     ()
-                                                    [((Var 3 sep_local))]
+                                                    [((Var 3 sep_local))
+                                                    (())]
                                                     (Integer 4 [])
                                                     ()
                                                     ()
@@ -1420,6 +1423,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             str:
                                 (GenericProcedure

@@ -175,6 +175,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType
@@ -351,6 +352,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     stdlib_string_type

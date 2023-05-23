@@ -340,6 +340,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             build_target_ptr:
                                 (StructType
@@ -539,6 +540,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             fpm_build_settings:
                                 (StructType

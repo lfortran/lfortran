@@ -480,6 +480,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             current_function_dependencies.push_back(al, s2c(al, matched_func_name));
                             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+                            ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
@@ -594,6 +595,7 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
             }
             current_function_dependencies.push_back(al, s2c(al, matched_subrout_name));
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+            ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
             asr = ASR::make_SubroutineCall_t(al, loc, a_name, sym,
                                             a_args.p, 2, nullptr);
         }
@@ -733,6 +735,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             current_function_dependencies.push_back(al, s2c(al, matched_func_name));
                             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+                            ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                             asr = ASR::make_FunctionCall_t(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
@@ -890,8 +893,9 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*final_sym));
     bool is_subroutine = ASR::down_cast<ASR::Function_t>(final_sym)->m_return_var == nullptr;
     ASR::ttype_t *return_type = nullptr;
+    ASR::Function_t* func = nullptr;
     if( ASR::is_a<ASR::Function_t>(*final_sym) ) {
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
+        func = ASR::down_cast<ASR::Function_t>(final_sym);
         if (func->m_return_var) {
             if( ASRUtils::get_FunctionType(func)->m_elemental &&
                 func->n_args == 1 &&
@@ -928,10 +932,16 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
     }
     // ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
     if( is_subroutine ) {
+        if( func ) {
+            ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+        }
         return ASR::make_SubroutineCall_t(al, loc, final_sym,
                                         v, args.p, args.size(),
                                         nullptr);
     } else {
+        if( func ) {
+            ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+        }
         return ASR::make_FunctionCall_t(al, loc, final_sym,
                                         v, args.p, args.size(),
                                         return_type,
@@ -974,6 +984,10 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
                                 ASRUtils::expr_value(a_arg))->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
+        } else if (a_kind == ASR::cast_kindType::IntegerToUnsignedInteger) {
+            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg))->m_n;
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
         } else if (a_kind == ASR::cast_kindType::IntegerToLogical) {
             // TODO: implement
         } else if (a_kind == ASR::cast_kindType::ComplexToComplex) {

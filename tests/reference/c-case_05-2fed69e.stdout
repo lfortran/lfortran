@@ -37,6 +37,7 @@ struct dimension_descriptor
 // Implementations
 int main(int argc, char* argv[])
 {
+    _lpython_set_argv(argc, argv);
     static char * grade = "B";
     if (grade == "A") {
         printf("%s\n", "Excellent!");

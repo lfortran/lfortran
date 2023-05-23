@@ -121,6 +121,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             sub_1:
                                 (ExternalSymbol
@@ -268,7 +269,7 @@
                         [(FunctionCall
                             4 f
                             ()
-                            []
+                            [(())]
                             (Logical 4 [])
                             ()
                             ()
@@ -586,6 +587,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     module_1

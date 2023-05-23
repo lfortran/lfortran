@@ -1874,6 +1874,7 @@ public:
             target->type != ASR::exprType::ArrayItem &&
             target->type != ASR::exprType::ArraySection &&
             target->type != ASR::exprType::StringSection &&
+            target->type != ASR::exprType::StringItem &&
             target->type != ASR::exprType::StructInstanceMember )
         {
             throw SemanticError(
@@ -1972,6 +1973,7 @@ public:
                                 shape->base.loc);
         }
         ASR::dimension_t* shape_dims;
+        ASR::expr_t* lower_bounds = nullptr;
         if( shape ) {
             int shape_rank = ASRUtils::extract_dimensions_from_ttype(
                                 ASRUtils::expr_type(shape),
@@ -1982,8 +1984,30 @@ public:
                                     std::to_string(shape_rank),
                                     shape->base.loc);
             }
+
+            ASR::dimension_t* target_dims;
+            int target_n_dims = ASRUtils::extract_dimensions_from_ttype(fptr_type, target_dims);
+            if( target_n_dims > 0 ) {
+                Vec<ASR::expr_t*> lbs;
+                lbs.reserve(al, target_n_dims);
+                bool success = true;
+                for( int i = 0; i < target_n_dims; i++ ) {
+                    if( target_dims->m_length == nullptr ) {
+                        success = false;
+                        break;
+                    }
+                    lbs.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x.base.base.loc, 1, ASRUtils::TYPE(
+                            ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0)))));
+                }
+                if( success ) {
+                    lower_bounds = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al,
+                        x.base.base.loc, lbs.p, lbs.size(), ASRUtils::expr_type(lbs[0]),
+                        ASR::arraystorageType::RowMajor));
+                }
+            }
         }
-        return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape);
+        return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, shape, lower_bounds);
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
@@ -2016,8 +2040,9 @@ public:
             }
         }
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
+        ASR::Function_t *f = nullptr;
         if (ASR::is_a<ASR::Function_t>(*sym)) {
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+            f = ASR::down_cast<ASR::Function_t>(sym);
             if (ASRUtils::is_intrinsic_procedure(f)) {
                 if (intrinsic_module_procedures_as_asr_nodes.find(sub_name) !=
                     intrinsic_module_procedures_as_asr_nodes.end()) {
@@ -2111,6 +2136,7 @@ public:
         ASR::symbol_t *final_sym=nullptr;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
+                f = ASR::down_cast<ASR::Function_t>(original_sym);
                 final_sym=original_sym;
                 original_sym = nullptr;
                 break;
@@ -2148,6 +2174,9 @@ public:
                             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                 }
                 // Create ExternalSymbol for procedures in different modules.
+                if( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(p->m_procs[idx])) ) {
+                    f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(p->m_procs[idx]));
+                }
                 final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     p->m_procs[idx], current_scope);
                 break;
@@ -2173,6 +2202,7 @@ public:
                     if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
                         throw SemanticError("ExternalSymbol must point to a Subroutine", x.base.base.loc);
                     }
+                    f = ASR::down_cast<ASR::Function_t>(final_sym);
                     // We mangle the new ExternalSymbol's local name as:
                     //   generic_procedure_local_name @
                     //     specific_procedure_remote_name
@@ -2254,6 +2284,9 @@ public:
         }
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym));
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        if( f ) {
+            ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
+        }
         tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr);
     }

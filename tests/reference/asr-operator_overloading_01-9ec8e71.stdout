@@ -419,6 +419,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             logical_and:
                                 (Function
@@ -509,6 +510,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~add:
                                 (CustomOperator

@@ -182,7 +182,7 @@
                     "! they are rounded correctly. Single letter constants contain underscore so"
                 )
                 (Comment
-                    "! that they do not clash with user variables ("e" and "i" are frequently used as"
+                    "! that they do not clash with user variables (\"e\" and \"i\" are frequently used as"
                 )
                 (Comment
                     "! loop variables)"

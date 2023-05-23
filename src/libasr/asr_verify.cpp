@@ -72,23 +72,23 @@ public:
                 ASR::symbol_t *sym2 = s->get_symbol(sym_name);
                 if (sym2) {
                     if (sym2 == sym) {
-                        // The symbol table was found and the symbol `sym` is in
-                        // it
+                        // The symbol table was found and the symbol `sym` is in it
                         return true;
                     } else {
-                        // The symbol table was found and the symbol in it
-                        // shares the name, but is not equal to `sym`
+                        diagnostics.message_label("ASR verify: The symbol table was found and the symbol in it shares the name, but is not equal to `sym`",
+                        {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
                         return false;
                     }
                 } else {
-                    // The symbol table was found, but the symbol `sym` is not
-                    // in it
+                    diagnostics.message_label("ASR verify: The symbol table was found, but the symbol `sym` is not in it",
+                        {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
                     return false;
                 }
             }
             s = s->parent;
         }
-        // The symbol table was not found in the scope of `symtab`.
+        diagnostics.message_label("ASR verify: The symbol table was not found in the scope of `symtab`.",
+                        {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
         return false;
     }
 
@@ -956,11 +956,15 @@ public:
     }
 
     void visit_Struct(const Struct_t &x) {
+        std::string symbol_owner = "global scope";
+        if( ASRUtils::get_asr_owner(x.m_derived_type) ) {
+            symbol_owner = ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type));
+        }
         require(symtab_in_scope(current_symtab, x.m_derived_type),
             "Struct::m_derived_type '" +
             std::string(ASRUtils::symbol_name(x.m_derived_type)) +
             "' cannot point outside of its symbol table, owner: " +
-            std::string(ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type))));
+            symbol_owner);
         for (size_t i=0; i<x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
         }

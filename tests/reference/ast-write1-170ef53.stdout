@@ -42,7 +42,7 @@
             0
             [(out_str)
             ((String
-                "(" Found index ", i9," but item is not in list.")"
+                "(\" Found index \", i9,\" but item is not in list.\")"
             ))]
             []
             [index]
@@ -83,7 +83,7 @@
             0
             [(fmt)
             ((String
-                "("(i",i0,".",i0,")")"
+                "(\"(i\",i0,\".\",i0,\")\")"
             ))]
             []
             [n

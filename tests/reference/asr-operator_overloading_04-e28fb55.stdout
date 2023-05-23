@@ -106,6 +106,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType
@@ -242,6 +243,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~assign:
                                 (CustomOperator
@@ -370,6 +372,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (ExternalSymbol

@@ -96,6 +96,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             slash_real:
                                 (Function
@@ -186,6 +187,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     math
@@ -477,6 +479,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             add_real:
                                 (ExternalSymbol
@@ -634,6 +637,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             avg_real_s_from_t:
                                 (Function
@@ -779,6 +783,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             avg_s_from_s:
                                 (ExternalSymbol
@@ -1015,6 +1020,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     template_travel_m
@@ -1235,6 +1241,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             avg_s_from_t:
                                 (Function
@@ -1431,6 +1438,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             d:
                                 (StructType
@@ -1557,6 +1565,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             d_divided_by_t:
                                 (Function
@@ -1666,6 +1675,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             plus_d:
                                 (Function
@@ -1775,6 +1785,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             plus_t:
                                 (Function
@@ -1884,6 +1895,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             s:
                                 (StructType

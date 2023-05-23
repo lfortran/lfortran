@@ -57,7 +57,7 @@ interface
 
     integer function int(x, kind)
     real, intent(in) :: x(:)
-    integer, intent(in) :: kind
+    integer, optional, intent(in) :: kind
     end function
 
     character function char(x)

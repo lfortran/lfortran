@@ -349,17 +349,30 @@ std::string CPreprocessor::run(const std::string &input, LocationManager &lm,
             "#" whitespace? "include" whitespace '"' @t1 [^"\x00]* @t2 '"' [^\n\x00]* newline {
                 if (!branch_enabled) continue;
                 std::string filename = token(t1, t2);
-                // Construct a filename relative to the current file
-                // TODO: make this multiplatform
-                std::string base_dir = lm.files.back().in_filename;
-                std::string::size_type n = base_dir.rfind("/");
-                if (n != std::string::npos) {
-                    base_dir = base_dir.substr(0, n);
-                    filename = base_dir + "/" + filename;
+                std::vector<std::filesystem::path> include_dirs;
+                include_dirs.push_back(parent_path(lm.files.back().in_filename));
+                include_dirs.insert(include_dirs.end(),
+                                    compiler_options.include_dirs.begin(),
+                                    compiler_options.include_dirs.end());
+                bool file_found = false;
+                std::string include = "";
+                if (is_relative_path(filename)) {
+                    for (auto &path:include_dirs) {
+                        std::string filepath = join_paths({path.generic_string(), filename});
+                        file_found = read_file(filepath, include);
+                        if (file_found) {
+                            filename = filepath;
+                            break;
+                        }
+                    }
+                } else {
+                    file_found = read_file(filename, include);
                 }
-                std::string include;
-                if (!read_file(filename, include)) {
-                    throw LCompilersException("C preprocessor: include file '" + filename + "' cannot be opened");
+
+                if (!file_found) {
+                    throw LCompilersException("C preprocessor: Include file '" + filename
+                        + "' not found. If an include path "
+                        "is available, please use the `-I` option to specify it.");
                 }
 
                 LocationManager lm_tmp = lm; // Make a copy

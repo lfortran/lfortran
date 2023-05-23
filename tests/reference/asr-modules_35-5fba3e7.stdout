@@ -115,7 +115,8 @@
                                                 (FunctionCall
                                                     3 len
                                                     ()
-                                                    [((Var 3 strings_a))]
+                                                    [((Var 3 strings_a))
+                                                    (())]
                                                     (Integer 4 [])
                                                     ()
                                                     ()
@@ -124,7 +125,8 @@
                                                 (FunctionCall
                                                     3 len
                                                     ()
-                                                    [((Var 3 strings))]
+                                                    [((Var 3 strings))
+                                                    (())]
                                                     (Integer 4 [])
                                                     ()
                                                     ()
@@ -193,6 +195,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     m_cli2_21

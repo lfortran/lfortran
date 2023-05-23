@@ -104,6 +104,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             max_integer:
                                 (Function
@@ -216,6 +217,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             min_integer:
                                 (Function
@@ -328,6 +330,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             minus_integer:
                                 (Function
@@ -418,6 +421,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             one_integer:
                                 (Function
@@ -468,6 +472,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             zero_integer:
                                 (Function
@@ -518,6 +523,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     math_integer_m
@@ -619,6 +625,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             max_real:
                                 (Function
@@ -731,6 +738,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             min_real:
                                 (Function
@@ -843,6 +851,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             minus_real:
                                 (Function
@@ -933,6 +942,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             one_real:
                                 (Function
@@ -986,6 +996,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             slash_real:
                                 (Function
@@ -1076,6 +1087,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             zero_real:
                                 (Function
@@ -1129,6 +1141,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     math_real_m
@@ -1468,6 +1481,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t:
                                 (StructType
@@ -1588,6 +1602,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             triple_r:
                                 (Function
@@ -1691,6 +1706,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     triple_m
@@ -1933,6 +1949,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             test_max_triples:
                                 (Function
@@ -2040,6 +2057,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             test_minus_triples:
                                 (Function
@@ -2147,6 +2165,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             triple_add_l:
                                 (Function
@@ -2229,6 +2248,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             triple_add_r:
                                 (Function
@@ -2311,6 +2331,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             triple_l:
                                 (ExternalSymbol
@@ -2403,6 +2424,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             triple_max_r:
                                 (Function
@@ -2485,6 +2507,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             triple_minus_l:
                                 (Function
@@ -2567,6 +2590,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             triple_minus_r:
                                 (Function
@@ -2649,6 +2673,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             triple_r:
                                 (ExternalSymbol

@@ -327,6 +327,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                             al, loc, left, (ASR::binopType)x->m_op,
                             right, x->m_type, nullptr));
 
+            case ASR::exprType::UnsignedIntegerBinOp:
+                return ASRUtils::EXPR(ASR::make_UnsignedIntegerBinOp_t(
+                            al, loc, left, (ASR::binopType)x->m_op,
+                            right, x->m_type, nullptr));
+
             case ASR::exprType::RealBinOp:
                 return ASRUtils::EXPR(ASR::make_RealBinOp_t(
                             al, loc, left, (ASR::binopType)x->m_op,
@@ -344,6 +349,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
             case ASR::exprType::IntegerCompare:
                 return ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                            al, loc, left, (ASR::cmpopType)x->m_op,
+                            right, x->m_type, nullptr));
+
+            case ASR::exprType::UnsignedIntegerCompare:
+                return ASRUtils::EXPR(ASR::make_UnsignedIntegerCompare_t(
                             al, loc, left, (ASR::cmpopType)x->m_op,
                             right, x->m_type, nullptr));
 
@@ -411,8 +421,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
     void replace_ArraySection(ASR::ArraySection_t* x) {
         Vec<ASR::dimension_t> x_dims;
         x_dims.reserve(al, x->n_args);
-        ASRUtils::ASRBuilder builder(al);
         const Location& loc = x->base.base.loc;
+        ASRUtils::ASRBuilder builder(al, loc);
         ASR::expr_t* i32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0))));
         Vec<ASR::dimension_t> empty_dims;
@@ -844,6 +854,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_ArrayOpCommon(x, "_integer_bin_op_res");
     }
 
+    void replace_UnsignedIntegerBinOp(ASR::UnsignedIntegerBinOp_t* x) {
+        replace_ArrayOpCommon(x, "_unsigned_integer_bin_op_res");
+    }
+
     void replace_ComplexBinOp(ASR::ComplexBinOp_t* x) {
         replace_ArrayOpCommon<ASR::ComplexBinOp_t>(x, "_complex_bin_op_res");
     }
@@ -854,6 +868,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
     void replace_IntegerCompare(ASR::IntegerCompare_t* x) {
         replace_ArrayOpCommon<ASR::IntegerCompare_t>(x, "_integer_comp_op_res");
+    }
+
+    void replace_UnsignedIntegerCompare(ASR::UnsignedIntegerCompare_t* x) {
+        replace_ArrayOpCommon<ASR::UnsignedIntegerCompare_t>(x, "_unsigned_integer_comp_op_res");
     }
 
     void replace_RealCompare(ASR::RealCompare_t* x) {
@@ -1058,8 +1076,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             std::vector<bool> array_mask(x->n_args, false);
             bool at_least_one_array = false;
             for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
-                array_mask[iarg] = ASRUtils::is_array(
-                    ASRUtils::expr_type(x->m_args[iarg].m_value));
+                array_mask[iarg] = (x->m_args[iarg].m_value != nullptr &&
+                    ASRUtils::is_array(ASRUtils::expr_type(x->m_args[iarg].m_value)));
                 at_least_one_array = at_least_one_array || array_mask[iarg];
             }
             if (!at_least_one_array) {
