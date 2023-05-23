@@ -118,6 +118,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             subtract:
                                 (Function
@@ -205,6 +206,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t_1:
                                 (StructType
@@ -330,6 +332,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             subtract:
                                 (ExternalSymbol

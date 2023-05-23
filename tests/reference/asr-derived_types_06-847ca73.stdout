@@ -118,7 +118,7 @@
                                         0
                                         (Var 11 lhs)
                                         (StringConstant
-                                            "(i4.4,"-",i2.2,"-",i2.2)"
+                                            "(i4.4,\"-\",i2.2,\"-\",i2.2)"
                                             (Character 1 24 () [])
                                         )
                                         ()
@@ -149,6 +149,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             datetime_to_string:
                                 (Function
@@ -400,6 +401,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_toml_time:
                                 (Function
@@ -704,6 +706,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             time_to_string:
                                 (Function
@@ -876,7 +879,7 @@
                                             0
                                             (Var 14 lhs)
                                             (StringConstant
-                                                "(i2.2,":",i2.2,":",i2.2,".",i3.3)"
+                                                "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
                                                 (Character 1 33 () [])
                                             )
                                             ()
@@ -920,7 +923,7 @@
                                             0
                                             (Var 14 lhs)
                                             (StringConstant
-                                                "(i2.2,":",i2.2,":",i2.2)"
+                                                "(i2.2,\":\",i2.2,\":\",i2.2)"
                                                 (Character 1 24 () [])
                                             )
                                             ()
@@ -1002,6 +1005,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_date:
                                 (StructType
@@ -1565,6 +1569,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_time:
                                 (ExternalSymbol

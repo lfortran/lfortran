@@ -124,6 +124,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -272,6 +273,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     arrays_04_func

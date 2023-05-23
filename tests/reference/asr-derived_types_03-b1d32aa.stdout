@@ -138,6 +138,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             z:
                                 (Function
@@ -239,6 +240,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     derived_types_03

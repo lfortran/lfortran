@@ -141,6 +141,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             executable_config:
                                 (StructType
@@ -386,6 +387,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     fpm_manifest_modules_30

@@ -362,6 +362,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             print_dictionary:
                                 (Function
@@ -676,7 +677,7 @@
                                         0
                                         ()
                                         (StringConstant
-                                            "(*(a,1x,a5,1x,l1,8x,"[",a,"]",/))"
+                                            "(*(a,1x,a5,1x,l1,8x,\"[\",a,\"]\",/))"
                                             (Character 1 33 () [])
                                         )
                                         ()
@@ -886,6 +887,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     fn5

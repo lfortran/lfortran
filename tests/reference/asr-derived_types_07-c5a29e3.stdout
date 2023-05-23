@@ -273,6 +273,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_vector:
                                 (Function
@@ -439,6 +440,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_node:
                                 (StructType
@@ -679,6 +681,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_keyval:
                                 (StructType
@@ -795,6 +798,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             match_key:
                                 (Function
@@ -939,6 +943,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_value:
                                 (StructType

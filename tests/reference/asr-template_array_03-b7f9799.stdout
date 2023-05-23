@@ -96,6 +96,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             add_real:
                                 (Function
@@ -186,6 +187,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             mult_integer:
                                 (Function
@@ -276,6 +278,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             mult_real:
                                 (Function
@@ -366,6 +369,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             zero_integer:
                                 (Function
@@ -432,6 +436,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             zero_real:
                                 (Function
@@ -506,6 +511,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     math
@@ -793,6 +799,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             mymatmul_int:
                                 (Function
@@ -1142,6 +1149,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             mymatmul_t:
                                 (Function
@@ -1536,6 +1544,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             plus_t:
                                 (Function
@@ -1637,6 +1646,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t:
                                 (StructType
@@ -1864,6 +1874,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             zero_integer:
                                 (ExternalSymbol
@@ -1961,6 +1972,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     template_array_03_m

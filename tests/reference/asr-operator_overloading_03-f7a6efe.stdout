@@ -455,6 +455,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             less_than_inverse:
                                 (Function
@@ -577,6 +578,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             less_than_overload_use:
                                 (Function
@@ -676,6 +678,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~gt:
                                 (CustomOperator

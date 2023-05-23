@@ -331,6 +331,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             fnv_1a_string_t:
                                 (Function
@@ -516,6 +517,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             is_fortran_name:
                                 (Function
@@ -886,6 +888,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_cat:
                                 (Function
@@ -1141,6 +1144,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_t:
                                 (StructType

@@ -300,6 +300,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             package_config_t:
                                 (ExternalSymbol
@@ -405,6 +406,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             char:
                                 (GenericProcedure
@@ -482,6 +484,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             version_t:
                                 (StructType

@@ -71,26 +71,6 @@
                                     Required
                                     .false.
                                 ),
-                            exp:
-                                (ExternalSymbol
-                                    2
-                                    exp
-                                    4 exp
-                                    lfortran_intrinsic_math
-                                    []
-                                    exp
-                                    Private
-                                ),
-                            exp@dexp:
-                                (ExternalSymbol
-                                    2
-                                    exp@dexp
-                                    4 dexp
-                                    lfortran_intrinsic_math
-                                    []
-                                    dexp
-                                    Private
-                                ),
                             n:
                                 (Variable
                                     2
@@ -174,7 +154,7 @@
                         []
                         .false.
                     )
-                    [exp@dexp]
+                    []
                     [(Var 2 n)
                     (Var 2 z)
                     (Var 2 cdn)]
@@ -197,10 +177,9 @@
                     (=
                         (Var 2 ca0)
                         (Cast
-                            (FunctionCall
-                                2 exp@dexp
-                                2 exp
-                                [((RealBinOp
+                            (IntrinsicFunction
+                                Exp
+                                [(RealBinOp
                                     (RealBinOp
                                         (RealUnaryMinus
                                             (RealConstant
@@ -232,9 +211,9 @@
                                     )
                                     (Real 8 [])
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8 [])
-                                ()
                                 ()
                             )
                             RealToReal
@@ -275,15 +254,8 @@
                     Public
                     .false.
                     .false.
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                    ()
+                )
         })
     []
 )

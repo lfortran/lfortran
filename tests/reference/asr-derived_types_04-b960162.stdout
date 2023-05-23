@@ -74,6 +74,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             bitset_type:
                                 (StructType

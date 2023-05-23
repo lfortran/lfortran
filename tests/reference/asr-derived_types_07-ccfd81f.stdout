@@ -117,6 +117,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             logger_type:
                                 (StructType
