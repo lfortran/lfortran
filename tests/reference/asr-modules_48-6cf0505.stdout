@@ -292,7 +292,8 @@
                                         (FunctionCall
                                             4 len
                                             ()
-                                            [((Var 4 input))]
+                                            [((Var 4 input))
+                                            (())]
                                             (Integer 4 [])
                                             ()
                                             ()
@@ -772,7 +773,8 @@
                                             (FunctionCall
                                                 6 len
                                                 ()
-                                                [((Var 6 name))]
+                                                [((Var 6 name))
+                                                (())]
                                                 (Integer 4 [])
                                                 ()
                                                 ()
@@ -857,7 +859,8 @@
                                                     (FunctionCall
                                                         6 len
                                                         ()
-                                                        [((Var 6 name))]
+                                                        [((Var 6 name))
+                                                        (())]
                                                         (Integer 4 [])
                                                         ()
                                                         ()

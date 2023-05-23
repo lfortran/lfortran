@@ -79,7 +79,10 @@
                             "HOME"
                             (Character 1 4 () [])
                         ))
-                        ((Var 2 homedir))]
+                        ((Var 2 homedir))
+                        (())
+                        (())
+                        (())]
                         ()
                     )
                     (Print
@@ -108,7 +111,11 @@
                         [((StringConstant
                             "printenv"
                             (Character 1 8 () [])
-                        ))]
+                        ))
+                        (())
+                        (())
+                        (())
+                        (())]
                         ()
                     )]
                 )

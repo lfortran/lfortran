@@ -8,7 +8,7 @@ source_filename = "LFortran"
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [13 x i8] c"%d%s%d%s%d%s\00", align 1
 
-declare i32 @__module_lfortran_intrinsic_builtin_int(%array*, i32*)
+declare i32 @__module_lfortran_intrinsic_builtin_int(%array*, i32*, i1*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

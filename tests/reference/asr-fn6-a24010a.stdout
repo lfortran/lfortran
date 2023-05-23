@@ -1221,7 +1221,8 @@
                                                 (FunctionCall
                                                     3 len
                                                     ()
-                                                    [((Var 3 sep_local))]
+                                                    [((Var 3 sep_local))
+                                                    (())]
                                                     (Integer 4 [])
                                                     ()
                                                     ()

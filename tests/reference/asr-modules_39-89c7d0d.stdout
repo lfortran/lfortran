@@ -100,7 +100,10 @@
                                             ((StringConstant
                                                 ".gitignore"
                                                 (Character 1 10 () [])
-                                            ))]
+                                            ))
+                                            (())
+                                            (())
+                                            (())]
                                             (Character 1 -2 () [])
                                             ()
                                             ()
