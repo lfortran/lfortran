@@ -1,0 +1,5 @@
+semantic error: Interface for deferred binding not found
+ --> tests/errors/derived_type_01.f90:7:9
+  |
+7 |         procedure(testing_interface), deferred  :: testing
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
