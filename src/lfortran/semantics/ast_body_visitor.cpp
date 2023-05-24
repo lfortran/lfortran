@@ -34,8 +34,9 @@ public:
     std::vector<ASR::symbol_t*> do_loop_variables;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping),
+            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -1470,7 +1471,20 @@ public:
     void visit_Use(const AST::Use_t& /* x */) {
         // handled in symbol table visitor
     }
-
+    void remove_common_variable_declarations(SymbolTable* current_scope) {
+        // iterate over all symbols in symbol table and check if any of them is present in common_variables_hash
+        // if yes, then remove it from scope
+        std::map<std::string, ASR::symbol_t*> syms = current_scope->get_scope();
+        for (auto it = syms.begin(); it != syms.end(); ++it) {
+            if (ASR::is_a<ASR::Variable_t>(*(it->second))) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(it->second);
+                uint64_t hash = get_hash((ASR::asr_t*) var);
+                if (common_variables_hash.find(hash) != common_variables_hash.end()) {
+                    current_scope->erase_symbol(it->first);
+                }
+            }
+        }
+    }
     void visit_Program(const AST::Program_t &x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
@@ -1495,6 +1509,7 @@ public:
 
         starting_m_body = nullptr;
         starting_n_body =  0;
+        remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -1580,7 +1595,7 @@ public:
 
         starting_m_body = nullptr;
         starting_n_body = 0;
-
+        remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -1633,6 +1648,7 @@ public:
 
         starting_m_body = nullptr;
         starting_n_body = 0;
+        remove_common_variable_declarations(current_scope);
         current_scope = old_scope;
         tmp = nullptr;
     }
@@ -1826,6 +1842,7 @@ public:
         current_scope = parent_scope;
     }
 
+    
     void visit_Assignment(const AST::Assignment_t &x) {
         if (is_statement_function(x)) {
             create_statement_function(x);
@@ -1946,8 +1963,9 @@ public:
             tmp = nullptr;
             return;
         }
+        
         tmp = ASR::make_Assignment_t(al, x.base.base.loc, target, value,
-                                     overloaded_stmt);;
+                            overloaded_stmt);
     }
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
@@ -2425,7 +2443,7 @@ public:
         ASR::expr_t *var, *start, *end;
         var = start = end = nullptr;
         if (x.m_var) {
-            var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_var)));
+            var = replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(x.base.base.loc, to_lower(x.m_var))));
         }
         if (x.m_start) {
             visit_expr(*x.m_start);
@@ -2452,9 +2470,11 @@ public:
         }
 
         if (var) {
-            ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(var);
-            ASR::symbol_t* loop_var_sym = loop_var->m_v;
-            do_loop_variables.push_back(loop_var_sym);
+            if (ASR::is_a<ASR::Var_t>(*var)) {
+                ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(var);
+                ASR::symbol_t* loop_var_sym = loop_var->m_v;
+                do_loop_variables.push_back(loop_var_sym);
+            }
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
@@ -2784,9 +2804,10 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
         std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash);
     try {
         b.is_body_visitor = true;
         b.requirement_map = requirement_map;

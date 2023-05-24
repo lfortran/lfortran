@@ -1,0 +1,560 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            file_common_block_block_1:
+                (Module
+                    (SymbolTable
+                        3
+                        {
+                            block_1:
+                                (StructType
+                                    (SymbolTable
+                                        4
+                                        {
+                                            a:
+                                                (Variable
+                                                    4
+                                                    a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            c:
+                                                (Variable
+                                                    4
+                                                    c
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerConstant 5 (Integer 4 [])))])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    block_1
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    file_common_block_block_1
+                    [block_1]
+                    .false.
+                    .false.
+                ),
+            main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            1_block_1_a:
+                                (ExternalSymbol
+                                    2
+                                    1_block_1_a
+                                    4 a
+                                    block_1
+                                    []
+                                    a
+                                    Public
+                                ),
+                            1_block_1_b:
+                                (ExternalSymbol
+                                    2
+                                    1_block_1_b
+                                    4 b
+                                    block_1
+                                    []
+                                    b
+                                    Public
+                                ),
+                            1_block_1_c:
+                                (ExternalSymbol
+                                    2
+                                    1_block_1_c
+                                    4 c
+                                    block_1
+                                    []
+                                    c
+                                    Public
+                                ),
+                            block_1:
+                                (ExternalSymbol
+                                    2
+                                    block_1
+                                    3 block_1
+                                    file_common_block_block_1
+                                    []
+                                    block_1
+                                    Public
+                                ),
+                            d:
+                                (Variable
+                                    2
+                                    d
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            struct_instance_block_1:
+                                (Variable
+                                    2
+                                    struct_instance_block_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        2 block_1
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    main
+                    []
+                    [(=
+                        (StructInstanceMember
+                            (Var 2 struct_instance_block_1)
+                            2 1_block_1_b
+                            (Integer 4 [])
+                            ()
+                        )
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_c
+                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4 [])))])
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Integer 4 [])
+                            ColMajor
+                            ()
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 d)
+                        (IntegerBinOp
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_a
+                                (Integer 4 [])
+                                ()
+                            )
+                            Add
+                            (IntegerBinOp
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_b
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                Mul
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_c
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    ()
+                                )
+                                (Integer 4 [])
+                                ()
+                            )
+                            (Integer 4 [])
+                            ()
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (Var 2 struct_instance_block_1)
+                            2 1_block_1_a
+                            (Integer 4 [])
+                            ()
+                        )
+                        (IntegerBinOp
+                            (IntegerConstant 5 (Integer 4 []))
+                            Mul
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_b
+                                (Integer 4 [])
+                                ()
+                            )
+                            (Integer 4 [])
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_a
+                                (Integer 4 [])
+                                ()
+                            )
+                            Gt
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_b
+                                (Integer 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(=
+                            (Var 2 d)
+                            (IntegerBinOp
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_a
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                Add
+                                (IntegerBinOp
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_block_1)
+                                        2 1_block_1_b
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    Div
+                                    (Var 2 d)
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                (Integer 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                        [(If
+                            (IntegerCompare
+                                (ArrayItem
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_block_1)
+                                        2 1_block_1_c
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 5 (Integer 4 [])))])
+                                        ()
+                                    )
+                                    [(()
+                                    (IntegerConstant 1 (Integer 4 []))
+                                    ())]
+                                    (Integer 4 [])
+                                    ColMajor
+                                    ()
+                                )
+                                Gt
+                                (Var 2 d)
+                                (Logical 4 [])
+                                ()
+                            )
+                            [(=
+                                (Var 2 d)
+                                (IntegerBinOp
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_block_1)
+                                        2 1_block_1_a
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_block_1)
+                                        2 1_block_1_b
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                ()
+                            )]
+                            []
+                        )]
+                    )
+                    (Where
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_c
+                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4 [])))])
+                                ()
+                            )
+                            Gt
+                            (IntegerConstant 10 (Integer 4 []))
+                            (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4 [])))])
+                            ()
+                        )
+                        [(=
+                            (Var 2 d)
+                            (IntegerBinOp
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_a
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                Add
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_b
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                (Integer 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                        []
+                    )
+                    (Select
+                        (StructInstanceMember
+                            (Var 2 struct_instance_block_1)
+                            2 1_block_1_a
+                            (Integer 4 [])
+                            ()
+                        )
+                        [(CaseStmt
+                            [(IntegerConstant 1 (Integer 4 []))]
+                            [(=
+                                (Var 2 d)
+                                (IntegerBinOp
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_block_1)
+                                        2 1_block_1_a
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    Add
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_block_1)
+                                        2 1_block_1_b
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                ()
+                            )]
+                        )
+                        (CaseStmt
+                            [(IntegerConstant 2 (Integer 4 []))]
+                            [(=
+                                (Var 2 d)
+                                (IntegerBinOp
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_block_1)
+                                        2 1_block_1_a
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_block_1)
+                                        2 1_block_1_b
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                ()
+                            )]
+                        )]
+                        [(=
+                            (Var 2 d)
+                            (IntegerBinOp
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_a
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                Mul
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_b
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                (Integer 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                    )
+                    (WhileLoop
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_a
+                                (Integer 4 [])
+                                ()
+                            )
+                            Gt
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_b
+                                (Integer 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(=
+                            (Var 2 d)
+                            (IntegerBinOp
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_a
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                Add
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_b
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                (Integer 4 [])
+                                ()
+                            )
+                            ()
+                        )
+                        (=
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_a
+                                (Integer 4 [])
+                                ()
+                            )
+                            (IntegerBinOp
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_a
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                Sub
+                                (IntegerConstant 1 (Integer 4 []))
+                                (Integer 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                    )
+                    (DoLoop
+                        ()
+                        ((StructInstanceMember
+                            (Var 2 struct_instance_block_1)
+                            2 1_block_1_a
+                            (Integer 4 [])
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4 []))
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_c
+                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4 [])))])
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Integer 4 [])
+                            ColMajor
+                            ()
+                        )
+                        (Var 2 d))
+                        [(=
+                            (Var 2 d)
+                            (IntegerBinOp
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_a
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                Add
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_b
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                (Integer 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                    )]
+                )
+        })
+    []
+)
