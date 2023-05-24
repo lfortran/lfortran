@@ -1,0 +1,5 @@
+semantic error: Passed object dummy argument does not match function argument
+ --> tests/errors/derived_type_02.f90:7:9
+  |
+7 |         procedure(testing_interface), deferred  :: testing
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
