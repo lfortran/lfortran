@@ -1438,6 +1438,53 @@ public:
         }
     }
 
+    bool arg_type_equal_to_class(ASR::ttype_t* var_type, ASR::symbol_t* clss_sym) {
+        if (ASR::is_a<ASR::Class_t>(*var_type)) {
+            ASR::Class_t* var_type_clss = ASR::down_cast<ASR::Class_t>(var_type);
+            ASR::symbol_t* var_type_clss_sym = var_type_clss->m_class_type;
+            while (var_type_clss_sym) {
+                if (var_type_clss_sym == clss_sym) {
+                    return true;
+                }
+                var_type_clss_sym = ASR::down_cast<ASR::StructType_t>(var_type_clss_sym)->m_parent;
+            }
+        }
+        return false;
+    }
+
+    void check_for_type_mistach_errors_in_class_procedures(bool is_deferred, ASR::symbol_t* proc_sym, char* pass_arg_name, ASR::symbol_t* clss_sym, Location &loc) {
+        if (is_deferred) {
+            if (proc_sym == nullptr) {
+                throw SemanticError("Interface for deferred binding not found", loc);
+            } else {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
+                if (pass_arg_name == nullptr) {
+                    ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
+                    if (func_type->n_arg_types == 0 ||
+                        !arg_type_equal_to_class(func_type->m_arg_types[0], clss_sym)) {
+                        throw SemanticError("Passed object dummy argument does not match function argument", loc);
+                    }
+                } else {
+                    bool is_pass_arg_name_found = false;
+                    for (size_t i = 0; i < func->n_args && !is_pass_arg_name_found; i++) {
+                        ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[i]);
+                        if (strcmp(v->m_name, pass_arg_name) == 0) {
+                            if (!arg_type_equal_to_class(v->m_type, clss_sym)) {
+                                throw SemanticError("Passed object dummy argument " + std::string(pass_arg_name)
+                                    + " type does not match function argument", loc);
+                            }
+                            is_pass_arg_name_found = true;
+                        }
+                    }
+                    if (!is_pass_arg_name_found) {
+                        throw SemanticError("Passed object dummy argument " + std::string(pass_arg_name)
+                            + " not found in function arguments", loc);
+                    }
+                }
+            }
+        }
+    }
+
     void add_class_procedures() {
         for (auto &proc : class_procedures) {
             // FIXME LOCATION
@@ -1466,6 +1513,7 @@ public:
                               class_deferred_procedures[proc.first].end() ) {
                     is_deferred = true;
                 }
+                check_for_type_mistach_errors_in_class_procedures(is_deferred, proc_sym, pass_arg_name, clss_sym, pname.second["procedure"].second);
                 ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
