@@ -147,6 +147,7 @@ RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_arr_03 LABELS gfortran llvm llvm2)
 
 RUN(NAME include_01 LABELS gfortran llvm wasm)
 RUN(NAME include_02 LABELS gfortran llvm wasm)
@@ -800,6 +801,7 @@ RUN(NAME pass_array_by_data_06 LABELS gfortran llvm wasm)
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm)
+RUN(NAME write_02 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm)
 
