@@ -168,6 +168,11 @@ namespace LCompilers {
                 ASR::ttype_t *x_type = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_type;
                 ASR::dimension_t* m_dims;
                 get_dim_rank(x_type, m_dims, n_dims);
+            } else if (ASR::is_a<ASR::ArrayConstant_t>(*x)) {
+                ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(x);
+                ASR::ttype_t* x_type = a->m_type;
+                ASR::dimension_t* m_dims;
+                get_dim_rank(x_type, m_dims, n_dims);
             }
             return n_dims;
         }
