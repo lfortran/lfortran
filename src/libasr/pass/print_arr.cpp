@@ -90,6 +90,35 @@ public:
         return doloop;
     }
 
+    ASR::expr_t* flatten_arr_const(ASR::ArrayConstant_t* arr_const) {
+        Vec<ASR::expr_t*> args;
+        Vec<ASR::dimension_t> dims;
+        args.reserve(al, arr_const->n_args);
+        dims.reserve(al, 1);
+        for (size_t i = 0; i < arr_const->n_args; i++) {
+            if (ASR::is_a<ASR::ArrayConstant_t>(*arr_const->m_args[i])) {
+                ASR::ArrayConstant_t* arr_const_2 = ASR::down_cast<ASR::ArrayConstant_t>(arr_const->m_args[i]);
+                ASR::ArrayConstant_t* flattened_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(flatten_arr_const(arr_const_2));
+                for (size_t j = 0; j < flattened_arr_const->n_args; j++) {
+                    args.push_back(al, flattened_arr_const->m_args[j]);
+                }
+            } else {
+                args.push_back(al, arr_const->m_args[i]);
+            }
+        }
+        Location &loc = arr_const->base.base.loc;
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, args.size(), int_type));
+        dims.push_back(al, dim);
+        int n_dims = dims.size();
+        PassUtils::set_dim_rank(arr_const->m_type, dims.p, n_dims, false, &al);
+        return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, arr_const->base.base.loc,
+                    args.p, args.size(), arr_const->m_type, arr_const->m_storage_format));
+    }
+
     void visit_Print(const ASR::Print_t& x) {
         std::vector<ASR::expr_t*> print_body;
         ASR::stmt_t* empty_print_endl;
@@ -130,9 +159,35 @@ public:
                     pass_result.push_back(al, print_stmt);
                     print_body.clear();
                 }
-                print_stmt = print_array_using_doloop(x.m_values[i], x.base.base.loc);
-                pass_result.push_back(al, print_stmt);
-                pass_result.push_back(al, back);
+                if (ASR::is_a<ASR::ArrayConstant_t>(*x.m_values[i])) {
+                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(x.m_values[i]);
+                    ASR::ArrayConstant_t* flat_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(flatten_arr_const(arr_const));
+                    Vec<ASR::expr_t*> print_args;
+                    print_args.reserve(al, 1);
+                    for (size_t j = 0; j < flat_arr_const->n_args; j++) {
+                        if (PassUtils::is_array(flat_arr_const->m_args[j])) {
+                            print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, nullptr, print_args.p,
+                                print_args.size(), nullptr, nullptr));
+                            pass_result.push_back(al, print_stmt);
+                            print_stmt = print_array_using_doloop(flat_arr_const->m_args[j], x.base.base.loc);
+                            pass_result.push_back(al, print_stmt);
+                            pass_result.push_back(al, back);
+                            print_args.reserve(al, 1);
+                        } else {
+                            print_args.push_back(al, flat_arr_const->m_args[j]);
+                        }
+                    }
+
+                    if (print_args.size() > 0) {
+                        print_stmt = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc, nullptr, print_args.p,
+                            print_args.size(), nullptr, space));
+                        pass_result.push_back(al, print_stmt);
+                    }
+                } else {
+                    print_stmt = print_array_using_doloop(x.m_values[i], x.base.base.loc);
+                    pass_result.push_back(al, print_stmt);
+                    pass_result.push_back(al, back);
+                }
                 if (x.m_separator) {
                     if (i == x.n_values - 1) {
                         empty_print_endl = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
@@ -229,9 +284,35 @@ public:
                     pass_result.push_back(al, empty_file_write_endl);
                     write_body.clear();
                 }
-                write_stmt = write_array_using_doloop(x.m_values[i], x.base.base.loc);
-                pass_result.push_back(al, write_stmt);
-                pass_result.push_back(al, empty_file_write_endl);
+                if (ASR::is_a<ASR::ArrayConstant_t>(*x.m_values[i])) {
+                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(x.m_values[i]);
+                    ASR::ArrayConstant_t* flat_arr_const = ASR::down_cast<ASR::ArrayConstant_t>(flatten_arr_const(arr_const));
+                    Vec<ASR::expr_t*> write_args;
+                    write_args.reserve(al, 1);
+                    for (size_t j = 0; j < flat_arr_const->n_args; j++) {
+                        if (PassUtils::is_array(flat_arr_const->m_args[j])) {
+                            write_stmt =  ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc, j, nullptr, nullptr, nullptr, nullptr, nullptr, write_args.p,
+                                write_args.size(), nullptr, nullptr));
+                            pass_result.push_back(al, write_stmt);
+                            write_stmt = write_array_using_doloop(flat_arr_const->m_args[j], x.base.base.loc);
+                            pass_result.push_back(al, write_stmt);
+                            pass_result.push_back(al, empty_file_write_endl);
+                            write_args.reserve(al, 1);
+                        } else {
+                            write_args.push_back(al, flat_arr_const->m_args[j]);
+                        }
+                    }
+
+                    if (write_args.size() > 0) {
+                        write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x.base.base.loc, i, nullptr, nullptr, nullptr, nullptr, nullptr, write_args.p,
+                            write_args.size(), nullptr, nullptr));
+                        pass_result.push_back(al, write_stmt);
+                    }
+                } else {
+                    write_stmt = write_array_using_doloop(x.m_values[i], x.base.base.loc);
+                    pass_result.push_back(al, write_stmt);
+                    pass_result.push_back(al, empty_file_write_endl);
+                }
             } else {
                 write_body.push_back(x.m_values[i]);
             }
