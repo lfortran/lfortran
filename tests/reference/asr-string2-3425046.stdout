@@ -40,11 +40,11 @@
                             get_temp_filename:
                                 (Function
                                     (SymbolTable
-                                        44
+                                        17
                                         {
                                             c_tempfile:
                                                 (Variable
-                                                    44
+                                                    17
                                                     c_tempfile
                                                     []
                                                     Local
@@ -63,7 +63,7 @@
                                                 ),
                                             f_string@f_string~genericprocedure:
                                                 (ExternalSymbol
-                                                    44
+                                                    17
                                                     f_string@f_string~genericprocedure
                                                     4 f_string~genericprocedure
                                                     fpm_strings
@@ -73,7 +73,7 @@
                                                 ),
                                             tempfile:
                                                 (Variable
-                                                    44
+                                                    17
                                                     tempfile
                                                     []
                                                     ReturnVar
@@ -107,18 +107,18 @@
                                     [f_string@f_string~genericprocedure]
                                     []
                                     [(=
-                                        (Var 44 tempfile)
+                                        (Var 17 tempfile)
                                         (FunctionCall
-                                            44 f_string@f_string~genericprocedure
+                                            17 f_string@f_string~genericprocedure
                                             2 f_string
-                                            [((Var 44 c_tempfile))]
+                                            [((Var 17 c_tempfile))]
                                             (Character 1 -2 () [])
                                             ()
                                             ()
                                         )
                                         ()
                                     )]
-                                    (Var 44 tempfile)
+                                    (Var 17 tempfile)
                                     Public
                                     .false.
                                     .false.
@@ -127,11 +127,11 @@
                             list_files:
                                 (Function
                                     (SymbolTable
-                                        43
+                                        16
                                         {
                                             dir_entry_c:
                                                 (Variable
-                                                    43
+                                                    16
                                                     dir_entry_c
                                                     []
                                                     Local
@@ -147,7 +147,7 @@
                                                 ),
                                             dir_handle:
                                                 (Variable
-                                                    43
+                                                    16
                                                     dir_handle
                                                     []
                                                     Local
@@ -163,7 +163,7 @@
                                                 ),
                                             f_string@f_string_cptr:
                                                 (ExternalSymbol
-                                                    43
+                                                    16
                                                     f_string@f_string_cptr
                                                     4 f_string_cptr
                                                     fpm_strings
@@ -173,7 +173,7 @@
                                                 ),
                                             string_fortran:
                                                 (Variable
-                                                    43
+                                                    16
                                                     string_fortran
                                                     []
                                                     Local
@@ -218,7 +218,7 @@
                                                 (FunctionCall
                                                     2 c_associated
                                                     ()
-                                                    [((Var 43 dir_entry_c))]
+                                                    [((Var 16 dir_entry_c))]
                                                     (Logical 4 [])
                                                     ()
                                                     ()
@@ -230,11 +230,11 @@
                                                 ()
                                             )]
                                             [(=
-                                                (Var 43 string_fortran)
+                                                (Var 16 string_fortran)
                                                 (FunctionCall
-                                                    43 f_string@f_string_cptr
+                                                    16 f_string@f_string_cptr
                                                     2 f_string
-                                                    [((Var 43 dir_entry_c))]
+                                                    [((Var 16 dir_entry_c))]
                                                     (Character 1 -2 () [])
                                                     ()
                                                     ()
@@ -244,7 +244,7 @@
                                         )]
                                     )
                                     (ImplicitDeallocate
-                                        [(Var 43 string_fortran)]
+                                        [(Var 16 string_fortran)]
                                     )]
                                     ()
                                     Public
@@ -657,9 +657,7 @@
                     .false.
                 ),
             iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
 )

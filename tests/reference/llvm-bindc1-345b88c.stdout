@@ -1,8 +1,6 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
-
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)

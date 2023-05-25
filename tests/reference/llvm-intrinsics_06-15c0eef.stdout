@@ -68,8 +68,6 @@ return:                                           ; preds = %.entry
 
 declare float @_lfortran_satan(float)
 
-declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
-
 define i32 @__module_lfortran_intrinsic_kind_kind(i1* %x) {
 .entry:
   %r = alloca i32, align 4
