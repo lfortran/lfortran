@@ -987,7 +987,7 @@ public:
             }
 
             ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_var_sym);
-            
+
             std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+target_var_name;
             ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
             if (!member_sym) {
@@ -1216,7 +1216,7 @@ public:
                         common_variables.p,
                         1,
                         false, false);
-            
+
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);
             current_scope = parent_scope;
@@ -1231,7 +1231,7 @@ public:
         char* var_name = var_->m_name;
         ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, var_->base.base.loc, struct_scope,
                         var_->m_name, var_->m_dependencies, var_->n_dependencies, var_->m_intent,
-                        var_->m_symbolic_value, var_->m_value, var_->m_storage, var_->m_type, 
+                        var_->m_symbolic_value, var_->m_value, var_->m_storage, var_->m_type,
                         var_->m_type_declaration, var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
         struct_scope->add_symbol(var_name, var_sym_new);
     }
@@ -3643,6 +3643,31 @@ public:
         return ASR::make_Iachar_t(al, x.base.base.loc, arg, type, iachar_value);
     }
 
+    ASR::asr_t* create_StringChr(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "char");
+        ASR::expr_t *arg = args[0];
+        if (!is_integer(*ASRUtils::expr_type(arg))) {
+            throw SemanticError("`x` argument of `char()` must be an integer",
+                x.base.base.loc);
+        }
+        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Character_t(al,
+            x.base.base.loc, 1, 1, nullptr, nullptr, 0));
+        ASR::expr_t* char_value = nullptr; int64_t ascii_code;
+        if( ASRUtils::extract_value(arg, ascii_code) ) {
+            std::string cvalue;
+            cvalue = (char) ascii_code;
+            if (! (ascii_code >= 0 && ascii_code <= 127) ) {
+                throw SemanticError("'x' argument of char(x) must be in the "
+                    "range 0 <= x <= 127", x.base.base.loc);
+            }
+            char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
+                x.base.base.loc, s2c(al, cvalue), type));
+        }
+        return ASR::make_StringChr_t(al, x.base.base.loc, arg, type, char_value);
+    }
+
     ASR::asr_t* create_IntrinsicFunctionSqrt(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names;
@@ -3809,6 +3834,8 @@ public:
                 tmp = create_Ichar(x);
             } else if( var_name == "iachar" ) {
                 tmp = create_Iachar(x);
+            } else if( var_name == "char" ) {
+                tmp = create_StringChr(x);
             } else if( var_name == "maxloc" ) {
                 tmp = create_ArrayMaxloc(x);
             } else if( var_name == "scan" ) {

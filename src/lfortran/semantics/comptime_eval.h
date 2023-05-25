@@ -26,7 +26,7 @@ struct IntrinsicProceduresAsASRNodes {
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "matmul", "pack", "transfer", "cmplx",
-                "dcmplx", "reshape", "ichar", "iachar", "maxloc",
+                "dcmplx", "reshape", "ichar", "iachar", "char", "maxloc",
                 "null", "associated", "_lfortran_sqrt", "all"};
 
             kind_based_intrinsics = {"scan", "verify"};
