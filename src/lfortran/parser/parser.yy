@@ -741,6 +741,7 @@ end_type
 
 derived_type_contains_opt
     : KW_CONTAINS sep procedure_list { $$ = $3; }
+    | KW_CONTAINS sep { LIST_NEW($$); }
     | %empty { LIST_NEW($$); }
     ;
 
