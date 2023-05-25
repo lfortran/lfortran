@@ -832,3 +832,5 @@ RUN(NAME allocated_01 LABELS gfortran llvm)
 RUN(NAME allocated_02 LABELS gfortran llvm)
 RUN(NAME allocated_03 LABELS gfortran llvm)
 RUN(NAME allocate_07 LABELS gfortran llvm)
+
+RUN(NAME double_complex_01 LABELS gfortran llvm)

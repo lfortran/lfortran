@@ -835,6 +835,10 @@ public:
                     type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
                     break;
                 }
+                case (AST::decl_typeType::TypeDoubleComplex) : {
+                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 8, nullptr, 0));
+                    break;
+                }
                 case (AST::decl_typeType::TypeLogical) : {
                     type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
                     break;
