@@ -88,8 +88,6 @@ return:                                           ; preds = %.entry
 
 declare double @_lfortran_dcos(double)
 
-declare i8* @__module_lfortran_intrinsic_builtin_char(i32*)
-
 define double @__module_lfortran_intrinsic_math_dcos(double* %x) {
 .entry:
   %r = alloca double, align 8
