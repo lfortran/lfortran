@@ -987,7 +987,7 @@ public:
             }
 
             ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_var_sym);
-            
+
             std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+target_var_name;
             ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
             if (!member_sym) {
@@ -1216,7 +1216,7 @@ public:
                         common_variables.p,
                         1,
                         false, false);
-            
+
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);
             current_scope = parent_scope;
@@ -1231,7 +1231,7 @@ public:
         char* var_name = var_->m_name;
         ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, var_->base.base.loc, struct_scope,
                         var_->m_name, var_->m_dependencies, var_->n_dependencies, var_->m_intent,
-                        var_->m_symbolic_value, var_->m_value, var_->m_storage, var_->m_type, 
+                        var_->m_symbolic_value, var_->m_value, var_->m_storage, var_->m_type,
                         var_->m_type_declaration, var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
         struct_scope->add_symbol(var_name, var_sym_new);
     }
