@@ -2408,6 +2408,10 @@ public:
             ASR::symbol_t *type_declaration;
             type = determine_type(x.base.base.loc, sym, x.m_vartype, false,
                 dims, type_declaration);
+        } else {
+            if (x.n_args == 0) {
+                throw SemanticError("Empty array constructor is not allowed", x.base.base.loc);
+            }
         }
         ASR::dimension_t dim;
         dim.loc = x.base.base.loc;
