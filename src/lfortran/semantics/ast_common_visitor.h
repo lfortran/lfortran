@@ -1200,21 +1200,18 @@ public:
         }
         if(!global_scope->resolve_symbol(module_name)){
             current_scope = al.make_new<SymbolTable>(global_scope);
-            Vec<char*> common_variables;
-            common_variables.reserve(al, 1);
 
             // create a struct
             SymbolTable* struct_scope = al.make_new<SymbolTable>(current_scope);
             ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_StructType_t(al, loc, struct_scope, s2c(al,common_block_name),
                                             nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, nullptr, nullptr));
             current_scope->add_symbol(common_block_name, struct_symbol);
-            common_variables.push_back(al,s2c(al, common_block_name));
 
             ASR::asr_t *tmp0 = ASR::make_Module_t(al, loc,
                         /* a_symtab */ current_scope,
                         /* a_name */ s2c(al, to_lower(module_name)),
-                        common_variables.p,
-                        1,
+                        nullptr,
+                        0,
                         false, false);
 
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
