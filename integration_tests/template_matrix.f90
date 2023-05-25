@@ -70,10 +70,10 @@ contains
   end function
 
   subroutine test_template()
-    integer :: n
-    n = plus_integer(1,1)
-    !instantiate matrix_t(integer, plus_integer, mult_integer, n), &
-    !  only: plus_integer_matrix => plus_matrix
+    integer :: m
+    m = 10
+    instantiate matrix_t(integer, plus_integer, mult_integer, m), &
+      only: plus_integer_matrix => plus_matrix
   end subroutine
 
 end module
