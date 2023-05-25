@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LFortran\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-18 00:30+0200\n"
-"PO-Revision-Date: 2023-05-23 16:51+0000\n"
+"PO-Revision-Date: 2023-05-25 20:20+0000\n"
 "Last-Translator: Vincent Magnin <vinmagpub@yahoo.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/fortran-lang/"
 "lfortran-docs/fr/>\n"
@@ -1015,7 +1015,7 @@ msgstr ""
 
 #: ../../doc/src/installation.md:1
 msgid "Installation"
-msgstr "Installer fpm"
+msgstr "Installation"
 
 #: ../../doc/src/installation.md:3
 msgid "All the instructions below work on Linux, macOS and Windows."
