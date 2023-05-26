@@ -15,19 +15,19 @@ public:
     SymbolTable *template_scope;        // the template scope, where the environment is
     std::map<std::string, ASR::ttype_t*> subs;
     std::map<std::string, ASR::symbol_t*> rt_subs;
-    std::string new_func_name;
+    std::string new_sym_name;
     // std::vector<ASR::Function_t*> rts;
     SetChar dependencies;
 
     FunctionInstantiator(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
             std::map<std::string, ASR::symbol_t*> rt_subs, SymbolTable *func_scope,
-            SymbolTable *template_scope, std::string new_func_name):
+            SymbolTable *template_scope, std::string new_sym_name):
         BaseExprStmtDuplicator(al),
         func_scope{func_scope},
         template_scope{template_scope},
         subs{subs},
         rt_subs{rt_subs},
-        new_func_name{new_func_name}
+        new_sym_name{new_sym_name}
         {}
 
     ASR::asr_t* instantiate_Function(ASR::Function_t *x) {
@@ -139,7 +139,7 @@ public:
 
         ASR::asr_t *result = ASRUtils::make_Function_t_util(
             al, x->base.base.loc,
-            current_scope, s2c(al, new_func_name),
+            current_scope, s2c(al, new_sym_name),
             deps_vec.p, deps_vec.size(),
             args.p, args.size(),
             body.p, body.size(),
@@ -149,7 +149,48 @@ public:
             ASRUtils::get_FunctionType(x)->m_static, false, false, false);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
-        func_scope->add_symbol(new_func_name, t);
+        func_scope->add_symbol(new_sym_name, t);
+
+        return result;
+    }
+
+    ASR::asr_t* instantiate_StructType(ASR::StructType_t *x) {
+        current_scope = al.make_new<SymbolTable>(func_scope);
+        for (auto const &sym_pair: x->m_symtab->get_scope()) {
+            ASR::symbol_t *sym = sym_pair.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::ttype_t *new_sym_type = substitute_type(ASRUtils::symbol_type(sym));
+                ASR::Variable_t *var_sym = ASR::down_cast<ASR::Variable_t>(sym);
+                std::string var_sym_name = var_sym->m_name;
+                SetChar variable_dependencies_vec;
+                variable_dependencies_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, new_sym_type);
+                ASR::asr_t *new_var = ASR::make_Variable_t(al, var_sym->base.base.loc,
+                    current_scope, s2c(al, var_sym_name), variable_dependencies_vec.p,
+                    variable_dependencies_vec.size(), var_sym->m_intent, nullptr, nullptr,
+                    var_sym->m_storage, new_sym_type, var_sym->m_type_declaration, var_sym->m_abi, var_sym->m_access,
+                    var_sym->m_presence, var_sym->m_value_attr);
+                current_scope->add_symbol(var_sym_name, ASR::down_cast<ASR::symbol_t>(new_var));
+            }
+        }
+
+        Vec<char*> data_member_names;
+        data_member_names.reserve(al, x->n_members);
+        for (size_t i=0; i<x->n_members; i++) {
+            data_member_names.push_back(al, x->m_members[i]);
+        }
+
+        ASR::expr_t *m_alignment = duplicate_expr(x->m_alignment);
+
+        ASR::asr_t *result = ASR::make_StructType_t(al, x->base.base.loc,
+            current_scope, s2c(al, new_sym_name),
+            nullptr, 0,
+            data_member_names.p, data_member_names.size(),
+            x->m_abi, x->m_access, x->m_is_packed, x->m_is_abstract,
+            m_alignment, nullptr);
+
+        ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
+        func_scope->add_symbol(new_sym_name, t);
 
         return result;
     }
@@ -420,14 +461,26 @@ public:
 
 };
 
+// TODO: convert these into symbol instantiators
+
 ASR::symbol_t* pass_instantiate_generic_function(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
         std::map<std::string, ASR::symbol_t*> rt_subs, SymbolTable *current_scope,
-        SymbolTable* template_scope, std::string new_func_name, ASR::symbol_t *sym) {
+        SymbolTable* template_scope, std::string new_sym_name, ASR::symbol_t *sym) {
     ASR::symbol_t* sym2 = ASRUtils::symbol_get_past_external(sym);
     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym2);
-    FunctionInstantiator tf(al, subs, rt_subs, current_scope, template_scope, new_func_name);
+    FunctionInstantiator tf(al, subs, rt_subs, current_scope, template_scope, new_sym_name);
     ASR::asr_t *new_function = tf.instantiate_Function(func);
     return ASR::down_cast<ASR::symbol_t>(new_function);
+}
+
+ASR::symbol_t* pass_instantiate_generic_struct(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
+        std::map<std::string, ASR::symbol_t*> rt_subs, SymbolTable *current_scope,
+        SymbolTable* template_scope, std::string new_sym_name, ASR::symbol_t *sym) {
+    ASR::symbol_t* sym2 = ASRUtils::symbol_get_past_external(sym);
+    ASR::StructType_t* func = ASR::down_cast<ASR::StructType_t>(sym2);
+    FunctionInstantiator tf(al, subs, rt_subs, current_scope, template_scope, new_sym_name);
+    ASR::asr_t *new_struct = tf.instantiate_StructType(func);
+    return ASR::down_cast<ASR::symbol_t>(new_struct);
 }
 
 } // namespace LCompilers

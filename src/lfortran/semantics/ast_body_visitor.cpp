@@ -720,15 +720,24 @@ public:
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
             std::string generic_name = to_lower(use_symbol->m_remote_sym);
             ASR::symbol_t* s = temp->m_symtab->resolve_symbol(generic_name);
-            ASR::symbol_t* s2 = ASRUtils::symbol_get_past_external(s);
-            if (!ASR::is_a<ASR::Function_t>(*s2)) {
-              throw SemanticError("Only functions can be instantiated", x.base.base.loc);
+            if (!s) {
+                throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
             }
-            std::string new_f_name = to_lower(use_symbol->m_local_rename);
-            pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
-                temp->m_symtab, new_f_name, s);
-            current_function_dependencies.erase(ASRUtils::symbol_name(s));
-            current_function_dependencies.push_back(al, s2c(al, new_f_name));
+            ASR::symbol_t* s2 = ASRUtils::symbol_get_past_external(s);
+            if (ASR::is_a<ASR::Function_t>(*s2)) {
+                std::string new_f_name = to_lower(use_symbol->m_local_rename);
+                pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
+                    temp->m_symtab, new_f_name, s);
+                current_function_dependencies.erase(ASRUtils::symbol_name(s));
+                current_function_dependencies.push_back(al, s2c(al, new_f_name));
+            } if (ASR::is_a<ASR::StructType_t>(*s2)) {
+                std::string new_s_name = to_lower(use_symbol->m_local_rename);
+                pass_instantiate_generic_struct(al, subs, restriction_subs, current_scope,
+                    temp->m_symtab, new_s_name, s);
+            } else {
+                throw SemanticError("Instantiation of " + generic_name + " symbol is not supported", 
+                    use_symbol->base.base.loc);
+            }
         }
 
         is_instantiate = false;
