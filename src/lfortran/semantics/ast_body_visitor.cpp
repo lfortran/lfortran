@@ -723,21 +723,11 @@ public:
             if (!s) {
                 throw SemanticError("Symbol " + generic_name + " was not found", x.base.base.loc);
             }
-            ASR::symbol_t* s2 = ASRUtils::symbol_get_past_external(s);
-            if (ASR::is_a<ASR::Function_t>(*s2)) {
-                std::string new_f_name = to_lower(use_symbol->m_local_rename);
-                pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
-                    temp->m_symtab, new_f_name, s);
-                current_function_dependencies.erase(ASRUtils::symbol_name(s));
-                current_function_dependencies.push_back(al, s2c(al, new_f_name));
-            } if (ASR::is_a<ASR::StructType_t>(*s2)) {
-                std::string new_s_name = to_lower(use_symbol->m_local_rename);
-                pass_instantiate_generic_struct(al, subs, restriction_subs, current_scope,
-                    temp->m_symtab, new_s_name, s);
-            } else {
-                throw SemanticError("Instantiation of " + generic_name + " symbol is not supported", 
-                    use_symbol->base.base.loc);
-            }
+            std::string new_sym_name = to_lower(use_symbol->m_local_rename);
+            pass_instantiate_generic_symbol(al, subs, restriction_subs, current_scope,
+                temp->m_symtab, new_sym_name, s);
+            current_function_dependencies.erase(ASRUtils::symbol_name(s));
+            current_function_dependencies.push_back(al, s2c(al, new_sym_name));
         }
 
         is_instantiate = false;
