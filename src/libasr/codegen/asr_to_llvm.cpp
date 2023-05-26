@@ -1049,8 +1049,11 @@ public:
         return CreateLoad(presult);
     }
 
-    llvm::Value* lfortran_str_len(llvm::Value* str)
+    llvm::Value* lfortran_str_len(llvm::Value* str, bool use_descriptor=false)
     {
+        if (use_descriptor) {
+            str = CreateLoad(arr_descr->get_pointer_to_data(str));
+        }
         std::string runtime_func_name = "_lfortran_str_len";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -5868,7 +5871,8 @@ public:
         this->visit_expr_wrapper(x.m_arg, true);
         llvm::AllocaInst *parg = builder->CreateAlloca(character_type, nullptr);
         builder->CreateStore(tmp, parg);
-        tmp = lfortran_str_len(parg);
+        ASR::ttype_t* arg_type = ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg));
+        tmp = lfortran_str_len(parg, arr_descr->is_array(arg_type));
     }
 
     void visit_StringOrd(const ASR::StringOrd_t &x) {
@@ -6755,7 +6759,9 @@ public:
             case (ASR::cast_kindType::CharacterToLogical) : {
                 llvm::AllocaInst *parg = builder->CreateAlloca(character_type, nullptr);
                 builder->CreateStore(tmp, parg);
-                tmp = builder->CreateICmpNE(lfortran_str_len(parg), builder->getInt32(0));
+                ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
+                tmp = builder->CreateICmpNE(lfortran_str_len(parg, arr_descr->is_array(arg_type)),
+                                    builder->getInt32(0));
                 break;
             }
             case (ASR::cast_kindType::CharacterToInteger) : {
@@ -8295,7 +8301,8 @@ public:
                 if (func_name == "len") {
                     args = convert_call_args(x, is_method);
                     LCOMPILERS_ASSERT(args.size() == 3)
-                    tmp = lfortran_str_len(args[0]);
+                    ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_args[0].m_value);
+                    tmp = lfortran_str_len(args[0], arr_descr->is_array(arg_type));
                     return;
                 } else if (func_name == "command_argument_count") {
                     llvm::Function *fn = module->getFunction("_lpython_get_argc");
