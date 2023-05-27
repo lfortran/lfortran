@@ -114,7 +114,8 @@ namespace LCompilers {
 
         bool SimpleCMODescriptor::is_array(ASR::ttype_t* asr_type) {
             std::string asr_type_code = ASRUtils::get_type_code(asr_type, false, false);
-            return tkr2array.find(asr_type_code) != tkr2array.end() && ASRUtils::is_array(asr_type);
+            return (tkr2array.find(asr_type_code) != tkr2array.end() &&
+                    ASRUtils::is_array(asr_type));
         }
 
         llvm::Value* SimpleCMODescriptor::

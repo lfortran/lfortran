@@ -940,6 +940,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             result_var = PassUtils::create_var(result_counter, res_prefix,
                             loc, operand, al, current_scope);
             result_counter += 1;
+            operand = operands[0];
+            ASR::dimension_t* m_dims;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(operand), m_dims);
+            allocate_result_var(operand, m_dims, n_dims);
         }
         *current_expr = result_var;
         if( op_expr == &(x->base) ) {

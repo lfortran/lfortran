@@ -264,6 +264,20 @@ class ASRBuilder {
         }
     }
 
+    ASR::expr_t* ElementalMul(ASR::expr_t* left, ASR::expr_t* right,
+        const Location& loc, ASR::expr_t* value=nullptr) {
+        switch (ASRUtils::expr_type(left)->type) {
+            create_ElementalBinOp(Real, make_RealBinOp_t, Mul, value)
+            create_ElementalBinOp(Integer, make_IntegerBinOp_t, Mul, value)
+            create_ElementalBinOp(Complex, make_ComplexBinOp_t, Mul, value)
+            default: {
+                throw LCompilersException("Expression type, " +
+                                          std::to_string(left->type) +
+                                          " not yet supported");
+            }
+        }
+    }
+
     ASR::expr_t* ElementalPow(ASR::expr_t* left, ASR::expr_t* right,
         const Location& loc, ASR::expr_t* value=nullptr) {
         switch (ASRUtils::expr_type(left)->type) {
