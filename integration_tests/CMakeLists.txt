@@ -147,6 +147,7 @@ RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_arr_03 LABELS gfortran llvm llvm2)
 
 RUN(NAME include_01 LABELS gfortran llvm wasm)
 RUN(NAME include_02 LABELS gfortran llvm wasm)
@@ -394,6 +395,8 @@ RUN(NAME intrinsics_46 LABELS gfortran llvm) # ichar & iachar
 RUN(NAME intrinsics_47 LABELS gfortran llvm) # all
 RUN(NAME intrinsics_48 LABELS gfortran llvm)
 RUN(NAME intrinsics_49 LABELS gfortran llvm)
+RUN(NAME intrinsics_50 LABELS gfortran llvm)
+RUN(NAME intrinsics_51 LABELS gfortran llvm)
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -801,6 +804,7 @@ RUN(NAME pass_array_by_data_06 LABELS gfortran llvm wasm)
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm)
+RUN(NAME write_02 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm)
 

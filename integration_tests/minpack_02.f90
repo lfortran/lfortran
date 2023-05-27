@@ -1,4 +1,4 @@
-module testmod_der1
+module minpack_02_testmod_der1
 implicit none
 
 integer, parameter :: dp=kind(0d0)
@@ -14,7 +14,7 @@ end subroutine
 end module
 
 program minpack_test
-use testmod_der1, only: dp, check_deriv
+use minpack_02_testmod_der1, only: dp, check_deriv
 implicit none
 
 real(dp) :: x1(10), fvec1(20), fjac1(30, 40)
