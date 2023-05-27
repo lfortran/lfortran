@@ -592,6 +592,8 @@ public:
 
         if (x.m_symbolic_value)
             visit_expr(*x.m_symbolic_value);
+        if (x.m_value)
+             visit_expr(*x.m_value);
         visit_ttype(*x.m_type);
 
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,

@@ -629,9 +629,35 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
     } else if (ASR::is_a<ASR::StringConstant_t>(*a_value)) {
         // OK
     } else if(ASR::is_a<ASR::ArrayConstant_t>(*a_value)) {
-        // OK
-        // TODO: Check for each value of array constant
-        // and make sure each one is a constant.
+        ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
+        for( size_t i = 0; i < array_constant->n_args; i++ ) {
+            if( !ASRUtils::is_value_constant(array_constant->m_args[i]) &&
+                !ASRUtils::is_value_constant(ASRUtils::expr_value(array_constant->m_args[i])) ) {
+                return false;
+            }
+        }
+        return true;
+    } else if(ASR::is_a<ASR::FunctionCall_t>(*a_value)) {
+        ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+        if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
+            return false;
+        }
+        for( size_t i = 0; i < func_call_t->n_args; i++ ) {
+            if( !ASRUtils::is_value_constant(func_call_t->m_args[i].m_value) ) {
+                return false;
+            }
+        }
+        return true;
+    } else if( ASR::is_a<ASR::StructInstanceMember_t>(*a_value) ) {
+        ASR::StructInstanceMember_t* struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
+        return is_value_constant(struct_member_t->m_v);
+    } else if( ASR::is_a<ASR::Var_t>(*a_value) ) {
+        ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)));
+        ASR::Variable_t* variable_t = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(var_t->m_v));
+        return variable_t->m_storage == ASR::storage_typeType::Parameter;
+
     } else if(ASR::is_a<ASR::ImpliedDoLoop_t>(*a_value)) {
         // OK
     } else if(ASR::is_a<ASR::Cast_t>(*a_value)) {
@@ -3462,7 +3488,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
              argi->m_intent == ASRUtils::intent_out ||
              argi->m_intent == ASRUtils::intent_inout) &&
             argi->m_storage != ASR::storage_typeType::Allocatable &&
-            !ASR::is_a<ASR::Struct_t>(*argi->m_type)) {
+            !ASR::is_a<ASR::Struct_t>(*argi->m_type) &&
+            !ASR::is_a<ASR::Character_t>(*argi->m_type)) {
             v.push_back(i);
         }
     }
@@ -3525,6 +3552,11 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc, dim, int32_type));
     return ASRUtils::EXPR(ASR::make_ArraySize_t(al, arr_expr->base.loc, arr_expr, dim_expr,
                                                 int32_type, nullptr));
+}
+
+static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al) {
+    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4, nullptr, 0));
+    return ASRUtils::EXPR(ASR::make_ArraySize_t(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr));
 }
 
 static inline void get_dimensions(ASR::expr_t* array, Vec<ASR::expr_t*>& dims,
@@ -3736,6 +3768,24 @@ static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimensi
         dims.push_back(al, t);
     }
     return dims.p;
+}
+
+static inline bool is_allocatable(ASR::expr_t* expr) {
+    switch (expr->type) {
+        case ASR::exprType::Var: {
+            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*
+                ASRUtils::symbol_get_past_external(var->m_v)));
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(var->m_v));
+            return variable->m_storage == ASR::storage_typeType::Allocatable;
+        }
+        default: {
+            throw LCompilersException("ASR::exprType::" + std::to_string(expr->type) +
+                                      " cannot be checked for allocatable attribute.");
+        }
+    }
+    return false;
 }
 
 } // namespace ASRUtils

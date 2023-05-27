@@ -1295,6 +1295,11 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     self.emit("    current_expr = &(x->m_%s[i].m_start);" % (field.name), level)
                     self.emit("    self().replace_expr(x->m_%s[i].m_start);"%(field.name), level)
                     self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
+                elif field.type == "expr":
+                    self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
+                    self.emit("    current_expr = &(x->m_%s[i]);" % (field.name), level)
+                    self.emit("    self().replace_expr(x->m_%s[i]);"%(field.name), level)
+                    self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
                     self.current_expr_copy_variable_count += 1
                 self.emit("}", level)
             else:

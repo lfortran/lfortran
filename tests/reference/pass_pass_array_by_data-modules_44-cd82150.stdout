@@ -152,7 +152,7 @@
                                         []
                                         .false.
                                     )
-                                    [warnwrite_data]
+                                    [warnwrite]
                                     [(Var 8 settings)]
                                     [(Allocate
                                         [((Var 8 littlefile)
@@ -180,28 +180,15 @@
                                         ()
                                     )
                                     (SubroutineCall
-                                        2 warnwrite_data
-                                        2 warnwrite_data
+                                        2 warnwrite
+                                        ()
                                         [((StructInstanceMember
                                             (Var 8 settings)
                                             8 1_fpm_new_settings_name
                                             (Character 1 -2 () [])
                                             ()
                                         ))
-                                        ((Var 8 littlefile))
-                                        ((ArrayBound
-                                            (Var 8 littlefile)
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
-                                            LBound
-                                            ()
-                                        ))
-                                        ((ArraySize
-                                            (Var 8 littlefile)
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
-                                            ()
-                                        ))]
+                                        ((Var 8 littlefile))]
                                         ()
                                     )
                                     (ImplicitDeallocate
@@ -286,16 +273,6 @@
                                     []
                                     warnwrite
                                     Public
-                                ),
-                            warnwrite_data:
-                                (ExternalSymbol
-                                    2
-                                    warnwrite_data
-                                    4 warnwrite_data
-                                    modules_44_module_fpm_filesystem
-                                    []
-                                    warnwrite_data
-                                    Public
                                 )
                         })
                     modules_44_fpm_cmd_new
@@ -368,108 +345,6 @@
                                     []
                                     [(Var 5 fname)
                                     (Var 5 data)]
-                                    []
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            warnwrite_data:
-                                (Function
-                                    (SymbolTable
-                                        10
-                                        {
-                                            __1data:
-                                                (Variable
-                                                    10
-                                                    __1data
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            __2data:
-                                                (Variable
-                                                    10
-                                                    __2data
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            data:
-                                                (Variable
-                                                    10
-                                                    data
-                                                    [__1data
-                                                    __2data]
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 () [((Var 10 __1data)
-                                                    (Var 10 __2data))])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            fname:
-                                                (Variable
-                                                    10
-                                                    fname
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 () [])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    warnwrite_data
-                                    (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Character 1 -1 () [(()
-                                        ())])]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ""
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 10 fname)
-                                    (Var 10 data)
-                                    (Var 10 __1data)
-                                    (Var 10 __2data)]
                                     []
                                     ()
                                     Public

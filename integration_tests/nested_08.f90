@@ -1,4 +1,4 @@
-module testmod_der1
+module nested_08_testmod_der1
 private
 public fcn
 contains
@@ -21,7 +21,7 @@ end module
 
 
 program example_lmder1
-use testmod_der1, only: fcn
+use nested_08_testmod_der1, only: fcn
 real :: x(3), fvec(15)
 ! The following starting values provide a rough fit.
 x = [1.0, 1.0, 1.0]
@@ -35,4 +35,3 @@ call fcn(x, fvec)
 end subroutine
 
 end program
-    
