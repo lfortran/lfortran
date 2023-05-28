@@ -1,0 +1,13 @@
+{
+    "basename": "asr-derived_type_05-3836aa5",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/derived_type_05.f90",
+    "infile_hash": "5987fece6fa8c1cf630060bab7fdff85f72075755e9b3f64cad7ef86",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-derived_type_05-3836aa5.stderr",
+    "stderr_hash": "8ab69b17b3f68e3089a6b8f9633424b69a4391d810104f78380ae35c",
+    "returncode": 2
+}

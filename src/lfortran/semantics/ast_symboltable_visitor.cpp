@@ -66,13 +66,17 @@ void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name) {
 
 class SymbolTableVisitor : public CommonVisitor<SymbolTableVisitor> {
 public:
+    struct ClassProcInfo {
+        std::string name;
+        Location loc;
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::vector<std::string>> generic_procedures;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<AST::intrinsicopType, std::vector<std::string>> overloaded_op_procs;
     std::map<std::string, std::vector<std::string>> defined_op_procs;
-    std::map<std::string, std::map<std::string, std::map<std::string, std::pair<std::string, Location>>>> class_procedures;
-    std::map<std::string, std::vector<std::string>> class_deferred_procedures;
+    std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
+    std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::string> assgn_proc_names;
     std::string dt_name;
     bool in_submodule = false;
@@ -1121,11 +1125,12 @@ public:
         for (size_t i = 0; i < x.n_symbols; i++) {
             AST::UseSymbol_t *use_sym = AST::down_cast<AST::UseSymbol_t>(
                 x.m_symbols[i]);
-            std::pair<std::string, Location> remote_sym_str;
+            ClassProcInfo remote_sym_str;
+            remote_sym_str.loc = x.base.base.loc;
             if( x.m_name ) {
-                remote_sym_str = std::make_pair(to_lower(x.m_name), x.base.base.loc);
+                remote_sym_str.name = to_lower(x.m_name);
             } else {
-                remote_sym_str = std::make_pair(to_lower(use_sym->m_remote_sym), x.base.base.loc);
+                remote_sym_str.name = to_lower(use_sym->m_remote_sym);
             }
             std::string use_sym_name = "";
             if (use_sym->m_local_rename) {
@@ -1139,15 +1144,19 @@ public:
                     case AST::decl_attributeType::AttrPass: {
                         AST::AttrPass_t* attr_pass = AST::down_cast<AST::AttrPass_t>(x.m_attr[i]);
                         LCOMPILERS_ASSERT(class_procedures[dt_name][use_sym_name].find("pass") == class_procedures[dt_name][use_sym_name].end());
-                        if (attr_pass->m_name) {
-                            class_procedures[dt_name][use_sym_name]["pass"] = std::make_pair(std::string(attr_pass->m_name), attr_pass->base.base.loc);
-                        }
+                        class_procedures[dt_name][use_sym_name]["pass"].name = (attr_pass->m_name) ? std::string(attr_pass->m_name) : "";
+                        class_procedures[dt_name][use_sym_name]["pass"].loc =  attr_pass->base.base.loc;
                         break ;
                     }
                     case AST::decl_attributeType::SimpleAttribute: {
-                        AST::SimpleAttribute_t* attr_deferred = AST::down_cast<AST::SimpleAttribute_t>(x.m_attr[i]);
-                        if( attr_deferred->m_attr == AST::simple_attributeType::AttrDeferred ) {
-                            class_deferred_procedures[dt_name].push_back(use_sym_name);
+                        auto &cdf = class_deferred_procedures;
+                        AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(x.m_attr[i]);
+                        if( attr->m_attr == AST::simple_attributeType::AttrDeferred ) {
+                            LCOMPILERS_ASSERT(cdf[dt_name][use_sym_name].find("deferred") == cdf[dt_name][use_sym_name].end());
+                            cdf[dt_name][use_sym_name]["deferred"] = attr->base.base.loc;
+                        } else if (attr->m_attr == AST::simple_attributeType::AttrNoPass) {
+                            LCOMPILERS_ASSERT(cdf[dt_name][use_sym_name].find("nopass") == cdf[dt_name][use_sym_name].end());
+                            cdf[dt_name][use_sym_name]["nopass"] = attr->base.base.loc;
                         }
                         break;
                     }
@@ -1460,68 +1469,78 @@ public:
         return false;
     }
 
-    void check_for_type_mistach_errors_in_class_procedures(bool is_deferred, ASR::symbol_t* proc_sym, char* pass_arg_name, ASR::symbol_t* clss_sym, Location &loc) {
-        if (is_deferred) {
-            if (proc_sym == nullptr) {
-                throw SemanticError("Interface for deferred binding not found", loc);
-            } else {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
-                if (pass_arg_name == nullptr) {
-                    ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
-                    if (func_type->n_arg_types == 0 ||
-                        !arg_type_equal_to_class(func_type->m_arg_types[0], clss_sym)) {
-                        throw SemanticError("Passed object dummy argument does not match function argument", loc);
-                    }
-                } else {
-                    bool is_pass_arg_name_found = false;
-                    for (size_t i = 0; i < func->n_args && !is_pass_arg_name_found; i++) {
-                        ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[i]);
-                        if (strcmp(v->m_name, pass_arg_name) == 0) {
-                            if (!arg_type_equal_to_class(v->m_type, clss_sym)) {
-                                throw SemanticError("Passed object dummy argument " + std::string(pass_arg_name)
-                                    + " type does not match function argument", loc);
-                            }
-                            is_pass_arg_name_found = true;
-                        }
-                    }
-                    if (!is_pass_arg_name_found) {
+    void ensure_matching_types_for_pass_obj_dum_arg(ASR::Function_t* func, char* pass_arg_name, ASR::symbol_t* clss_sym, Location &loc) {
+        if (pass_arg_name == nullptr) {
+            ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
+            if (func_type->n_arg_types == 0 ||
+                !arg_type_equal_to_class(func_type->m_arg_types[0], clss_sym)) {
+                throw SemanticError("Passed object dummy argument does not match function argument", loc);
+            }
+        } else {
+            bool is_pass_arg_name_found = false;
+            for (size_t i = 0; i < func->n_args && !is_pass_arg_name_found; i++) {
+                ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[i]);
+                if (strcmp(v->m_name, pass_arg_name) == 0) {
+                    if (!arg_type_equal_to_class(v->m_type, clss_sym)) {
                         throw SemanticError("Passed object dummy argument " + std::string(pass_arg_name)
-                            + " not found in function arguments", loc);
+                            + " type does not match function argument", loc);
                     }
+                    is_pass_arg_name_found = true;
                 }
+            }
+            if (!is_pass_arg_name_found) {
+                throw SemanticError("Passed object dummy argument " + std::string(pass_arg_name)
+                    + " not found in function arguments", loc);
             }
         }
     }
 
     void add_class_procedures() {
         for (auto &proc : class_procedures) {
-            // FIXME LOCATION
-            Location loc;
-            loc.first = 1;
-            loc.last = 1;
             ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(
                 current_scope->resolve_symbol(proc.first));
             ASR::StructType_t *clss = ASR::down_cast<ASR::StructType_t>(clss_sym);
             SymbolTable* proc_scope = ASRUtils::symbol_parent_symtab(clss_sym);
             for (auto &pname : proc.second) {
-                ASR::symbol_t *proc_sym = proc_scope->resolve_symbol(pname.second["procedure"].first);
+                auto &loc = pname.second["procedure"].loc;
+                auto& cdf = class_deferred_procedures;
+                bool is_pass = pname.second.count("pass");
+                bool is_deferred = (cdf.count(proc.first) && cdf[proc.first].count(pname.first) && cdf[proc.first][pname.first].count("deferred"));
+                bool is_nopass = (cdf.count(proc.first) && cdf[proc.first].count(pname.first) && cdf[proc.first][pname.first].count("nopass"));
+                if (is_pass && is_nopass) {
+                    throw SemanticError(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("pass specified here", { pname.second["pass"].loc} ),
+                            diag::Label("nopass specified here", { cdf[proc.first][pname.first]["nopass"] })
+                        }));
+                }
+
+                ASR::symbol_t *proc_sym = proc_scope->resolve_symbol(pname.second["procedure"].name);
+                if (proc_sym == nullptr) {
+                    if (is_deferred) {
+                        throw SemanticError("Interface must be specified for DEFERRED binding", cdf[proc.first][pname.first]["deferred"]);
+                    } else {
+                        throw SemanticError("'" + pname.second["procedure"].name + "' must be a module procedure"
+                            " or an external procedure with an explicit interface", loc);
+                    }
+                }
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
+                if (!is_deferred &&
+                    ASRUtils::get_FunctionType(*func)->m_deftype == ASR::deftypeType::Interface) {
+                    throw SemanticError("PROCEDURE(interface) should be declared DEFERRED", loc);
+                }
                 Str s;
                 s.from_str_view(pname.first);
                 char *name = s.c_str(al);
-                s.from_str_view(pname.second["procedure"].first);
+                s.from_str_view(pname.second["procedure"].name);
                 char *proc_name = s.c_str(al);
                 char* pass_arg_name = nullptr;
-                if( pname.second.find("pass") != pname.second.end() ) {
-                    pass_arg_name = s2c(al, pname.second["pass"].first);
+                if( is_pass && pname.second["pass"].name.length() > 0) {
+                    pass_arg_name = s2c(al, pname.second["pass"].name);
                 }
-                bool is_deferred = false;
-                if( class_deferred_procedures.find(proc.first) != class_deferred_procedures.end() &&
-                    std::find(class_deferred_procedures[proc.first].begin(),
-                              class_deferred_procedures[proc.first].end(), pname.first) !=
-                              class_deferred_procedures[proc.first].end() ) {
-                    is_deferred = true;
+                if (!is_nopass) {
+                    ensure_matching_types_for_pass_obj_dum_arg(func, pass_arg_name, clss_sym, loc);
                 }
-                check_for_type_mistach_errors_in_class_procedures(is_deferred, proc_sym, pass_arg_name, clss_sym, pname.second["procedure"].second);
                 ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
