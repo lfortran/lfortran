@@ -38,23 +38,14 @@
                                     Public
                                 ),
                             struct_instance_sample:
-                                (Variable
+                                (ExternalSymbol
                                     5
                                     struct_instance_sample
+                                    3 struct_instance_sample
+                                    file_common_block_sample
                                     []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Struct
-                                        5 sample
-                                        []
-                                    )
-                                    ()
-                                    Source
+                                    struct_instance_sample
                                     Public
-                                    Required
-                                    .false.
                                 )
                         })
                     common1
@@ -153,17 +144,38 @@
                                         })
                                     b
                                     []
-                                    []
+                                    [d
+                                    e
+                                    f]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_b:
+                                (Variable
+                                    8
+                                    struct_instance_b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        8 b
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_b
-                    [b]
+                    []
                     .false.
                     .false.
                 ),
@@ -244,17 +256,39 @@
                                         })
                                     c
                                     []
-                                    []
+                                    [c
+                                    g
+                                    h
+                                    j]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_c:
+                                (Variable
+                                    6
+                                    struct_instance_c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        6 c
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_c
-                    [c]
+                    []
                     .false.
                     .false.
                 ),
@@ -320,17 +354,38 @@
                                         })
                                     sample
                                     []
-                                    []
+                                    [a
+                                    b
+                                    i]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_sample:
+                                (Variable
+                                    3
+                                    struct_instance_sample
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        3 sample
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_sample
-                    [sample]
+                    []
                     .false.
                     .false.
                 ),
@@ -386,23 +441,14 @@
                                     Public
                                 ),
                             struct_instance_sample:
-                                (Variable
+                                (ExternalSymbol
                                     2
                                     struct_instance_sample
+                                    3 struct_instance_sample
+                                    file_common_block_sample
                                     []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Struct
-                                        2 sample
-                                        []
-                                    )
-                                    ()
-                                    Source
+                                    struct_instance_sample
                                     Public
-                                    Required
-                                    .false.
                                 )
                         })
                     pass
@@ -423,7 +469,79 @@
                     )
                     []
                     []
-                    [(Print
+                    [(If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_sample)
+                                        2 1_sample_a
+                                        (Real 4 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (StructInstanceMember
+                                        (Var 2 struct_instance_sample)
+                                        2 1_sample_b
+                                        (Real 4 [])
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        20.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
                         ()
                         [(StructInstanceMember
                             (Var 2 struct_instance_sample)

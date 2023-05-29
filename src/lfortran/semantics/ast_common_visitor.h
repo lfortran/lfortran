@@ -975,18 +975,17 @@ public:
                 scope->add_symbol(ext_sym_name, ext_sym_struct);
             }
 
-            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Struct_t(al, curr_struct->base.loc, ext_sym_struct, nullptr, 0));
-
+            SymbolTable* module_scope = ASR::down_cast<ASR::StructType_t>(curr_struct)->m_symtab->parent;
             std::string struct_var_name = "struct_instance_"+std::string(struct_type->m_name);
-            ASR::symbol_t* struct_var_sym = scope->resolve_symbol(struct_var_name);
-            if (!struct_var_sym) {
-                struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, target_var->base.base.loc, scope, s2c(al, struct_var_name), nullptr, 0,
-                                            ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                                            ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
-                scope->add_symbol(struct_var_name, struct_var_sym);
+            ASR::symbol_t* module_var_sym = module_scope->resolve_symbol(struct_var_name);
+            ASR::symbol_t* struct_sym = scope->resolve_symbol(struct_var_name);
+            if (!struct_sym) {
+                struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope, 
+                                                s2c(al, struct_var_name), module_var_sym, s2c(al, module_name), nullptr, 0, s2c(al, struct_var_name), ASR::accessType::Public));
+                scope->add_symbol(struct_var_name, struct_sym);
             }
 
-            ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_var_sym);
+            ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_sym);
 
             std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+target_var_name;
             ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
@@ -1191,6 +1190,7 @@ public:
 
     ASR::symbol_t* create_common_module(Location loc, std::string common_block_name) {
         std::string base_module_name = "file_common_block_";
+        std::string base_struct_instance_name = "struct_instance_";
         std::string module_name = base_module_name + common_block_name;
         SymbolTable *parent_scope = current_scope;
         SymbolTable *global_scope = current_scope;
@@ -1200,21 +1200,26 @@ public:
         }
         if(!global_scope->resolve_symbol(module_name)){
             current_scope = al.make_new<SymbolTable>(global_scope);
-            Vec<char*> common_variables;
-            common_variables.reserve(al, 1);
 
             // create a struct
             SymbolTable* struct_scope = al.make_new<SymbolTable>(current_scope);
             ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_StructType_t(al, loc, struct_scope, s2c(al,common_block_name),
                                             nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, nullptr, nullptr));
             current_scope->add_symbol(common_block_name, struct_symbol);
-            common_variables.push_back(al,s2c(al, common_block_name));
+
+            // create a struct instance
+            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, struct_symbol, nullptr, 0));
+            std::string struct_var_name = base_struct_instance_name + common_block_name;
+            ASR::symbol_t* struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc, current_scope, s2c(al, struct_var_name), nullptr, 0,
+                                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+            current_scope->add_symbol(struct_var_name, struct_var_sym);
 
             ASR::asr_t *tmp0 = ASR::make_Module_t(al, loc,
                         /* a_symtab */ current_scope,
                         /* a_name */ s2c(al, to_lower(module_name)),
-                        common_variables.p,
-                        1,
+                        nullptr,
+                        0,
                         false, false);
 
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
@@ -1227,13 +1232,23 @@ public:
         }
     }
 
-    void add_sym_to_struct(ASR::Variable_t* var_, SymbolTable* struct_scope) {
+    void add_sym_to_struct(ASR::Variable_t* var_, ASR::StructType_t* struct_type) {
         char* var_name = var_->m_name;
+        SymbolTable* struct_scope = struct_type->m_symtab;
         ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, var_->base.base.loc, struct_scope,
                         var_->m_name, var_->m_dependencies, var_->n_dependencies, var_->m_intent,
                         var_->m_symbolic_value, var_->m_value, var_->m_storage, var_->m_type,
                         var_->m_type_declaration, var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
         struct_scope->add_symbol(var_name, var_sym_new);
+
+        Vec<char*> members;
+        members.reserve(al, struct_type->n_members+1);
+        for (size_t i=0; i<struct_type->n_members; i++) {
+            members.push_back(al, struct_type->m_members[i]);
+        }
+        members.push_back(al, var_name);
+        struct_type->m_members = members.p;
+        struct_type->n_members = members.size();
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
@@ -1293,7 +1308,7 @@ public:
                         // private :: x, y, z
                         std::string common_block_name = "";
                         ASR::symbol_t* common_block_struct_sym = nullptr;
-                        SymbolTable* struct_scope = nullptr;
+                        ASR::StructType_t* struct_type = nullptr;
                         for (size_t i=0; i<x.n_syms; i++) {
                             AST::var_sym_t &s = x.m_syms[i];
                             if (s.m_name == nullptr) {
@@ -1306,7 +1321,7 @@ public:
                                     uint64_t hash = get_hash((ASR::asr_t*) var_);
                                     common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
                                     common_variables_hash[hash] = common_block_struct_sym;
-                                    add_sym_to_struct(var_, struct_scope);
+                                    add_sym_to_struct(var_, struct_type);
                                 } else {
                                     if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
                                         // Operator Overloading Encountered
@@ -1362,7 +1377,7 @@ public:
                                         ::AttrCommon) {
                                     common_block_name = sym;
                                     common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
-                                    struct_scope = ASR::down_cast<ASR::StructType_t>(common_block_struct_sym)->m_symtab;
+                                    struct_type = ASR::down_cast<ASR::StructType_t>(common_block_struct_sym);
                                     // populate common_block_dictionary
                                     // if common_block_dictionary do not contain the common_block_name
                                     if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()) {
@@ -1378,7 +1393,7 @@ public:
                                         common_variables_hash[hash] = common_block_struct_sym;
 
                                         // add variable to struct
-                                        add_sym_to_struct(var_, struct_scope);
+                                        add_sym_to_struct(var_, struct_type);
 
                                     } else {
                                         // check if it has been already declared in any other program
@@ -1416,7 +1431,7 @@ public:
                                             common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
                                             common_variables_hash[hash] = common_block_struct_sym;
                                             // add variable to struct
-                                            add_sym_to_struct(var_, struct_scope);
+                                            add_sym_to_struct(var_, struct_type);
                                         }
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType

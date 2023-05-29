@@ -95,17 +95,38 @@
                                         })
                                     block_1
                                     []
-                                    []
+                                    [a
+                                    b
+                                    h]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_block_1:
+                                (Variable
+                                    3
+                                    struct_instance_block_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        3 block_1
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_block_1
-                    [block_1]
+                    []
                     .false.
                     .false.
                 ),
@@ -154,17 +175,37 @@
                                         })
                                     block_2
                                     []
-                                    []
+                                    [c
+                                    d]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_block_2:
+                                (Variable
+                                    5
+                                    struct_instance_block_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        5 block_2
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_block_2
-                    [block_2]
+                    []
                     .false.
                     .false.
                 ),
@@ -213,17 +254,37 @@
                                         })
                                     block_3
                                     []
-                                    []
+                                    [e
+                                    g]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_block_3:
+                                (Variable
+                                    7
+                                    struct_instance_block_3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        7 block_3
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_block_3
-                    [block_3]
+                    []
                     .false.
                     .false.
                 ),
@@ -256,17 +317,36 @@
                                         })
                                     block_4
                                     []
-                                    []
+                                    [i]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_block_4:
+                                (Variable
+                                    9
+                                    struct_instance_block_4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        9 block_4
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_block_4
-                    [block_4]
+                    []
                     .false.
                     .false.
                 ),
@@ -315,17 +395,37 @@
                                         })
                                     block_5
                                     []
-                                    []
+                                    [j
+                                    k]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_block_5:
+                                (Variable
+                                    11
+                                    struct_instance_block_5
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        11 block_5
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_block_5
-                    [block_5]
+                    []
                     .false.
                     .false.
                 )

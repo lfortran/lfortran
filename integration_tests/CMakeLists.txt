@@ -840,3 +840,8 @@ RUN(NAME allocated_03 LABELS gfortran llvm)
 RUN(NAME allocate_07 LABELS gfortran llvm)
 
 RUN(NAME double_complex_01 LABELS gfortran llvm)
+
+RUN(NAME common_02 LABELS gfortran lfortran)
+RUN(NAME common_03 LABELS gfortran) #TODO: Fix these tests
+RUN(NAME common_04 LABELS gfortran) 
+RUN(NAME common_05 LABELS gfortran)
