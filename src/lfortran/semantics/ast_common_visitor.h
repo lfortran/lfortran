@@ -975,18 +975,17 @@ public:
                 scope->add_symbol(ext_sym_name, ext_sym_struct);
             }
 
-            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Struct_t(al, curr_struct->base.loc, ext_sym_struct, nullptr, 0));
-
+            SymbolTable* module_scope = ASR::down_cast<ASR::StructType_t>(curr_struct)->m_symtab->parent;
             std::string struct_var_name = "struct_instance_"+std::string(struct_type->m_name);
-            ASR::symbol_t* struct_var_sym = scope->resolve_symbol(struct_var_name);
-            if (!struct_var_sym) {
-                struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, target_var->base.base.loc, scope, s2c(al, struct_var_name), nullptr, 0,
-                                            ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                                            ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
-                scope->add_symbol(struct_var_name, struct_var_sym);
+            ASR::symbol_t* module_var_sym = module_scope->resolve_symbol(struct_var_name);
+            ASR::symbol_t* struct_sym = scope->resolve_symbol(struct_var_name);
+            if (!struct_sym) {
+                struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope, 
+                                                s2c(al, struct_var_name), module_var_sym, s2c(al, module_name), nullptr, 0, s2c(al, struct_var_name), ASR::accessType::Public));
+                scope->add_symbol(struct_var_name, struct_sym);
             }
 
-            ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_var_sym);
+            ASR::asr_t* struct_var_ = ASR::make_Var_t(al, target_var->base.base.loc, struct_sym);
 
             std::string member_name = "1_"+std::string(struct_type->m_name)+"_"+target_var_name;
             ASR::symbol_t* member_sym = scope->resolve_symbol(member_name);
@@ -1191,6 +1190,7 @@ public:
 
     ASR::symbol_t* create_common_module(Location loc, std::string common_block_name) {
         std::string base_module_name = "file_common_block_";
+        std::string base_struct_instance_name = "struct_instance_";
         std::string module_name = base_module_name + common_block_name;
         SymbolTable *parent_scope = current_scope;
         SymbolTable *global_scope = current_scope;
@@ -1206,6 +1206,14 @@ public:
             ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_StructType_t(al, loc, struct_scope, s2c(al,common_block_name),
                                             nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, nullptr, nullptr));
             current_scope->add_symbol(common_block_name, struct_symbol);
+
+            // create a struct instance
+            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Struct_t(al, loc, struct_symbol, nullptr, 0));
+            std::string struct_var_name = base_struct_instance_name + common_block_name;
+            ASR::symbol_t* struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc, current_scope, s2c(al, struct_var_name), nullptr, 0,
+                                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+            current_scope->add_symbol(struct_var_name, struct_var_sym);
 
             ASR::asr_t *tmp0 = ASR::make_Module_t(al, loc,
                         /* a_symtab */ current_scope,
