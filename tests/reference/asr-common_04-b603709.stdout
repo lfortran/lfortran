@@ -64,17 +64,38 @@
                                         })
                                     block_1
                                     []
-                                    []
+                                    [a
+                                    b
+                                    c]
                                     Source
                                     Public
                                     .false.
                                     .false.
                                     ()
                                     ()
+                                ),
+                            struct_instance_block_1:
+                                (Variable
+                                    3
+                                    struct_instance_block_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        3 block_1
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     file_common_block_block_1
-                    [block_1]
+                    []
                     .false.
                     .false.
                 ),
@@ -140,23 +161,14 @@
                                     .false.
                                 ),
                             struct_instance_block_1:
-                                (Variable
+                                (ExternalSymbol
                                     2
                                     struct_instance_block_1
+                                    3 struct_instance_block_1
+                                    file_common_block_block_1
                                     []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Struct
-                                        2 block_1
-                                        []
-                                    )
-                                    ()
-                                    Source
+                                    struct_instance_block_1
                                     Public
-                                    Required
-                                    .false.
                                 )
                         })
                     main
@@ -245,6 +257,190 @@
                         )
                         ()
                     )
+                    (If
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_a
+                                (Integer 4 [])
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 2 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_b
+                                (Integer 4 [])
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_c
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Integer 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 2 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_c
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Integer 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_c
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Integer 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_c
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Integer 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_c
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 5 (Integer 4 []))
+                                ())]
+                                (Integer 4 [])
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 d)
+                            NotEq
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (Print
                         ()
                         [(StructInstanceMember
@@ -266,7 +462,6 @@
                             (IntegerConstant 5 (Integer 4 [])))])
                             ()
                         )
-                        (Var 2 d)
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -281,7 +476,8 @@
                             (Integer 4 [])
                             ColMajor
                             ()
-                        )]
+                        )
+                        (Var 2 d)]
                         ()
                         ()
                     )]
