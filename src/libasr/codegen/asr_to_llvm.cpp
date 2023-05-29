@@ -7102,6 +7102,21 @@ public:
         builder->CreateCall(fn, {unit_val});
     }
 
+    void visit_FileRewind(const ASR::FileRewind_t &x) {
+        std::string runtime_func_name = "_lfortran_rewind";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        this->visit_expr_wrapper(x.m_unit, true);
+        builder->CreateCall(fn, {tmp});
+    }
+
     void visit_FileClose(const ASR::FileClose_t &x) {
         llvm::Value *unit_val = nullptr;
         this->visit_expr_wrapper(x.m_unit, true);
