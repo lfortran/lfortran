@@ -3153,13 +3153,13 @@ ast = true
 asr = true
 
 [[test]]
-filename = "common3.f90"
+filename = "../integration_tests/common_03.f90"
 asr = true
 
 [[test]]
-filename = "common4.f90"
+filename = "../integration_tests/common_04.f90"
 asr = true
 
 [[test]]
-filename = "common5.f90"
+filename = "../integration_tests/common_05.f90"
 asr = true
