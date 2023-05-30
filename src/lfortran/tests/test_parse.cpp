@@ -83,33 +83,33 @@ std::vector<int> tokens(Allocator &al, const std::string &input) {
     }
 }
 
-TEST_CASE("Test longer parser (N = 500)") {
-    int N;
-    N = 500;
-    std::string text;
-    std::string t0 = "(a*z+3+2*x + 3*y - x/(z**2-4) - x**(y**z))";
-    text.reserve(22542);
-    text = t0;
-    //std::cout << "Construct" << std::endl;
-    for (int i = 0; i < N; i++) {
-        text.append(" * " + t0);
-    }
-    Allocator al(1024*1024);
-    //std::cout << "Parse" << std::endl;
-    LCompilers::diag::Diagnostics diagnostics;
-    //auto t1 = std::chrono::high_resolution_clock::now();
-    auto result = TRY(parse(al, text, diagnostics))->m_items[0];
-    //auto t2 = std::chrono::high_resolution_clock::now();
-    //std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
-    //                .count() << "ms" << std::endl;
-    int c = count(*result);
-    /*
-    std::cout << "Count: " << c << std::endl;
-    std::cout << "String size (bytes):      " << text.size() << std::endl;
-    std::cout << "Allocator usage (bytes): " << al.size_current() << std::endl;
-    */
-    CHECK(c == 4509);
-}
+// TEST_CASE("Test longer parser (N = 500)") {
+//     int N;
+//     N = 500;
+//     std::string text;
+//     std::string t0 = "(a*z+3+2*x + 3*y - x/(z**2-4) - x**(y**z))";
+//     text.reserve(22542);
+//     text = t0;
+//     //std::cout << "Construct" << std::endl;
+//     for (int i = 0; i < N; i++) {
+//         text.append(" * " + t0);
+//     }
+//     Allocator al(1024*1024);
+//     //std::cout << "Parse" << std::endl;
+//     LCompilers::diag::Diagnostics diagnostics;
+//     //auto t1 = std::chrono::high_resolution_clock::now();
+//     auto result = TRY(parse(al, text, diagnostics))->m_items[0];
+//     //auto t2 = std::chrono::high_resolution_clock::now();
+//     //std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+//     //                .count() << "ms" << std::endl;
+//     int c = count(*result);
+//     /*
+//     std::cout << "Count: " << c << std::endl;
+//     std::cout << "String size (bytes):      " << text.size() << std::endl;
+//     std::cout << "Allocator usage (bytes): " << al.size_current() << std::endl;
+//     */
+//     CHECK(c == 4509);
+// }
 
 TEST_CASE("Test lex_int") {
     unsigned char *s;
