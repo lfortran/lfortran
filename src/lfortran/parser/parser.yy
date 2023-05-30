@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    210 // shift/reduce conflicts
+%expect    594 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -834,6 +834,9 @@ program
     : KW_PROGRAM id sep use_statement_star implicit_statement_star decl_statements
         contains_block_opt end_program sep {
       LLOC(@$, @9); $$ = PROGRAM($2, TRIVIA($3, $9, @$), $4, $5, $6, $7, @$); }
+    | use_statement_star implicit_statement_star decl_statements
+        contains_block_opt end_program_without_id sep {
+      LLOC(@$, @6); $$ = PROGRAM(nullptr, TRIVIA($1, $6, @$), $1, $2, $3, $4, @$); }
     ;
 
 end_program
@@ -841,6 +844,11 @@ end_program
     | KW_ENDPROGRAM id_opt
     | KW_END
     ;
+
+end_program_without_id
+    : KW_END_PROGRAM
+    | KW_ENDPROGRAM
+    | KW_END
 
 end_module
     : KW_END_MODULE id_opt

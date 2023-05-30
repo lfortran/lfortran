@@ -60,7 +60,8 @@ static inline trivia_t* trivia_cast(const ast_t *f) {
 
 static inline char* name2char(const ast_t *n)
 {
-    return down_cast2<Name_t>(n)->m_id;
+	if (n == nullptr) return nullptr;
+	return down_cast2<Name_t>(n)->m_id;
 }
 
 template <typename T, astType type>
@@ -1335,6 +1336,12 @@ ast_t* PROGRAM2(Allocator &al, const Location &a_loc, char* a_name,
         implicit_statement_t** a_implicit, size_t n_implicit,
         Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
         size_t n_contains) {
+
+if (!a_name) {
+	LCompilers::Str s;
+	s.from_str(al, "__xx_main");
+	a_name = s.p;
+}
 
 Vec<ast_t*> decl;
 Vec<ast_t*> stmt;
