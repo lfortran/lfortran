@@ -1,0 +1,111 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [23 x i8] c"%13.8e%s%13.8e%s%lld%s\00", align 1
+@3 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@5 = private unnamed_addr constant [9 x i8] c"%13.8e%s\00", align 1
+@6 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+
+define float @_lcompilers_cos_f32(float* %x) {
+.entry:
+  %_lcompilers_cos_f32 = alloca float, align 4
+  %0 = load float, float* %x, align 4
+  %1 = call float @_lfortran_scos(float %0)
+  store float %1, float* %_lcompilers_cos_f32, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  %2 = load float, float* %_lcompilers_cos_f32, align 4
+  ret float %2
+}
+
+declare float @_lfortran_scos(float)
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  %a = alloca float, align 4
+  %myreal = alloca float, align 4
+  %theta = alloca float, align 4
+  %x = alloca float, align 4
+  %y = alloca float, align 4
+  store float 0x3FDAE147A0000000, float* %x, align 4
+  store float 0x3FD6666660000000, float* %y, align 4
+  store float 0x4022333340000000, float* %myreal, align 4
+  store float 1.500000e+00, float* %theta, align 4
+  store float 0x3FD99999A0000000, float* %a, align 4
+  %v = alloca float*, align 8
+  %z = alloca float, align 4
+  %2 = load float, float* %x, align 4
+  %3 = fmul float %2, 2.000000e+00
+  %4 = load float, float* %y, align 4
+  %5 = fmul float %4, 2.000000e+00
+  %6 = fadd float %3, %5
+  %7 = fsub float 0.000000e+00, %6
+  %8 = call float @_lcompilers_cos_f32(float* %theta)
+  %9 = fmul float %7, %8
+  store float %9, float* %z, align 4
+  store float* %myreal, float** %v, align 8
+  %10 = load float, float* %a, align 4
+  %11 = load float, float* %z, align 4
+  %12 = fadd float %10, %11
+  %13 = fpext float %12 to double
+  %14 = load float, float* %a, align 4
+  %15 = load float, float* %z, align 4
+  %16 = fsub float %14, %15
+  %17 = fpext float %16 to double
+  %18 = load float*, float** %v, align 8
+  %19 = ptrtoint float* %18 to i64
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([23 x i8], [23 x i8]* @2, i32 0, i32 0), double %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 %19, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %20 = load float*, float** %v, align 8
+  %21 = load float*, float** %v, align 8
+  %22 = load float, float* %21, align 4
+  %23 = fmul float %22, 0x4012666660000000
+  store float %23, float* %20, align 4
+  %24 = load float, float* %myreal, align 4
+  %25 = fpext float %24 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @5, i32 0, i32 0), double %25, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  %26 = load float, float* %myreal, align 4
+  %27 = fsub float %26, 0x4044EE1480000000
+  %28 = fcmp ugt float %27, 0x3EE4F8B580000000
+  %29 = load float, float* %myreal, align 4
+  %30 = fsub float %29, 0x4044EE1480000000
+  %31 = fcmp ult float %30, 0xBEE4F8B580000000
+  %32 = icmp eq i1 %28, false
+  %33 = alloca i1, align 1
+  br i1 %32, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store i1 %31, i1* %33, align 1
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  store i1 %28, i1* %33, align 1
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %34 = load i1, i1* %33, align 1
+  br i1 %34, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @6, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)
+
+declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @exit(i32)

@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_main_program-7a34895",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/wasm_main_program.f90",
+    "infile_hash": "ab8926c68ae35c9f50cf6a99dd6afaf843e3439d51645de08baebead",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-wasm_main_program-7a34895.stdout",
+    "stdout_hash": "09e18e5c008c5a3ac7b609408872a122c325f4fa33ceece6b8b75690",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

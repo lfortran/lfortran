@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-arrays_01_real-6c5e850",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/arrays_01_real.f90",
+    "infile_hash": "52d4b470c5523650dead5fa570d62db7293b9ecd23758e3cc4ba28c2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-arrays_01_real-6c5e850.stdout",
+    "stdout_hash": "f207ccc6c64df5d385a1f5561e0b06489e6773c1801fef2234bb845a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,47 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            array_03_transfer:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (IntegerConstant 21432 (Integer 4 []))
+                                    (IntegerConstant 21432 (Integer 4 []))
+                                    Save
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    array_03_transfer
+                    []
+                    [(Print
+                        ()
+                        [(BitCast
+                            (Var 2 x)
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            ()
+                            (Real 4 [])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

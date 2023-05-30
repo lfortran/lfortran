@@ -1,0 +1,13 @@
+{
+    "basename": "wat-if_04-1d3b97a",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/../integration_tests/if_04.f90",
+    "infile_hash": "dc3029f2df7281746bd116d435ee39913201c693d801c2e53aca3886",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-if_04-1d3b97a.stdout",
+    "stdout_hash": "671102bbebd0f474244ac87d54ab49fcb15d43c6651c274f4f525103",
+    "stderr": "wat-if_04-1d3b97a.stderr",
+    "stderr_hash": "8b854a8be811f407b5f543a37121d6b73b7265ed8b67dc1c76a42d63",
+    "returncode": 0
+}

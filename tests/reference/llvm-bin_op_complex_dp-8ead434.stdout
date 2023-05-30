@@ -1,0 +1,92 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%complex_8 = type { double, double }
+%complex_4 = type { float, float }
+
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [41 x i8] c"(%f,%f)%s(%lf,%lf)%s(%f,%f)%s(%lf,%lf)%s\00", align 1
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  %u = alloca %complex_8, align 8
+  %v = alloca %complex_8, align 8
+  %x = alloca %complex_4, align 8
+  %zero = alloca %complex_4, align 8
+  %2 = alloca %complex_4, align 8
+  %3 = getelementptr %complex_4, %complex_4* %2, i32 0, i32 0
+  %4 = getelementptr %complex_4, %complex_4* %2, i32 0, i32 1
+  store float 0x3FC24924A0000000, float* %3, align 4
+  store float 0.000000e+00, float* %4, align 4
+  %5 = load %complex_4, %complex_4* %2, align 4
+  store %complex_4 %5, %complex_4* %zero, align 4
+  %6 = alloca %complex_8, align 8
+  %7 = getelementptr %complex_8, %complex_8* %6, i32 0, i32 0
+  %8 = getelementptr %complex_8, %complex_8* %6, i32 0, i32 1
+  store double 0x3FC2492492492492, double* %7, align 8
+  store double 0.000000e+00, double* %8, align 8
+  %9 = load %complex_8, %complex_8* %6, align 8
+  store %complex_8 %9, %complex_8* %u, align 8
+  %10 = alloca %complex_8, align 8
+  %11 = getelementptr %complex_8, %complex_8* %10, i32 0, i32 0
+  %12 = getelementptr %complex_8, %complex_8* %10, i32 0, i32 1
+  store double 0x3FC2492492492492, double* %11, align 8
+  store double 0.000000e+00, double* %12, align 8
+  %13 = load %complex_8, %complex_8* %10, align 8
+  store %complex_8 %13, %complex_8* %v, align 8
+  %14 = alloca %complex_4, align 8
+  %15 = getelementptr %complex_4, %complex_4* %14, i32 0, i32 0
+  %16 = getelementptr %complex_4, %complex_4* %14, i32 0, i32 1
+  store float 0x3FC24924A0000000, float* %15, align 4
+  store float 0.000000e+00, float* %16, align 4
+  %17 = load %complex_4, %complex_4* %14, align 4
+  store %complex_4 %17, %complex_4* %x, align 4
+  %18 = load %complex_4, %complex_4* %zero, align 4
+  %19 = alloca %complex_4, align 8
+  store %complex_4 %18, %complex_4* %19, align 4
+  %20 = getelementptr %complex_4, %complex_4* %19, i32 0, i32 0
+  %21 = load float, float* %20, align 4
+  %22 = fpext float %21 to double
+  %23 = alloca %complex_4, align 8
+  store %complex_4 %18, %complex_4* %23, align 4
+  %24 = getelementptr %complex_4, %complex_4* %23, i32 0, i32 1
+  %25 = load float, float* %24, align 4
+  %26 = fpext float %25 to double
+  %27 = load %complex_8, %complex_8* %v, align 8
+  %28 = alloca %complex_8, align 8
+  store %complex_8 %27, %complex_8* %28, align 8
+  %29 = getelementptr %complex_8, %complex_8* %28, i32 0, i32 0
+  %30 = load double, double* %29, align 8
+  %31 = alloca %complex_8, align 8
+  store %complex_8 %27, %complex_8* %31, align 8
+  %32 = getelementptr %complex_8, %complex_8* %31, i32 0, i32 1
+  %33 = load double, double* %32, align 8
+  %34 = load %complex_4, %complex_4* %x, align 4
+  %35 = alloca %complex_4, align 8
+  store %complex_4 %34, %complex_4* %35, align 4
+  %36 = getelementptr %complex_4, %complex_4* %35, i32 0, i32 0
+  %37 = load float, float* %36, align 4
+  %38 = fpext float %37 to double
+  %39 = alloca %complex_4, align 8
+  store %complex_4 %34, %complex_4* %39, align 4
+  %40 = getelementptr %complex_4, %complex_4* %39, i32 0, i32 1
+  %41 = load float, float* %40, align 4
+  %42 = fpext float %41 to double
+  %43 = load %complex_8, %complex_8* %u, align 8
+  %44 = alloca %complex_8, align 8
+  store %complex_8 %43, %complex_8* %44, align 8
+  %45 = getelementptr %complex_8, %complex_8* %44, i32 0, i32 0
+  %46 = load double, double* %45, align 8
+  %47 = alloca %complex_8, align 8
+  store %complex_8 %43, %complex_8* %47, align 8
+  %48 = getelementptr %complex_8, %complex_8* %47, i32 0, i32 1
+  %49 = load double, double* %48, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([41 x i8], [41 x i8]* @2, i32 0, i32 0), double %22, double %26, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %30, double %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %38, double %42, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %46, double %49, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)
+
+declare void @_lfortran_printf(i8*, ...)

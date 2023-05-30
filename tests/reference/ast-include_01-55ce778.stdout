@@ -1,0 +1,72 @@
+(TranslationUnit
+    [(Subroutine
+        a
+        []
+        []
+        ()
+        (TriviaNode
+            []
+            [(EndOfLine)
+            (EndOfLine)
+            (EndOfLine)]
+        )
+        []
+        []
+        []
+        []
+        [(Print
+            0
+            ()
+            [(String
+                "From B"
+            )]
+            ()
+        )
+        (Print
+            0
+            ()
+            [(String
+                "From C"
+            )]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (Print
+            0
+            ()
+            [(String
+                "From A"
+            )]
+            ()
+        )]
+        []
+    )
+    (Program
+        include_01
+        ()
+        []
+        []
+        []
+        [(SubroutineCall
+            0
+            a
+            []
+            []
+            []
+            ()
+        )
+        (Print
+            0
+            ()
+            [(String
+                "From Main"
+            )]
+            ()
+        )]
+        []
+    )]
+)

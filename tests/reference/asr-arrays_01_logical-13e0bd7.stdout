@@ -1,0 +1,717 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            arrays_01_logical:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            j:
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    arrays_01_logical
+                    []
+                    [(=
+                        (ArrayItem
+                            (Var 2 a)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        (LogicalConstant
+                            .true.
+                            (Logical 4 [])
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 []))
+                        ())
+                        [(=
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (LogicalNot
+                                (ArrayItem
+                                    (Var 2 a)
+                                    [(()
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    ())]
+                                    (Logical 4 [])
+                                    ColMajor
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                    )
+                    (If
+                        (LogicalNot
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (ArrayItem
+                            (Var 2 a)
+                            [(()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalNot
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 3 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        (LogicalConstant
+                            .false.
+                            (Logical 4 [])
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 12 (Integer 4 []))
+                        (IntegerConstant 14 (Integer 4 []))
+                        ())
+                        [(=
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Sub
+                                    (IntegerConstant 10 (Integer 4 []))
+                                    (Integer 4 [])
+                                    ()
+                                )
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (LogicalNot
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Sub
+                                            (IntegerConstant 10 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    ())]
+                                    (Logical 4 [])
+                                    ColMajor
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                    )
+                    (If
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalNot
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 3 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalNot
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 []))
+                        ())
+                        [(=
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (LogicalBinOp
+                                (ArrayItem
+                                    (Var 2 a)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Logical 4 [])
+                                    ColMajor
+                                    ()
+                                )
+                                And
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4 [])
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            ()
+                        )]
+                    )
+                    (If
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 3 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 4 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (LogicalBinOp
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        ())]
+                                        (Logical 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Or
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        ())]
+                                        (Logical 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                Or
+                                (ArrayItem
+                                    (Var 2 b)
+                                    [(()
+                                    (IntegerConstant 3 (Integer 4 []))
+                                    ())]
+                                    (Logical 4 [])
+                                    ColMajor
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            Or
+                            (ArrayItem
+                                (Var 2 a)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (LogicalNot
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 4 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (Var 2 a)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (LogicalNot
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 4 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4 []))
+                        ())
+                        [(DoLoop
+                            ()
+                            ((Var 2 j)
+                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())
+                            [(If
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Add
+                                            (Var 2 j)
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        Sub
+                                        (IntegerBinOp
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            Mul
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 2 i)
+                                                    Add
+                                                    (Var 2 j)
+                                                    (Integer 4 [])
+                                                    ()
+                                                )
+                                                Div
+                                                (IntegerConstant 2 (Integer 4 []))
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    Eq
+                                    (IntegerConstant 1 (Integer 4 []))
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                [(=
+                                    (ArrayItem
+                                        (Var 2 c)
+                                        [(()
+                                        (Var 2 i)
+                                        ())
+                                        (()
+                                        (Var 2 j)
+                                        ())]
+                                        (Logical 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    (LogicalConstant
+                                        .true.
+                                        (Logical 4 [])
+                                    )
+                                    ()
+                                )]
+                                [(=
+                                    (ArrayItem
+                                        (Var 2 c)
+                                        [(()
+                                        (Var 2 i)
+                                        ())
+                                        (()
+                                        (Var 2 j)
+                                        ())]
+                                        (Logical 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4 [])
+                                    )
+                                    ()
+                                )]
+                            )]
+                        )]
+                    )
+                    (If
+                        (ArrayItem
+                            (Var 2 c)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalNot
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())
+                                (()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalNot
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 2 (Integer 4 []))
+                                ())
+                                (()
+                                (IntegerConstant 1 (Integer 4 []))
+                                ())]
+                                (Logical 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (ArrayItem
+                            (Var 2 c)
+                            [(()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())]
+                            (Logical 4 [])
+                            ColMajor
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

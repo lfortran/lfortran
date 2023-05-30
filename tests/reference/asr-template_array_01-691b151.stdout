@@ -5,31 +5,31 @@
             template_array_01:
                 (Program
                     (SymbolTable
-                        6
+                        7
                         {
-                            insert_t:
+                            array_tmpl:
                                 (ExternalSymbol
-                                    6
-                                    insert_t
-                                    2 insert_t
+                                    7
+                                    array_tmpl
+                                    2 array_tmpl
                                     template_array_01_m
                                     []
-                                    insert_t
+                                    array_tmpl
                                     Public
                                 ),
-                            t:
+                            r:
                                 (ExternalSymbol
-                                    6
-                                    t
-                                    2 t
+                                    7
+                                    r
+                                    2 r
                                     template_array_01_m
                                     []
-                                    t
+                                    r
                                     Public
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    6
+                                    7
                                     test_template
                                     2 test_template
                                     template_array_01_m
@@ -41,7 +41,7 @@
                     template_array_01
                     [template_array_01_m]
                     [(SubroutineCall
-                        6 test_template
+                        7 test_template
                         ()
                         []
                         ()
@@ -52,14 +52,172 @@
                     (SymbolTable
                         2
                         {
+                            array_tmpl:
+                                (Template
+                                    (SymbolTable
+                                        4
+                                        {
+                                            insert_t:
+                                                (Function
+                                                    (SymbolTable
+                                                        5
+                                                        {
+                                                            i:
+                                                                (Variable
+                                                                    5
+                                                                    i
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            lst:
+                                                                (Variable
+                                                                    5
+                                                                    lst
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        [(()
+                                                                        ())]
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    5
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    insert_t
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            []
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                            []
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 5 lst)
+                                                    (Var 5 i)]
+                                                    [(=
+                                                        (ArrayItem
+                                                            (Var 5 lst)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4 []))
+                                                            ())]
+                                                            (TypeParameter
+                                                                t
+                                                                []
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        (Var 5 i)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 5 r)
+                                                        (ArrayItem
+                                                            (Var 5 lst)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4 []))
+                                                            ())]
+                                                            (TypeParameter
+                                                                t
+                                                                []
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 5 r)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    4
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        []
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    array_tmpl
+                                    [t]
+                                ),
                             insert_int:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             i:
                                                 (Variable
-                                                    7
+                                                    8
                                                     i
                                                     []
                                                     In
@@ -75,7 +233,7 @@
                                                 ),
                                             lst:
                                                 (Variable
-                                                    7
+                                                    8
                                                     lst
                                                     []
                                                     In
@@ -92,7 +250,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    7
+                                                    8
                                                     r
                                                     []
                                                     ReturnVar
@@ -121,16 +279,14 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     []
-                                    [(Var 7 lst)
-                                    (Var 7 i)]
+                                    [(Var 8 lst)
+                                    (Var 8 i)]
                                     [(=
                                         (ArrayItem
-                                            (Var 7 lst)
+                                            (Var 8 lst)
                                             [(()
                                             (IntegerConstant 1 (Integer 4 []))
                                             ())]
@@ -138,13 +294,13 @@
                                             ColMajor
                                             ()
                                         )
-                                        (Var 7 i)
+                                        (Var 8 i)
                                         ()
                                     )
                                     (=
-                                        (Var 7 r)
+                                        (Var 8 r)
                                         (ArrayItem
-                                            (Var 7 lst)
+                                            (Var 8 lst)
                                             [(()
                                             (IntegerConstant 1 (Integer 4 []))
                                             ())]
@@ -154,62 +310,23 @@
                                         )
                                         ()
                                     )]
-                                    (Var 7 r)
+                                    (Var 8 r)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
-                            insert_t:
-                                (Function
+                            r:
+                                (Requirement
                                     (SymbolTable
-                                        4
+                                        3
                                         {
-                                            i:
+                                            t:
                                                 (Variable
-                                                    4
-                                                    i
+                                                    3
+                                                    t
                                                     []
                                                     In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (TypeParameter
-                                                        t
-                                                        []
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            lst:
-                                                (Variable
-                                                    4
-                                                    lst
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (TypeParameter
-                                                        t
-                                                        [(()
-                                                        ())]
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    4
-                                                    r
-                                                    []
-                                                    ReturnVar
                                                     ()
                                                     ()
                                                     Default
@@ -224,102 +341,17 @@
                                                     .false.
                                                 )
                                         })
-                                    insert_t
-                                    (FunctionType
-                                        [(TypeParameter
-                                            t
-                                            [(()
-                                            ())]
-                                        )
-                                        (TypeParameter
-                                            t
-                                            []
-                                        )]
-                                        (TypeParameter
-                                            t
-                                            []
-                                        )
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        [(TypeParameter
-                                            t
-                                            []
-                                        )]
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 4 lst)
-                                    (Var 4 i)]
-                                    [(=
-                                        (ArrayItem
-                                            (Var 4 lst)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            ())]
-                                            (TypeParameter
-                                                t
-                                                []
-                                            )
-                                            ColMajor
-                                            ()
-                                        )
-                                        (Var 4 i)
-                                        ()
-                                    )
-                                    (=
-                                        (Var 4 r)
-                                        (ArrayItem
-                                            (Var 4 lst)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            ())]
-                                            (TypeParameter
-                                                t
-                                                []
-                                            )
-                                            ColMajor
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 4 r)
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            t:
-                                (StructType
-                                    (SymbolTable
-                                        3
-                                        {
-                                            
-                                        })
-                                    t
-                                    []
-                                    []
-                                    Source
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                    ()
+                                    r
+                                    [t]
                                 ),
                             test_template:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             a:
                                                 (Variable
-                                                    5
+                                                    6
                                                     a
                                                     []
                                                     Local
@@ -336,7 +368,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    5
+                                                    6
                                                     i
                                                     []
                                                     Local
@@ -352,7 +384,7 @@
                                                 ),
                                             r:
                                                 (Variable
-                                                    5
+                                                    6
                                                     r
                                                     []
                                                     Local
@@ -379,15 +411,13 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     [insert_int]
                                     []
                                     [(=
                                         (ArrayItem
-                                            (Var 5 a)
+                                            (Var 6 a)
                                             [(()
                                             (IntegerConstant 1 (Integer 4 []))
                                             ())]
@@ -399,14 +429,14 @@
                                         ()
                                     )
                                     (=
-                                        (Var 5 i)
+                                        (Var 6 i)
                                         (IntegerConstant 1 (Integer 4 []))
                                         ()
                                     )
                                     (Print
                                         ()
                                         [(ArrayItem
-                                            (Var 5 a)
+                                            (Var 6 a)
                                             [(()
                                             (IntegerConstant 1 (Integer 4 []))
                                             ())]
@@ -418,12 +448,12 @@
                                         ()
                                     )
                                     (=
-                                        (Var 5 r)
+                                        (Var 6 r)
                                         (FunctionCall
                                             2 insert_int
                                             ()
-                                            [((Var 5 a))
-                                            ((Var 5 i))]
+                                            [((Var 6 a))
+                                            ((Var 6 i))]
                                             (Integer 4 [])
                                             ()
                                             ()
@@ -433,7 +463,7 @@
                                     (Print
                                         ()
                                         [(ArrayItem
-                                            (Var 5 a)
+                                            (Var 6 a)
                                             [(()
                                             (IntegerConstant 1 (Integer 4 []))
                                             ())]

@@ -1,0 +1,570 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            complex_07:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            c1:
+                                (Variable
+                                    2
+                                    c1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            img_part:
+                                (Variable
+                                    2
+                                    img_part
+                                    []
+                                    Local
+                                    (RealConstant
+                                        3.140000
+                                        (Real 4 [])
+                                    )
+                                    (RealConstant
+                                        3.140000
+                                        (Real 4 [])
+                                    )
+                                    Parameter
+                                    (Real 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            real_part:
+                                (Variable
+                                    2
+                                    real_part
+                                    []
+                                    Local
+                                    (IntegerConstant 42 (Integer 4 []))
+                                    (IntegerConstant 42 (Integer 4 []))
+                                    Parameter
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    [real_part]
+                                    Local
+                                    (ComplexConstructor
+                                        (Cast
+                                            (Var 2 real_part)
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                42.000000
+                                                (Real 4 [])
+                                            )
+                                        )
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4 [])
+                                        )
+                                        (Complex 4 [])
+                                        (ComplexConstant
+                                            42.000000
+                                            0.000000
+                                            (Complex 4 [])
+                                        )
+                                    )
+                                    (ComplexConstant
+                                        42.000000
+                                        0.000000
+                                        (Complex 4 [])
+                                    )
+                                    Save
+                                    (Complex 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x2:
+                                (Variable
+                                    2
+                                    x2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    [img_part]
+                                    Local
+                                    (ComplexConstructor
+                                        (Var 2 img_part)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4 [])
+                                        )
+                                        (Complex 4 [])
+                                        (ComplexConstant
+                                            3.140000
+                                            0.000000
+                                            (Complex 4 [])
+                                        )
+                                    )
+                                    (ComplexConstant
+                                        3.140000
+                                        0.000000
+                                        (Complex 4 [])
+                                    )
+                                    Save
+                                    (Complex 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y2:
+                                (Variable
+                                    2
+                                    y2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    [real_part
+                                    img_part]
+                                    Local
+                                    (ComplexConstructor
+                                        (Cast
+                                            (Var 2 real_part)
+                                            IntegerToReal
+                                            (Real 4 [])
+                                            (RealConstant
+                                                42.000000
+                                                (Real 4 [])
+                                            )
+                                        )
+                                        (Var 2 img_part)
+                                        (Complex 4 [])
+                                        (ComplexConstant
+                                            42.000000
+                                            3.140000
+                                            (Complex 4 [])
+                                        )
+                                    )
+                                    (ComplexConstant
+                                        42.000000
+                                        3.140000
+                                        (Complex 4 [])
+                                    )
+                                    Save
+                                    (Complex 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            z2:
+                                (Variable
+                                    2
+                                    z2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    complex_07
+                    []
+                    [(=
+                        (Var 2 c1)
+                        (Cast
+                            (ComplexConstructor
+                                (IntegerConstant 12 (Integer 4 []))
+                                (IntegerConstant 24 (Integer 4 []))
+                                (Complex 4 [])
+                                (ComplexConstant
+                                    12.000000
+                                    24.000000
+                                    (Complex 4 [])
+                                )
+                            )
+                            ComplexToComplex
+                            (Complex 8 [])
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 c1)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 x2)
+                        (ComplexConstructor
+                            (Var 2 real_part)
+                            (RealConstant
+                                0.000000
+                                (Real 8 [])
+                            )
+                            (Complex 8 [])
+                            (ComplexConstant
+                                42.000000
+                                0.000000
+                                (Complex 8 [])
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 y2)
+                        (ComplexConstructor
+                            (Var 2 img_part)
+                            (RealConstant
+                                0.000000
+                                (Real 8 [])
+                            )
+                            (Complex 8 [])
+                            (ComplexConstant
+                                3.140000
+                                0.000000
+                                (Complex 8 [])
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 z2)
+                        (ComplexConstructor
+                            (Var 2 real_part)
+                            (Var 2 img_part)
+                            (Complex 8 [])
+                            (ComplexConstant
+                                42.000000
+                                3.140000
+                                (Complex 8 [])
+                            )
+                        )
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
+                                    (Var 2 x)
+                                    Sub
+                                    (ComplexConstructor
+                                        (Var 2 real_part)
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        (Complex 4 [])
+                                        (ComplexConstant
+                                            42.000000
+                                            0.000000
+                                            (Complex 4 [])
+                                        )
+                                    )
+                                    (Complex 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
+                                    (Var 2 y)
+                                    Sub
+                                    (ComplexConstructor
+                                        (Var 2 img_part)
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        (Complex 4 [])
+                                        (ComplexConstant
+                                            3.140000
+                                            0.000000
+                                            (Complex 4 [])
+                                        )
+                                    )
+                                    (Complex 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
+                                    (Var 2 z)
+                                    Sub
+                                    (ComplexConstructor
+                                        (Var 2 real_part)
+                                        (Var 2 img_part)
+                                        (Complex 4 [])
+                                        (ComplexConstant
+                                            42.000000
+                                            3.140000
+                                            (Complex 4 [])
+                                        )
+                                    )
+                                    (Complex 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
+                                    (Var 2 x2)
+                                    Sub
+                                    (Cast
+                                        (ComplexConstructor
+                                            (Var 2 real_part)
+                                            (IntegerConstant 0 (Integer 4 []))
+                                            (Complex 4 [])
+                                            (ComplexConstant
+                                                42.000000
+                                                0.000000
+                                                (Complex 4 [])
+                                            )
+                                        )
+                                        ComplexToComplex
+                                        (Complex 8 [])
+                                        ()
+                                    )
+                                    (Complex 8 [])
+                                    ()
+                                )]
+                                0
+                                (Real 8 [])
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000010
+                                    (Real 4 [])
+                                )
+                                RealToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    0.000010
+                                    (Real 8 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
+                                    (Var 2 y2)
+                                    Sub
+                                    (Cast
+                                        (ComplexConstructor
+                                            (Var 2 img_part)
+                                            (IntegerConstant 0 (Integer 4 []))
+                                            (Complex 4 [])
+                                            (ComplexConstant
+                                                3.140000
+                                                0.000000
+                                                (Complex 4 [])
+                                            )
+                                        )
+                                        ComplexToComplex
+                                        (Complex 8 [])
+                                        ()
+                                    )
+                                    (Complex 8 [])
+                                    ()
+                                )]
+                                0
+                                (Real 8 [])
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000010
+                                    (Real 4 [])
+                                )
+                                RealToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    0.000010
+                                    (Real 8 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(ComplexBinOp
+                                    (Var 2 z2)
+                                    Sub
+                                    (Cast
+                                        (ComplexConstructor
+                                            (Var 2 real_part)
+                                            (Var 2 img_part)
+                                            (Complex 4 [])
+                                            (ComplexConstant
+                                                42.000000
+                                                3.140000
+                                                (Complex 4 [])
+                                            )
+                                        )
+                                        ComplexToComplex
+                                        (Complex 8 [])
+                                        ()
+                                    )
+                                    (Complex 8 [])
+                                    ()
+                                )]
+                                0
+                                (Real 8 [])
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000010
+                                    (Real 4 [])
+                                )
+                                RealToReal
+                                (Real 8 [])
+                                (RealConstant
+                                    0.000010
+                                    (Real 8 [])
+                                )
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)
+                        (Var 2 y)
+                        (Var 2 z)]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

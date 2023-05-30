@@ -1,0 +1,96 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            k:
+                                (Variable
+                                    2
+                                    k
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Optional
+                                    .false.
+                                )
+                        })
+                    main
+                    []
+                    [(GoToTarget
+                        1000
+                        1000
+                    )
+                    (If
+                        (IntegerCompare
+                            (IntegerConstant 0 (Integer 4 []))
+                            Lt
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Logical 4 [])
+                            (LogicalConstant
+                                .true.
+                                (Logical 4 [])
+                            )
+                        )
+                        [(=
+                            (Var 2 k)
+                            (IntegerConstant 15 (Integer 4 []))
+                            ()
+                        )]
+                        []
+                    )
+                    (GoToTarget
+                        100
+                        100
+                    )
+                    (Select
+                        (Var 2 k)
+                        [(CaseStmt
+                            [(IntegerConstant 100 (Integer 4 []))]
+                            [(GoTo
+                                100
+                                100
+                            )]
+                        )
+                        (CaseStmt
+                            [(IntegerConstant 1000 (Integer 4 []))]
+                            [(GoTo
+                                1000
+                                1000
+                            )]
+                        )
+                        (CaseStmt
+                            [(IntegerConstant 15 (Integer 4 []))]
+                            [(GoTo
+                                15
+                                15
+                            )]
+                        )]
+                        []
+                    )
+                    (GoToTarget
+                        15
+                        15
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "run"
+                            (Character 1 3 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

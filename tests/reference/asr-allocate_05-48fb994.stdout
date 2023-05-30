@@ -1,0 +1,115 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            allocate_05:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            num:
+                                (Variable
+                                    2
+                                    num
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 3 () [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            string:
+                                (Variable
+                                    2
+                                    string
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Character 1 -2 () [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    allocate_05
+                    []
+                    [(Allocate
+                        [((Var 2 string)
+                        [])]
+                        ()
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 num)
+                        (StringConstant
+                            "abc"
+                            (Character 1 3 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 string)
+                        (Var 2 num)
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 string)
+                            NotEq
+                            (StringConstant
+                                "abc"
+                                (Character 1 3 () [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (StringSection
+                            (Var 2 string)
+                            ()
+                            ()
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Character 1 -1 () [])
+                            ()
+                        )
+                        (Var 2 num)
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 string)
+                            NotEq
+                            (StringConstant
+                                "abc"
+                                (Character 1 3 () [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ImplicitDeallocate
+                        [(Var 2 string)]
+                    )]
+                )
+        })
+    []
+)

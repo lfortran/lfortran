@@ -1,0 +1,79 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cassert>
+#include <cmath>
+#include <complex>
+#include <Kokkos_Core.hpp>
+#include <lfortran_intrinsics.h>
+
+template <typename T>
+Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
+{
+    Kokkos::View<T*> r("r", v.size());
+    for (size_t i=0; i < v.size(); i++) {
+        r(i) = v[i];
+    }
+    return r;
+}
+
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length;
+};
+// Forward declarations
+namespace {
+float func1(float a, float b);
+float func2(float a, float b);
+}
+
+// Implementations
+namespace {
+float func1(float a, float b)
+{
+    float c;
+    static float saved=  2.00000000000000000e+00;
+    saved = saved +   1.00000000000000000e+00;
+    c = c + a + b + saved;
+    return c;
+}
+
+float func2(float a, float b)
+{
+    float c;
+    float d;
+    static float saved1=  2.00000000000000000e+00;
+    static float saved2;
+    saved1 = saved1 +   1.00000000000000000e+00;
+    c = d + c + a + b + saved1 + saved2;
+    saved2 = saved2 +   1.00000000000000000e+00;
+    d = d +   3.00000000000000000e+00;
+    return c;
+}
+
+
+void main2() {
+    float x;
+    float y;
+    float z;
+    x =   1.00000000000000000e+00;
+    y =   2.00000000000000000e+00;
+    z = func1(x, y);
+    std::cout << "6.0 == " << " " << z << std::endl;
+    z = func1(x, y);
+    std::cout << "7.0 == " << " " << z << std::endl;
+    z = func2(x, y);
+    std::cout << "6.0 == " << " " << z << std::endl;
+    z = func2(x, y);
+    std::cout << "8.0 == " << " " << z << std::endl;
+}
+
+}
+int main(int argc, char* argv[])
+{
+    Kokkos::initialize(argc, argv);
+    main2();
+    Kokkos::finalize();
+    return 0;
+}

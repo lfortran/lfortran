@@ -1,0 +1,318 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            string_10:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "BC"
+                                        (Character 1 2 () [])
+                                    )
+                                    (StringConstant
+                                        "BC"
+                                        (Character 1 2 () [])
+                                    )
+                                    Save
+                                    (Character 1 2 () [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            is_alpha:
+                                (Variable
+                                    2
+                                    is_alpha
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            num:
+                                (Variable
+                                    2
+                                    num
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 3 () [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    string_10
+                    []
+                    [(=
+                        (Var 2 is_alpha)
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "A"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "Z"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "a"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "z"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 is_alpha)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 c)
+                        (StringConstant
+                            "@a"
+                            (Character 1 2 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 is_alpha)
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "A"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "Z"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "a"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "z"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 is_alpha)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 c)
+                        (StringConstant
+                            "a@"
+                            (Character 1 2 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 is_alpha)
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "A"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "Z"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            Or
+                            (LogicalBinOp
+                                (StringCompare
+                                    (Var 2 c)
+                                    GtE
+                                    (StringConstant
+                                        "a"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                And
+                                (StringCompare
+                                    (Var 2 c)
+                                    LtE
+                                    (StringConstant
+                                        "z"
+                                        (Character 1 1 () [])
+                                    )
+                                    (Logical 4 [])
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 is_alpha)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (StringSection
+                            (Var 2 num)
+                            (IntegerBinOp
+                                (IntegerConstant 1 (Integer 4 []))
+                                Sub
+                                (IntegerConstant 1 (Integer 4 []))
+                                (Integer 4 [])
+                                ()
+                            )
+                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4 []))
+                            (Character 1 -1 () [])
+                            ()
+                        )
+                        (StringConstant
+                            "sbs"
+                            (Character 1 3 () [])
+                        )
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 num)
+                            NotEq
+                            (StringConstant
+                                "sbs"
+                                (Character 1 3 () [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

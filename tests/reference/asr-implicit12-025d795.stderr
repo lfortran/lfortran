@@ -1,0 +1,5 @@
+semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
+ --> tests/implicit12.f90:2:1
+  |
+2 | implicit integer (b-c)
+  | ^^^^^^^^^^^^^^^^^^^^^^^ 

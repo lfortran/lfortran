@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-intent_01-6d96ec5",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/intent_01.f90",
+    "infile_hash": "ecbce2d4b01a09bee24ec92ce8be335f75903e746d23a667806bf264",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-intent_01-6d96ec5.stdout",
+    "stdout_hash": "9f024f38a96d723adc6401373dde00acb57d33279f2730a9acea5ed7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

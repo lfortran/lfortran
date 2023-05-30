@@ -1,0 +1,20 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+define void @find_fit(i32 ()* %expr) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+declare i32 @expr()
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)

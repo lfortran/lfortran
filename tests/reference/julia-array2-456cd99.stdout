@@ -1,0 +1,14 @@
+function main()
+    local a = Array{Float32, 1}(undef, 5)
+    local b = Array{Float32, 1}(undef, 5)
+    local c = Array{Int32, 1}(undef, 3)
+    local d = Array{Bool, 1}(undef, 2)
+    local e = Array{Float32, 2}(undef, 2, 3)
+    local f = Array{Int32, 2}(undef, 3, 4)
+    local g = Array{Bool, 2}(undef, 5, 2)
+    local h = Array{Float32, 3}(undef, 2, 3, 4)
+    local i = Array{Int32, 3}(undef, 3, 4, 3)
+    local j = Array{Bool, 3}(undef, 5, 2, 2)
+end
+
+main()

@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-complex_dp_param-5efce36",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/complex_dp_param.f90",
+    "infile_hash": "0d4d9eaf5bcc2cee6a8b57ee6a66b5a10ced2edf6d64b5d2e2a0bcb8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-complex_dp_param-5efce36.stdout",
+    "stdout_hash": "7338b0e031edaf4d3c6e3d9b00e8df6ea5caa33e9357e712e8078ec3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

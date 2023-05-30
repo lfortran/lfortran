@@ -1,0 +1,28 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [26 x i8] c"%13.8e%s%23.17e%s%13.8e%s\00", align 1
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  %v = alloca double, align 8
+  %x = alloca float, align 4
+  %zero = alloca float, align 4
+  store float 0.000000e+00, float* %zero, align 4
+  store double 1.050000e+00, double* %v, align 8
+  store float 0x3FF0CCCCC0000000, float* %x, align 4
+  %2 = load float, float* %x, align 4
+  %3 = fpext float %2 to double
+  %4 = load double, double* %v, align 8
+  %5 = load float, float* %zero, align 4
+  %6 = fpext float %5 to double
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([26 x i8], [26 x i8]* @2, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), double %6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)
+
+declare void @_lfortran_printf(i8*, ...)

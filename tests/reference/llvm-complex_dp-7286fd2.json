@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-complex_dp-7286fd2",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/complex_dp.f90",
+    "infile_hash": "2ab8a19155ace703dc52c1f26d2ecea0db08a49637452b31871a40b2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-complex_dp-7286fd2.stdout",
+    "stdout_hash": "a80a0eb56f5f2c83e5577b9143ab8d23d413c06bc3cb47645cc53a75",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

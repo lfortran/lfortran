@@ -216,8 +216,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     []
@@ -398,8 +396,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     [modulo2]

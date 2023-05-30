@@ -1,0 +1,5 @@
+semantic error: Kind 3 is not supported for Real
+ --> tests/errors/kind1.f90:4:5
+  |
+4 |     real(3) :: x
+  |     ^^^^^^^^^^^^ 

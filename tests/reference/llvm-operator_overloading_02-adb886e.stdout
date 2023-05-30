@@ -1,0 +1,51 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@2 = private unnamed_addr constant [6 x i8] c"tf=0:\00", align 1
+@3 = private unnamed_addr constant [6 x i8] c"False\00", align 1
+@4 = private unnamed_addr constant [5 x i8] c"True\00", align 1
+@5 = private unnamed_addr constant [9 x i8] c"%s%s%s%s\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@8 = private unnamed_addr constant [6 x i8] c"tf=1:\00", align 1
+@9 = private unnamed_addr constant [6 x i8] c"False\00", align 1
+@10 = private unnamed_addr constant [5 x i8] c"True\00", align 1
+@11 = private unnamed_addr constant [9 x i8] c"%s%s%s%s\00", align 1
+
+define void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %i) {
+.entry:
+  %0 = load i32, i32* %i, align 4
+  %1 = icmp eq i32 %0, 0
+  store i1 %1, i1* %tf, align 1
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %call_arg_value1 = alloca i32, align 4
+  %call_arg_value = alloca i32, align 4
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  %tf = alloca i1, align 1
+  store i32 0, i32* %call_arg_value, align 4
+  call void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %call_arg_value)
+  %2 = load i1, i1* %tf, align 1
+  %3 = icmp eq i1 %2, false
+  %4 = select i1 %3, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([6 x i8], [6 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i8* %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  store i32 1, i32* %call_arg_value1, align 4
+  call void @__module_overload_assignment_m_logical_gets_integer(i1* %tf, i32* %call_arg_value1)
+  %5 = load i1, i1* %tf, align 1
+  %6 = icmp eq i1 %5, false
+  %7 = select i1 %6, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([6 x i8], [6 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i8* %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)
+
+declare void @_lfortran_printf(i8*, ...)

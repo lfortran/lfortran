@@ -1,0 +1,13 @@
+{
+    "basename": "asr-private2-d3a4771",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/private2.f90",
+    "infile_hash": "34984962bf015cefb96abba7000799bbabd4618eb80e4484fb5ca4bd",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-private2-d3a4771.stderr",
+    "stderr_hash": "4c2f89bda14c9decfc88e5a2793f7faa82c2dfc93b0264d7eeb2f1ff",
+    "returncode": 2
+}

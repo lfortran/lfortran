@@ -1,0 +1,104 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            real_dp:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            v:
+                                (Variable
+                                    2
+                                    v
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            zero:
+                                (Variable
+                                    2
+                                    zero
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    real_dp
+                    []
+                    [(=
+                        (Var 2 zero)
+                        (RealConstant
+                            0.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 v)
+                        (Cast
+                            (RealConstant
+                                1.050000
+                                (Real 4 [])
+                            )
+                            RealToReal
+                            (Real 8 [])
+                            (RealConstant
+                                1.050000
+                                (Real 8 [])
+                            )
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (RealConstant
+                            1.050000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)
+                        (Var 2 v)
+                        (Var 2 zero)]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

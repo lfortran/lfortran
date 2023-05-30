@@ -1,0 +1,132 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            implicit_program_lfortran:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            j:
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            s:
+                                (Variable
+                                    2
+                                    s
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            u:
+                                (Variable
+                                    2
+                                    u
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 100 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    implicit_program_lfortran
+                    []
+                    [(=
+                        (Var 2 s)
+                        (RealConstant
+                            0.000000
+                            (Real 4 [])
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 j)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 100 (Integer 4 []))
+                        ())
+                        [(=
+                            (Var 2 s)
+                            (RealBinOp
+                                (Var 2 s)
+                                Add
+                                (ArrayItem
+                                    (Var 2 u)
+                                    [(()
+                                    (Var 2 j)
+                                    ())]
+                                    (Real 4 [])
+                                    ColMajor
+                                    ()
+                                )
+                                (Real 4 [])
+                                ()
+                            )
+                            ()
+                        )
+                        (If
+                            (RealCompare
+                                (Var 2 s)
+                                GtE
+                                (Cast
+                                    (IntegerConstant 1000000 (Integer 4 []))
+                                    IntegerToReal
+                                    (Real 4 [])
+                                    (RealConstant
+                                        1000000.000000
+                                        (Real 4 [])
+                                    )
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            [(GoTo
+                                2
+                                2
+                            )]
+                            []
+                        )
+                        (GoToTarget
+                            1
+                            1
+                        )]
+                    )
+                    (Stop
+                        ()
+                    )
+                    (GoToTarget
+                        2
+                        2
+                    )]
+                )
+        })
+    []
+)

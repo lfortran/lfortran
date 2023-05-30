@@ -1,0 +1,5 @@
+semantic error: Cannot assign to an intent(in) variable `y`
+ --> tests/errors/intent1.f90:9:5
+  |
+9 |     y = 99  
+  |     ^ 

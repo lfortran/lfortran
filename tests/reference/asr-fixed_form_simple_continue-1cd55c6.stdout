@@ -1,0 +1,18 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            implicit_program_lfortran:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    implicit_program_lfortran
+                    []
+                    []
+                )
+        })
+    []
+)
