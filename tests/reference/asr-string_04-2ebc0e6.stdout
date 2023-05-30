@@ -2,6 +2,8 @@
     (SymbolTable
         1
         {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
             string_04:
                 (Program
                     (SymbolTable
@@ -18,6 +20,32 @@
                                     Allocatable
                                     (Character 1 1 () [(()
                                     ())])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            len:
+                                (ExternalSymbol
+                                    2
+                                    len
+                                    4 len
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    len
+                                    Private
+                                ),
+                            str:
+                                (Variable
+                                    2
+                                    str
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Character 1 -2 () [])
                                     ()
                                     Source
                                     Public
@@ -230,8 +258,58 @@
                         ()
                         ()
                     )
+                    (Allocate
+                        [((Var 2 str)
+                        [])]
+                        ()
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 str)
+                        (StringConstant
+                            "abcd"
+                            (Character 1 4 () [])
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (FunctionCall
+                                2 len
+                                ()
+                                [((StringSection
+                                    (Var 2 str)
+                                    (IntegerBinOp
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    ()
+                                    (IntegerConstant 1 (Integer 4 []))
+                                    (Character 1 -1 () [])
+                                    ()
+                                ))
+                                (())]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 3 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (ImplicitDeallocate
                         [(Var 2 greetings)
+                        (Var 2 str)
                         (Var 2 user_data)]
                     )]
                 )

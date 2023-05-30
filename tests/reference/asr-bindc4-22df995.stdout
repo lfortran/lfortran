@@ -2,11 +2,21 @@
     (SymbolTable
         1
         {
-            bindc2:
+            bindc4:
                 (Program
                     (SymbolTable
                         2
                         {
+                            c_associated:
+                                (ExternalSymbol
+                                    2
+                                    c_associated
+                                    4 c_associated
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_associated
+                                    Public
+                                ),
                             c_f_pointer:
                                 (ExternalSymbol
                                     2
@@ -143,7 +153,7 @@
                                     .false.
                                 )
                         })
-                    bindc2
+                    bindc4
                     [iso_c_binding]
                     [(=
                         (ArrayItem
@@ -415,6 +425,39 @@
                                 ()
                             )]
                         )]
+                    )
+                    (If
+                        (PointerAssociated
+                            (Var 2 queries)
+                            (PointerToCPtr
+                                (GetPointer
+                                    (ArrayItem
+                                        (Var 2 x)
+                                        [(()
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        ())
+                                        (()
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        ())]
+                                        (Integer 2 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    (Pointer
+                                        (Integer 2 [])
+                                    )
+                                    ()
+                                )
+                                (CPtr)
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 ),
             iso_c_binding:
