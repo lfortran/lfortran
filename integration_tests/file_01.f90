@@ -6,6 +6,7 @@ program fileops
     open(j, file="../file_01_data.txt")
     read(j, *) i
     read(j, *) c
+    rewind(j)
     close(j)
 
 end program fileops
