@@ -437,7 +437,7 @@ jobs:
         shell: bash -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm llvmImplicit
 
   gfortran:
     name: Test integration_tests with GFortran
