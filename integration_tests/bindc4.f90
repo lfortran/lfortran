@@ -1,5 +1,5 @@
-program bindc2
-use iso_c_binding, only: c_loc, c_ptr, c_f_pointer
+program bindc4
+use iso_c_binding, only: c_associated, c_loc, c_ptr, c_f_pointer
 type(c_ptr) :: queries
 integer :: i, j
 integer(2), target :: xv(3, 4)
@@ -36,4 +36,6 @@ do i = lbound(x, 1), ubound(x, 1)
         print *, i, j, c_loc(x(i, j))
     end do
 end do
+
+if (c_associated(queries, c_loc(x(0, 0)))) error stop
 end program

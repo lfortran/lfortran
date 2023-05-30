@@ -3,6 +3,7 @@ implicit none
 
 character(len = 40), allocatable :: user_data(:)
 character, allocatable :: greetings(:)
+character(len=:), allocatable :: str
 
 allocate(user_data(3))
 user_data(1) = 'Mr. '
@@ -17,5 +18,9 @@ greetings(5) = 'o'
 
 print *, 'Here is ', user_data(1), user_data(2), user_data(3)
 print *, greetings
+
+allocate(character(len=8)::str)
+str = 'abcd'
+if (len(str(2:)) /= 3) error stop
 
 end program
