@@ -1,0 +1,13 @@
+{
+    "basename": "c-program3-32749e4",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/program3.f90",
+    "infile_hash": "f5e4a3f2a2a6f406171d0aa3895b5d7342c4d87b73ffede073827f34",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "c-program3-32749e4.stdout",
+    "stdout_hash": "5e38f5002a781d17e8e902397774147623f9fa81298b1a18ce692456",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -1,0 +1,708 @@
+(TranslationUnit
+    [(Program
+        data1
+        ()
+        []
+        []
+        [(DerivedType
+            person
+            []
+            ()
+            []
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(age
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )
+            (Declaration
+                (AttrType
+                    TypeCharacter
+                    [(()
+                    20
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
+                []
+                [(fullname
+                []
+                []
+                ()
+                None
+                ())]
+                ()
+            )]
+            []
+        )
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                10
+                Value)]
+                ()
+                ()
+                None
+            )
+            []
+            [(myname
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            [(AttrDimension
+                [(0
+                9
+                DimensionExpr)]
+            )]
+            [(miles
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
+                ()
+                None
+            )
+            [(AttrDimension
+                [(1
+                100
+                DimensionExpr)
+                (1
+                100
+                DimensionExpr)]
+            )]
+            [(skew
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeType
+                []
+                ()
+                person
+                None
+            )
+            []
+            [(yourname
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeReal
+                [(()
+                8
+                Value)]
+                ()
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrParameter
+            )]
+            [(sin3
+            []
+            []
+            (FuncCallOrArray
+                sin
+                []
+                [(()
+                (Real "3.d0")
+                ()
+                0)]
+                []
+                []
+            )
+            Equal
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeReal
+                [(()
+                8
+                Value)]
+                ()
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrParameter
+            )]
+            [(cos3
+            []
+            []
+            (FuncCallOrArray
+                cos
+                []
+                [(()
+                (Real "3.d0")
+                ()
+                0)]
+                []
+                []
+            )
+            Equal
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeReal
+                [(()
+                8
+                Value)]
+                ()
+                ()
+                None
+            )
+            []
+            [(s
+            [(1
+            10
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(iarx
+            [(1
+            3
+            DimensionExpr)
+            (1
+            1
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (iary
+            [(1
+            3
+            DimensionExpr)
+            (1
+            1
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )]
+        [(DataStmt
+            0
+            [(DataStmtSet
+                [myname]
+                [(String
+                    "xyz"
+                )]
+            )
+            (DataStmtSet
+                [miles]
+                [0
+                0
+                0
+                0
+                0
+                0
+                0
+                0
+                0
+                0]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [age [(yourname
+                [])]
+                fullname [(yourname
+                [])]]
+                [35
+                (String
+                    "abc"
+                )]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [(DataImpliedDo
+                    [(DataImpliedDo
+                        [(FuncCallOrArray
+                            skew
+                            []
+                            [(()
+                            k
+                            ()
+                            0)
+                            (()
+                            j
+                            ()
+                            0)]
+                            []
+                            []
+                        )]
+                        ()
+                        j
+                        1
+                        k
+                        ()
+                    )]
+                    (AttrType
+                        TypeInteger
+                        [(()
+                        4
+                        Value)]
+                        ()
+                        ()
+                        None
+                    )
+                    k
+                    1
+                    10
+                    ()
+                )]
+                [(Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [(DataImpliedDo
+                    [(DataImpliedDo
+                        [(FuncCallOrArray
+                            skew
+                            []
+                            [(()
+                            k
+                            ()
+                            0)
+                            (()
+                            j
+                            ()
+                            0)]
+                            []
+                            []
+                        )]
+                        ()
+                        j
+                        1
+                        k
+                        k
+                    )]
+                    (AttrType
+                        TypeInteger
+                        [(()
+                        4
+                        Value)]
+                        ()
+                        ()
+                        None
+                    )
+                    k
+                    1
+                    100
+                    2
+                )]
+                [(Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")
+                (Real "0.0")]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [(DataImpliedDo
+                    [(DataImpliedDo
+                        [(FuncCallOrArray
+                            skew
+                            []
+                            [(()
+                            k
+                            ()
+                            0)
+                            (()
+                            j
+                            ()
+                            0)]
+                            []
+                            []
+                        )]
+                        ()
+                        j
+                        (+ k 1)
+                        10
+                        ()
+                    )]
+                    ()
+                    k
+                    1
+                    3
+                    ()
+                )]
+                [(Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [(DataImpliedDo
+                    [(DataImpliedDo
+                        [(FuncCallOrArray
+                            skew
+                            []
+                            [(()
+                            k
+                            ()
+                            0)
+                            (()
+                            j
+                            ()
+                            0)]
+                            []
+                            []
+                        )]
+                        ()
+                        j
+                        (+ k 1)
+                        10
+                        k
+                    )]
+                    ()
+                    k
+                    1
+                    3
+                    1
+                )]
+                [(Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")
+                (Real "1.0")]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [s]
+                [(Real "1.d0")
+                (u- (Real "1.d0"))
+                (Real "0.d0")
+                (Real "0.d0")
+                (Real "0.d0")
+                (u- (Real "1.d0"))
+                sin3
+                cos3
+                (Real "0.d0")
+                (u- (Real "1.d0"))]
+            )]
+            ()
+        )
+        (Print
+            0
+            ()
+            [(String
+                "Your name is: "
+            )
+            fullname [(yourname
+            [])]]
+            ()
+        )
+        (Print
+            0
+            ()
+            [(String
+                "Your age is: "
+            )
+            age [(yourname
+            [])]]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [(DataImpliedDo
+                    [(FuncCallOrArray
+                        iarx
+                        []
+                        [(()
+                        i
+                        ()
+                        0)
+                        (()
+                        1
+                        ()
+                        0)]
+                        []
+                        []
+                    )
+                    (FuncCallOrArray
+                        iary
+                        []
+                        [(()
+                        i
+                        ()
+                        0)
+                        (()
+                        1
+                        ()
+                        0)]
+                        []
+                        []
+                    )]
+                    ()
+                    i
+                    1
+                    3
+                    ()
+                )]
+                [1
+                9
+                1950
+                1350
+                4350
+                4]
+            )]
+            ()
+        )
+        (Print
+            0
+            ()
+            [(String
+                "My name is: "
+            )
+            myname]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [(DataImpliedDo
+                    [(FuncCallOrArray
+                        iary
+                        []
+                        [(()
+                        i
+                        ()
+                        0)
+                        (()
+                        1
+                        ()
+                        0)]
+                        []
+                        []
+                    )]
+                    ()
+                    i
+                    1
+                    3
+                    ()
+                )]
+                [1
+                9
+                1950]
+            )]
+            ()
+        )]
+        []
+    )]
+)

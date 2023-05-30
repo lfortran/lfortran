@@ -26,14 +26,16 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table,
         CompilerOptions &compiler_options,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping);
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping);
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash);
 
 void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &compiler_options) {
     SymbolTable *tu_symtab = tu.m_global_scope;
@@ -74,9 +76,10 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     CompilerOptions &compiler_options)
 {
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
+    std::map<uint64_t, ASR::symbol_t*> common_variables_hash;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
-        compiler_options, implicit_mapping);
+        compiler_options, implicit_mapping, common_variables_hash);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -90,7 +93,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
 #endif
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
-            implicit_mapping);
+            implicit_mapping, common_variables_hash);
         if (res.ok) {
             tu = res.result;
         } else {

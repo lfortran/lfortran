@@ -46,6 +46,7 @@
 #include <libasr/pass/subroutine_from_function.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/nested_vars.h>
+#include <libasr/pass/print_struct_type.h>
 #include <libasr/asr_verify.h>
 
 #include <map>
@@ -92,7 +93,8 @@ namespace LCompilers {
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
             {"init_expr", &pass_replace_init_expr},
             {"nested_vars", &pass_nested_vars},
-            {"where", &pass_replace_where}
+            {"where", &pass_replace_where},
+            {"print_struct_type", &pass_replace_print_struct_type}
         };
 
         bool is_fast;
@@ -192,16 +194,17 @@ namespace LCompilers {
                 "nested_vars",
                 "global_stmts",
                 "init_expr",
-                "class_constructor",
                 "implied_do_loops",
+                "class_constructor",
                 "pass_list_expr",
-                "arr_slice",
+                // "arr_slice", TODO: Remove ``arr_slice.cpp`` completely
                 "subroutine_from_function",
                 "where",
                 "array_op",
                 "intrinsic_function",
                 "array_op",
                 "pass_array_by_data",
+                "print_struct_type",
                 "print_arr",
                 "print_list_tuple",
                 "array_dim_intrinsics_update",
@@ -216,14 +219,15 @@ namespace LCompilers {
             _with_optimization_passes = {
                 "global_stmts",
                 "init_expr",
-                "class_constructor",
                 "implied_do_loops",
+                "class_constructor",
                 "pass_array_by_data",
                 "arr_slice",
                 "subroutine_from_function",
                 "array_op",
                 "intrinsic_function",
                 "array_op",
+                "print_struct_type",
                 "print_arr",
                 "print_list_tuple",
                 "loop_vectorise",

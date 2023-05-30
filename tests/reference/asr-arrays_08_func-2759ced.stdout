@@ -1,0 +1,414 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            arrays_08_func:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            copy_from_to:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    3
+                                                    b
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    copy_from_to
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 a)
+                                    (Var 3 b)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 3 i)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (ArraySize
+                                            (Var 3 a)
+                                            ()
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ())
+                                        [(=
+                                            (ArrayItem
+                                                (Var 3 b)
+                                                [(()
+                                                (Var 3 i)
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            )
+                                            (ArrayItem
+                                                (Var 3 a)
+                                                [(()
+                                                (Var 3 i)
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            r:
+                                (Variable
+                                    2
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            verify:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            a:
+                                                (Variable
+                                                    4
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    4
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            r:
+                                                (Variable
+                                                    4
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    verify
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])
+                                        (Integer 4 [(()
+                                        ())])]
+                                        (Logical 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 a)
+                                    (Var 4 b)]
+                                    [(=
+                                        (Var 4 r)
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4 [])
+                                        )
+                                        ()
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 4 i)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (ArraySize
+                                            (Var 4 a)
+                                            ()
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ())
+                                        [(=
+                                            (Var 4 r)
+                                            (LogicalBinOp
+                                                (Var 4 r)
+                                                And
+                                                (IntegerCompare
+                                                    (ArrayItem
+                                                        (Var 4 a)
+                                                        [(()
+                                                        (Var 4 i)
+                                                        ())]
+                                                        (Integer 4 [])
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    Eq
+                                                    (ArrayItem
+                                                        (Var 4 b)
+                                                        [(()
+                                                        (Var 4 i)
+                                                        ())]
+                                                        (Integer 4 [])
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    (Logical 4 [])
+                                                    ()
+                                                )
+                                                (Logical 4 [])
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                    )]
+                                    (Var 4 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    arrays_08_func
+                    []
+                    [(DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4 []))
+                        (ArraySize
+                            (Var 2 x)
+                            ()
+                            (Integer 4 [])
+                            (IntegerConstant 10 (Integer 4 []))
+                        )
+                        ())
+                        [(=
+                            (ArrayItem
+                                (Var 2 x)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Integer 4 [])
+                                ColMajor
+                                ()
+                            )
+                            (Var 2 i)
+                            ()
+                        )]
+                    )
+                    (SubroutineCall
+                        2 copy_from_to
+                        ()
+                        [((Var 2 x))
+                        ((Var 2 y))]
+                        ()
+                    )
+                    (=
+                        (Var 2 r)
+                        (FunctionCall
+                            2 verify
+                            ()
+                            [((Var 2 x))
+                            ((Var 2 y))]
+                            (Logical 4 [])
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 r)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (LogicalNot
+                            (Var 2 r)
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

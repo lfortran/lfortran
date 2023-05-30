@@ -1,0 +1,228 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+@1 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+@2 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+@3 = private unnamed_addr constant [12 x i8] c"ERROR STOP\0A\00", align 1
+
+define float @_lcompilers_abs_f32(float* %x) {
+.entry:
+  %_lcompilers_abs_f32 = alloca float, align 4
+  %0 = load float, float* %x, align 4
+  %1 = fcmp uge float %0, 0.000000e+00
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %2 = load float, float* %x, align 4
+  store float %2, float* %_lcompilers_abs_f32, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %3 = load float, float* %x, align 4
+  %4 = fsub float 0.000000e+00, %3
+  store float %4, float* %_lcompilers_abs_f32, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  %5 = load float, float* %_lcompilers_abs_f32, align 4
+  ret float %5
+}
+
+define double @_lcompilers_abs_f64(double* %x) {
+.entry:
+  %_lcompilers_abs_f64 = alloca double, align 8
+  %0 = load double, double* %x, align 8
+  %1 = fcmp uge double %0, 0.000000e+00
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %2 = load double, double* %x, align 8
+  store double %2, double* %_lcompilers_abs_f64, align 8
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %3 = load double, double* %x, align 8
+  %4 = fsub double 0.000000e+00, %3
+  store double %4, double* %_lcompilers_abs_f64, align 8
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  %5 = load double, double* %_lcompilers_abs_f64, align 8
+  ret double %5
+}
+
+define float @_lcompilers_cos_f32(float* %x) {
+.entry:
+  %_lcompilers_cos_f32 = alloca float, align 4
+  %0 = load float, float* %x, align 4
+  %1 = call float @_lfortran_scos(float %0)
+  store float %1, float* %_lcompilers_cos_f32, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  %2 = load float, float* %_lcompilers_cos_f32, align 4
+  ret float %2
+}
+
+declare float @_lfortran_scos(float)
+
+define double @_lcompilers_cos_f64(double* %x) {
+.entry:
+  %_lcompilers_cos_f64 = alloca double, align 8
+  %0 = load double, double* %x, align 8
+  %1 = call double @_lfortran_dcos(double %0)
+  store double %1, double* %_lcompilers_cos_f64, align 8
+  br label %return
+
+return:                                           ; preds = %.entry
+  %2 = load double, double* %_lcompilers_cos_f64, align 8
+  ret double %2
+}
+
+declare double @_lfortran_dcos(double)
+
+define double @__module_lfortran_intrinsic_math_dcos(double* %x) {
+.entry:
+  %r = alloca double, align 8
+  %0 = load double, double* %x, align 8
+  %1 = call double @_lfortran_dcos(double %0)
+  store double %1, double* %r, align 8
+  br label %return
+
+return:                                           ; preds = %.entry
+  %2 = load double, double* %r, align 8
+  ret double %2
+}
+
+define double @__module_lfortran_intrinsic_math2_dabs(double* %x) {
+.entry:
+  %r = alloca double, align 8
+  %0 = load double, double* %x, align 8
+  %1 = fcmp uge double %0, 0.000000e+00
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %2 = load double, double* %x, align 8
+  store double %2, double* %r, align 8
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %3 = load double, double* %x, align 8
+  %4 = fsub double 0.000000e+00, %3
+  store double %4, double* %r, align 8
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  %5 = load double, double* %r, align 8
+  ret double %5
+}
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %call_arg_value11 = alloca double, align 8
+  %call_arg_value7 = alloca float, align 4
+  %call_arg_value6 = alloca float, align 4
+  %call_arg_value5 = alloca double, align 8
+  %call_arg_value1 = alloca double, align 8
+  %call_arg_value = alloca float, align 4
+  call void @_lpython_set_argv(i32 %0, i8** %1)
+  %a = alloca double, align 8
+  %r1 = alloca double, align 8
+  %r2 = alloca double, align 8
+  %x = alloca float, align 4
+  store double 4.200000e+00, double* %a, align 8
+  store float 0xBFEFE8D5A0000000, float* %x, align 4
+  %2 = load float, float* %x, align 4
+  %3 = fadd float %2, 0x3FEFE8D5A0000000
+  store float %3, float* %call_arg_value, align 4
+  %4 = call float @_lcompilers_abs_f32(float* %call_arg_value)
+  %5 = fcmp ugt float %4, 0x3E7AD7F2A0000000
+  br i1 %5, label %then, label %else
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %6 = call double @_lcompilers_cos_f64(double* %a)
+  %7 = fadd double %6, 0x3FDF606EEB1A3FC7
+  store double %7, double* %call_arg_value1, align 8
+  %8 = call double @_lcompilers_abs_f64(double* %call_arg_value1)
+  %9 = fcmp ugt double %8, 0x3E7AD7F29ABCAF48
+  br i1 %9, label %then2, label %else3
+
+then2:                                            ; preds = %ifcont
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @1, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont4
+
+else3:                                            ; preds = %ifcont
+  br label %ifcont4
+
+ifcont4:                                          ; preds = %else3, %then2
+  %10 = load double, double* %a, align 8
+  %11 = call double @_lcompilers_cos_f64(double* %a)
+  %12 = fadd double %10, %11
+  store double %12, double* %call_arg_value5, align 8
+  %13 = call double @_lcompilers_cos_f64(double* %call_arg_value5)
+  %14 = fptrunc double %13 to float
+  %15 = fadd float 0x3FB21BD540000000, %14
+  store float %15, float* %call_arg_value6, align 4
+  %16 = call float @_lcompilers_cos_f32(float* %call_arg_value6)
+  %17 = fsub float %16, 0x3FE6ECC720000000
+  store float %17, float* %call_arg_value7, align 4
+  %18 = call float @_lcompilers_abs_f32(float* %call_arg_value7)
+  %19 = fcmp ugt float %18, 0x3E7AD7F2A0000000
+  br i1 %19, label %then8, label %else9
+
+then8:                                            ; preds = %ifcont4
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont10
+
+else9:                                            ; preds = %ifcont4
+  br label %ifcont10
+
+ifcont10:                                         ; preds = %else9, %then8
+  %20 = call double @__module_lfortran_intrinsic_math_dcos(double* %a)
+  store double %20, double* %r1, align 8
+  store double 0xBFDF606EEC8AC71E, double* %r2, align 8
+  %21 = load double, double* %r1, align 8
+  %22 = load double, double* %r2, align 8
+  %23 = fsub double %21, %22
+  store double %23, double* %call_arg_value11, align 8
+  %24 = call double @__module_lfortran_intrinsic_math2_dabs(double* %call_arg_value11)
+  %25 = fcmp ugt double %24, 1.000000e-15
+  br i1 %25, label %then12, label %else13
+
+then12:                                           ; preds = %ifcont10
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([12 x i8], [12 x i8]* @3, i32 0, i32 0))
+  call void @exit(i32 1)
+  br label %ifcont14
+
+else13:                                           ; preds = %ifcont10
+  br label %ifcont14
+
+ifcont14:                                         ; preds = %else13, %then12
+  ret i32 0
+}
+
+declare void @_lpython_set_argv(i32, i8**)
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @exit(i32)

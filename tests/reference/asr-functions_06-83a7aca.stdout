@@ -1,0 +1,573 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            functions_06:
+                (Program
+                    (SymbolTable
+                        33
+                        {
+                            int_return:
+                                (ExternalSymbol
+                                    33
+                                    int_return
+                                    2 int_return
+                                    functions_06_m
+                                    []
+                                    int_return
+                                    Public
+                                ),
+                            len:
+                                (ExternalSymbol
+                                    33
+                                    len
+                                    6 len
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    len
+                                    Private
+                                ),
+                            real_return:
+                                (ExternalSymbol
+                                    33
+                                    real_return
+                                    2 real_return
+                                    functions_06_m
+                                    []
+                                    real_return
+                                    Public
+                                ),
+                            string:
+                                (Variable
+                                    33
+                                    string
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "  abc"
+                                        (Character 1 5 () [])
+                                    )
+                                    (StringConstant
+                                        "  abc"
+                                        (Character 1 5 () [])
+                                    )
+                                    Save
+                                    (Character 1 5 () [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            trim_wrapper:
+                                (ExternalSymbol
+                                    33
+                                    trim_wrapper
+                                    2 trim_wrapper
+                                    functions_06_m
+                                    []
+                                    trim_wrapper
+                                    Public
+                                )
+                        })
+                    functions_06
+                    [functions_06_m]
+                    [(Print
+                        ()
+                        [(FunctionCall
+                            33 trim_wrapper
+                            ()
+                            [((Var 33 string))]
+                            (Character 1 -3 (FunctionCall
+                                33 len
+                                ()
+                                [((Var 33 string))
+                                (())]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            ) [])
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            33 int_return
+                            ()
+                            [((Var 33 string))]
+                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                            (FunctionCall
+                                33 len
+                                ()
+                                [((Var 33 string))
+                                (())]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            ))])
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            33 real_return
+                            ()
+                            [((Var 33 string))]
+                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                            (FunctionCall
+                                33 len
+                                ()
+                                [((Var 33 string))
+                                (())]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            ))])
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                ),
+            functions_06_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            int_return:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            i:
+                                                (Variable
+                                                    4
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            len:
+                                                (ExternalSymbol
+                                                    4
+                                                    len
+                                                    6 len
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    len
+                                                    Private
+                                                ),
+                                            r:
+                                                (Variable
+                                                    4
+                                                    r
+                                                    [s]
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                                    (FunctionCall
+                                                        4 len
+                                                        ()
+                                                        [((Var 4 s))
+                                                        (())]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ))])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            s:
+                                                (Variable
+                                                    4
+                                                    s
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    int_return
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (FunctionCall
+                                            4 len
+                                            ()
+                                            [((FunctionParam
+                                                0
+                                                (Character 1 -1 () [])
+                                                ()
+                                            ))
+                                            (())]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ))])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [len]
+                                    [(Var 4 s)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 4 i)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (FunctionCall
+                                            4 len
+                                            ()
+                                            [((Var 4 s))
+                                            (())]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        ())
+                                        [(=
+                                            (ArrayItem
+                                                (Var 4 r)
+                                                [(()
+                                                (Var 4 i)
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            )
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            ()
+                                        )]
+                                    )]
+                                    (Var 4 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            real_return:
+                                (Function
+                                    (SymbolTable
+                                        32
+                                        {
+                                            i:
+                                                (Variable
+                                                    32
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            len:
+                                                (ExternalSymbol
+                                                    32
+                                                    len
+                                                    6 len
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    len
+                                                    Private
+                                                ),
+                                            r:
+                                                (Variable
+                                                    32
+                                                    r
+                                                    [s]
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                                    (FunctionCall
+                                                        32 len
+                                                        ()
+                                                        [((Var 32 s))
+                                                        (())]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ))])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            s:
+                                                (Variable
+                                                    32
+                                                    s
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    real_return
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (FunctionCall
+                                            32 len
+                                            ()
+                                            [((FunctionParam
+                                                0
+                                                (Character 1 -1 () [])
+                                                ()
+                                            ))
+                                            (())]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ))])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [len]
+                                    [(Var 32 s)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 32 i)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (FunctionCall
+                                            32 len
+                                            ()
+                                            [((Var 32 s))
+                                            (())]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        )
+                                        ())
+                                        [(=
+                                            (ArrayItem
+                                                (Var 32 r)
+                                                [(()
+                                                (Var 32 i)
+                                                ())]
+                                                (Real 4 [])
+                                                ColMajor
+                                                ()
+                                            )
+                                            (RealConstant
+                                                2.000000
+                                                (Real 4 [])
+                                            )
+                                            ()
+                                        )]
+                                    )]
+                                    (Var 32 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            trim_wrapper:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            len:
+                                                (ExternalSymbol
+                                                    3
+                                                    len
+                                                    6 len
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    len
+                                                    Private
+                                                ),
+                                            len_trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    len_trim
+                                                    35 len_trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    len_trim
+                                                    Private
+                                                ),
+                                            r:
+                                                (Variable
+                                                    3
+                                                    r
+                                                    [s]
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -3 (FunctionCall
+                                                        3 len
+                                                        ()
+                                                        [((Var 3 s))
+                                                        (())]
+                                                        (Integer 4 [])
+                                                        ()
+                                                        ()
+                                                    ) [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            s:
+                                                (Variable
+                                                    3
+                                                    s
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            trim:
+                                                (ExternalSymbol
+                                                    3
+                                                    trim
+                                                    35 trim
+                                                    lfortran_intrinsic_string
+                                                    []
+                                                    trim
+                                                    Private
+                                                )
+                                        })
+                                    trim_wrapper
+                                    (FunctionType
+                                        [(Character 1 -1 () [])]
+                                        (Character 1 -3 (FunctionCall
+                                            3 len
+                                            ()
+                                            [((FunctionParam
+                                                0
+                                                (Character 1 -1 () [])
+                                                ()
+                                            ))
+                                            (())]
+                                            (Integer 4 [])
+                                            ()
+                                            ()
+                                        ) [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [len
+                                    len_trim
+                                    trim]
+                                    [(Var 3 s)]
+                                    [(=
+                                        (Var 3 r)
+                                        (FunctionCall
+                                            3 trim
+                                            ()
+                                            [((Var 3 s))]
+                                            (Character 1 -3 (FunctionCall
+                                                3 len_trim
+                                                ()
+                                                [((Var 3 s))]
+                                                (Integer 4 [])
+                                                ()
+                                                ()
+                                            ) [])
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 3 r)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    functions_06_m
+                    [lfortran_intrinsic_builtin
+                    lfortran_intrinsic_string]
+                    .false.
+                    .false.
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string)
+        })
+    []
+)

@@ -1,0 +1,58 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            f:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            f1:
+                                (Variable
+                                    2
+                                    f1
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    f
+                    (FunctionType
+                        []
+                        (Integer 4 [])
+                        BindC
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (Var 2 f1)
+                        (IntegerConstant 5 (Integer 4 []))
+                        ()
+                    )]
+                    (Var 2 f1)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

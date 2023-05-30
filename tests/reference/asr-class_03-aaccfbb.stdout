@@ -1,0 +1,472 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            hr:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            employee:
+                                (StructType
+                                    (SymbolTable
+                                        4
+                                        {
+                                            department:
+                                                (Variable
+                                                    4
+                                                    department
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 20 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            hire_date:
+                                                (Variable
+                                                    4
+                                                    hire_date
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            person:
+                                                (Variable
+                                                    4
+                                                    person
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 person
+                                                        []
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    employee
+                                    [person]
+                                    [person
+                                    hire_date
+                                    department]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            person:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            birthyear:
+                                                (Variable
+                                                    3
+                                                    birthyear
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            first:
+                                                (Variable
+                                                    3
+                                                    first
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 20 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            last:
+                                                (Variable
+                                                    3
+                                                    last
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 20 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            sgender:
+                                                (Variable
+                                                    3
+                                                    sgender
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    person
+                                    []
+                                    [first
+                                    last
+                                    birthyear
+                                    sgender]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    ()
+                                )
+                        })
+                    hr
+                    []
+                    .false.
+                    .false.
+                ),
+            hr_code:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            1_employee_department:
+                                (ExternalSymbol
+                                    5
+                                    1_employee_department
+                                    4 department
+                                    employee
+                                    []
+                                    department
+                                    Public
+                                ),
+                            1_employee_hire_date:
+                                (ExternalSymbol
+                                    5
+                                    1_employee_hire_date
+                                    4 hire_date
+                                    employee
+                                    []
+                                    hire_date
+                                    Public
+                                ),
+                            1_employee_person:
+                                (ExternalSymbol
+                                    5
+                                    1_employee_person
+                                    4 person
+                                    employee
+                                    []
+                                    person
+                                    Public
+                                ),
+                            1_person_birthyear:
+                                (ExternalSymbol
+                                    5
+                                    1_person_birthyear
+                                    3 birthyear
+                                    person
+                                    []
+                                    birthyear
+                                    Public
+                                ),
+                            1_person_first:
+                                (ExternalSymbol
+                                    5
+                                    1_person_first
+                                    3 first
+                                    person
+                                    []
+                                    first
+                                    Public
+                                ),
+                            1_person_last:
+                                (ExternalSymbol
+                                    5
+                                    1_person_last
+                                    3 last
+                                    person
+                                    []
+                                    last
+                                    Public
+                                ),
+                            1_person_sgender:
+                                (ExternalSymbol
+                                    5
+                                    1_person_sgender
+                                    3 sgender
+                                    person
+                                    []
+                                    sgender
+                                    Public
+                                ),
+                            employee:
+                                (ExternalSymbol
+                                    5
+                                    employee
+                                    2 employee
+                                    hr
+                                    []
+                                    employee
+                                    Public
+                                ),
+                            jack:
+                                (Variable
+                                    5
+                                    jack
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        5 person
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            jill:
+                                (Variable
+                                    5
+                                    jill
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        5 employee
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            person:
+                                (ExternalSymbol
+                                    5
+                                    person
+                                    2 person
+                                    hr
+                                    []
+                                    person
+                                    Public
+                                )
+                        })
+                    hr_code
+                    [hr]
+                    [(=
+                        (Var 5 jack)
+                        (StructTypeConstructor
+                            5 person
+                            [((StringConstant
+                                "Jack"
+                                (Character 1 4 () [])
+                            ))
+                            ((StringConstant
+                                "Smith"
+                                (Character 1 5 () [])
+                            ))
+                            ((IntegerConstant 1984 (Integer 4 [])))
+                            ((StringConstant
+                                "M"
+                                (Character 1 1 () [])
+                            ))]
+                            (Struct
+                                5 person
+                                []
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 5 jill)
+                        (StructTypeConstructor
+                            5 employee
+                            [((StructTypeConstructor
+                                5 person
+                                [((StringConstant
+                                    "Jill"
+                                    (Character 1 4 () [])
+                                ))
+                                ((StringConstant
+                                    "Smith"
+                                    (Character 1 5 () [])
+                                ))
+                                ((IntegerConstant 1984 (Integer 4 [])))
+                                ((StringConstant
+                                    "F"
+                                    (Character 1 1 () [])
+                                ))]
+                                (Struct
+                                    5 person
+                                    []
+                                )
+                                ()
+                            ))
+                            ((IntegerConstant 2003 (Integer 4 [])))
+                            ((StringConstant
+                                "sales"
+                                (Character 1 5 () [])
+                            ))]
+                            (Struct
+                                5 employee
+                                []
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StructInstanceMember
+                            (Var 5 jack)
+                            5 1_person_first
+                            (Character 1 20 () [])
+                            ()
+                        )
+                        (StructInstanceMember
+                            (Var 5 jack)
+                            5 1_person_last
+                            (Character 1 20 () [])
+                            ()
+                        )
+                        (StructInstanceMember
+                            (Var 5 jack)
+                            5 1_person_birthyear
+                            (Integer 4 [])
+                            ()
+                        )
+                        (StructInstanceMember
+                            (Var 5 jack)
+                            5 1_person_sgender
+                            (Character 1 1 () [])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StructInstanceMember
+                            (StructInstanceMember
+                                (Var 5 jill)
+                                5 1_employee_person
+                                (Struct
+                                    5 person
+                                    []
+                                )
+                                ()
+                            )
+                            5 1_person_first
+                            (Character 1 20 () [])
+                            ()
+                        )
+                        (StructInstanceMember
+                            (StructInstanceMember
+                                (Var 5 jill)
+                                5 1_employee_person
+                                (Struct
+                                    5 person
+                                    []
+                                )
+                                ()
+                            )
+                            5 1_person_last
+                            (Character 1 20 () [])
+                            ()
+                        )
+                        (StructInstanceMember
+                            (StructInstanceMember
+                                (Var 5 jill)
+                                5 1_employee_person
+                                (Struct
+                                    5 person
+                                    []
+                                )
+                                ()
+                            )
+                            5 1_person_birthyear
+                            (Integer 4 [])
+                            ()
+                        )
+                        (StructInstanceMember
+                            (StructInstanceMember
+                                (Var 5 jill)
+                                5 1_employee_person
+                                (Struct
+                                    5 person
+                                    []
+                                )
+                                ()
+                            )
+                            5 1_person_sgender
+                            (Character 1 1 () [])
+                            ()
+                        )
+                        (StructInstanceMember
+                            (Var 5 jill)
+                            5 1_employee_department
+                            (Character 1 20 () [])
+                            ()
+                        )
+                        (StructInstanceMember
+                            (Var 5 jill)
+                            5 1_employee_hire_date
+                            (Integer 4 [])
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

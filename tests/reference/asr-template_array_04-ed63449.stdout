@@ -1,0 +1,672 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        7
+                        {
+                            reverse:
+                                (ExternalSymbol
+                                    7
+                                    reverse
+                                    2 reverse
+                                    reverse_m
+                                    []
+                                    reverse
+                                    Public
+                                ),
+                            swap:
+                                (ExternalSymbol
+                                    7
+                                    swap
+                                    2 swap
+                                    reverse_m
+                                    []
+                                    swap
+                                    Public
+                                ),
+                            t:
+                                (ExternalSymbol
+                                    7
+                                    t
+                                    2 t
+                                    reverse_m
+                                    []
+                                    t
+                                    Public
+                                ),
+                            test_reverse:
+                                (ExternalSymbol
+                                    7
+                                    test_reverse
+                                    2 test_reverse
+                                    reverse_m
+                                    []
+                                    test_reverse
+                                    Public
+                                )
+                        })
+                    main
+                    [reverse_m]
+                    [(SubroutineCall
+                        7 test_reverse
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            reverse_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            __asr_generic_swap:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            tmp:
+                                                (Variable
+                                                    9
+                                                    tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    9
+                                                    x
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    9
+                                                    y
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    __asr_generic_swap
+                                    (FunctionType
+                                        [(Integer 4 [])
+                                        (Integer 4 [])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 9 x)
+                                    (Var 9 y)]
+                                    [(=
+                                        (Var 9 tmp)
+                                        (Var 9 x)
+                                        ()
+                                    )
+                                    (=
+                                        (Var 9 x)
+                                        (Var 9 y)
+                                        ()
+                                    )
+                                    (=
+                                        (Var 9 y)
+                                        (Var 9 tmp)
+                                        ()
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            ireverse:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            arr:
+                                                (Variable
+                                                    8
+                                                    arr
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [(()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    8
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    8
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ireverse
+                                    (FunctionType
+                                        [(Integer 4 [(()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [__asr_generic_swap]
+                                    [(Var 8 arr)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 8 i)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerBinOp
+                                            (ArraySize
+                                                (Var 8 arr)
+                                                ()
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            Div
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ())
+                                        [(=
+                                            (Var 8 j)
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (ArraySize
+                                                        (Var 8 arr)
+                                                        ()
+                                                        (Integer 4 [])
+                                                        ()
+                                                    )
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4 []))
+                                                    (Integer 4 [])
+                                                    ()
+                                                )
+                                                Sub
+                                                (Var 8 i)
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (SubroutineCall
+                                            2 __asr_generic_swap
+                                            ()
+                                            [((ArrayItem
+                                                (Var 8 arr)
+                                                [(()
+                                                (Var 8 i)
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            ))
+                                            ((ArrayItem
+                                                (Var 8 arr)
+                                                [(()
+                                                (Var 8 j)
+                                                ())]
+                                                (Integer 4 [])
+                                                ColMajor
+                                                ()
+                                            ))]
+                                            ()
+                                        )]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            reverse:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            arr:
+                                                (Variable
+                                                    5
+                                                    arr
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        [(()
+                                                        ())]
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    5
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    5
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    reverse
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            [(()
+                                            ())]
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
+                                    [swap]
+                                    [(Var 5 arr)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 5 i)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerBinOp
+                                            (ArraySize
+                                                (Var 5 arr)
+                                                ()
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            Div
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            (Integer 4 [])
+                                            ()
+                                        )
+                                        ())
+                                        [(=
+                                            (Var 5 j)
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (ArraySize
+                                                        (Var 5 arr)
+                                                        ()
+                                                        (Integer 4 [])
+                                                        ()
+                                                    )
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4 []))
+                                                    (Integer 4 [])
+                                                    ()
+                                                )
+                                                Sub
+                                                (Var 5 i)
+                                                (Integer 4 [])
+                                                ()
+                                            )
+                                            ()
+                                        )
+                                        (SubroutineCall
+                                            2 swap
+                                            ()
+                                            [((ArrayItem
+                                                (Var 5 arr)
+                                                [(()
+                                                (Var 5 i)
+                                                ())]
+                                                (TypeParameter
+                                                    t
+                                                    []
+                                                )
+                                                ColMajor
+                                                ()
+                                            ))
+                                            ((ArrayItem
+                                                (Var 5 arr)
+                                                [(()
+                                                (Var 5 j)
+                                                ())]
+                                                (TypeParameter
+                                                    t
+                                                    []
+                                                )
+                                                ColMajor
+                                                ()
+                                            ))]
+                                            ()
+                                        )]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            swap:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            tmp:
+                                                (Variable
+                                                    4
+                                                    tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        []
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        []
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    4
+                                                    y
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        []
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    swap
+                                    (FunctionType
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )
+                                        (TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        [(TypeParameter
+                                            t
+                                            []
+                                        )]
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 x)
+                                    (Var 4 y)]
+                                    [(=
+                                        (Var 4 tmp)
+                                        (Var 4 x)
+                                        ()
+                                    )
+                                    (=
+                                        (Var 4 x)
+                                        (Var 4 y)
+                                        ()
+                                    )
+                                    (=
+                                        (Var 4 y)
+                                        (Var 4 tmp)
+                                        ()
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            t:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    t
+                                    []
+                                    []
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            test_reverse:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            a:
+                                                (Variable
+                                                    6
+                                                    a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerConstant 5 (Integer 4 [])))])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    test_reverse
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [ireverse]
+                                    []
+                                    [(=
+                                        (Var 6 a)
+                                        (ArrayConstant
+                                            [(IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 3 (Integer 4 []))
+                                            (IntegerConstant 4 (Integer 4 []))
+                                            (IntegerConstant 5 (Integer 4 []))]
+                                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 5 (Integer 4 [])))])
+                                            ColMajor
+                                        )
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        2 ireverse
+                                        ()
+                                        [((Var 6 a))]
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 6 a)]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    reverse_m
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

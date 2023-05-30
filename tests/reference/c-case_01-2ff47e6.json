@@ -1,0 +1,13 @@
+{
+    "basename": "c-case_01-2ff47e6",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/../integration_tests/case_01.f90",
+    "infile_hash": "b0377013ea9328e6a8544ad056d49280c21a7b4c96cd9ee7670ddf0d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "c-case_01-2ff47e6.stdout",
+    "stdout_hash": "8619b528b4e606d8b6cecd667f5bbffe4a45663dabad435c339a9206",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

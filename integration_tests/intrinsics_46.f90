@@ -12,6 +12,7 @@ program test_ichar
     lj_1 = iachar('a', 8)
     li_2 = ichar('Z', kind=8)
     lj_2 = iachar('z', kind=8)
+    c_1 = char(100);
 
     if (i /= 32) error stop
     if (j /= 32) error stop
@@ -22,6 +23,7 @@ program test_ichar
 
     ! Run_time
     c = ichar(c_1)
-    if (c /= 98) error stop
+    if (c /= 100) error stop
+    if (char(c) /= 'd') error stop
 
 end program test_ichar

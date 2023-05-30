@@ -1,0 +1,167 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            access_vars:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            print_vars:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    3
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            print_vars:
+                                                (Variable
+                                                    3
+                                                    print_vars
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    print_vars
+                                    (FunctionType
+                                        [(Real 4 [])
+                                        (Real 4 [])]
+                                        (Integer 4 [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 a)
+                                    (Var 3 b)]
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "priv = "
+                                            (Character 1 7 () [])
+                                        )
+                                        (Var 3 a)]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "publ = "
+                                            (Character 1 7 () [])
+                                        )
+                                        (Var 3 b)]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 3 print_vars)
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        ()
+                                    )]
+                                    (Var 3 print_vars)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            priv:
+                                (Variable
+                                    2
+                                    priv
+                                    []
+                                    Local
+                                    (RealConstant
+                                        1.500000
+                                        (Real 4 [])
+                                    )
+                                    (RealConstant
+                                        1.500000
+                                        (Real 4 [])
+                                    )
+                                    Save
+                                    (Real 4 [])
+                                    ()
+                                    Source
+                                    Private
+                                    Required
+                                    .false.
+                                ),
+                            publ:
+                                (Variable
+                                    2
+                                    publ
+                                    []
+                                    Local
+                                    (RealConstant
+                                        2.500000
+                                        (Real 4 [])
+                                    )
+                                    (RealConstant
+                                        2.500000
+                                        (Real 4 [])
+                                    )
+                                    Save
+                                    (Real 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    access_vars
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

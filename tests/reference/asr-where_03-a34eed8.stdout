@@ -1,0 +1,582 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            
+                        })
+                    main
+                    []
+                    [(SubroutineCall
+                        1 where_03
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            where_03:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    where_03
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (Var 2 a)
+                        (ArrayConstant
+                            [(RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            (RealConstant
+                                2.000000
+                                (Real 4 [])
+                            )
+                            (RealConstant
+                                3.000000
+                                (Real 4 [])
+                            )
+                            (RealConstant
+                                4.000000
+                                (Real 4 [])
+                            )]
+                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4 [])))])
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 b)
+                        (ArrayConstant
+                            [(RealUnaryMinus
+                                (RealConstant
+                                    1.000000
+                                    (Real 4 [])
+                                )
+                                (Real 4 [])
+                                (RealConstant
+                                    -1.000000
+                                    (Real 4 [])
+                                )
+                            )
+                            (RealUnaryMinus
+                                (RealConstant
+                                    2.000000
+                                    (Real 4 [])
+                                )
+                                (Real 4 [])
+                                (RealConstant
+                                    -2.000000
+                                    (Real 4 [])
+                                )
+                            )
+                            (RealConstant
+                                5.000000
+                                (Real 4 [])
+                            )
+                            (RealConstant
+                                7.000000
+                                (Real 4 [])
+                            )]
+                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4 [])))])
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (Where
+                        (RealCompare
+                            (Var 2 a)
+                            Gt
+                            (Var 2 b)
+                            (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4 [])))])
+                            ()
+                        )
+                        [(=
+                            (Var 2 a)
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            ()
+                        )]
+                        []
+                    )
+                    (Where
+                        (RealCompare
+                            (Var 2 a)
+                            Eq
+                            (RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4 [])))])
+                            ()
+                        )
+                        [(=
+                            (Var 2 a)
+                            (RealConstant
+                                2.000000
+                                (Real 4 [])
+                            )
+                            ()
+                        )]
+                        [(Where
+                            (RealCompare
+                                (Var 2 a)
+                                Eq
+                                (RealConstant
+                                    2.000000
+                                    (Real 4 [])
+                                )
+                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4 [])))])
+                                ()
+                            )
+                            [(=
+                                (Var 2 b)
+                                (RealConstant
+                                    3.000000
+                                    (Real 4 [])
+                                )
+                                ()
+                            )]
+                            [(=
+                                (Var 2 a)
+                                (RealBinOp
+                                    (RealBinOp
+                                        (RealBinOp
+                                            (Var 2 b)
+                                            Mul
+                                            (RealConstant
+                                                2.000000
+                                                (Real 4 [])
+                                            )
+                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 4 (Integer 4 [])))])
+                                            ()
+                                        )
+                                        Div
+                                        (Var 2 a)
+                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4 [])))])
+                                        ()
+                                    )
+                                    Mul
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    ()
+                                )
+                                ()
+                            )]
+                        )]
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        ())]
+                                        (Real 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        ())]
+                                        (Real 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (IntegerConstant 3 (Integer 4 []))
+                                        ())]
+                                        (Real 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (IntegerConstant 4 (Integer 4 []))
+                                        ())]
+                                        (Real 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.500000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        ())]
+                                        (Real 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealUnaryMinus
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4 [])
+                                        )
+                                        (Real 4 [])
+                                        (RealConstant
+                                            -1.000000
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        ())]
+                                        (Real 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealUnaryMinus
+                                        (RealConstant
+                                            2.000000
+                                            (Real 4 [])
+                                        )
+                                        (Real 4 [])
+                                        (RealConstant
+                                            -2.000000
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (IntegerConstant 3 (Integer 4 []))
+                                        ())]
+                                        (Real 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        5.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 b)
+                                        [(()
+                                        (IntegerConstant 4 (Integer 4 []))
+                                        ())]
+                                        (Real 4 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        7.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        ()
+                        [(Var 2 a)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 b)]
+                        ()
+                        ()
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

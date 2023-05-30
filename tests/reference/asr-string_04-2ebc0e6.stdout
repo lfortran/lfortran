@@ -1,0 +1,318 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            string_04:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            greetings:
+                                (Variable
+                                    2
+                                    greetings
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Character 1 1 () [(()
+                                    ())])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            len:
+                                (ExternalSymbol
+                                    2
+                                    len
+                                    4 len
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    len
+                                    Private
+                                ),
+                            str:
+                                (Variable
+                                    2
+                                    str
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Character 1 -2 () [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            user_data:
+                                (Variable
+                                    2
+                                    user_data
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Allocatable
+                                    (Character 1 40 () [(()
+                                    ())])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    string_04
+                    []
+                    [(Allocate
+                        [((Var 2 user_data)
+                        [((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4 [])))])]
+                        ()
+                        ()
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 user_data)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Character 1 40 () [])
+                            ColMajor
+                            ()
+                        )
+                        (StringConstant
+                            "Mr. "
+                            (Character 1 4 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 user_data)
+                            [(()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())]
+                            (Character 1 40 () [])
+                            ColMajor
+                            ()
+                        )
+                        (StringConstant
+                            "Rowan "
+                            (Character 1 6 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 user_data)
+                            [(()
+                            (IntegerConstant 3 (Integer 4 []))
+                            ())]
+                            (Character 1 40 () [])
+                            ColMajor
+                            ()
+                        )
+                        (StringConstant
+                            "Atkinson"
+                            (Character 1 8 () [])
+                        )
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 greetings)
+                        [((IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 5 (Integer 4 [])))])]
+                        ()
+                        ()
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 greetings)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Character 1 1 () [])
+                            ColMajor
+                            ()
+                        )
+                        (StringConstant
+                            "h"
+                            (Character 1 1 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 greetings)
+                            [(()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())]
+                            (Character 1 1 () [])
+                            ColMajor
+                            ()
+                        )
+                        (StringConstant
+                            "e"
+                            (Character 1 1 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 greetings)
+                            [(()
+                            (IntegerConstant 3 (Integer 4 []))
+                            ())]
+                            (Character 1 1 () [])
+                            ColMajor
+                            ()
+                        )
+                        (StringConstant
+                            "l"
+                            (Character 1 1 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 greetings)
+                            [(()
+                            (IntegerConstant 4 (Integer 4 []))
+                            ())]
+                            (Character 1 1 () [])
+                            ColMajor
+                            ()
+                        )
+                        (StringConstant
+                            "l"
+                            (Character 1 1 () [])
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 greetings)
+                            [(()
+                            (IntegerConstant 5 (Integer 4 []))
+                            ())]
+                            (Character 1 1 () [])
+                            ColMajor
+                            ()
+                        )
+                        (StringConstant
+                            "o"
+                            (Character 1 1 () [])
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "Here is "
+                            (Character 1 8 () [])
+                        )
+                        (ArrayItem
+                            (Var 2 user_data)
+                            [(()
+                            (IntegerConstant 1 (Integer 4 []))
+                            ())]
+                            (Character 1 40 () [])
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (Var 2 user_data)
+                            [(()
+                            (IntegerConstant 2 (Integer 4 []))
+                            ())]
+                            (Character 1 40 () [])
+                            ColMajor
+                            ()
+                        )
+                        (ArrayItem
+                            (Var 2 user_data)
+                            [(()
+                            (IntegerConstant 3 (Integer 4 []))
+                            ())]
+                            (Character 1 40 () [])
+                            ColMajor
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 greetings)]
+                        ()
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 str)
+                        [])]
+                        ()
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 str)
+                        (StringConstant
+                            "abcd"
+                            (Character 1 4 () [])
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (FunctionCall
+                                2 len
+                                ()
+                                [((StringSection
+                                    (Var 2 str)
+                                    (IntegerBinOp
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        (Integer 4 [])
+                                        ()
+                                    )
+                                    ()
+                                    (IntegerConstant 1 (Integer 4 []))
+                                    (Character 1 -1 () [])
+                                    ()
+                                ))
+                                (())]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 3 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ImplicitDeallocate
+                        [(Var 2 greetings)
+                        (Var 2 str)
+                        (Var 2 user_data)]
+                    )]
+                )
+        })
+    []
+)

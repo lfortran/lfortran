@@ -1,0 +1,412 @@
+(TranslationUnit
+    [(Program
+        data_01
+        ()
+        []
+        []
+        [(Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(x
+            []
+            []
+            ()
+            None
+            ())
+            (td
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(y
+            []
+            []
+            ()
+            None
+            ())
+            (z
+            []
+            []
+            ()
+            None
+            ())
+            (c1
+            [(1
+            4
+            DimensionExpr)]
+            []
+            ()
+            None
+            ())
+            (bf1
+            []
+            []
+            ()
+            None
+            ())
+            (xx90
+            []
+            []
+            ()
+            None
+            ())
+            (xx95
+            []
+            []
+            ()
+            None
+            ())
+            (b
+            []
+            []
+            ()
+            None
+            ())
+            (p
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
+        [(DataStmt
+            0
+            [(DataStmtSet
+                [x
+                td
+                b]
+                [1
+                4
+                3]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [y
+                z]
+                [(Real "2.0")
+                (Real "3.0")]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [c1]
+                [(Real "0.0")
+                (Real "0.22")
+                (u- (Real "0.14"))
+                (u- (Real "0.21"))]
+            )]
+            ()
+        )
+        (DataStmt
+            0
+            [(DataStmtSet
+                [bf1]
+                [(Real "0.8")]
+            )
+            (DataStmtSet
+                [xx90
+                xx95]
+                [(Real "0.55")
+                (Real "0.62")]
+            )]
+            ()
+        )
+        (Print
+            0
+            ()
+            [x
+            y
+            z]
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 1)
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- y (Real "2.0"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- z (Real "3.0"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- (FuncCallOrArray
+                    c1
+                    []
+                    [(()
+                    1
+                    ()
+                    0)]
+                    []
+                    []
+                ) (Real "0.0"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- (FuncCallOrArray
+                    c1
+                    []
+                    [(()
+                    2
+                    ()
+                    0)]
+                    []
+                    []
+                ) (Real "0.22"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (+ (FuncCallOrArray
+                    c1
+                    []
+                    [(()
+                    4
+                    ()
+                    0)]
+                    []
+                    []
+                ) (Real "0.21"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- bf1 (Real "0.8"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- xx90 (Real "0.55"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- xx95 (Real "0.62"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (=
+            0
+            p
+            (** b (- td 1))
+            ()
+        )
+        (If
+            0
+            ()
+            (> (FuncCallOrArray
+                abs
+                []
+                [(()
+                (- p (Real "27.0"))
+                ()
+                0)]
+                []
+                []
+            ) (Real "1e-5"))
+            [(ErrorStop
+                0
+                ()
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )]
+        []
+    )]
+)

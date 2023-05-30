@@ -1,0 +1,432 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            modules_39:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            build_model:
+                                (ExternalSymbol
+                                    8
+                                    build_model
+                                    2 build_model
+                                    modules_39_fpm_39
+                                    []
+                                    build_model
+                                    Public
+                                ),
+                            filewrite:
+                                (ExternalSymbol
+                                    8
+                                    filewrite
+                                    4 filewrite
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    filewrite
+                                    Public
+                                ),
+                            join_path:
+                                (ExternalSymbol
+                                    8
+                                    join_path
+                                    4 join_path
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    join_path
+                                    Public
+                                )
+                        })
+                    modules_39
+                    [modules_39_fpm_39]
+                    [(SubroutineCall
+                        8 build_model
+                        ()
+                        []
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "executing modules_39"
+                            (Character 1 20 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                ),
+            modules_39_fpm_39:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            build_model:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    build_model
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [filewrite
+                                    join_path]
+                                    []
+                                    [(SubroutineCall
+                                        2 filewrite
+                                        ()
+                                        [((FunctionCall
+                                            2 join_path
+                                            ()
+                                            [((StringConstant
+                                                "build"
+                                                (Character 1 5 () [])
+                                            ))
+                                            ((StringConstant
+                                                ".gitignore"
+                                                (Character 1 10 () [])
+                                            ))
+                                            (())
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4 [])
+                                            ))
+                                            (())
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4 [])
+                                            ))
+                                            (())
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4 [])
+                                            ))]
+                                            (Character 1 -2 () [])
+                                            ()
+                                            ()
+                                        ))
+                                        ((ArrayConstant
+                                            [(StringConstant
+                                                "*"
+                                                (Character 1 1 () [])
+                                            )]
+                                            (Character 1 1 () [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4 [])))])
+                                            ColMajor
+                                        ))]
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            filewrite:
+                                (ExternalSymbol
+                                    2
+                                    filewrite
+                                    4 filewrite
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    filewrite
+                                    Public
+                                ),
+                            join_path:
+                                (ExternalSymbol
+                                    2
+                                    join_path
+                                    4 join_path
+                                    modules_39_module_fpm_filesystem_39
+                                    []
+                                    join_path
+                                    Public
+                                )
+                        })
+                    modules_39_fpm_39
+                    [modules_39_module_fpm_filesystem_39]
+                    .false.
+                    .false.
+                ),
+            modules_39_module_fpm_filesystem_39:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            filewrite:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            filedata:
+                                                (Variable
+                                                    5
+                                                    filedata
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [(()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            filename:
+                                                (Variable
+                                                    5
+                                                    filename
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    filewrite
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Character 1 -1 () [(()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 filename)
+                                    (Var 5 filedata)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            join_path:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            a1:
+                                                (Variable
+                                                    6
+                                                    a1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            a2:
+                                                (Variable
+                                                    6
+                                                    a2
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            a3:
+                                                (Variable
+                                                    6
+                                                    a3
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            a4:
+                                                (Variable
+                                                    6
+                                                    a4
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            a5:
+                                                (Variable
+                                                    6
+                                                    a5
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                ),
+                                            is_a3_present_:
+                                                (Variable
+                                                    6
+                                                    is_a3_present_
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            is_a4_present_:
+                                                (Variable
+                                                    6
+                                                    is_a4_present_
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            is_a5_present_:
+                                                (Variable
+                                                    6
+                                                    is_a5_present_
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4 [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            path:
+                                                (Variable
+                                                    6
+                                                    path
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    join_path
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Character 1 -1 () [])
+                                        (Character 1 -1 () [])
+                                        (Character 1 -1 () [])
+                                        (Character 1 -1 () [])]
+                                        (Character 1 -2 () [])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 6 a1)
+                                    (Var 6 a2)
+                                    (Var 6 a3)
+                                    (Var 6 is_a3_present_)
+                                    (Var 6 a4)
+                                    (Var 6 is_a4_present_)
+                                    (Var 6 a5)
+                                    (Var 6 is_a5_present_)]
+                                    []
+                                    (Var 6 path)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    modules_39_module_fpm_filesystem_39
+                    []
+                    .true.
+                    .false.
+                )
+        })
+    []
+)

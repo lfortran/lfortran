@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit5-8745632",
+    "cmd": "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+    "infile": "tests/implicit5.f90",
+    "infile_hash": "57638dfdf42ed194d8b670c35ec4e43e74c3a6cf3a32f2cb553f5927",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-implicit5-8745632.stdout",
+    "stdout_hash": "7a2bbfc8be36ef269c1f20cf8877065b69d837c0224769ed06728fd9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

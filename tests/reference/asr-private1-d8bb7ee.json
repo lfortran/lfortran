@@ -1,0 +1,13 @@
+{
+    "basename": "asr-private1-d8bb7ee",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/private1.f90",
+    "infile_hash": "aab1af3d1d5589a3a229317b277fd53d15afd3db9d21a6f2306c111e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-private1-d8bb7ee.stdout",
+    "stdout_hash": "5b23be271eeb9a30bf9b57f79172efd6f69e94ff3c39cb6154d89c45",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

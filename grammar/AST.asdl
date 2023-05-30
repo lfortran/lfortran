@@ -374,24 +374,26 @@ argstar = (expr? value)
 
 -- The identifier is wrapped up in a product type so that location information
 -- is included:
-arg = (identifier arg)
+-- Null for `arg` means, it's a star
+arg = (identifier? arg)
 
 
 -- Encoding of array elements and sections in fnarg:
---           start      end     step
+--           start      end     step    label
 -- element:
--- X(i)       ()         i       ()
+-- X(i)       ()         i       ()       0
+-- X(*10)     ()         ()      ()       10
 -- section:
--- X(:)       ()         ()      1
--- X(a:)      a          ()      1
--- X(:b)      ()         b       1
--- X(a:b)     a          b       1
--- X(::c)     ()         ()      c
--- X(a::c)    a          ()      c
--- X(:b:c)    ()         b       c
--- X(a:b:c)   a          b       c
+-- X(:)       ()         ()      1        0
+-- X(a:)      a          ()      1        0
+-- X(:b)      ()         b       1        0
+-- X(a:b)     a          b       1        0
+-- X(::c)     ()         ()      c        0
+-- X(a::c)    a          ()      c        0
+-- X(:b:c)    ()         b       c        0
+-- X(a:b:c)   a          b       c        0
 --
-fnarg = (expr? start, expr? end, expr? step)
+fnarg = (expr? start, expr? end, expr? step, int label)
 
 coarrayarg = (expr? start, expr? end, expr? step, codimension_type star)
 

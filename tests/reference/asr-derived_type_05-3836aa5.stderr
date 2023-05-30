@@ -1,0 +1,8 @@
+semantic error: Pass and NoPass attributes cannot be provided together
+ --> tests/errors/derived_type_05.f90:7:49
+  |
+7 |         procedure(testing_interface), deferred, pass(my_object), nopass  :: testing
+  |                                                 ^^^^^^^^^^^^^^^ pass specified here
+  |
+7 |         procedure(testing_interface), deferred, pass(my_object), nopass  :: testing
+  |                                                                  ^^^^^^ nopass specified here

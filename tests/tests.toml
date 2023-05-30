@@ -614,6 +614,11 @@ filename = "../integration_tests/subroutines_09.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/subroutines_10.f90"
+ast = true
+ast_f90 = true
+
+[[test]]
 filename = "../integration_tests/data_01.f90"
 ast = true
 
@@ -1079,6 +1084,10 @@ extrafiles = "../integration_tests/derived_types_19_module.f90"
 [[test]]
 filename = "derived_types_07.f90"
 asr = true
+
+[[test]]
+filename = "derived_types_09.f90"
+ast = true
 
 [[test]]
 filename = "modules1.f90"
@@ -2651,6 +2660,26 @@ asr = true
 pass = "pass_array_by_data,transform_optional_argument_functions"
 
 [[test]]
+filename = "../integration_tests/modules_43.f90"
+asr = true
+pass = "array_op"
+
+[[test]]
+filename = "../integration_tests/modules_44.f90"
+asr = true
+extrafiles = "../integration_tests/modules_44_module.f90"
+pass = "pass_array_by_data"
+
+[[test]]
+filename = "../integration_tests/modules_45.f90"
+asr = true
+pass = "pass_array_by_data,transform_optional_argument_functions"
+
+[[test]]
+filename = "../integration_tests/modules_48.f90"
+asr = true
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 
@@ -2685,6 +2714,10 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "../integration_tests/implicit_interface_04.f90"
 asr_implicit_interface_and_typing_with_llvm = true
+
+[[test]]
+filename = "external_01.f90"
+asr_implicit_interface_and_typing = true
 
 [[test]]
 filename = "dimension_attr2.f90"
@@ -3072,6 +3105,34 @@ filename = "errors/implicit_typing3.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "errors/derived_type_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/derived_type_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/derived_type_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/derived_type_04.f90"
+asr = true
+
+[[test]]
+filename = "errors/derived_type_05.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_02.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/where_02.f90"
 asr = true
 pass = "where"
@@ -3085,3 +3146,20 @@ pass = "where"
 filename = "../integration_tests/where_04.f90"
 asr = true
 pass = "where"
+
+[[test]]
+filename = "common2.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/common_03.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/common_04.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/common_05.f90"
+asr = true

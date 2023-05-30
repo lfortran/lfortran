@@ -1,0 +1,123 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            ch12n:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            ch12n:
+                                (Variable
+                                    2
+                                    ch12n
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ci:
+                                (Variable
+                                    2
+                                    ci
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 8 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    ch12n
+                    (FunctionType
+                        [(Integer 4 [])
+                        (Complex 8 [])]
+                        (Integer 4 [])
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 n)
+                    (Var 2 z)]
+                    [(=
+                        (Var 2 ci)
+                        (ComplexConstructor
+                            (RealConstant
+                                0.000000
+                                (Real 8 [])
+                            )
+                            (RealConstant
+                                1.000000
+                                (Real 8 [])
+                            )
+                            (Complex 8 [])
+                            (ComplexConstant
+                                0.000000
+                                1.000000
+                                (Complex 8 [])
+                            )
+                        )
+                        ()
+                    )]
+                    (Var 2 ch12n)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

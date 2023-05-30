@@ -1,0 +1,204 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            stdlib_quadrature:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            simps38_weights_dp:
+                                (ExternalSymbol
+                                    5
+                                    simps38_weights_dp
+                                    2 simps38_weights_dp
+                                    stdlib_quadrature_simps
+                                    []
+                                    simps38_weights_dp
+                                    Public
+                                ),
+                            x1:
+                                (Variable
+                                    5
+                                    x1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    stdlib_quadrature
+                    [stdlib_quadrature_simps]
+                    [(Print
+                        ()
+                        [(FunctionCall
+                            5 simps38_weights_dp
+                            ()
+                            [((Var 5 x1))]
+                            (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4 [])))])
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                ),
+            stdlib_quadrature_simps:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            simps38_weights:
+                                (GenericProcedure
+                                    2
+                                    simps38_weights
+                                    [2 simps38_weights_dp]
+                                    Public
+                                ),
+                            simps38_weights_dp:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            w:
+                                                (Variable
+                                                    3
+                                                    w
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerConstant 4 (Integer 4 [])))])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerConstant 4 (Integer 4 [])))])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    simps38_weights_dp
+                                    (FunctionType
+                                        [(Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4 [])))])]
+                                        (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4 [])))])
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 x)]
+                                    []
+                                    (Var 3 w)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            simps38_weights_dp_use:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            x1:
+                                                (Variable
+                                                    4
+                                                    x1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerConstant 4 (Integer 4 [])))])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    simps38_weights_dp_use
+                                    (FunctionType
+                                        [(Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4 [])))])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [simps38_weights_dp]
+                                    [(Var 4 x1)]
+                                    [(Print
+                                        ()
+                                        [(FunctionCall
+                                            2 simps38_weights_dp
+                                            2 simps38_weights
+                                            [((Var 4 x1))]
+                                            (Real 8 [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 4 (Integer 4 [])))])
+                                            ()
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    stdlib_quadrature_simps
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

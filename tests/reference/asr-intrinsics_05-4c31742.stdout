@@ -1,0 +1,101 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics_05:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    intrinsics_05
+                    []
+                    [(=
+                        (Var 2 x)
+                        (IntrinsicFunction
+                            Sinh
+                            [(RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )]
+                            0
+                            (Real 4 [])
+                            (RealConstant
+                                1.175201
+                                (Real 4 [])
+                            )
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (IntrinsicFunction
+                            Cosh
+                            [(RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )]
+                            0
+                            (Real 4 [])
+                            (RealConstant
+                                1.543081
+                                (Real 4 [])
+                            )
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 2 x)
+                        (IntrinsicFunction
+                            Tanh
+                            [(RealConstant
+                                1.000000
+                                (Real 4 [])
+                            )]
+                            0
+                            (Real 4 [])
+                            (RealConstant
+                                0.761594
+                                (Real 4 [])
+                            )
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 2 x)]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

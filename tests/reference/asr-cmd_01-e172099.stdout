@@ -1,0 +1,161 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_string:
+                (IntrinsicModule lfortran_intrinsic_string),
+            test_get_command_argument:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            arg:
+                                (Variable
+                                    2
+                                    arg
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 32 () [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            command_argument_count:
+                                (ExternalSymbol
+                                    2
+                                    command_argument_count
+                                    4 command_argument_count
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    command_argument_count
+                                    Private
+                                ),
+                            count:
+                                (Variable
+                                    2
+                                    count
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            get_command_argument:
+                                (ExternalSymbol
+                                    2
+                                    get_command_argument
+                                    4 get_command_argument
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    get_command_argument
+                                    Private
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4 []))
+                                    (IntegerConstant 0 (Integer 4 []))
+                                    Save
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            len_trim:
+                                (ExternalSymbol
+                                    2
+                                    len_trim
+                                    31 len_trim
+                                    lfortran_intrinsic_string
+                                    []
+                                    len_trim
+                                    Private
+                                ),
+                            trim:
+                                (ExternalSymbol
+                                    2
+                                    trim
+                                    31 trim
+                                    lfortran_intrinsic_string
+                                    []
+                                    trim
+                                    Private
+                                )
+                        })
+                    test_get_command_argument
+                    []
+                    [(=
+                        (Var 2 count)
+                        (FunctionCall
+                            2 command_argument_count
+                            ()
+                            []
+                            (Integer 4 [])
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "count: "
+                            (Character 1 7 () [])
+                        )
+                        (Var 2 count)]
+                        ()
+                        ()
+                    )
+                    (SubroutineCall
+                        2 get_command_argument
+                        ()
+                        [((Var 2 i))
+                        ((Var 2 arg))
+                        (())
+                        (())]
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            2 trim
+                            ()
+                            [((Var 2 arg))]
+                            (Character 1 -3 (FunctionCall
+                                2 len_trim
+                                ()
+                                [((Var 2 arg))]
+                                (Integer 4 [])
+                                ()
+                                ()
+                            ) [])
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

@@ -1,0 +1,205 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            foo1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    foo1
+                    []
+                    .false.
+                    .false.
+                ),
+            foo2:
+                (Module
+                    (SymbolTable
+                        3
+                        {
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    f
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    [(=
+                                        (Var 3 y)
+                                        (RealConstant
+                                            3.000000
+                                            (Real 4 [])
+                                        )
+                                        ()
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            y:
+                                (Variable
+                                    3
+                                    y
+                                    []
+                                    Local
+                                    (Cast
+                                        (IntegerConstant 2 (Integer 4 []))
+                                        IntegerToReal
+                                        (Real 4 [])
+                                        (RealConstant
+                                            2.000000
+                                            (Real 4 [])
+                                        )
+                                    )
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4 [])
+                                    )
+                                    Save
+                                    (Real 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    foo2
+                    []
+                    .false.
+                    .false.
+                ),
+            test:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            f:
+                                (ExternalSymbol
+                                    5
+                                    f
+                                    3 f
+                                    foo2
+                                    []
+                                    f
+                                    Public
+                                ),
+                            y:
+                                (ExternalSymbol
+                                    5
+                                    y
+                                    3 y
+                                    foo2
+                                    []
+                                    y
+                                    Public
+                                )
+                        })
+                    test
+                    [foo2]
+                    [(Print
+                        ()
+                        [(Var 5 y)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 5 y)
+                                    Sub
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        5 f
+                        ()
+                        []
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 5 y)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 5 y)
+                                    Sub
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4 [])
+                                    )
+                                    (Real 4 [])
+                                    ()
+                                )]
+                                0
+                                (Real 4 [])
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4 [])
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

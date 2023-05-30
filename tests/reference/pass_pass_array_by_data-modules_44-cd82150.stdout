@@ -1,0 +1,363 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            modules_44:
+                (Program
+                    (SymbolTable
+                        9
+                        {
+                            cmd_new:
+                                (ExternalSymbol
+                                    9
+                                    cmd_new
+                                    2 cmd_new
+                                    modules_44_fpm_cmd_new
+                                    []
+                                    cmd_new
+                                    Public
+                                ),
+                            fpm_cmd_settings:
+                                (ExternalSymbol
+                                    9
+                                    fpm_cmd_settings
+                                    2 fpm_cmd_settings
+                                    modules_44_fpm_cmd_new
+                                    []
+                                    fpm_cmd_settings
+                                    Public
+                                ),
+                            fpm_new_settings:
+                                (ExternalSymbol
+                                    9
+                                    fpm_new_settings
+                                    2 fpm_new_settings
+                                    modules_44_fpm_cmd_new
+                                    []
+                                    fpm_new_settings
+                                    Public
+                                ),
+                            settings:
+                                (Variable
+                                    9
+                                    settings
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Struct
+                                        9 fpm_new_settings
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            warnwrite:
+                                (ExternalSymbol
+                                    9
+                                    warnwrite
+                                    4 warnwrite
+                                    modules_44_module_fpm_filesystem
+                                    []
+                                    warnwrite
+                                    Public
+                                )
+                        })
+                    modules_44
+                    [modules_44_fpm_cmd_new]
+                    [(SubroutineCall
+                        9 cmd_new
+                        ()
+                        [((Var 9 settings))]
+                        ()
+                    )]
+                ),
+            modules_44_fpm_cmd_new:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            cmd_new:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            1_fpm_new_settings_name:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_fpm_new_settings_name
+                                                    7 name
+                                                    fpm_new_settings
+                                                    []
+                                                    name
+                                                    Public
+                                                ),
+                                            littlefile:
+                                                (Variable
+                                                    8
+                                                    littlefile
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [(()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            settings:
+                                                (Variable
+                                                    8
+                                                    settings
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 fpm_new_settings
+                                                        []
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    cmd_new
+                                    (FunctionType
+                                        [(Struct
+                                            2 fpm_new_settings
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [warnwrite]
+                                    [(Var 8 settings)]
+                                    [(Allocate
+                                        [((Var 8 littlefile)
+                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4 [])))])]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 8 littlefile)
+                                        (ArrayConstant
+                                            [(StringConstant
+                                                "# "
+                                                (Character 1 2 () [])
+                                            )
+                                            (StringConstant
+                                                "My cool new project!"
+                                                (Character 1 20 () [])
+                                            )]
+                                            (Character 1 80 () [((IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4 [])))])
+                                            ColMajor
+                                        )
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        2 warnwrite
+                                        ()
+                                        [((StructInstanceMember
+                                            (Var 8 settings)
+                                            8 1_fpm_new_settings_name
+                                            (Character 1 -2 () [])
+                                            ()
+                                        ))
+                                        ((Var 8 littlefile))]
+                                        ()
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 8 littlefile)]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            fpm_cmd_settings:
+                                (StructType
+                                    (SymbolTable
+                                        6
+                                        {
+                                            working_dir:
+                                                (Variable
+                                                    6
+                                                    working_dir
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    fpm_cmd_settings
+                                    []
+                                    [working_dir]
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                    ()
+                                ),
+                            fpm_new_settings:
+                                (StructType
+                                    (SymbolTable
+                                        7
+                                        {
+                                            name:
+                                                (Variable
+                                                    7
+                                                    name
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    fpm_new_settings
+                                    []
+                                    [name]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    2 fpm_cmd_settings
+                                ),
+                            warnwrite:
+                                (ExternalSymbol
+                                    2
+                                    warnwrite
+                                    4 warnwrite
+                                    modules_44_module_fpm_filesystem
+                                    []
+                                    warnwrite
+                                    Public
+                                )
+                        })
+                    modules_44_fpm_cmd_new
+                    [modules_44_module_fpm_filesystem]
+                    .false.
+                    .false.
+                ),
+            modules_44_module_fpm_filesystem:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            warnwrite:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            data:
+                                                (Variable
+                                                    5
+                                                    data
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [(()
+                                                    ())])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            fname:
+                                                (Variable
+                                                    5
+                                                    fname
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    warnwrite
+                                    (FunctionType
+                                        [(Character 1 -1 () [])
+                                        (Character 1 -1 () [(()
+                                        ())])]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 fname)
+                                    (Var 5 data)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    modules_44_module_fpm_filesystem
+                    []
+                    .true.
+                    .false.
+                )
+        })
+    []
+)

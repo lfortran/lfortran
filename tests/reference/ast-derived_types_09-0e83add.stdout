@@ -1,0 +1,26 @@
+(TranslationUnit
+    [(Program
+        type_parsing
+        (TriviaNode
+            [(EndOfLine)
+            (EndOfLine)]
+            []
+        )
+        []
+        []
+        [(DerivedType
+            SomeType
+            []
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+            []
+            []
+            []
+        )]
+        []
+        []
+    )]
+)

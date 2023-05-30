@@ -1,0 +1,362 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            modules_40:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            
+                        })
+                    modules_40
+                    []
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "executing modules_40"
+                            (Character 1 20 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                ),
+            modules_40_tomlf_de_tokenizer:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            parse_select:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            de:
+                                                (Variable
+                                                    5
+                                                    de
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Class
+                                                        2 toml_tokenizer
+                                                        []
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            fill_stack:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            de:
+                                                                (Variable
+                                                                    6
+                                                                    de
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Class
+                                                                        2 toml_tokenizer
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            stack:
+                                                                (Variable
+                                                                    6
+                                                                    stack
+                                                                    []
+                                                                    Out
+                                                                    ()
+                                                                    ()
+                                                                    Allocatable
+                                                                    (Struct
+                                                                        2 toml_key
+                                                                        [(()
+                                                                        ())]
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            top:
+                                                                (Variable
+                                                                    6
+                                                                    top
+                                                                    []
+                                                                    Out
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    fill_stack
+                                                    (FunctionType
+                                                        [(Class
+                                                            2 toml_tokenizer
+                                                            []
+                                                        )
+                                                        (Integer 4 [])
+                                                        (Struct
+                                                            2 toml_key
+                                                            [(()
+                                                            ())]
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [resize]
+                                                    [(Var 6 de)
+                                                    (Var 6 top)
+                                                    (Var 6 stack)]
+                                                    [(WhileLoop
+                                                        ()
+                                                        (LogicalConstant
+                                                            .true.
+                                                            (Logical 4 [])
+                                                        )
+                                                        [(If
+                                                            (IntegerCompare
+                                                                (Var 6 top)
+                                                                GtE
+                                                                (ArraySize
+                                                                    (Var 6 stack)
+                                                                    ()
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                )
+                                                                (Logical 4 [])
+                                                                ()
+                                                            )
+                                                            [(SubroutineCall
+                                                                5 resize
+                                                                ()
+                                                                [((Var 6 stack))
+                                                                (())]
+                                                                ()
+                                                            )]
+                                                            []
+                                                        )]
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            resize:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            n:
+                                                                (Variable
+                                                                    7
+                                                                    n
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Optional
+                                                                    .false.
+                                                                ),
+                                                            stack:
+                                                                (Variable
+                                                                    7
+                                                                    stack
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Allocatable
+                                                                    (Struct
+                                                                        2 toml_key
+                                                                        [(()
+                                                                        ())]
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    resize
+                                                    (FunctionType
+                                                        [(Struct
+                                                            2 toml_key
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                        (Integer 4 [])]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 7 stack)
+                                                    (Var 7 n)]
+                                                    []
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                )
+                                        })
+                                    parse_select
+                                    (FunctionType
+                                        [(Class
+                                            2 toml_tokenizer
+                                            []
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 de)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            tfc:
+                                (Variable
+                                    2
+                                    tfc
+                                    []
+                                    Local
+                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 []))
+                                    Parameter
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            toml_key:
+                                (StructType
+                                    (SymbolTable
+                                        3
+                                        {
+                                            key:
+                                                (Variable
+                                                    3
+                                                    key
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Allocatable
+                                                    (Character 1 -2 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    toml_key
+                                    []
+                                    [key]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            toml_tokenizer:
+                                (StructType
+                                    (SymbolTable
+                                        4
+                                        {
+                                            parse_select:
+                                                (ClassProcedure
+                                                    4
+                                                    parse_select
+                                                    ()
+                                                    parse_select
+                                                    2 parse_select
+                                                    Source
+                                                    .false.
+                                                )
+                                        })
+                                    toml_tokenizer
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                    ()
+                                )
+                        })
+                    modules_40_tomlf_de_tokenizer
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

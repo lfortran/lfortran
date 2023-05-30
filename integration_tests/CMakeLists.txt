@@ -147,6 +147,7 @@ RUN(NAME print_02 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_03 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_arr_01 LABELS gfortran llvm llvm2 wasm)
 RUN(NAME print_arr_02 LABELS gfortran llvm llvm2 wasm)
+RUN(NAME print_arr_03 LABELS gfortran llvm llvm2)
 
 RUN(NAME include_01 LABELS gfortran llvm wasm)
 RUN(NAME include_02 LABELS gfortran llvm wasm)
@@ -221,6 +222,7 @@ RUN(NAME subroutines_06 LABELS gfortran)
 RUN(NAME subroutines_07 LABELS gfortran)
 RUN(NAME subroutines_08 LABELS gfortran llvm wasm)
 RUN(NAME subroutines_09 LABELS gfortran)
+RUN(NAME subroutines_10 LABELS gfortran)
 
 RUN(NAME functions_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME functions_02 LABELS gfortran llvm wasm)
@@ -237,6 +239,8 @@ RUN(NAME functions_13 LABELS gfortran)
 RUN(NAME functions_15 LABELS gfortran llvm)
 RUN(NAME functions_16 LABELS gfortran)
 RUN(NAME functions_17 LABELS gfortran llvm)
+
+RUN(NAME common_01 LABELS gfortran)
 
 
 RUN(NAME types_01 LABELS gfortran llvm cpp wasm)
@@ -391,6 +395,8 @@ RUN(NAME intrinsics_46 LABELS gfortran llvm) # ichar & iachar
 RUN(NAME intrinsics_47 LABELS gfortran llvm) # all
 RUN(NAME intrinsics_48 LABELS gfortran llvm)
 RUN(NAME intrinsics_49 LABELS gfortran llvm)
+RUN(NAME intrinsics_50 LABELS gfortran llvm)
+RUN(NAME intrinsics_51 LABELS gfortran llvm)
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 
 RUN(NAME parameter_01 LABELS gfortran)
@@ -455,7 +461,15 @@ RUN(NAME modules_37 LABELS gfortran)
 RUN(NAME modules_38 LABELS gfortran)
 RUN(NAME modules_39 LABELS gfortran EXTRAFILES
         modules_39_module.f90)
+RUN(NAME modules_44 LABELS gfortran EXTRAFILES
+        modules_44_module.f90)
 RUN(NAME modules_40 LABELS gfortran)
+RUN(NAME modules_41 LABELS gfortran llvm)
+RUN(NAME modules_42 LABELS gfortran llvm)
+RUN(NAME modules_43 LABELS gfortran)
+RUN(NAME modules_45 LABELS gfortran)
+RUN(NAME modules_48 LABELS gfortran)
+RUN(NAME modules_49 LABELS gfortran llvm)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
@@ -532,6 +546,7 @@ RUN(NAME operator_overloading_01 LABELS gfortran llvm)
 RUN(NAME operator_overloading_02 LABELS gfortran llvm)
 RUN(NAME operator_overloading_03 LABELS gfortran llvm)
 RUN(NAME operator_overloading_04 LABELS gfortran)
+RUN(NAME operator_overloading_06 LABELS gfortran llvm)
 
 RUN(NAME types_07 LABELS gfortran)
 RUN(NAME types_08 LABELS gfortran)
@@ -593,6 +608,7 @@ RUN(NAME derived_types_19 LABELS gfortran
 RUN(NAME derived_types_20 LABELS gfortran
         EXTRAFILES derived_types_20_module2.f90
                    derived_types_20_module1.f90)
+RUN(NAME derived_types_21 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
@@ -607,6 +623,7 @@ RUN(NAME allocate_02 LABELS gfortran llvm)
 RUN(NAME allocate_03 LABELS gfortran llvm)
 RUN(NAME allocate_04 LABELS gfortran llvm)
 RUN(NAME allocate_05 LABELS gfortran llvm)
+RUN(NAME allocate_06 LABELS gfortran llvm)
 RUN(NAME block_01 LABELS gfortran llvm)
 RUN(NAME block_02 LABELS gfortran)
 RUN(NAME block_03 LABELS gfortran llvm)
@@ -690,13 +707,16 @@ RUN(NAME return_02 LABELS gfortran llvm) # contains module
 RUN(NAME return_03 LABELS gfortran llvm wasm)
 RUN(NAME return_04 LABELS gfortran llvm wasm)
 
-RUN(NAME file_01 LABELS gfortran llvm)
+RUN(NAME file_01       LABELS gfortran llvm)
+RUN(NAME inquire_01    LABELS gfortran llvm)
 
 RUN(NAME class_01 LABELS gfortran)
 RUN(NAME class_02 LABELS gfortran llvm)
 RUN(NAME class_03 LABELS gfortran)
 RUN(NAME class_04 LABELS gfortran)
 RUN(NAME class_05 LABELS gfortran llvm)
+RUN(NAME class_06 LABELS gfortran llvm)
+RUN(NAME class_07 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm wasm)
 RUN(NAME kwargs_02 LABELS gfortran)
@@ -732,6 +752,7 @@ RUN(NAME loop_unroll_large LABELS gfortran llvm)
 RUN(NAME sign_from_value LABELS gfortran llvm wasm)
 
 RUN(NAME rewind_inquire_flush LABELS gfortran)
+RUN(NAME flush_01 LABELS gfortran llvm)
 
 RUN(NAME assign_to1 LABELS gfortran llvm)
 RUN(NAME assign_to2 LABELS gfortran llvm)
@@ -785,6 +806,7 @@ RUN(NAME pass_array_by_data_06 LABELS gfortran llvm wasm)
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm)
+RUN(NAME write_02 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm)
 
@@ -816,3 +838,11 @@ RUN(NAME procedure_04 LABELS gfortran llvm)
 RUN(NAME allocated_01 LABELS gfortran llvm)
 RUN(NAME allocated_02 LABELS gfortran llvm)
 RUN(NAME allocated_03 LABELS gfortran llvm)
+RUN(NAME allocate_07 LABELS gfortran llvm)
+
+RUN(NAME double_complex_01 LABELS gfortran llvm)
+
+RUN(NAME common_02 LABELS gfortran lfortran)
+RUN(NAME common_03 LABELS gfortran) #TODO: Fix these tests
+RUN(NAME common_04 LABELS gfortran) 
+RUN(NAME common_05 LABELS gfortran)

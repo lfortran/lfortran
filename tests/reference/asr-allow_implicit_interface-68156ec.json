@@ -1,0 +1,13 @@
+{
+    "basename": "asr-allow_implicit_interface-68156ec",
+    "cmd": "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/allow_implicit_interface.f90",
+    "infile_hash": "3d73fa8cc6b2a34329665b09295d1469f049597c7ab7f0c1039e4370",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-allow_implicit_interface-68156ec.stdout",
+    "stdout_hash": "53b90df71179eea71b866f777ee9e7f2ed4f0f14918e45b86f50a6f3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

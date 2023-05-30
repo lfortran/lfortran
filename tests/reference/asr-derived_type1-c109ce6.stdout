@@ -1,0 +1,190 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            derived_type1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            1_enum_escape_newline:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_escape_newline
+                                    12 newline
+                                    enum_escape
+                                    []
+                                    newline
+                                    Public
+                                ),
+                            enum_escape:
+                                (StructType
+                                    (SymbolTable
+                                        12
+                                        {
+                                            achar:
+                                                (ExternalSymbol
+                                                    12
+                                                    achar
+                                                    14 achar
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    achar
+                                                    Private
+                                                ),
+                                            newline:
+                                                (Variable
+                                                    12
+                                                    newline
+                                                    [tfc]
+                                                    Local
+                                                    (FunctionCall
+                                                        12 achar
+                                                        ()
+                                                        [((IntegerConstant 10 (Integer 4 [])))
+                                                        ((Var 2 tfc))]
+                                                        (Character 1 1 () [])
+                                                        (StringConstant
+                                                            "\n"
+                                                            (Character 1 1 () [])
+                                                        )
+                                                        ()
+                                                    )
+                                                    (StringConstant
+                                                        "\n"
+                                                        (Character 1 1 () [])
+                                                    )
+                                                    Save
+                                                    (Character 1 1 () [])
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    enum_escape
+                                    []
+                                    [newline]
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                    ()
+                                ),
+                            nl:
+                                (Variable
+                                    2
+                                    nl
+                                    [toml_escape]
+                                    Local
+                                    (StringConcat
+                                        (StringConstant
+                                            " "
+                                            (Character 1 1 () [])
+                                        )
+                                        (StructInstanceMember
+                                            (Var 2 toml_escape)
+                                            2 1_enum_escape_newline
+                                            (Character 1 1 () [])
+                                            (StringConstant
+                                                "\n"
+                                                (Character 1 1 () [])
+                                            )
+                                        )
+                                        (Character 1 2 () [])
+                                        (StringConstant
+                                            " \n"
+                                            (Character 1 2 () [])
+                                        )
+                                    )
+                                    (StringConstant
+                                        " \n"
+                                        (Character 1 2 () [])
+                                    )
+                                    Parameter
+                                    (Character 1 2 () [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            selected_char_kind:
+                                (ExternalSymbol
+                                    2
+                                    selected_char_kind
+                                    4 selected_char_kind
+                                    lfortran_intrinsic_kind
+                                    []
+                                    selected_char_kind
+                                    Private
+                                ),
+                            tfc:
+                                (Variable
+                                    2
+                                    tfc
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 selected_char_kind
+                                        ()
+                                        [((StringConstant
+                                            "DEFAULT"
+                                            (Character 1 7 () [])
+                                        ))]
+                                        (Integer 4 [])
+                                        (IntegerConstant 1 (Integer 4 []))
+                                        ()
+                                    )
+                                    (IntegerConstant 1 (Integer 4 []))
+                                    Parameter
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            toml_escape:
+                                (Variable
+                                    2
+                                    toml_escape
+                                    []
+                                    Local
+                                    (StructTypeConstructor
+                                        2 enum_escape
+                                        [(())]
+                                        (Struct
+                                            2 enum_escape
+                                            []
+                                        )
+                                        ()
+                                    )
+                                    ()
+                                    Parameter
+                                    (Struct
+                                        2 enum_escape
+                                        []
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    derived_type1
+                    [lfortran_intrinsic_kind
+                    lfortran_intrinsic_builtin]
+                    .false.
+                    .false.
+                ),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_kind:
+                (IntrinsicModule lfortran_intrinsic_kind)
+        })
+    []
+)
