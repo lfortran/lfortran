@@ -695,7 +695,7 @@ public:
     IntrinsicProcedures intrinsic_procedures;
     IntrinsicProceduresAsASRNodes intrinsic_procedures_as_asr_nodes;
     std::set<std::string> intrinsic_module_procedures_as_asr_nodes = {
-        "c_loc", "c_f_pointer"
+        "c_loc", "c_f_pointer", "c_associated"
     };
 
     ASR::accessType dflt_access = ASR::Public;
@@ -980,7 +980,7 @@ public:
             ASR::symbol_t* module_var_sym = module_scope->resolve_symbol(struct_var_name);
             ASR::symbol_t* struct_sym = scope->resolve_symbol(struct_var_name);
             if (!struct_sym) {
-                struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope, 
+                struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope,
                                                 s2c(al, struct_var_name), module_var_sym, s2c(al, module_name), nullptr, 0, s2c(al, struct_var_name), ASR::accessType::Public));
                 scope->add_symbol(struct_var_name, struct_sym);
             }
@@ -4162,6 +4162,8 @@ public:
                 if (intrinsic_module_procedures_as_asr_nodes.find(var_name) != intrinsic_module_procedures_as_asr_nodes.end()) {
                     if (var_name == "c_loc") {
                         tmp = create_PointerToCptr(x);
+                    } else if (var_name == "c_associated") {
+                        tmp = create_Associated(x);
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }

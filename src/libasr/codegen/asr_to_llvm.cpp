@@ -4576,9 +4576,14 @@ public:
         ptr = CreateLoad(ptr);
         ptr = builder->CreatePtrToInt(ptr, getIntType(8, false));
         if (x.m_tgt) {
-            ASR::Variable_t *t = EXPR2VAR(x.m_tgt);
-            uint32_t t_h = get_hash((ASR::asr_t*)t);
-            nptr = llvm_symtab[t_h];
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr_wrapper(x.m_tgt, true);
+            ptr_loads = ptr_loads_copy;
+            // ASR::Variable_t *t = EXPR2VAR(x.m_tgt);
+            // uint32_t t_h = get_hash((ASR::asr_t*)t);
+            // nptr = llvm_symtab[t_h];
+            nptr = tmp;
             nptr = builder->CreatePtrToInt(nptr, getIntType(8, false));
             tmp = builder->CreateICmpEQ(ptr, nptr);
         } else {
