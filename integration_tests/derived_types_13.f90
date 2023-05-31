@@ -16,5 +16,6 @@ program derived_types_13
 
     type(t) :: x
     x = new_value()
+    print *, x
     if (x%i /= 123) error stop
 end program derived_types_13
