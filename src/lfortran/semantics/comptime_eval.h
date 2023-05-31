@@ -220,15 +220,11 @@ struct IntrinsicProcedures {
             {"huge", {m_math2, &eval_huge, false}},
 
             // Transformational function
-            {"c_associated", {m_iso_c_binding, &not_implemented, false}},
             {"all",          {m_builtin, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
             {"ieee_is_nan", {m_ieee_arithmetic, &not_implemented, false}},
-
-            // ISO C Binding
-            {"c_associated", {m_iso_c_binding, &not_implemented, false}},
         };
     }
 

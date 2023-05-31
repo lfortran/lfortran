@@ -134,8 +134,7 @@
                                         []
                                         .false.
                                     )
-                                    [getcwd
-                                    c_associated]
+                                    [getcwd]
                                     [(Var 10 path)]
                                     [(Allocate
                                         [((Var 10 cpath)
@@ -159,12 +158,10 @@
                                         ()
                                     )
                                     (If
-                                        (FunctionCall
-                                            2 c_associated
+                                        (PointerAssociated
+                                            (Var 10 tmp)
                                             ()
-                                            [((Var 10 tmp))]
                                             (Logical 4 [])
-                                            ()
                                             ()
                                         )
                                         [(Print
@@ -272,8 +269,7 @@
                         })
                     array12
                     [iso_c_binding
-                    array12
-                    lfortran_intrinsic_iso_c_binding]
+                    array12]
                     .false.
                     .false.
                 ),

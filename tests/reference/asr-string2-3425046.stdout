@@ -204,8 +204,7 @@
                                         []
                                         .false.
                                     )
-                                    [c_associated
-                                    f_string@f_string_cptr]
+                                    [f_string@f_string_cptr]
                                     []
                                     [(WhileLoop
                                         ()
@@ -215,12 +214,10 @@
                                         )
                                         [(If
                                             (LogicalNot
-                                                (FunctionCall
-                                                    2 c_associated
+                                                (PointerAssociated
+                                                    (Var 16 dir_entry_c)
                                                     ()
-                                                    [((Var 16 dir_entry_c))]
                                                     (Logical 4 [])
-                                                    ()
                                                     ()
                                                 )
                                                 (Logical 4 [])
@@ -265,8 +262,7 @@
                         })
                     fpm_filesystem
                     [fpm_strings
-                    iso_c_binding
-                    lfortran_intrinsic_iso_c_binding]
+                    iso_c_binding]
                     .false.
                     .false.
                 ),

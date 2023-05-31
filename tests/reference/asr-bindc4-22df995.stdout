@@ -2,11 +2,21 @@
     (SymbolTable
         1
         {
-            bindc2:
+            bindc4:
                 (Program
                     (SymbolTable
                         2
                         {
+                            c_associated:
+                                (ExternalSymbol
+                                    2
+                                    c_associated
+                                    4 c_associated
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_associated
+                                    Public
+                                ),
                             c_f_pointer:
                                 (ExternalSymbol
                                     2
@@ -141,9 +151,49 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 2 [(()
+                                        ())
+                                        (()
+                                        ())])
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            yv:
+                                (Variable
+                                    2
+                                    yv
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 2 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
-                    bindc2
+                    bindc4
                     [iso_c_binding]
                     [(=
                         (ArrayItem
@@ -174,6 +224,10 @@
                     (=>
                         (Var 2 x)
                         (Var 2 xv)
+                    )
+                    (=>
+                        (Var 2 y)
+                        (Var 2 yv)
                     )
                     (DoLoop
                         ()
@@ -415,6 +469,75 @@
                                 ()
                             )]
                         )]
+                    )
+                    (If
+                        (PointerAssociated
+                            (Var 2 queries)
+                            (PointerToCPtr
+                                (GetPointer
+                                    (ArrayItem
+                                        (Var 2 x)
+                                        [(()
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        ())
+                                        (()
+                                        (IntegerConstant 0 (Integer 4 []))
+                                        ())]
+                                        (Integer 2 [])
+                                        ColMajor
+                                        ()
+                                    )
+                                    (Pointer
+                                        (Integer 2 [])
+                                    )
+                                    ()
+                                )
+                                (CPtr)
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalNot
+                            (PointerAssociated
+                                (Var 2 queries)
+                                (PointerToCPtr
+                                    (Var 2 x)
+                                    (CPtr)
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (PointerAssociated
+                            (Var 2 queries)
+                            (PointerToCPtr
+                                (Var 2 y)
+                                (CPtr)
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
                     )]
                 ),
             iso_c_binding:
