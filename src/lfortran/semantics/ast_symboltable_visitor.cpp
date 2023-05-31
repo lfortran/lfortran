@@ -92,7 +92,8 @@ public:
         {AST::intrinsicopType::LT, "~lt"},
         {AST::intrinsicopType::LTE, "~lte"},
         {AST::intrinsicopType::GT, "~gt"},
-        {AST::intrinsicopType::GTE, "~gte"}
+        {AST::intrinsicopType::GTE, "~gte"},
+        {AST::intrinsicopType::MINUS, "~sub"}
     };
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
@@ -1277,6 +1278,7 @@ public:
                 x = resolve_symbol(loc, name);
                 symbols.push_back(al, x);
             }
+            LCOMPILERS_ASSERT(strlen(generic_name) > 0);
             ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
                                 generic_name, symbols.p, symbols.size(), ASR::Public);
             current_scope->add_symbol(intrinsic2str[proc.first], ASR::down_cast<ASR::symbol_t>(v));
@@ -1301,6 +1303,7 @@ public:
                 x = resolve_symbol(loc, name);
                 symbols.push_back(al, x);
             }
+            LCOMPILERS_ASSERT(strlen(generic_name) > 0);
             ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
                                 generic_name, symbols.p, symbols.size(), ASR::Public);
             current_scope->add_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
@@ -1431,20 +1434,23 @@ public:
                 // Check for GenericOperator
                 bool operator_found = false;
                 for (auto &[key, value]: intrinsic2str) {
-                    if (value == pname.first) {
+                    if (value == pname.first && pname.first.size() > 0) {
                         operator_found  = true;
                     }
                 }
                 if ( operator_found || startswith(pname.first, "~def_op~") ) {
                     // GenericOperator and GenericDefinedOperator
-                    v = ASR::make_CustomOperator_t(al, loc, current_scope,
+                    LCOMPILERS_ASSERT(strlen(generic_name) > 0);
+                    v = ASR::make_CustomOperator_t(al, loc, clss->m_symtab,
                         generic_name, cand_procs.p, cand_procs.size(),
                         ASR::accessType::Public);
                 } else if( pname.first == "~assign" ) {
+                    LCOMPILERS_ASSERT(strlen(generic_name) > 0);
                     v = ASR::make_CustomOperator_t(al, loc, clss->m_symtab,
                         generic_name, cand_procs.p, cand_procs.size(),
                         ASR::accessType::Public);
                 } else {
+                    LCOMPILERS_ASSERT(strlen(generic_name) > 0);
                     v = ASR::make_GenericProcedure_t(al, loc,
                         clss->m_symtab, generic_name,
                         cand_procs.p, cand_procs.size(), ASR::accessType::Public); // Update the access as per the input Fortran code

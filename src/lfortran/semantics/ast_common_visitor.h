@@ -450,7 +450,10 @@ public:
   }
 
   inline static void visit_UnaryOp(Allocator &al, const AST::UnaryOp_t &x,
-                                   ASR::expr_t *&operand, ASR::asr_t *&asr) {
+                                   ASR::expr_t *&operand, ASR::asr_t *&asr,
+                                   SymbolTable* current_scope,
+                                   SetChar& current_function_dependencies,
+                                   SetChar& current_module_dependencies) {
 
     ASR::ttype_t *operand_type = ASRUtils::expr_type(operand);
     ASR::expr_t *value = nullptr;
@@ -484,8 +487,7 @@ public:
             asr = ASR::make_IntegerUnaryMinus_t(al, x.base.base.loc, operand,
                                                     operand_type, value);
             return;
-        }
-        else if (ASRUtils::is_real(*operand_type)) {
+        } else if (ASRUtils::is_real(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 double op_value = ASR::down_cast<ASR::RealConstant_t>(
                                         ASRUtils::expr_value(operand))->m_r;
@@ -495,8 +497,7 @@ public:
             asr = ASR::make_RealUnaryMinus_t(al, x.base.base.loc, operand,
                                              operand_type, value);
             return;
-        }
-        else if (ASRUtils::is_complex(*operand_type)) {
+        } else if (ASRUtils::is_complex(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
                                     ASRUtils::expr_value(operand));
@@ -510,7 +511,24 @@ public:
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
                                                     operand_type, value);
             return;
+        } else if( ASR::is_a<ASR::Struct_t>(*operand_type) ) {
+            ASR::expr_t* overloaded_uminus = nullptr;
+            if( ASRUtils::use_overloaded_unary_minus(operand,
+                current_scope, asr, al,
+                x.base.base.loc, current_function_dependencies,
+                current_module_dependencies,
+                [&](const std::string &msg, const Location &loc)
+                { throw SemanticError(msg, loc); }) ) {
+                overloaded_uminus = ASRUtils::EXPR(asr);
+            }
+            LCOMPILERS_ASSERT(overloaded_uminus != nullptr);
+            asr = ASR::make_OverloadedUnaryMinus_t(al, x.base.base.loc,
+                operand, ASRUtils::expr_type(overloaded_uminus),
+                nullptr, overloaded_uminus);
+        } else {
+            LCOMPILERS_ASSERT(false);
         }
+        return;
 
     } else if (x.m_op == AST::unaryopType::Invert) {
 
@@ -667,6 +685,7 @@ public:
     std::map<AST::operatorType, std::string> binop2str = {
         {AST::operatorType::Mul, "~mul"},
         {AST::operatorType::Add, "~add"},
+        {AST::operatorType::Sub, "~sub"},
     };
 
     std::map<AST::cmpopType, std::string> cmpop2str = {
@@ -980,7 +999,7 @@ public:
             ASR::symbol_t* module_var_sym = module_scope->resolve_symbol(struct_var_name);
             ASR::symbol_t* struct_sym = scope->resolve_symbol(struct_var_name);
             if (!struct_sym) {
-                struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope, 
+                struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, curr_struct->base.loc, scope,
                                                 s2c(al, struct_var_name), module_var_sym, s2c(al, module_name), nullptr, 0, s2c(al, struct_var_name), ASR::accessType::Public));
                 scope->add_symbol(struct_var_name, struct_sym);
             }
@@ -4451,9 +4470,9 @@ public:
     }
 
     void visit_BinOp2(Allocator &al, const AST::BinOp_t &x,
-                                    ASR::expr_t *&left, ASR::expr_t *&right,
-                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
-                                    SymbolTable* curr_scope) {
+                    ASR::expr_t *&left, ASR::expr_t *&right,
+                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
+                    SymbolTable* curr_scope) {
         ASR::binopType op;
         switch (x.m_op) {
             case (AST::Add):
@@ -4483,24 +4502,27 @@ public:
         ASR::ttype_t *right_type = ASRUtils::expr_type(right);
         ASR::expr_t *overloaded = nullptr;
         if ( ASRUtils::use_overloaded(left, right, op,
-            intrinsic_op_name, curr_scope, asr, al,
-            x.base.base.loc, current_function_dependencies,
-            current_module_dependencies,
-            [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); }) ) {
+                    intrinsic_op_name, curr_scope, asr, al,
+                    x.base.base.loc, current_function_dependencies,
+                    current_module_dependencies,
+                    [&](const std::string &msg, const Location &loc)
+                    { throw SemanticError(msg, loc); }) ) {
             overloaded = ASRUtils::EXPR(asr);
         }
 
         ASR::expr_t **conversion_cand = &left;
         ASR::ttype_t *source_type = left_type;
         ASR::ttype_t *dest_type = right_type;
-        if(!ASRUtils::is_generic(*left_type) && !ASRUtils::is_generic(*right_type)){
-            ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
-                                                    right_type, conversion_cand,
-                                                    &source_type, &dest_type);
-        }
+        if( overloaded == nullptr ) {
+            if(!ASRUtils::is_generic(*left_type) && !ASRUtils::is_generic(*right_type)){
+                ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
+                                                        right_type, conversion_cand,
+                                                        &source_type, &dest_type);
+            }
 
-        ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
-                                            source_type, dest_type);
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, conversion_cand,
+                                                source_type, dest_type);
+        }
 
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right))) {
@@ -4783,7 +4805,9 @@ public:
     void visit_UnaryOp(const AST::UnaryOp_t &x) {
         this->visit_expr(*x.m_operand);
         ASR::expr_t *operand = ASRUtils::EXPR(tmp);
-        CommonVisitorMethods::visit_UnaryOp(al, x, operand, tmp);
+        CommonVisitorMethods::visit_UnaryOp(al, x, operand, tmp,
+            current_scope, current_function_dependencies,
+            current_module_dependencies);
     }
 
     void visit_Compare(const AST::Compare_t &x) {

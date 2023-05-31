@@ -1406,8 +1406,14 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     SetChar& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err);
 
+bool use_overloaded_unary_minus(ASR::expr_t* operand,
+    SymbolTable* curr_scope, ASR::asr_t*& asr, Allocator &al,
+    const Location& loc, SetChar& current_function_dependencies,
+    SetChar& current_module_dependencies,
+    const std::function<void (const std::string &, const Location &)> err);
+
 bool is_op_overloaded(ASR::binopType op, std::string& intrinsic_op_name,
-                      SymbolTable* curr_scope);
+                      SymbolTable* curr_scope, ASR::StructType_t* left_struct=nullptr);
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     ASR::cmpopType op, std::string& intrinsic_op_name,
