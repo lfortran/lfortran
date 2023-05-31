@@ -151,6 +151,46 @@
                                     Public
                                     Required
                                     .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 2 [(()
+                                        ())
+                                        (()
+                                        ())])
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            yv:
+                                (Variable
+                                    2
+                                    yv
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 2 [((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4 [])))
+                                    ((IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     bindc4
@@ -184,6 +224,10 @@
                     (=>
                         (Var 2 x)
                         (Var 2 xv)
+                    )
+                    (=>
+                        (Var 2 y)
+                        (Var 2 yv)
                     )
                     (DoLoop
                         ()
@@ -448,6 +492,42 @@
                                     )
                                     ()
                                 )
+                                (CPtr)
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalNot
+                            (PointerAssociated
+                                (Var 2 queries)
+                                (PointerToCPtr
+                                    (Var 2 x)
+                                    (CPtr)
+                                    ()
+                                )
+                                (Logical 4 [])
+                                ()
+                            )
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (PointerAssociated
+                            (Var 2 queries)
+                            (PointerToCPtr
+                                (Var 2 y)
                                 (CPtr)
                                 ()
                             )
