@@ -6165,6 +6165,10 @@ public:
         this->visit_expr(*x.m_overloaded);
     }
 
+    void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t &x) {
+        this->visit_expr(*x.m_overloaded);
+    }
+
     void visit_IntegerBitNot(const ASR::IntegerBitNot_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
