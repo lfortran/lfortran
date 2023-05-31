@@ -149,14 +149,16 @@ endmacro(RUN)
 
 # The supported test labels are:
 #
-# gfortran --- compile with GFortran
-# llvm     --- compile with LFortran, only generate binary code at the very end
-# llvm2    --- compile with LFortran, generate object files
+# gfortran      --- compile with GFortran
+# llvm          --- compile with LFortran, only generate binary code at the very end
+# llvm2         --- compile with LFortran, generate object files
 # llvm_rtlib    --- compile with LFortran loading ASR runtime library, generate object files
-# cpp      --- compile to C++, compile C++ to binary
-# x86      --- compile to x86 binary directly
-# wasm     --- compile to WASM binary directly
+# cpp           --- compile to C++, compile C++ to binary
+# x86           --- compile to x86 binary directly
+# wasm          --- compile to WASM binary directly
 
+# `reduce` is not supported by GFortran yet:
+# RUN(NAME doconcurrentloop_02 LABELS gfortran)
 
 # GFortran + LFortran LLVM + LFortran C++
 
@@ -605,9 +607,6 @@ RUN(NAME logical1 LABELS gfortran llvm wasm)
 RUN(NAME logical2 LABELS gfortran llvm wasm)
 RUN(NAME logical3 LABELS gfortran llvm wasm)
 RUN(NAME logical4 LABELS gfortran llvm wasm)
-
-# `reduce` is not supported by GFortran yet:
-# RUN(NAME doconcurrentloop_02 LABELS gfortran)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm)
 RUN(NAME derived_types_02 LABELS gfortran)
