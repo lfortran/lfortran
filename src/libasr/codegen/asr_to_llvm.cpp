@@ -2470,6 +2470,9 @@ public:
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
                 type);
             if (!external) {
+                if (ASRUtils::is_array(x.m_type)) {
+                    throw CodeGenError("Arrays are not supported by visit_Variable");
+                }
                 if (init_value) {
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             init_value);
