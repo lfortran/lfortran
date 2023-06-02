@@ -1693,6 +1693,33 @@ R"(#include <stdio.h>
         handle_BinOp(x);
     }
 
+    void visit_ComplexConstructor(const ASR::ComplexConstructor_t &x) {
+        self().visit_expr(*x.m_re);
+        std::string re = std::move(src);
+        self().visit_expr(*x.m_im);
+        std::string im = std::move(src);
+        src = "CMPLX(" + re + "," + im + ")";
+    }
+
+    void visit_StructTypeConstructor(const ASR::StructTypeConstructor_t &x) {
+        std::string out = "{";
+        ASR::StructType_t *st = ASR::down_cast<ASR::StructType_t>(x.m_dt_sym);
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_value) {
+                out += ".";
+                out += st->m_members[i];
+                out += " = ";
+                self().visit_expr(*x.m_args[i].m_value);
+                out += src;
+                if (i < x.n_args-1) {
+                    out += ", ";
+                }
+            }
+        }
+        out += "}";
+        src = out;
+    }
+
     template <typename T>
     void handle_BinOp(const T &x) {
         CHECK_FAST_C_CPP(compiler_options, x)
@@ -2256,6 +2283,15 @@ R"(#include <stdio.h>
         out += "(" + src + ")";
         src = out;
     }
+
+    void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
+        std::string out = "sqrt";
+        headers.insert("math.h");
+        this->visit_expr(*x.m_arg);
+        out += "(" + src + ")";
+        src = out;
+    }
+
 };
 
 } // namespace LCompilers
