@@ -450,16 +450,24 @@ public:
                 }
             }
         }
+        if (_type == AST::stmtType::Write && a_fmt == nullptr
+                && compiler_options.print_leading_space) {
+            ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
+            al, loc, 1, 0, nullptr, nullptr, 0));
+            ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
+            al, loc, s2c(al, ""), str_type_len_0));
+            a_values_vec.push_back(al, empty_string);
+        }
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
             a_values_vec.push_back(al, ASRUtils::EXPR(tmp));
         }
         if( _type == AST::stmtType::Write ) {
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
-                                    a_iomsg, a_iostat, a_id, a_values_vec.p, n_values, a_separator, a_end);
+                                    a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
         } else if( _type == AST::stmtType::Read ) {
             tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                   a_iomsg, a_iostat, a_id, a_values_vec.p, n_values);
+                                   a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
         }
     }
 
@@ -2327,16 +2335,27 @@ public:
     void visit_Print(const AST::Print_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_values);
+
+        ASR::expr_t *fmt=nullptr;
+        if (x.m_fmt != nullptr) {
+            this->visit_expr(*x.m_fmt);
+            fmt = ASRUtils::EXPR(tmp);
+        } else {
+            if (compiler_options.print_leading_space) {
+                ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_Character_t(
+                al, x.base.base.loc, 1, 0, nullptr, nullptr, 0));
+                ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                al, x.base.base.loc, s2c(al, ""), str_type_len_0));
+                body.push_back(al, empty_string);
+            }
+        }
+
         for (size_t i=0; i<x.n_values; i++) {
             visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             body.push_back(al, expr);
         }
-        ASR::expr_t *fmt=nullptr;
-        if (x.m_fmt != nullptr) {
-            this->visit_expr(*x.m_fmt);
-            fmt = ASRUtils::EXPR(tmp);
-        }
+
         tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
             body.p, body.size(), nullptr, nullptr);
     }
