@@ -3,17 +3,12 @@
         __xx_main
         ()
         []
-        [(ImplicitNone
-            []
-            ()
-        )]
         []
-        [(Print
+        []
+        [(Stop
             0
             ()
-            [(String
-                "hello world"
-            )]
+            ()
             ()
         )]
         []
