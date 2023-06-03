@@ -1255,7 +1255,8 @@ int compile_to_object_file_cpp(const std::string &infile,
             std::string kokkos_dir = get_kokkos_dir();
             options += "-std=c++17 -I" + kokkos_dir + "/include";
         }
-        options += " -I" + rtlib_header_dir;
+        std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
+        options += " -I" + rtlib_c_header_dir;
         std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cppfile;
         int err = system(cmd.c_str());
         if (err) {
@@ -1421,6 +1422,8 @@ int link_executable(const std::vector<std::string> &infiles,
             post_options += kokkos_dir + "/lib/libkokkoscontainers.a "
                 + kokkos_dir + "/lib/libkokkoscore.a -ldl";
         }
+        std::string rtlib_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
+        options += " -I" + rtlib_header_dir;
         std::string cmd = CXX + options + " -o " + outfile + " ";
         for (auto &s : infiles) {
             cmd += s + " ";
