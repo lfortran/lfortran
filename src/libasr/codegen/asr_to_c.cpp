@@ -299,6 +299,8 @@ public:
                         if( !force_declare ) {
                             force_declare_name = std::string(v.m_name);
                         }
+                        bool is_module_var = ASR::is_a<ASR::Module_t>(
+                                *ASR::down_cast<ASR::symbol_t>(v.m_parent_symtab->asr_owner));
                         generate_array_decl(sub, force_declare_name, type_name, dims,
                                             encoded_type_name, m_dims, n_dims,
                                             use_ref, dummy,
@@ -306,7 +308,8 @@ public:
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
                                             v.m_intent != ASRUtils::intent_unspecified &&
-                                            !is_struct_type_member) || force_declare,
+                                            !is_struct_type_member &&
+                                            !is_module_var) || force_declare,
                                             is_fixed_size, false, v.m_abi);
                     }
                 } else {
