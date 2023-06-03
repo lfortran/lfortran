@@ -537,6 +537,22 @@ R"(#include <stdio.h>
                 std::string(x.m_name) == "char" ||
                 std::string(x.m_name) == "present" ||
                 std::string(x.m_name) == "len" ||
+                std::string(x.m_name) == "cabs" ||
+                std::string(x.m_name) == "cacos" ||
+                std::string(x.m_name) == "cacosh" ||
+                std::string(x.m_name) == "casin" ||
+                std::string(x.m_name) == "casinh" ||
+                std::string(x.m_name) == "catan" ||
+                std::string(x.m_name) == "catanh" ||
+                std::string(x.m_name) == "ccos" ||
+                std::string(x.m_name) == "ccosh" ||
+                std::string(x.m_name) == "cexp" ||
+                std::string(x.m_name) == "clog" ||
+                std::string(x.m_name) == "csin" ||
+                std::string(x.m_name) == "csinh" ||
+                std::string(x.m_name) == "csqrt" ||
+                std::string(x.m_name) == "ctan" ||
+                std::string(x.m_name) == "ctanh" ||
                 std::string(x.m_name) == "not"
                 ) && intrinsic_module) {
             // Intrinsic function `int`
