@@ -193,6 +193,7 @@ jobs:
             ./run_tests.py -s
             cd integration_tests
             ./run_tests.py -b llvm
+            ./run_tests.py -b cpp
 
   minpack:
     name: Check Minpack Compilation
