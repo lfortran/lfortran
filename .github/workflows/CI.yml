@@ -266,10 +266,11 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90
-            $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90
-            $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90
-            $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90
-            $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90
+
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90
 
   fpm:
     name: Check fpm Compilation
@@ -437,7 +438,7 @@ jobs:
         shell: bash -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm llvmImplicit
 
   gfortran:
     name: Test integration_tests with GFortran

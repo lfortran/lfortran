@@ -2466,6 +2466,9 @@ public:
             llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
                 type);
             if (!external) {
+                if (ASRUtils::is_array(x.m_type)) {
+                    throw CodeGenError("Arrays are not supported by visit_Variable");
+                }
                 if (init_value) {
                     module->getNamedGlobal(x.m_name)->setInitializer(
                             init_value);
@@ -2558,6 +2561,21 @@ public:
                                 llvm::ConstantPointerNull::get(
                                     static_cast<llvm::PointerType*>(void_ptr))
                                 );
+                    }
+                }
+                llvm_symtab[h] = ptr;
+            } else {
+                llvm::Type* type = get_type_from_ttype_t_util(x.m_type);
+                llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                    type);
+                if (!external) {
+                    if (init_value) {
+                        module->getNamedGlobal(x.m_name)->setInitializer(
+                                init_value);
+                    } else {
+                        module->getNamedGlobal(x.m_name)->setInitializer(
+                                llvm::Constant::getNullValue(type)
+                            );
                     }
                 }
                 llvm_symtab[h] = ptr;
