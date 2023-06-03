@@ -79,6 +79,7 @@ julia = true
 
 [[test]]
 filename = "do1.f90"
+interactive = true
 ast = true
 
 [[test]]
@@ -335,6 +336,7 @@ asr_preprocess = true
 
 [[test]]
 filename = "expr1.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -342,6 +344,7 @@ pass = "global_stmts"
 
 [[test]]
 filename = "expr2.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -350,6 +353,7 @@ pass = "global_stmts"
 
 [[test]]
 filename = "expr3.f90"
+interactive = true
 ast = true
 asr = true
 pass = "global_stmts"
@@ -357,6 +361,7 @@ llvm = true
 
 [[test]]
 filename = "expr4.f90"
+interactive = true
 ast = true
 asr = true
 pass = "global_stmts"
@@ -371,12 +376,14 @@ obj = true
 
 [[test]]
 filename = "expr6.f90"
+interactive = true
 asr = true
 pass = "global_stmts"
 llvm = true
 
 [[test]]
 filename = "expr7.f90"
+interactive = true
 tokens = true
 ast = true
 ast_f90 = true
@@ -384,11 +391,13 @@ ast_f90 = true
 [[test]]
 filename = "expr8.f90"
 tokens = true
+interactive = true
 ast = true
 ast_f90 = true
 
 [[test]]
 filename = "expr9.f90"
+interactive = true
 ast = true
 ast_f90 = true
 
@@ -632,6 +641,7 @@ asr = true
 
 [[test]]
 filename = "global_scope1.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -639,6 +649,7 @@ pass = "global_stmts"
 
 [[test]]
 filename = "global_scope2.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -646,6 +657,7 @@ pass = "global_stmts"
 
 [[test]]
 filename = "global_scope3.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -653,30 +665,42 @@ pass = "global_stmts"
 
 [[test]]
 filename = "global_scope4.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
 
 [[test]]
 filename = "global_scope5.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
 
 [[test]]
 filename = "global_scope6.f90"
+interactive = true
+asr = true
+llvm = true
+pass = "global_stmts"
+
+[[test]]
+filename = "global_scope7.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
 
 [[test]]
 filename = "global_scope8.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
 
 [[test]]
 filename = "global_scope9.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
@@ -1524,6 +1548,7 @@ mod_to_asr = true
 
 [[test]]
 filename = "fmt1.f90"
+interactive = true
 ast = true
 ast_f90 = true
 
@@ -1534,11 +1559,13 @@ ast_f90 = true
 
 [[test]]
 filename = "associate1.f90"
+interactive = true
 ast = true
 ast_f90 = true
 
 [[test]]
 filename = "fn_call1.f90"
+interactive = true
 ast = true
 ast_f90 = true
 
@@ -2014,12 +2041,6 @@ asr = true
 [[test]]
 filename = "../integration_tests/string_12.f90"
 asr = true
-
-[[test]]
-filename = "global_scope7.f90"
-asr = true
-llvm = true
-pass = "global_stmts"
 
 [[test]]
 filename = "../integration_tests/parsing_01.f90"
@@ -2996,6 +3017,7 @@ asr = true
 
 [[test]]
 filename = "no_prescan_include1.f90"
+interactive = true
 ast = true
 ast_no_prescan = true
 
