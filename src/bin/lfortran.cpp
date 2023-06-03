@@ -1715,6 +1715,7 @@ int main(int argc, char *argv[])
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
+        app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
 
