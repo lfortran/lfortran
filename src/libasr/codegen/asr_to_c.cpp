@@ -779,6 +779,12 @@ R"(
     }
 
     void visit_Module(const ASR::Module_t &x) {
+        if (startswith(x.m_name, "lfortran_intrinsic_")) {
+            intrinsic_module = true;
+        } else {
+            intrinsic_module = false;
+        }
+
         std::string unit_src = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -824,6 +830,7 @@ R"(
             unit_src += src;
         }
         src = unit_src;
+        intrinsic_module = false;
     }
 
     void visit_Program(const ASR::Program_t &x) {
