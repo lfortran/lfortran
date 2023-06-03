@@ -97,8 +97,10 @@ TEST_CASE("Test longer parser (N = 500)") {
     Allocator al(1024*1024);
     //std::cout << "Parse" << std::endl;
     LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
     //auto t1 = std::chrono::high_resolution_clock::now();
-    auto result = TRY(parse(al, text, diagnostics))->m_items[0];
+    auto result = TRY(parse(al, text, diagnostics, co))->m_items[0];
     //auto t2 = std::chrono::high_resolution_clock::now();
     //std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
     //                .count() << "ms" << std::endl;
@@ -1271,7 +1273,9 @@ TEST_CASE("Location") {
 
     Allocator al(1024*1024);
     LCompilers::diag::Diagnostics diagnostics;
-    LCompilers::LFortran::AST::ast_t* result = TRY(parse(al, input, diagnostics))->m_items[0];
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
+    LCompilers::LFortran::AST::ast_t* result = TRY(parse(al, input, diagnostics, co))->m_items[0];
     CHECK(result->loc.first == 0);
     CHECK(result->loc.last == 56);
     auto sub = cast(Subroutine, result);
@@ -1298,7 +1302,7 @@ TEST_CASE("Location") {
     x = y
     x = 213*yz
     end function)";
-    result = TRY(parse(al, input, diagnostics))->m_items[0];
+    result = TRY(parse(al, input, diagnostics, co))->m_items[0];
     CHECK(result->loc.first == 0);
     CHECK(result->loc.last == 54);
 
@@ -1306,7 +1310,7 @@ TEST_CASE("Location") {
     x = y
     x = 213*yz
     end program)";
-    result = TRY(parse(al, input, diagnostics))->m_items[0];
+    result = TRY(parse(al, input, diagnostics, co))->m_items[0];
     CHECK(result->loc.first == 0);
     CHECK(result->loc.last == 50);
 }
@@ -1315,9 +1319,11 @@ TEST_CASE("Errors") {
     Allocator al(1024*1024);
     std::string input;
     LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
 
     input = "(2+3+";
-    Result<LCompilers::LFortran::AST::TranslationUnit_t*> res = parse(al, input, diagnostics);
+    Result<LCompilers::LFortran::AST::TranslationUnit_t*> res = parse(al, input, diagnostics, co);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
@@ -1330,7 +1336,7 @@ TEST_CASE("Errors") {
     x = y
     x = 213*yz+*
     end function)";
-    res = parse(al, input, diagnostics);
+    res = parse(al, input, diagnostics, co);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
@@ -1342,7 +1348,7 @@ TEST_CASE("Errors") {
     x = y
     x = 213-*yz
     end function)";
-    res = parse(al, input, diagnostics);
+    res = parse(al, input, diagnostics, co);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
@@ -1354,7 +1360,7 @@ TEST_CASE("Errors") {
     x = y xxy xx
     x = 213*yz
     end function)";
-    res = parse(al, input, diagnostics);
+    res = parse(al, input, diagnostics, co);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
@@ -1363,7 +1369,7 @@ TEST_CASE("Errors") {
     diagnostics.diagnostics.clear();
 
     input = "1 + .notx.";
-    res = parse(al, input, diagnostics);
+    res = parse(al, input, diagnostics, co);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
@@ -1372,7 +1378,7 @@ TEST_CASE("Errors") {
     diagnostics.diagnostics.clear();
 
     input = "1 + x allocate y";
-    res = parse(al, input, diagnostics);
+    res = parse(al, input, diagnostics, co);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Parser);
@@ -1381,7 +1387,7 @@ TEST_CASE("Errors") {
     diagnostics.diagnostics.clear();
 
     input = "1 @ x allocate y";
-    res = parse(al, input, diagnostics);
+    res = parse(al, input, diagnostics, co);
     CHECK(res.ok == false);
     REQUIRE(diagnostics.diagnostics.size() >= 1);
     CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Tokenizer);

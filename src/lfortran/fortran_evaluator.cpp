@@ -205,8 +205,7 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         code = &tmp;
     }
     Result<LFortran::AST::TranslationUnit_t*>
-        res = LFortran::parse(al, *code, diagnostics,
-        compiler_options.fixed_form);
+        res = LFortran::parse(al, *code, diagnostics, compiler_options);
     if (res.ok) {
         return res.result;
     } else {

@@ -263,7 +263,7 @@ bool determine_completeness(std::string command)
     return complete;
 }
 
-int prompt(bool verbose)
+int prompt(bool verbose, CompilerOptions &cu)
 {
     Terminal term(true, false);
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
@@ -276,8 +276,7 @@ int prompt(bool verbose)
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
     Allocator al(64*1024*1024);
-    CompilerOptions cu;
-    cu.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    cu.interactive = true;
     LCompilers::FortranEvaluator e(cu);
 
     std::vector<std::string> history;
@@ -1833,7 +1832,7 @@ int main(int argc, char *argv[])
 
         if (arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return prompt(arg_v);
+            return prompt(arg_v, compiler_options);
 #else
             std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;

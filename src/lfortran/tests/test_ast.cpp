@@ -40,7 +40,7 @@ end program
 
     LCompilers::diag::Diagnostics diagnostics;
     CompilerOptions compiler_options;
-    AST::TranslationUnit_t* ast = TRY(LFortran::parse(al, src, diagnostics));
+    AST::TranslationUnit_t* ast = TRY(LFortran::parse(al, src, diagnostics, compiler_options));
     ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
         diagnostics, nullptr, false, compiler_options));
 

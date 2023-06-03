@@ -15,10 +15,111 @@
 
 namespace LCompilers::LFortran {
 
+bool is_program_needed(AST::TranslationUnit_t &ast) {
+    for (size_t i = 0; i < ast.n_items; i++) {
+        if (!AST::is_a<AST::mod_t>(*ast.m_items[i])
+            && !AST::is_a<AST::program_unit_t>(*ast.m_items[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_program_end(AST::Name_t* name) {
+    // "end program" should not be a name. Ideally, it should be a special entity.
+    // It is used as a Name_t here, so that `end`, `endprogram` and `end program`
+    // can all be handled together and this simplifies the code logic.
+    return (strcmp(name->m_id, "end") == 0 || strcmp(name->m_id, "endprogram") == 0
+            || strcmp(name->m_id, "end program") == 0);
+}
+
+void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast) {
+    Vec<AST::ast_t*> global_items; global_items.reserve(al, 0);
+    Vec<AST::unit_decl1_t*> use; use.reserve(al, 0);
+    Vec<AST::implicit_statement_t*> implicit; implicit.reserve(al, 0);
+    Vec<AST::unit_decl2_t*> decl; decl.reserve(al, 0);
+    Vec<AST::stmt_t*> body; body.reserve(al, 0);
+    Vec<AST::program_unit_t*> contains_body; contains_body.reserve(al, 0);
+    bool contains = false, program_added = false;
+    for (size_t i = 0; i < ast.n_items; i++) {
+        if (program_added) {
+            if (ast.m_items[i]->type == AST::astType::program_unit
+                || ast.m_items[i]->type == AST::astType::mod) {
+                global_items.push_back(al, ast.m_items[i]);
+            } else {
+                throw parser_local::ParserError("Only function, subroutine, procedure, module, submodule or"
+                    " block data allowed in global scope in non-interactive mode", ast.m_items[i]->loc);
+            }
+        } else if (contains) {
+            if (ast.m_items[i]->type == AST::astType::program_unit) {
+                contains_body.push_back(al, AST::down_cast<AST::program_unit_t>(ast.m_items[i]));
+            } else if (ast.m_items[i]->type == AST::astType::expr) {
+                AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
+                if (AST::is_a<AST::Name_t>(*expr)) {
+                    AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
+                    if (is_program_end(name)) {
+                        AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
+                            use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
+                            body.p, body.size(), contains_body.p, contains_body.size());
+
+                        global_items.push_back(al, program_ast);
+                        program_added = true;
+                    } else {
+                        throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", name->base.base.loc);
+                    }
+                } else {
+                    throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", expr->base.loc);
+                }
+            } else {
+                throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", ast.m_items[i]->loc);
+            }
+        } else if (ast.m_items[i]->type == AST::astType::stmt) {
+            body.push_back(al, AST::down_cast<AST::stmt_t>(ast.m_items[i]));
+        } else if (ast.m_items[i]->type == AST::astType::unit_decl1) {
+            // use module_name
+            use.push_back(al, AST::down_cast<AST::unit_decl1_t>(ast.m_items[i]));
+        } else if (ast.m_items[i]->type == AST::astType::implicit_statement) {
+            implicit.push_back(al, AST::down_cast<AST::implicit_statement_t>(ast.m_items[i]));
+        } else if (ast.m_items[i]->type == AST::astType::unit_decl2) {
+            // Declaration, Interface, DerivedType, Template, Enum, Instantiate, Requirement, Requires
+            decl.push_back(al, AST::down_cast<AST::unit_decl2_t>(ast.m_items[i]));
+        } else if (ast.m_items[i]->type == AST::astType::expr) {
+            AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
+            if (AST::is_a<AST::Name_t>(*expr)) {
+                AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
+                if (strcmp(name->m_id, "stop") == 0) {
+                    AST::ast_t* stop_ast = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(stop_ast));
+                } else if (is_program_end(name)) {
+                    AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
+                    use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
+                    body.p, body.size(), contains_body.p, contains_body.size());
+
+                    global_items.push_back(al, program_ast);
+                    program_added = true;
+                } else if (strcmp(name->m_id, "contains") == 0) {
+                    contains = true;
+                } else {
+                    throw parser_local::ParserError("Statement or Declaration expected inside program, found Variable name", ast.m_items[i]->loc);
+                }
+            } else {
+                throw parser_local::ParserError("Statement or Declaration expected inside program, found Expression", ast.m_items[i]->loc);
+            }
+        } else {
+            global_items.push_back(al, ast.m_items[i]);
+        }
+    }
+    if (!program_added) {
+        throw parser_local::ParserError("Expected program end", ast.base.base.loc);
+    }
+    ast.m_items = global_items.p;
+    ast.n_items = global_items.size();
+}
+
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics, const bool &fixed_form)
+        diag::Diagnostics &diagnostics, const CompilerOptions &co)
 {
-    Parser p(al, diagnostics, fixed_form);
+    Parser p(al, diagnostics, co.fixed_form);
     try {
         if (!p.parse(s)) {
             return Error();
@@ -40,8 +141,18 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         l.first=p.result[0]->loc.first;
         l.last=p.result[p.result.size()-1]->loc.last;
     }
-    return (AST::TranslationUnit_t*)AST::make_TranslationUnit_t(al, l,
+    AST::TranslationUnit_t* ast = (AST::TranslationUnit_t*)AST::make_TranslationUnit_t(al, l,
         p.result.p, p.result.size());
+    if (!co.interactive && !co.fixed_form && is_program_needed(*ast)) {
+        try {
+            fix_program_without_program_line(al, *ast);
+        } catch (const parser_local::ParserError &e) {
+            Error error;
+            diagnostics.diagnostics.push_back(e.d);
+            return error;
+        }
+    }
+    return ast;
 }
 
 bool Parser::parse(const std::string &input)

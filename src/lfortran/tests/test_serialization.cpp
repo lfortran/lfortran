@@ -58,7 +58,9 @@ void ast_ser(const std::string &src) {
 
     LCompilers::LFortran::AST::TranslationUnit_t* result;
     LCompilers::diag::Diagnostics diagnostics;
-    result = TRY(LCompilers::LFortran::parse(al, src, diagnostics));
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
+    result = TRY(LCompilers::LFortran::parse(al, src, diagnostics, co));
     std::string ast_orig = LCompilers::LFortran::pickle(*result);
     std::string binary = LCompilers::LFortran::serialize(*result);
 
@@ -77,7 +79,7 @@ void asr_ser(const std::string &src) {
     LCompilers::LFortran::AST::TranslationUnit_t* ast0;
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::CompilerOptions compiler_options;
-    ast0 = TRY(LCompilers::LFortran::parse(al, src, diagnostics));
+    ast0 = TRY(LCompilers::LFortran::parse(al, src, diagnostics, compiler_options));
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast0,
         diagnostics, nullptr, false, compiler_options));
 
@@ -104,7 +106,7 @@ void asr_mod(const std::string &src) {
     LCompilers::LFortran::AST::TranslationUnit_t* ast0;
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::CompilerOptions compiler_options;
-    ast0 = TRY(LCompilers::LFortran::parse(al, src, diagnostics));
+    ast0 = TRY(LCompilers::LFortran::parse(al, src, diagnostics, compiler_options));
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast0,
         diagnostics, nullptr, false, compiler_options));
 

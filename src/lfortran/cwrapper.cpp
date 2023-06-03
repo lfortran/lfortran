@@ -53,8 +53,10 @@ lfortran_exceptions_t lfortran_parser_parse(LFortranCParser *self,
 
     LCompilers::LFortran::AST::ast_t* result;
     LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
     LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*> res
-        = LCompilers::LFortran::parse(self->al, input, diagnostics);
+        = LCompilers::LFortran::parse(self->al, input, diagnostics, co);
     if (res.ok) {
         result = res.result->m_items[0];
     } else {
