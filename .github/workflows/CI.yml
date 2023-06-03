@@ -159,7 +159,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -202,7 +202,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -280,7 +280,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -325,7 +325,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux_llvm10.yml
           extra-specs: |
@@ -366,7 +366,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux_llvm14.yml
           extra-specs: |
@@ -407,7 +407,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux_llvm15.yml
           extra-specs: |
@@ -462,7 +462,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -517,7 +517,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -536,7 +536,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -555,7 +555,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -604,7 +604,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -628,7 +628,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_docs_linux.yml
 
