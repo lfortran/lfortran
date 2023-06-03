@@ -2568,6 +2568,21 @@ public:
                     }
                 }
                 llvm_symtab[h] = ptr;
+            } else {
+                llvm::Type* type = get_type_from_ttype_t_util(x.m_type);
+                llvm::Constant *ptr = module->getOrInsertGlobal(x.m_name,
+                    type);
+                if (!external) {
+                    if (init_value) {
+                        module->getNamedGlobal(x.m_name)->setInitializer(
+                                init_value);
+                    } else {
+                        module->getNamedGlobal(x.m_name)->setInitializer(
+                                llvm::Constant::getNullValue(type)
+                            );
+                    }
+                }
+                llvm_symtab[h] = ptr;
             }
         } else if(x.m_type->type == ASR::ttypeType::Pointer) {
             ASR::dimension_t* m_dims = nullptr;
