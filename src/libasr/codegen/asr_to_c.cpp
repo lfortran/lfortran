@@ -595,9 +595,13 @@ public:
                     }
                 }
                 if( init_expr ) {
-                    this->visit_expr(*init_expr);
-                    std::string init = src;
-                    sub += " = " + init;
+                    if (is_c && ASR::is_a<ASR::StringChr_t>(*init_expr)) {
+                        // TODO: Not supported yet
+                    } else {
+                        this->visit_expr(*init_expr);
+                        std::string init = src;
+                        sub += " = " + init;
+                    }
                 }
             }
         }
