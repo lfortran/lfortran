@@ -111,6 +111,8 @@ symbol
         identifier proc_name, symbol proc, abi abi, bool is_deferred)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
+    | Requirement(symbol_table symtab, identifier name, identifier* args)
+    | Template(symbol_table symtab, identifier name, identifier* args)
 
 storage_type = Default | Save | Parameter | Allocatable
 access = Public | Private
@@ -373,12 +375,9 @@ ttype
     | Const(ttype type)
     | CPtr()
     | TypeParameter(identifier param, dimension* dims)
-    | FunctionType(ttype* arg_types, ttype? return_var_type,
-        abi abi, deftype deftype, string? bindc_name, bool elemental,
-        bool pure, bool module, bool inline, bool static, ttype* type_params,
-        symbol* restrictions, bool is_restriction)
-
-restriction_arg = RestrictionArg(identifier restriction_name, symbol restriction_func)
+    | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
+        deftype deftype, string? bindc_name, bool elemental, bool pure,
+        bool module, bool inline, bool static, bool is_restriction)
 
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
 

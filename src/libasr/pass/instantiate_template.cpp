@@ -10,19 +10,21 @@ namespace LCompilers {
 class FunctionInstantiator : public ASR::BaseExprStmtDuplicator<FunctionInstantiator>
 {
 public:
-    SymbolTable *func_scope;
-    SymbolTable *current_scope;
+    SymbolTable *func_scope;            // the instantiate scope
+    SymbolTable *current_scope;         // the new function scope
+    SymbolTable *template_scope;        // the template scope, where the environment is
     std::map<std::string, ASR::ttype_t*> subs;
     std::map<std::string, ASR::symbol_t*> rt_subs;
     std::string new_func_name;
-    std::vector<ASR::Function_t*> rts;
+    // std::vector<ASR::Function_t*> rts;
     SetChar dependencies;
 
     FunctionInstantiator(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
             std::map<std::string, ASR::symbol_t*> rt_subs, SymbolTable *func_scope,
-            std::string new_func_name):
+            SymbolTable *template_scope, std::string new_func_name):
         BaseExprStmtDuplicator(al),
         func_scope{func_scope},
+        template_scope{template_scope},
         subs{subs},
         rt_subs{rt_subs},
         new_func_name{new_func_name}
@@ -110,11 +112,6 @@ public:
             }
         }
 
-        for (size_t i=0; i < ASRUtils::get_FunctionType(x)->n_restrictions; i++) {
-            rts.push_back(ASR::down_cast<ASR::Function_t>(
-                ASRUtils::get_FunctionType(x)->m_restrictions[i]));
-        }
-
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x->n_body);
         for (size_t i=0; i<x->n_body; i++) {
@@ -149,7 +146,7 @@ public:
             new_return_var_ref,
             func_abi, func_access, func_deftype, bindc_name,
             func_elemental, func_pure, func_module, ASRUtils::get_FunctionType(x)->m_inline,
-            ASRUtils::get_FunctionType(x)->m_static, nullptr, 0, nullptr, 0, false, false, false);
+            ASRUtils::get_FunctionType(x)->m_static, false, false, false);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_func_name, t);
@@ -232,7 +229,7 @@ public:
 
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t *x) {
         std::string call_name = ASRUtils::symbol_name(x->m_name);
-        ASR::symbol_t *name = func_scope->get_symbol(call_name);
+        ASR::symbol_t *name = template_scope->get_symbol(call_name);
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
         for (size_t i=0; i<x->n_args; i++) {
@@ -244,13 +241,13 @@ public:
         ASR::ttype_t* type = substitute_type(x->m_type);
         ASR::expr_t* value = duplicate_expr(x->m_value);
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
-        if (ASRUtils::is_restriction_function(name)) {
+        if (ASRUtils::is_requirement_function(name)) {
             name = rt_subs[call_name];
-        } else if (ASRUtils::is_generic_function(name)) {
+        } else if (ASRUtils::is_template_function(name)) {
             std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name);
             ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(name2);
-            FunctionInstantiator nested_tf(al, subs, rt_subs, func_scope, nested_func_name);
+            FunctionInstantiator nested_tf(al, subs, rt_subs, func_scope, template_scope, nested_func_name);
             ASR::asr_t* nested_generic_func = nested_tf.instantiate_Function(func);
             name = ASR::down_cast<ASR::symbol_t>(nested_generic_func);
         }
@@ -261,7 +258,7 @@ public:
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t *x) {
         std::string call_name = ASRUtils::symbol_name(x->m_name);
-        ASR::symbol_t *name = func_scope->get_symbol(call_name);
+        ASR::symbol_t *name = template_scope->get_symbol(call_name);
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
         for (size_t i=0; i<x->n_args; i++) {
@@ -271,13 +268,13 @@ public:
             args.push_back(al, new_arg);
         }
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
-        if (ASRUtils::is_restriction_function(name)) {
+        if (ASRUtils::is_requirement_function(name)) {
             name = rt_subs[call_name];
         } else {
             std::string nested_func_name = current_scope->get_unique_name("__asr_generic_" + call_name);
             ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(name2);
-            FunctionInstantiator nested_tf(al, subs, rt_subs, func_scope, nested_func_name);
+            FunctionInstantiator nested_tf(al, subs, rt_subs, func_scope, template_scope, nested_func_name);
             ASR::asr_t* nested_generic_func = nested_tf.instantiate_Function(func);
             name = ASR::down_cast<ASR::symbol_t>(nested_generic_func);
         }
@@ -420,10 +417,10 @@ public:
 
 ASR::symbol_t* pass_instantiate_generic_function(Allocator &al, std::map<std::string, ASR::ttype_t*> subs,
         std::map<std::string, ASR::symbol_t*> rt_subs, SymbolTable *current_scope,
-        std::string new_func_name, ASR::symbol_t *sym) {
+        SymbolTable* template_scope, std::string new_func_name, ASR::symbol_t *sym) {
     ASR::symbol_t* sym2 = ASRUtils::symbol_get_past_external(sym);
     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym2);
-    FunctionInstantiator tf(al, subs, rt_subs, current_scope, new_func_name);
+    FunctionInstantiator tf(al, subs, rt_subs, current_scope, template_scope, new_func_name);
     ASR::asr_t *new_function = tf.instantiate_Function(func);
     return ASR::down_cast<ASR::symbol_t>(new_function);
 }

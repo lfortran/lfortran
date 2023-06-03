@@ -259,8 +259,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     [msg_scalar]
@@ -957,8 +955,6 @@
                                                         .false.
                                                         .false.
                                                         .false.
-                                                        []
-                                                        []
                                                         .false.
                                                     )
                                                     [len_trim
@@ -1183,8 +1179,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     [present

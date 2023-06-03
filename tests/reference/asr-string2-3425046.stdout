@@ -100,8 +100,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     [f_string@f_string~genericprocedure]
@@ -200,8 +198,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     [f_string@f_string_cptr]
@@ -365,8 +361,6 @@
                                                         .false.
                                                         .false.
                                                         .false.
-                                                        []
-                                                        []
                                                         .false.
                                                     )
                                                     []
@@ -423,8 +417,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     [f_string_cptr_n
@@ -534,8 +526,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     []
@@ -600,8 +590,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
-                                        []
                                         .false.
                                     )
                                     []

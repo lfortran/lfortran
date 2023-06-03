@@ -253,6 +253,12 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Block: {
             return ASR::down_cast<ASR::Block_t>(f)->m_name;
         }
+        case ASR::symbolType::Requirement: {
+            return ASR::down_cast<ASR::Requirement_t>(f)->m_name;
+        }
+        case ASR::symbolType::Template: {
+            return ASR::down_cast<ASR::Template_t>(f)->m_name;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -425,6 +431,12 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Block: {
             return ASR::down_cast<ASR::Block_t>(f)->m_symtab->parent;
         }
+        case ASR::symbolType::Requirement: {
+            return ASR::down_cast<ASR::Requirement_t>(f)->m_symtab->parent;
+        }
+        case ASR::symbolType::Template: {
+            return ASR::down_cast<ASR::Template_t>(f)->m_symtab->parent;
+        }
         default : throw LCompilersException("Not implemented");
     }
 }
@@ -472,6 +484,12 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Block: {
             return ASR::down_cast<ASR::Block_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::Requirement: {
+            return ASR::down_cast<ASR::Requirement_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::Template: {
+            return ASR::down_cast<ASR::Template_t>(f)->m_symtab;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -1498,29 +1516,32 @@ static inline bool is_logical(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Logical_t>(*type_get_past_pointer(&x));
 }
 
-static inline bool is_generic(ASR::ttype_t &x) {
+static inline bool is_type_parameter(ASR::ttype_t &x) {
     switch (x.type) {
         case ASR::ttypeType::List: {
             ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(type_get_past_pointer(&x));
-            return is_generic(*list_type->m_type);
+            return is_type_parameter(*list_type->m_type);
         }
         default : return ASR::is_a<ASR::TypeParameter_t>(*type_get_past_pointer(&x));
     }
 }
 
-static inline bool is_generic_function(ASR::symbol_t *x) {
+static inline bool is_template_function(ASR::symbol_t *x) {
     ASR::symbol_t* x2 = symbol_get_past_external(x);
     switch (x2->type) {
         case ASR::symbolType::Function: {
-            ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x2);
-            return (ASRUtils::get_FunctionType(func_sym)->n_type_params > 0 &&
-                   !ASRUtils::get_FunctionType(func_sym)->m_is_restriction);
+            const SymbolTable* parent_symtab = symbol_parent_symtab(x2);
+            if (ASR::is_a<ASR::symbol_t>(*parent_symtab->asr_owner)) {
+                ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(parent_symtab->asr_owner);
+                return ASR::is_a<ASR::Template_t>(*parent_sym);
+            }
+            return false;
         }
         default: return false;
     }
 }
 
-static inline bool is_restriction_function(ASR::symbol_t *x) {
+static inline bool is_requirement_function(ASR::symbol_t *x) {
     ASR::symbol_t* x2 = symbol_get_past_external(x);
     switch (x2->type) {
         case ASR::symbolType::Function: {
@@ -1955,8 +1976,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             return ASRUtils::TYPE(ASR::make_FunctionType_t(al, ft->base.base.loc,
                 arg_types.p, arg_types.size(), ft->m_return_var_type, ft->m_abi,
                 ft->m_deftype, ft->m_bindc_name, ft->m_elemental, ft->m_pure, ft->m_module, ft->m_inline,
-                ft->m_static, ft->m_type_params, ft->n_type_params, ft->m_restrictions, ft->n_restrictions,
-                ft->m_is_restriction));
+                ft->m_static, ft->m_is_restriction));
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
@@ -2987,8 +3007,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
     ASR::expr_t* m_return_var, ASR::abiType m_abi, ASR::accessType m_access,
     ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
-    bool m_module, bool m_inline, bool m_static, ASR::ttype_t** m_type_params,
-    size_t n_type_params, ASR::symbol_t** m_restrictions, size_t n_restrictions,
+    bool m_module, bool m_inline, bool m_static,
     bool m_is_restriction, bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr) {
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
@@ -3008,8 +3027,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
         al, loc, arg_types.p, arg_types.size(), return_var_type, m_abi,
         m_deftype, m_bindc_name, m_elemental, m_pure, m_module, m_inline,
-        m_static, m_type_params, n_type_params, m_restrictions, n_restrictions,
-        m_is_restriction));
+        m_static, m_is_restriction));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
@@ -3190,28 +3208,6 @@ class SymbolDuplicator {
 
         ASR::FunctionType_t* function_type = ASRUtils::get_FunctionType(function);
 
-        Vec<ASR::ttype_t*> new_ttypes;
-        new_ttypes.reserve(al, function_type->n_type_params);
-        for( size_t i = 0; i < function_type->n_type_params; i++ ) {
-            node_duplicator.success = true;
-            ASR::ttype_t* new_ttype = node_duplicator.duplicate_ttype(function_type->m_type_params[i]);
-            if( !node_duplicator.success ) {
-                return nullptr;
-            }
-            new_ttypes.push_back(al, new_ttype);
-        }
-
-        Vec<ASR::symbol_t*> new_restrictions;
-        new_restrictions.reserve(al, function_type->n_restrictions);
-        for( size_t i = 0; i < function_type->n_restrictions; i++ ) {
-            std::string restriction_name = ASRUtils::symbol_name(function_type->m_restrictions[i]);
-            ASR::symbol_t* new_restriction = function_symtab->resolve_symbol(restriction_name);
-            if( !new_restriction ) {
-                throw LCompilersException("Symbol " + restriction_name + " not found.");
-            }
-            new_restrictions.push_back(al, new_restriction);
-        }
-
         return ASR::down_cast<ASR::symbol_t>(make_Function_t_util(al,
             function->base.base.loc, function_symtab, function->m_name,
             function->m_dependencies, function->n_dependencies, new_args.p,
@@ -3219,7 +3215,6 @@ class SymbolDuplicator {
             function_type->m_abi, function->m_access, function_type->m_deftype,
             function_type->m_bindc_name, function_type->m_elemental, function_type->m_pure,
             function_type->m_module, function_type->m_inline, function_type->m_static,
-            new_ttypes.p, new_ttypes.size(), new_restrictions.p, new_restrictions.size(),
             function_type->m_is_restriction, function->m_deterministic,
             function->m_side_effect_free));
     }

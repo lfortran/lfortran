@@ -26,7 +26,6 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash);
 
@@ -35,7 +34,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<std::string, std::map<std::string, ASR::asr_t*>>& requirement_map,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash);
 
@@ -77,12 +75,11 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     SymbolTable *symbol_table, bool symtab_only,
     CompilerOptions &compiler_options)
 {
-    std::map<std::string, std::map<std::string, ASR::asr_t*>> requirement_map;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::map<uint64_t, ASR::symbol_t*> common_variables_hash;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
-        compiler_options, requirement_map, implicit_mapping, common_variables_hash);
+        compiler_options, implicit_mapping, common_variables_hash);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -94,10 +91,9 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return Error();
         };
 #endif
-
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
-            requirement_map, implicit_mapping, common_variables_hash);
+            implicit_mapping, common_variables_hash);
         if (res.ok) {
             tu = res.result;
         } else {
