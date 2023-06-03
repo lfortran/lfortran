@@ -1,0 +1,101 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            print_03:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    print_03
+                    []
+                    [(=
+                        (Var 2 x)
+                        (IntegerConstant 24 (Integer 4 []))
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            ""
+                            (Character 1 0 () [])
+                        )
+                        (StringConstant
+                            "x is "
+                            (Character 1 5 () [])
+                        )
+                        (Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringConstant
+                            ""
+                            (Character 1 0 () [])
+                        )
+                        (StringConstant
+                            "x is "
+                            (Character 1 5 () [])
+                        )
+                        (Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            ""
+                            (Character 1 0 () [])
+                        )
+                        (StringConstant
+                            "ok"
+                            (Character 1 2 () [])
+                        )]
+                        ()
+                        ()
+                    )
+                    (FileWrite
+                        0
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                        [(StringConstant
+                            ""
+                            (Character 1 0 () [])
+                        )
+                        (StringConstant
+                            "ok"
+                            (Character 1 2 () [])
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)
