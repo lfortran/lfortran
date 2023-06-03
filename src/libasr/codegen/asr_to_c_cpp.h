@@ -462,7 +462,13 @@ R"(#include <stdio.h>
         } else {
             sub = "void ";
         }
-        std::string sym_name = x.m_name;
+        std::string sym_name;
+        ASR::FunctionType_t *f_type = ASRUtils::get_FunctionType(x);
+        if (f_type->m_abi == ASR::abiType::BindC && f_type->m_bindc_name) {
+            sym_name = f_type->m_bindc_name;
+        } else {
+            sym_name = x.m_name;
+        }
         if (sym_name == "main") {
             sym_name = "_xx_lcompilers_changed_main_xx";
         }
@@ -630,6 +636,12 @@ R"(#include <stdio.h>
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
         std::string fn_name = fn->m_name;
+        ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(fn);
+        if (fn_type->m_abi == ASR::abiType::BindC && fn_type->m_bindc_name) {
+            fn_name = fn_type->m_bindc_name;
+        } else {
+            fn_name = fn->m_name;
+        }
         if (sym_info[get_hash((ASR::asr_t*)fn)].intrinsic_function) {
             if (fn_name == "size") {
                 LCOMPILERS_ASSERT(x.n_args > 0);
@@ -2213,8 +2225,14 @@ R"(#include <stdio.h>
         std::string indent(indentation_level*indentation_spaces, ' ');
         ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
+        std::string sym_name;
+        ASR::FunctionType_t *s_type = ASRUtils::get_FunctionType(s);
+        if (s_type->m_abi == ASR::abiType::BindC && s_type->m_bindc_name) {
+            sym_name = s_type->m_bindc_name;
+        } else {
+            sym_name = s->m_name;
+        }
         // TODO: use a mapping with a hash(s) instead:
-        std::string sym_name = s->m_name;
         if (sym_name == "exit") {
             sym_name = "_xx_lcompilers_changed_exit_xx";
         }
