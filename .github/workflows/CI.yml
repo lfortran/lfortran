@@ -193,7 +193,6 @@ jobs:
             ./run_tests.py -s
             cd integration_tests
             ./run_tests.py -b llvm
-            ./run_tests.py -b cpp
 
   minpack:
     name: Check Minpack Compilation
@@ -529,7 +528,7 @@ jobs:
         run: |
           xonsh ci/test_without_llvm_backend.xsh
 
-  test_cpp:
+  test_cpp_build:
     name: Test CPP
     runs-on: ubuntu-latest
     steps:
@@ -596,6 +595,47 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b wasm
+
+  test_cpp:
+    name: Test C++ backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/provision-with-micromamba@v16
+        with:
+          environment-file: ci/environment_linux.yml
+          extra-specs: |
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b cpp
 
   upload_tarball:
     name: Upload Tarball
