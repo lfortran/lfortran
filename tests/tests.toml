@@ -2318,6 +2318,11 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "print3.f90"
+print_leading_space = true
+asr = true
+
+[[test]]
 filename = "uppercase1.f90"
 asr = true
 

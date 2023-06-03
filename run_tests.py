@@ -54,6 +54,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     obj = is_included("obj")
     x86 = is_included("x86")
     bin_ = is_included("bin")
+    print_leading_space = is_included("print_leading_space")
     pass_ = test.get("pass", None)
     extrafiles = test.get("extrafiles", "").split(",")
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
@@ -75,6 +76,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")
 
     extra_args = f"--no-error-banner {show_verbose}"
+    if print_leading_space:
+        extra_args += " --print-leading-space"
 
     if tokens:
         run_test(
