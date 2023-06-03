@@ -594,6 +594,7 @@ script_unit
     | var_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
+    | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
     ;
 
 // ----------------------------------------------------------------------------
