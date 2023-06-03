@@ -856,7 +856,13 @@ int compile_to_object_file(const std::string &infile,
     LCompilers::LocationManager lm;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    lpm.do_not_use_optimization_passes();
+
+    if (compiler_options.fast) {
+        lpm.use_optimization_passes();
+    } else {
+        lpm.do_not_use_optimization_passes();
+    }
+
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = infile;
@@ -1712,10 +1718,6 @@ int main(int argc, char *argv[])
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
 
-
-        if( compiler_options.fast ) {
-            lfortran_pass_manager.use_optimization_passes();
-        }
         /*
         * Subcommands:
         */
@@ -1772,6 +1774,10 @@ int main(int argc, char *argv[])
         compiler_options.use_colors = !arg_no_color;
         compiler_options.indent = !arg_no_indent;
         compiler_options.prescan = !arg_no_prescan;
+
+        if( compiler_options.fast ) {
+            lfortran_pass_manager.use_optimization_passes();
+        }
 
         if (fmt) {
             if (CLI::NonexistentPath(arg_fmt_file).empty())

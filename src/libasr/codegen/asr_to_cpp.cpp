@@ -744,6 +744,7 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
 {
     LCompilers::PassOptions pass_options;
     pass_options.always_run = true;
+    pass_options.fast = co.fast;
     pass_unused_functions(al, asr, pass_options);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
