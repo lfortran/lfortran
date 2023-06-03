@@ -1,0 +1,2 @@
+print *, "OK"
+end
