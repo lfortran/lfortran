@@ -305,6 +305,7 @@ public:
                                             (v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
+                                            v.m_intent != ASRUtils::intent_unspecified &&
                                             !is_struct_type_member) || force_declare,
                                             is_fixed_size, false, v.m_abi);
                     }
@@ -343,6 +344,7 @@ public:
                                             (v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
+                                            v.m_intent != ASRUtils::intent_unspecified &&
                                             !is_struct_type_member) || force_declare,
                                             is_fixed_size, false, v.m_abi);
                     }
@@ -381,6 +383,7 @@ public:
                                             (v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
+                                            v.m_intent != ASRUtils::intent_unspecified &&
                                             !is_struct_type_member) || force_declare, is_fixed_size);
                     }
                 } else {
@@ -419,6 +422,7 @@ public:
                                             (v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
+                                            v.m_intent != ASRUtils::intent_unspecified &&
                                             !is_struct_type_member) || force_declare, is_fixed_size);
                     }
                 } else {
