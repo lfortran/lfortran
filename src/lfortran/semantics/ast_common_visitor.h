@@ -1464,13 +1464,11 @@ public:
                                             } else {
                                                 for (auto &expr: common_block_dictionary[common_block_name].second) {
                                                     ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(expr);
-                                                    char* var_name = var_->m_name;
                                                     s = x.m_syms[i];
                                                     AST::expr_t* expr_ = s.m_initializer;
                                                     this->visit_expr(*expr_);
                                                     ASR::Variable_t* var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
-                                                    char* var_name_ = var__->m_name;
-                                                    if (strcmp(var_name, var_name_) != 0) {
+                                                    if (!ASRUtils::check_equal_type(var_->m_type, var__->m_type)) {
                                                         throw SemanticError("The order of variables in common block must be same in all programs",
                                                             x.base.base.loc);
                                                     } else {
