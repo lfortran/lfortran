@@ -13,6 +13,7 @@ if (NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR
 endif ()
 
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
+set(DISABLE_FAST no CACHE BOOL "Disable --fast testing of integration tests")
 
 enable_testing()
 
@@ -31,6 +32,7 @@ else ()
 endif ()
 message("Installation prefix: ${CMAKE_INSTALL_PREFIX}")
 message("LFORTRAN_BACKEND: ${LFORTRAN_BACKEND}")
+message("DISABLE_FAST: ${DISABLE_FAST}")
 
 
 macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_INCLUDE_PATH RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
@@ -139,7 +141,7 @@ macro(RUN)
 
     RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_INCLUDE_PATH RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
 
-    if (NOT RUN_NOFAST)
+    if ((NOT DISABLE_FAST) AND (NOT RUN_NOFAST))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --fast)
         set(RUN_NAME "${RUN_NAME}_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
