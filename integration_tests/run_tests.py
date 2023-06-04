@@ -40,6 +40,28 @@ def test_backend(backend):
         return
     run_test(backend)
 
+def check_module_names():
+    from glob import glob
+    import re
+    mod = re.compile("(module|MODULE) (\w+)")
+    files = glob("*.f90")
+    module_names = []
+    file_names = []
+    for file in files:
+        f = open(file).read()
+        s = mod.search(f)
+        if s:
+            module_names.append(s.group(2))
+            file_names.append(file)
+    for i in range(len(module_names)):
+        name = module_names[i]
+        if name in module_names[i+1:]:
+            print("FAIL: Found a duplicate module name")
+            print("Name:", name)
+            print("Filename:", file_names[i])
+            raise Exception("Duplicate module names")
+    print("OK: All module names are unique")
+
 def get_args():
     parser = argparse.ArgumentParser(description="LFortran Integration Test Suite")
     parser.add_argument("-j", "-n", "--no_of_threads", type=int,
@@ -47,10 +69,16 @@ def get_args():
     parser.add_argument("-b", "--backends", nargs="*", default=["llvm"], type=str,
                 help="Test the requested backends (%s)" % \
                         ", ".join(supported_backends))
+    parser.add_argument("-m", action='store_true',
+                help="Check that all module names are unique")
     return parser.parse_args()
 
 def main():
     args = get_args()
+
+    if args.m:
+        check_module_names()
+        return
 
     # Setup
     global no_of_threads
