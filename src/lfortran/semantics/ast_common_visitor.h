@@ -1316,6 +1316,60 @@ public:
         return var_;
     } 
 
+    void populate_common_dictionary(const AST::Declaration_t &x, ASR::symbol_t* common_block_struct_sym, ASR::StructType_t* struct_type, std::string common_block_name, size_t &i) {
+        AST::var_sym_t& s = x.m_syms[i];
+        if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()) {
+            // create a new common_block pair
+            std::vector<ASR::expr_t*> common_block_variables;
+            AST::expr_t* expr = s.m_initializer;
+            ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
+            uint64_t hash = get_hash((ASR::asr_t*) var_);
+            common_block_variables.push_back(ASRUtils::EXPR(tmp));
+            common_block_dictionary[common_block_name].first = true;
+            common_block_dictionary[common_block_name].second = common_block_variables;
+            common_variables_hash[hash] = common_block_struct_sym;
+
+            // add variable to struct
+            add_sym_to_struct(var_, struct_type);
+        } else {
+            // check if it has been already declared in any other program
+            if (!common_block_dictionary[common_block_name].first) {
+                // already declared in some other program, verify the order of variables
+                std::vector<ASR::expr_t*> common_block_variables = common_block_dictionary[common_block_name].second;
+                if (common_block_variables.size() != x.n_syms) {
+                    throw SemanticError("The order of variables in common block must be same in all programs",
+                        x.base.base.loc);
+                } else {
+                    for (auto &expr: common_block_dictionary[common_block_name].second) {
+                        ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(expr);
+                        s = x.m_syms[i];
+                        AST::expr_t* expr_ = s.m_initializer;
+                        this->visit_expr(*expr_);
+                        ASR::Variable_t* var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                        if (!ASRUtils::check_equal_type(var_->m_type, var__->m_type)) {
+                            throw SemanticError("The order of variables in common block must be same in all programs",
+                                x.base.base.loc);
+                        } else {
+                            uint64_t hash = get_hash((ASR::asr_t*) var__);
+                            common_variables_hash[hash] = common_block_struct_sym;
+                        }
+                        i++;
+                    }
+                    i-=1;
+                }
+            } else {
+                AST::expr_t* expr = s.m_initializer;
+                this->visit_expr(*expr);
+                ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                uint64_t hash = get_hash((ASR::asr_t*) var_);
+                common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
+                common_variables_hash[hash] = common_block_struct_sym;
+                // add variable to struct
+                add_sym_to_struct(var_, struct_type);
+            }
+        }
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -1379,16 +1433,25 @@ public:
                             if (s.m_name == nullptr) {
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrCommon) {
-                                    is_common_variable = true;
-                                    // add to existing common_block pair
-                                    AST::expr_t* expr = s.m_initializer;
-                                    this->visit_expr(*expr);
-                                    ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
-                                    uint64_t hash = get_hash((ASR::asr_t*) var_);
-                                    common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
-                                    common_variables_hash[hash] = common_block_struct_sym;
-                                    add_sym_to_struct(var_, struct_type);
-                                    is_common_variable = false;
+                                    if (struct_type) {
+                                        is_common_variable = true;
+                                        // add to existing common_block pair
+                                        AST::expr_t* expr = s.m_initializer;
+                                        this->visit_expr(*expr);
+                                        ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
+                                        uint64_t hash = get_hash((ASR::asr_t*) var_);
+                                        common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
+                                        common_variables_hash[hash] = common_block_struct_sym;
+                                        add_sym_to_struct(var_, struct_type);
+                                        is_common_variable = false;
+                                    } else {
+                                        is_common_variable = true;
+                                        common_block_name = "blank_block";
+                                        common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
+                                        struct_type = ASR::down_cast<ASR::StructType_t>(common_block_struct_sym);
+                                        populate_common_dictionary(x, common_block_struct_sym, struct_type, common_block_name, i);
+                                        is_common_variable = false;
+                                    }
                                 } else {
                                     if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
                                         // Operator Overloading Encountered
@@ -1447,57 +1510,7 @@ public:
                                     common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
                                     struct_type = ASR::down_cast<ASR::StructType_t>(common_block_struct_sym);
                                     // populate common_block_dictionary
-                                    // if common_block_dictionary do not contain the common_block_name
-                                    if (common_block_dictionary.find(common_block_name) == common_block_dictionary.end()) {
-                                        // create a new common_block pair
-                                        std::vector<ASR::expr_t*> common_block_variables;
-                                        AST::expr_t* expr = s.m_initializer;
-                                        ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
-                                        uint64_t hash = get_hash((ASR::asr_t*) var_);
-                                        common_block_variables.push_back(ASRUtils::EXPR(tmp));
-                                        common_block_dictionary[common_block_name].first = true;
-                                        common_block_dictionary[common_block_name].second = common_block_variables;
-                                        common_variables_hash[hash] = common_block_struct_sym;
-
-                                        // add variable to struct
-                                        add_sym_to_struct(var_, struct_type);
-                                    } else {
-                                        // check if it has been already declared in any other program
-                                        if (!common_block_dictionary[common_block_name].first) {
-                                            // already declared in some other program, verify the order of variables
-                                            std::vector<ASR::expr_t*> common_block_variables = common_block_dictionary[common_block_name].second;
-                                            if (common_block_variables.size() != x.n_syms) {
-                                                throw SemanticError("The order of variables in common block must be same in all programs",
-                                                    x.base.base.loc);
-                                            } else {
-                                                for (auto &expr: common_block_dictionary[common_block_name].second) {
-                                                    ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(expr);
-                                                    s = x.m_syms[i];
-                                                    AST::expr_t* expr_ = s.m_initializer;
-                                                    this->visit_expr(*expr_);
-                                                    ASR::Variable_t* var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
-                                                    if (!ASRUtils::check_equal_type(var_->m_type, var__->m_type)) {
-                                                        throw SemanticError("The order of variables in common block must be same in all programs",
-                                                            x.base.base.loc);
-                                                    } else {
-                                                        uint64_t hash = get_hash((ASR::asr_t*) var__);
-                                                        common_variables_hash[hash] = common_block_struct_sym;
-                                                    }
-                                                    i++;
-                                                }
-                                                i-=1;
-                                            }
-                                        } else {
-                                            AST::expr_t* expr = s.m_initializer;
-                                            this->visit_expr(*expr);
-                                            ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
-                                            uint64_t hash = get_hash((ASR::asr_t*) var_);
-                                            common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
-                                            common_variables_hash[hash] = common_block_struct_sym;
-                                            // add variable to struct
-                                            add_sym_to_struct(var_, struct_type);
-                                        }
-                                    }
+                                    populate_common_dictionary(x, common_block_struct_sym, struct_type, common_block_name, i);
                                     is_common_variable = false;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
