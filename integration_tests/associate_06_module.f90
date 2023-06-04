@@ -1,4 +1,4 @@
-module stdlib_string_type
+module associate_06_stdlib_string_type
 
 contains
 

@@ -1,6 +1,6 @@
 (TranslationUnit
     [(Module
-        module_11
+        modules_11_module11
         (TriviaNode
             []
             [(EndOfLine)
@@ -80,7 +80,7 @@
         ()
         [(Use
             []
-            module_11
+            modules_11_module11
             []
             .false.
             ()

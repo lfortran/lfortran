@@ -2,18 +2,7 @@
     (SymbolTable
         1
         {
-            stdlib_string:
-                (Program
-                    (SymbolTable
-                        8
-                        {
-                            
-                        })
-                    stdlib_string
-                    []
-                    []
-                ),
-            stdlib_string_type:
+            operator_overloading_04_stdlib_string_type:
                 (Module
                     (SymbolTable
                         2
@@ -249,12 +238,12 @@
                                     Public
                                 )
                         })
-                    stdlib_string_type
+                    operator_overloading_04_stdlib_string_type
                     []
                     .false.
                     .false.
                 ),
-            stdlib_string_use:
+            operator_overloading_stdlib_string_use:
                 (Module
                     (SymbolTable
                         6
@@ -269,7 +258,7 @@
                                                     7
                                                     assign_string_char@~assign
                                                     2 assign_string_char
-                                                    stdlib_string_type
+                                                    operator_overloading_04_stdlib_string_type
                                                     []
                                                     assign_string_char
                                                     Public
@@ -333,7 +322,7 @@
                                                     7
                                                     ~assign
                                                     2 ~assign
-                                                    stdlib_string_type
+                                                    operator_overloading_04_stdlib_string_type
                                                     []
                                                     ~assign
                                                     Public
@@ -373,16 +362,27 @@
                                     6
                                     string_type
                                     2 string_type
-                                    stdlib_string_type
+                                    operator_overloading_04_stdlib_string_type
                                     []
                                     string_type
                                     Public
                                 )
                         })
-                    stdlib_string_use
-                    [stdlib_string_type]
+                    operator_overloading_stdlib_string_use
+                    [operator_overloading_04_stdlib_string_type]
                     .false.
                     .false.
+                ),
+            stdlib_string:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            
+                        })
+                    stdlib_string
+                    []
+                    []
                 )
         })
     []

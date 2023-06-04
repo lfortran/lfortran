@@ -1,5 +1,5 @@
-module stdlib_string
-    use stdlib_string_type
+module associate_06_stdlib_string
+    use associate_06_stdlib_string_type
 end module
 
 program associate_06

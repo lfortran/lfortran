@@ -1,4 +1,4 @@
-module module_11  
+module modules_11_module11
 implicit none 
 integer :: i = 1
 integer :: j = 2
@@ -9,10 +9,10 @@ contains
       print*, "i = ", i
    end subroutine access_internally 
    
-end module module_11
+end module
 
 program access_externally
-use module_11
+use modules_11_module11
 implicit none
    print*, "j = ", j
    call access_internally() 

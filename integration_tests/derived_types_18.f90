@@ -1,4 +1,4 @@
-module module_1
+module derived_types_18_module_1
 
     implicit none
     type t_1
@@ -9,10 +9,10 @@ module module_1
         real :: r
     end type t_2
 
-end module module_1
+end module
 
 program derived_types_10
-    use module_1
+    use derived_types_18_module_1
     implicit none
 
     type(t_1) :: type_1
