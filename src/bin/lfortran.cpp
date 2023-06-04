@@ -1427,7 +1427,6 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s : infiles) {
             cmd += s + " ";
         }
-        cmd += + " -L";
         cmd += " " + post_options + " -lm";
         int err = system(cmd.c_str());
         if (err) {
