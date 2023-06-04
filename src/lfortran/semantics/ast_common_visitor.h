@@ -739,6 +739,7 @@ public:
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
+    bool is_common_variable = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     // fields for generics
@@ -1331,6 +1332,7 @@ public:
                             if (s.m_name == nullptr) {
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrCommon) {
+                                    is_common_variable = true;
                                     // add to existing common_block pair
                                     AST::expr_t* expr = s.m_initializer;
                                     this->visit_expr(*expr);
@@ -1339,6 +1341,7 @@ public:
                                     common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
                                     common_variables_hash[hash] = common_block_struct_sym;
                                     add_sym_to_struct(var_, struct_type);
+                                    is_common_variable = false;
                                 } else {
                                     if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
                                         // Operator Overloading Encountered
@@ -1392,6 +1395,7 @@ public:
                                         "supported yet", x.base.base.loc);
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrCommon) {
+                                    is_common_variable = true;
                                     common_block_name = sym;
                                     common_block_struct_sym = create_common_module(x.base.base.loc, common_block_name);
                                     struct_type = ASR::down_cast<ASR::StructType_t>(common_block_struct_sym);
@@ -1452,7 +1456,6 @@ public:
 
                                         // add variable to struct
                                         add_sym_to_struct(var_, struct_type);
-
                                     } else {
                                         // check if it has been already declared in any other program
                                         if (!common_block_dictionary[common_block_name].first) {
@@ -1490,6 +1493,7 @@ public:
                                             add_sym_to_struct(var_, struct_type);
                                         }
                                     }
+                                    is_common_variable = false;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
                                     // TODO
@@ -4159,6 +4163,7 @@ public:
             }
         }
         if (compiler_options.implicit_interface
+                && !is_common_variable
                 && ASR::is_a<ASR::Variable_t>(*v)
                 && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
                 && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
