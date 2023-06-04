@@ -1,4 +1,4 @@
-module module_11
+module modules_11_module11
 
 function access_internally()
     println("i = ", " ", i)
@@ -6,7 +6,7 @@ end
 
 end
 
-using Main.module_11: access_internally
+using Main.modules_11_module11: access_internally
 
 function main()
     println("j = ", " ", j)

@@ -1,4 +1,4 @@
-module bitset
+module subroutines_06_bitset
     interface assignment(=)
         pure module subroutine assign_large( set1, set2 )
             integer, intent(out) :: set1
@@ -38,7 +38,7 @@ end module
 
 program subroutines_06
 
-    use bitset
+    use subroutines_06_bitset
     implicit none
 
     ! empty program

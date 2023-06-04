@@ -13,7 +13,7 @@
                     []
                     []
                 ),
-            stdlib_logger:
+            kwargs_02_stdlib_logger:
                 (Module
                     (SymbolTable
                         2
@@ -264,8 +264,8 @@
                                     ()
                                 )
                         })
-                    stdlib_logger
-                    [stdlib_logger]
+                    kwargs_02_stdlib_logger
+                    [kwargs_02_stdlib_logger]
                     .false.
                     .false.
                 )

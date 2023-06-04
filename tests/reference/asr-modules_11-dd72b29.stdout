@@ -12,7 +12,7 @@
                                     4
                                     access_internally
                                     2 access_internally
-                                    module_11
+                                    modules_11_module11
                                     []
                                     access_internally
                                     Public
@@ -22,7 +22,7 @@
                                     4
                                     i
                                     2 i
-                                    module_11
+                                    modules_11_module11
                                     []
                                     i
                                     Public
@@ -32,14 +32,14 @@
                                     4
                                     j
                                     2 j
-                                    module_11
+                                    modules_11_module11
                                     []
                                     j
                                     Public
                                 )
                         })
                     access_externally
-                    [module_11]
+                    [modules_11_module11]
                     [(Print
                         ()
                         [(StringConstant
@@ -57,7 +57,7 @@
                         ()
                     )]
                 ),
-            module_11:
+            modules_11_module11:
                 (Module
                     (SymbolTable
                         2
@@ -134,7 +134,7 @@
                                     .false.
                                 )
                         })
-                    module_11
+                    modules_11_module11
                     []
                     .false.
                     .false.

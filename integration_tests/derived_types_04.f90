@@ -1,4 +1,4 @@
-module bitset
+module derived_types_04_bitset
     type, abstract :: bitset_type
 
         private

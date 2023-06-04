@@ -1,4 +1,4 @@
-module string_module
+module string_17_string_module
 implicit none
     type :: string_type
         sequence

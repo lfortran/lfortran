@@ -2,11 +2,11 @@
     "basename": "asr-template_travel-453a557",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_travel.f90",
-    "infile_hash": "d81130ab9937c54b32a7a7588a2e567b4d54d68e207000a11fbf36b5",
+    "infile_hash": "cab0e00c59e47727169ec17166911d0c6a2b6ecf07bc510d1108d628",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_travel-453a557.stdout",
-    "stdout_hash": "6a45723cb7711591067558e965f0f2fec148b6086dca634eef51c399",
+    "stdout_hash": "57b412014d704cf24de193af51bfa277d648661494ff9910adf13f67",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

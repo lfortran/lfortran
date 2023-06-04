@@ -1,4 +1,4 @@
-module module_1
+module derived_types_15_module_1
     implicit none
     private
     public :: t_1
@@ -23,10 +23,10 @@ contains
         real :: res
         res = self%i - (j ** 0.5)
     end function sqrt_subtract
-end module module_1
+end module
 
 program name
-    use module_1
+    use derived_types_15_module_1
     implicit none
     type(t_1) :: type_1
     type_1%i = 100.0

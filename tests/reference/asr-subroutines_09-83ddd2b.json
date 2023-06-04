@@ -2,11 +2,11 @@
     "basename": "asr-subroutines_09-83ddd2b",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/subroutines_09.f90",
-    "infile_hash": "e54a4daf036af7ad2ae719e99a98292ef471ca4cd2dab0bf0f9f5970",
+    "infile_hash": "3f6ea6213db107e0cec3cc74bd308164cc52607efc6f85e7a7a389aa",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-subroutines_09-83ddd2b.stdout",
-    "stdout_hash": "f310e3e06fbf92df96b159f53536da399bf5f5aa5d945063c4d3b3a5",
+    "stdout_hash": "18f1a5d9d1f49113d104a9321b946dab7894e7d9b05b0e7ca20bb306",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

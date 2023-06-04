@@ -13,7 +13,7 @@
                     []
                     []
                 ),
-            stdlib_string_type:
+            derived_types_05_stdlib_string_type:
                 (Module
                     (SymbolTable
                         2
@@ -329,7 +329,7 @@
                                     Public
                                 )
                         })
-                    stdlib_string_type
+                    derived_types_05_stdlib_string_type
                     []
                     .false.
                     .false.
@@ -612,7 +612,7 @@
                                     8
                                     string_type
                                     2 string_type
-                                    stdlib_string_type
+                                    derived_types_05_stdlib_string_type
                                     []
                                     string_type
                                     Public
@@ -622,7 +622,7 @@
                                     8
                                     ~string_type
                                     2 ~string_type
-                                    stdlib_string_type
+                                    derived_types_05_stdlib_string_type
                                     []
                                     ~string_type
                                     Public

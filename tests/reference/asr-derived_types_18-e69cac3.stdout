@@ -12,7 +12,7 @@
                                     5
                                     1_t_1
                                     2 t_1
-                                    module_1
+                                    derived_types_18_module_1
                                     []
                                     t_1
                                     Public
@@ -42,7 +42,7 @@
                                     5
                                     t_1
                                     2 t_1
-                                    module_1
+                                    derived_types_18_module_1
                                     []
                                     t_1
                                     Public
@@ -52,7 +52,7 @@
                                     5
                                     t_2
                                     2 t_2
-                                    module_1
+                                    derived_types_18_module_1
                                     []
                                     t_2
                                     Public
@@ -97,7 +97,7 @@
                                 )
                         })
                     derived_types_10
-                    [module_1]
+                    [derived_types_18_module_1]
                     [(=
                         (StructInstanceMember
                             (Var 5 type_1)
@@ -174,7 +174,7 @@
                         []
                     )]
                 ),
-            module_1:
+            derived_types_18_module_1:
                 (Module
                     (SymbolTable
                         2
@@ -244,7 +244,7 @@
                                     2 t_1
                                 )
                         })
-                    module_1
+                    derived_types_18_module_1
                     []
                     .false.
                     .false.

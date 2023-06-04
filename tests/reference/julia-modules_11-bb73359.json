@@ -2,11 +2,11 @@
     "basename": "julia-modules_11-bb73359",
     "cmd": "lfortran --no-color --show-julia {infile}",
     "infile": "tests/../integration_tests/modules_11.f90",
-    "infile_hash": "3adf54a582ee98feab0583ed3cb0093df888f323e87e2cb7defcef52",
+    "infile_hash": "f19a5ba8d01ebaae3da78891afbae58462d711a364274aa3a5569fa1",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "julia-modules_11-bb73359.stdout",
-    "stdout_hash": "b8c4f7d7fc7f874f70156036d738afa60b0a3905016ab744118c074c",
+    "stdout_hash": "8f436714f9e8658e37c0d13431659a4b867a02ef2b2979d6a2aed8dc",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
