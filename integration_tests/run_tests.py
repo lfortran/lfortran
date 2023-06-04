@@ -24,6 +24,9 @@ def run_test(backend):
     if backend == "gfortran":
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
+    elif backend == "cpp":
+        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend}" + common,
+                cwd=cwd)
     else:
         run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend}" + common,
                 cwd=cwd)

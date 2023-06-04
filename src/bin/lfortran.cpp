@@ -1425,7 +1425,6 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s : infiles) {
             cmd += s + " ";
         }
-        cmd += + " -L";
         cmd += " " + post_options + " -lm";
         int err = system(cmd.c_str());
         if (err) {
@@ -1655,6 +1654,7 @@ int main(int argc, char *argv[])
 
         CompilerOptions compiler_options;
         compiler_options.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
         LCompilers::PassManager lfortran_pass_manager;
 
@@ -1949,7 +1949,7 @@ int main(int argc, char *argv[])
 #endif
             } else if (backend == Backend::cpp) {
                 return compile_to_object_file_cpp(arg_file, outfile, false,
-                        true, rtlib_header_dir, compiler_options);
+                        true, rtlib_c_header_dir, compiler_options);
             } else if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
             } else if (backend == Backend::wasm) {
