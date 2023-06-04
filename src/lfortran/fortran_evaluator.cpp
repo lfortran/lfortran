@@ -34,12 +34,12 @@ namespace LCompilers {
 
 FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
     :
+    compiler_options{compiler_options},
     al{1024*1024},
 #ifdef HAVE_LFORTRAN_LLVM
     e{std::make_unique<LLVMEvaluator>()},
     eval_count{0},
 #endif
-    compiler_options{compiler_options},
     symbol_table{nullptr}
 {
 }
