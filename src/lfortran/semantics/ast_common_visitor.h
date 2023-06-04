@@ -1269,6 +1269,53 @@ public:
         struct_type->n_members = members.size();
     }
 
+    ASR::Variable_t* extract_common_variable(AST::expr_t* expr, Location loc, Location var_loc) {
+        this->visit_expr(*expr);
+        ASR::Variable_t* var_;
+        if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
+            ASR::expr_t* array = array_item->m_v;
+            var_ = ASRUtils::EXPR2VAR(array);
+            if (ASRUtils::is_array(ASRUtils::expr_type(array))) {
+                throw SemanticError("Duplicate DIMENSION attribute specified",
+                    var_loc);
+            } else {
+                if (array_item->n_args == 1) {
+                    ASR::array_index_t arg = array_item->m_args[0];
+                    ASR::expr_t* arg_right = arg.m_right;
+                    ASR::ttype_t* type = array_item->m_type;
+                    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                                                                                    4, nullptr, 0));
+                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type));
+
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim;
+                    dim.loc = loc;
+                    dim.m_start = one;
+                    dim.m_length = arg_right;
+                    dims.push_back(al, dim);
+
+                    if (ASR::is_a<ASR::Real_t>(*type)) {
+                        ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
+                        int64_t kind = real_type->m_kind;
+                        var_->m_type = ASRUtils::TYPE(ASR::make_Real_t(al, var_->base.base.loc, kind, dims.p, dims.size()));
+                    } else if (ASR::is_a<ASR::Integer_t>(*type)) {
+                        ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(type);
+                        int64_t kind = int_type->m_kind;
+                        var_->m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, var_->base.base.loc, kind, dims.p, dims.size()));
+                    } else {
+                        throw SemanticError("Type not supported yet",
+                            loc);
+                    }
+                }
+            }
+        } else {
+            var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+        }
+        return var_;
+    } 
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
@@ -1336,7 +1383,7 @@ public:
                                     // add to existing common_block pair
                                     AST::expr_t* expr = s.m_initializer;
                                     this->visit_expr(*expr);
-                                    ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                                    ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
                                     uint64_t hash = get_hash((ASR::asr_t*) var_);
                                     common_block_dictionary[common_block_name].second.push_back(ASRUtils::EXPR(tmp));
                                     common_variables_hash[hash] = common_block_struct_sym;
@@ -1405,49 +1452,7 @@ public:
                                         // create a new common_block pair
                                         std::vector<ASR::expr_t*> common_block_variables;
                                         AST::expr_t* expr = s.m_initializer;
-                                        this->visit_expr(*expr);
-                                        ASR::Variable_t* var_;
-                                        if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
-                                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
-                                            ASR::expr_t* array = array_item->m_v;
-                                            var_ = ASRUtils::EXPR2VAR(array);
-                                            if (ASRUtils::is_array(ASRUtils::expr_type(array))) {
-                                                throw SemanticError("Duplicate DIMENSION attribute specified",
-                                                    s.loc);
-                                            } else {
-                                                if (array_item->n_args == 1) {
-                                                    ASR::array_index_t arg = array_item->m_args[0];
-                                                    ASR::expr_t* arg_right = arg.m_right;
-                                                    ASR::ttype_t* type = array_item->m_type;
-                                                    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
-                                                                                                                    4, nullptr, 0));
-                                                    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
-
-                                                    Vec<ASR::dimension_t> dims;
-                                                    dims.reserve(al, 1);
-                                                    ASR::dimension_t dim;
-                                                    dim.loc = x.base.base.loc;
-                                                    dim.m_start = one;
-                                                    dim.m_length = arg_right;
-                                                    dims.push_back(al, dim);
-
-                                                    if (ASR::is_a<ASR::Real_t>(*type)) {
-                                                        ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
-                                                        int64_t kind = real_type->m_kind;
-                                                        var_->m_type = ASRUtils::TYPE(ASR::make_Real_t(al, var_->base.base.loc, kind, dims.p, dims.size()));
-                                                    } else if (ASR::is_a<ASR::Integer_t>(*type)) {
-                                                        ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(type);
-                                                        int64_t kind = int_type->m_kind;
-                                                        var_->m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, var_->base.base.loc, kind, dims.p, dims.size()));
-                                                    } else {
-                                                        throw SemanticError("Type not supported yet",
-                                                            x.base.base.loc);
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            var_ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
-                                        }
+                                        ASR::Variable_t* var_ = extract_common_variable(expr, x.base.base.loc, s.loc);
                                         uint64_t hash = get_hash((ASR::asr_t*) var_);
                                         common_block_variables.push_back(ASRUtils::EXPR(tmp));
                                         common_block_dictionary[common_block_name].first = true;
