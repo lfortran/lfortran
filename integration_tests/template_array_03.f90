@@ -1,4 +1,4 @@
-module math
+module template_array_03_math
 
     implicit none
     private
@@ -46,7 +46,7 @@ end module
 
 module template_array_03_m
 
-    use math
+    use template_array_03_math
     implicit none
     private
     public :: test_template

@@ -1,4 +1,4 @@
-module stdlib_string_type
+module derived_types_05_stdlib_string_type
     implicit none
 
     type :: string_type
@@ -29,9 +29,9 @@ module stdlib_string_type
 
     end interface string_type
 
-end module stdlib_string_type
+end module
 
-submodule(stdlib_string_type) stdlib_string_type_constructor
+submodule(derived_types_05_stdlib_string_type) stdlib_string_type_constructor
 
 contains
 

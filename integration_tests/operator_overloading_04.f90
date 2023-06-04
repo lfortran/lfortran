@@ -1,4 +1,4 @@
-module stdlib_string_type
+module operator_overloading_04_stdlib_string_type
     type :: string_type
         ! Use the sequence statement below as a hack to prevent extending this type.
         ! It is not used for storage association.
@@ -27,15 +27,15 @@ contains
     end function trim_string
 end module
 
-module stdlib_string_use
-use stdlib_string_type, only: string_type
+module operator_overloading_stdlib_string_use
+use operator_overloading_04_stdlib_string_type, only: string_type
 implicit none
 
 contains
 
 pure function chomp_string(string) result(chomped_string)
     ! Avoid polluting the module scope and use the assignment only in this scope
-    use stdlib_string_type, only : assignment(=)
+    use operator_overloading_04_stdlib_string_type, only : assignment(=)
     type(string_type), intent(in) :: string
     type(string_type) :: chomped_string
     integer :: last
