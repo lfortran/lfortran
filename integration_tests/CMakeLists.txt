@@ -871,3 +871,4 @@ RUN(NAME common_02 LABELS gfortran llvm)
 RUN(NAME common_03 LABELS gfortran llvm)
 RUN(NAME common_04 LABELS gfortran) # TODO: Fix these tests
 RUN(NAME common_05 LABELS gfortran)
+RUN(NAME common_07 LABELS gfortran llvmImplicit)
