@@ -2,7 +2,77 @@
     (SymbolTable
         1
         {
-            bitset:
+            subroutines_06:
+                (Program
+                    (SymbolTable
+                        7
+                        {
+                            assign_large:
+                                (ExternalSymbol
+                                    7
+                                    assign_large
+                                    2 assign_large
+                                    subroutines_06_bitset
+                                    []
+                                    assign_large
+                                    Public
+                                ),
+                            assign_logint8_large:
+                                (ExternalSymbol
+                                    7
+                                    assign_logint8_large
+                                    2 assign_logint8_large
+                                    subroutines_06_bitset
+                                    []
+                                    assign_logint8_large
+                                    Public
+                                ),
+                            error_handler:
+                                (ExternalSymbol
+                                    7
+                                    error_handler
+                                    2 error_handler
+                                    subroutines_06_bitset
+                                    []
+                                    error_handler
+                                    Public
+                                ),
+                            error_handler~genericprocedure:
+                                (ExternalSymbol
+                                    7
+                                    error_handler~genericprocedure
+                                    2 error_handler~genericprocedure
+                                    subroutines_06_bitset
+                                    []
+                                    error_handler~genericprocedure
+                                    Public
+                                ),
+                            ~assign:
+                                (ExternalSymbol
+                                    7
+                                    ~assign
+                                    2 ~assign
+                                    subroutines_06_bitset
+                                    []
+                                    ~assign
+                                    Public
+                                ),
+                            ~error_handler:
+                                (ExternalSymbol
+                                    7
+                                    ~error_handler
+                                    2 ~error_handler
+                                    subroutines_06_bitset
+                                    []
+                                    ~error_handler
+                                    Public
+                                )
+                        })
+                    subroutines_06
+                    [subroutines_06_bitset]
+                    []
+                ),
+            subroutines_06_bitset:
                 (Module
                     (SymbolTable
                         2
@@ -391,80 +461,10 @@
                                     Public
                                 )
                         })
-                    bitset
+                    subroutines_06_bitset
                     []
                     .false.
                     .false.
-                ),
-            subroutines_06:
-                (Program
-                    (SymbolTable
-                        7
-                        {
-                            assign_large:
-                                (ExternalSymbol
-                                    7
-                                    assign_large
-                                    2 assign_large
-                                    bitset
-                                    []
-                                    assign_large
-                                    Public
-                                ),
-                            assign_logint8_large:
-                                (ExternalSymbol
-                                    7
-                                    assign_logint8_large
-                                    2 assign_logint8_large
-                                    bitset
-                                    []
-                                    assign_logint8_large
-                                    Public
-                                ),
-                            error_handler:
-                                (ExternalSymbol
-                                    7
-                                    error_handler
-                                    2 error_handler
-                                    bitset
-                                    []
-                                    error_handler
-                                    Public
-                                ),
-                            error_handler~genericprocedure:
-                                (ExternalSymbol
-                                    7
-                                    error_handler~genericprocedure
-                                    2 error_handler~genericprocedure
-                                    bitset
-                                    []
-                                    error_handler~genericprocedure
-                                    Public
-                                ),
-                            ~assign:
-                                (ExternalSymbol
-                                    7
-                                    ~assign
-                                    2 ~assign
-                                    bitset
-                                    []
-                                    ~assign
-                                    Public
-                                ),
-                            ~error_handler:
-                                (ExternalSymbol
-                                    7
-                                    ~error_handler
-                                    2 ~error_handler
-                                    bitset
-                                    []
-                                    ~error_handler
-                                    Public
-                                )
-                        })
-                    subroutines_06
-                    [bitset]
-                    []
                 )
         })
     []

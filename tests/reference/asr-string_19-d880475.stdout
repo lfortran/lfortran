@@ -10,7 +10,147 @@
                 (IntrinsicModule lfortran_intrinsic_math2),
             lfortran_intrinsic_math3:
                 (IntrinsicModule lfortran_intrinsic_math3),
-            stdlib_string_type:
+            stdlib_strings_use:
+                (Program
+                    (SymbolTable
+                        110
+                        {
+                            char:
+                                (ExternalSymbol
+                                    110
+                                    char
+                                    2 char
+                                    string_19_stdlib_string_type
+                                    []
+                                    char
+                                    Public
+                                ),
+                            char_string:
+                                (ExternalSymbol
+                                    110
+                                    char_string
+                                    2 char_string
+                                    string_19_stdlib_string_type
+                                    []
+                                    char_string
+                                    Public
+                                ),
+                            compute_lps:
+                                (ExternalSymbol
+                                    110
+                                    compute_lps
+                                    6 compute_lps
+                                    string_19_stdlib_strings
+                                    []
+                                    compute_lps
+                                    Public
+                                ),
+                            compute_lps_use:
+                                (ExternalSymbol
+                                    110
+                                    compute_lps_use
+                                    6 compute_lps_use
+                                    string_19_stdlib_strings
+                                    []
+                                    compute_lps_use
+                                    Public
+                                ),
+                            compute_lps_use1:
+                                (ExternalSymbol
+                                    110
+                                    compute_lps_use1
+                                    6 compute_lps_use1
+                                    string_19_stdlib_strings
+                                    []
+                                    compute_lps_use1
+                                    Public
+                                ),
+                            len:
+                                (ExternalSymbol
+                                    110
+                                    len
+                                    2 len
+                                    string_19_stdlib_string_type
+                                    []
+                                    len
+                                    Public
+                                ),
+                            len_string:
+                                (ExternalSymbol
+                                    110
+                                    len_string
+                                    2 len_string
+                                    string_19_stdlib_string_type
+                                    []
+                                    len_string
+                                    Public
+                                ),
+                            padl:
+                                (ExternalSymbol
+                                    110
+                                    padl
+                                    6 padl
+                                    string_19_stdlib_strings
+                                    []
+                                    padl
+                                    Public
+                                ),
+                            padl_char_default:
+                                (ExternalSymbol
+                                    110
+                                    padl_char_default
+                                    6 padl_char_default
+                                    string_19_stdlib_strings
+                                    []
+                                    padl_char_default
+                                    Public
+                                ),
+                            padl_char_pad_with:
+                                (ExternalSymbol
+                                    110
+                                    padl_char_pad_with
+                                    6 padl_char_pad_with
+                                    string_19_stdlib_strings
+                                    []
+                                    padl_char_pad_with
+                                    Public
+                                ),
+                            padl_string_default:
+                                (ExternalSymbol
+                                    110
+                                    padl_string_default
+                                    6 padl_string_default
+                                    string_19_stdlib_strings
+                                    []
+                                    padl_string_default
+                                    Public
+                                ),
+                            padl_string_pad_with:
+                                (ExternalSymbol
+                                    110
+                                    padl_string_pad_with
+                                    6 padl_string_pad_with
+                                    string_19_stdlib_strings
+                                    []
+                                    padl_string_pad_with
+                                    Public
+                                ),
+                            string_type:
+                                (ExternalSymbol
+                                    110
+                                    string_type
+                                    2 string_type
+                                    string_19_stdlib_string_type
+                                    []
+                                    string_type
+                                    Public
+                                )
+                        })
+                    stdlib_strings_use
+                    [string_19_stdlib_strings]
+                    []
+                ),
+            string_19_stdlib_string_type:
                 (Module
                     (SymbolTable
                         2
@@ -217,12 +357,12 @@
                                     ()
                                 )
                         })
-                    stdlib_string_type
+                    string_19_stdlib_string_type
                     []
                     .false.
                     .false.
                 ),
-            stdlib_strings:
+            string_19_stdlib_strings:
                 (Module
                     (SymbolTable
                         6
@@ -232,7 +372,7 @@
                                     6
                                     char
                                     2 char
-                                    stdlib_string_type
+                                    string_19_stdlib_string_type
                                     []
                                     char
                                     Public
@@ -242,7 +382,7 @@
                                     6
                                     char_string
                                     2 char_string
-                                    stdlib_string_type
+                                    string_19_stdlib_string_type
                                     []
                                     char_string
                                     Public
@@ -443,7 +583,7 @@
                                                     36
                                                     char@char_string
                                                     2 char_string
-                                                    stdlib_string_type
+                                                    string_19_stdlib_string_type
                                                     []
                                                     char_string
                                                     Private
@@ -469,7 +609,7 @@
                                                     36
                                                     len_string
                                                     2 len_string
-                                                    stdlib_string_type
+                                                    string_19_stdlib_string_type
                                                     []
                                                     len_string
                                                     Private
@@ -545,7 +685,7 @@
                                     6
                                     len
                                     2 len
-                                    stdlib_string_type
+                                    string_19_stdlib_string_type
                                     []
                                     len
                                     Public
@@ -555,7 +695,7 @@
                                     6
                                     len_string
                                     2 len_string
-                                    stdlib_string_type
+                                    string_19_stdlib_string_type
                                     []
                                     len_string
                                     Public
@@ -916,7 +1056,7 @@
                                                     37
                                                     char@char_string
                                                     2 char_string
-                                                    stdlib_string_type
+                                                    string_19_stdlib_string_type
                                                     []
                                                     char_string
                                                     Private
@@ -946,7 +1086,7 @@
                                                     37
                                                     len_string
                                                     2 len_string
-                                                    stdlib_string_type
+                                                    string_19_stdlib_string_type
                                                     []
                                                     len_string
                                                     Private
@@ -1119,7 +1259,7 @@
                                                     38
                                                     char@char_string
                                                     2 char_string
-                                                    stdlib_string_type
+                                                    string_19_stdlib_string_type
                                                     []
                                                     char_string
                                                     Private
@@ -1149,7 +1289,7 @@
                                                     38
                                                     len_string
                                                     2 len_string
-                                                    stdlib_string_type
+                                                    string_19_stdlib_string_type
                                                     []
                                                     len_string
                                                     Private
@@ -1332,159 +1472,19 @@
                                     6
                                     string_type
                                     2 string_type
-                                    stdlib_string_type
+                                    string_19_stdlib_string_type
                                     []
                                     string_type
                                     Public
                                 )
                         })
-                    stdlib_strings
+                    string_19_stdlib_strings
                     [lfortran_intrinsic_builtin
-                    stdlib_string_type
+                    string_19_stdlib_string_type
                     lfortran_intrinsic_math2
-                    stdlib_strings]
+                    string_19_stdlib_strings]
                     .false.
                     .false.
-                ),
-            stdlib_strings_use:
-                (Program
-                    (SymbolTable
-                        110
-                        {
-                            char:
-                                (ExternalSymbol
-                                    110
-                                    char
-                                    2 char
-                                    stdlib_string_type
-                                    []
-                                    char
-                                    Public
-                                ),
-                            char_string:
-                                (ExternalSymbol
-                                    110
-                                    char_string
-                                    2 char_string
-                                    stdlib_string_type
-                                    []
-                                    char_string
-                                    Public
-                                ),
-                            compute_lps:
-                                (ExternalSymbol
-                                    110
-                                    compute_lps
-                                    6 compute_lps
-                                    stdlib_strings
-                                    []
-                                    compute_lps
-                                    Public
-                                ),
-                            compute_lps_use:
-                                (ExternalSymbol
-                                    110
-                                    compute_lps_use
-                                    6 compute_lps_use
-                                    stdlib_strings
-                                    []
-                                    compute_lps_use
-                                    Public
-                                ),
-                            compute_lps_use1:
-                                (ExternalSymbol
-                                    110
-                                    compute_lps_use1
-                                    6 compute_lps_use1
-                                    stdlib_strings
-                                    []
-                                    compute_lps_use1
-                                    Public
-                                ),
-                            len:
-                                (ExternalSymbol
-                                    110
-                                    len
-                                    2 len
-                                    stdlib_string_type
-                                    []
-                                    len
-                                    Public
-                                ),
-                            len_string:
-                                (ExternalSymbol
-                                    110
-                                    len_string
-                                    2 len_string
-                                    stdlib_string_type
-                                    []
-                                    len_string
-                                    Public
-                                ),
-                            padl:
-                                (ExternalSymbol
-                                    110
-                                    padl
-                                    6 padl
-                                    stdlib_strings
-                                    []
-                                    padl
-                                    Public
-                                ),
-                            padl_char_default:
-                                (ExternalSymbol
-                                    110
-                                    padl_char_default
-                                    6 padl_char_default
-                                    stdlib_strings
-                                    []
-                                    padl_char_default
-                                    Public
-                                ),
-                            padl_char_pad_with:
-                                (ExternalSymbol
-                                    110
-                                    padl_char_pad_with
-                                    6 padl_char_pad_with
-                                    stdlib_strings
-                                    []
-                                    padl_char_pad_with
-                                    Public
-                                ),
-                            padl_string_default:
-                                (ExternalSymbol
-                                    110
-                                    padl_string_default
-                                    6 padl_string_default
-                                    stdlib_strings
-                                    []
-                                    padl_string_default
-                                    Public
-                                ),
-                            padl_string_pad_with:
-                                (ExternalSymbol
-                                    110
-                                    padl_string_pad_with
-                                    6 padl_string_pad_with
-                                    stdlib_strings
-                                    []
-                                    padl_string_pad_with
-                                    Public
-                                ),
-                            string_type:
-                                (ExternalSymbol
-                                    110
-                                    string_type
-                                    2 string_type
-                                    stdlib_string_type
-                                    []
-                                    string_type
-                                    Public
-                                )
-                        })
-                    stdlib_strings_use
-                    [stdlib_strings]
-                    []
                 )
         })
     []
