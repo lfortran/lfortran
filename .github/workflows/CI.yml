@@ -192,6 +192,7 @@ jobs:
             ctest
             ./run_tests.py -s
             cd integration_tests
+            ./run_tests.py -m
             ./run_tests.py -b llvm
 
   minpack:
