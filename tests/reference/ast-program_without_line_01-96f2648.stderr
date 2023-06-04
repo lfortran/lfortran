@@ -1,0 +1,9 @@
+syntax error: Expected program end
+ --> tests/errors/program_without_line_01.f90:1:1 - 2:8
+  |
+1 |    print *, "OK"
+  |    ^^^^^^^^^^^^^...
+...
+  |
+2 |    contains
+  | ...^^^^^^^^ 

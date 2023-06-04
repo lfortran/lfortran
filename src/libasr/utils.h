@@ -28,6 +28,7 @@ struct CompilerOptions {
     std::string runtime_library_dir;
 
     bool fixed_form = false;
+    bool interactive = false;
     bool c_preprocessor = false;
     std::vector<std::string> c_preprocessor_defines;
     bool prescan = true;

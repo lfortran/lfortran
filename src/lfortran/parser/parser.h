@@ -6,6 +6,7 @@
 #include <memory>
 #include <filesystem>
 
+#include <libasr/utils.h>
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
 #include <lfortran/parser/tokenizer.h>
@@ -36,12 +37,11 @@ public:
     void handle_yyerror(const Location &loc, const std::string &msg);
 };
 
-
 // Parses Fortran code to AST
 Result<AST::TranslationUnit_t*> parse(Allocator &al,
     const std::string &s,
     diag::Diagnostics &diagnostics,
-    const bool &fixed_form=false);
+    const CompilerOptions &co);
 
 // Tokenizes the `input` and return a list of tokens
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,

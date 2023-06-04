@@ -39,9 +39,11 @@ int main()
     }
     Allocator al(64*1024*1024); // The actual size is 31,600,600
     LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
     std::cout << "Parse" << std::endl;
     auto t1 = std::chrono::high_resolution_clock::now();
-    auto result = parse(al, text, diagnostics);
+    auto result = parse(al, text, diagnostics, co);
     auto t2 = std::chrono::high_resolution_clock::now();
     int c = count(*LCompilers::TRY(result)->m_items[0]);
     auto t3 = std::chrono::high_resolution_clock::now();

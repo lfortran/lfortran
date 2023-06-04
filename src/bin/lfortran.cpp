@@ -263,7 +263,7 @@ bool determine_completeness(std::string command)
     return complete;
 }
 
-int prompt(bool verbose)
+int prompt(bool verbose, CompilerOptions &cu)
 {
     Terminal term(true, false);
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
@@ -276,8 +276,7 @@ int prompt(bool verbose)
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
     Allocator al(64*1024*1024);
-    CompilerOptions cu;
-    cu.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    cu.interactive = true;
     LCompilers::FortranEvaluator e(cu);
 
     std::vector<std::string> history;
@@ -1716,6 +1715,7 @@ int main(int argc, char *argv[])
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
+        app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
         app.add_flag("--cumulative", compiler_options.pass_cumulative, "Apply all the passes cumulatively till the given pass");
 
@@ -1833,7 +1833,7 @@ int main(int argc, char *argv[])
 
         if (arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return prompt(arg_v);
+            return prompt(arg_v, compiler_options);
 #else
             std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
