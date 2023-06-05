@@ -73,7 +73,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_INCLUDE_PATH RUN_LABELS RUN_E
 			set(include_path_with_flag "")
 		endif()
 
-        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86"))
+        if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86") OR (LFORTRAN_BACKEND STREQUAL "c"))
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${include_path_with_flag} ${extra_args} --backend=${LFORTRAN_BACKEND})
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
@@ -185,7 +185,7 @@ RUN(NAME include_03 LABELS gfortran llvm wasm INCLUDE_PATH include_03)
 RUN(NAME cond_01 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME cond_02 LABELS gfortran llvm wasm)
 
-RUN(NAME expr_01 FAIL LABELS gfortran llvm cpp x86 wasm)
+RUN(NAME expr_01 FAIL LABELS gfortran llvm cpp x86 wasm c)
 RUN(NAME expr_02 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME expr_03 LABELS gfortran llvm cpp x86 wasm)
 RUN(NAME expr_04 LABELS gfortran llvm cpp wasm)
