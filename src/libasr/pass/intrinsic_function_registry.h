@@ -1367,7 +1367,7 @@ namespace Max {
             ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
              "ASR Verify: Arguments to max0 must be of real or integer type",
             x.base.base.loc, diagnostics);
-        for(int i=0;i<x.n_args;i++){
+        for(size_t i=0;i<x.n_args;i++){
             ASRUtils::require_impl(ASRUtils::expr_type(x.m_args[i]) == ASRUtils::expr_type(x.m_args[0]),
             "ASR Verify: All arguments must be of the same type",
             x.base.base.loc, diagnostics);
@@ -1401,7 +1401,7 @@ namespace Max {
         const std::function<void (const std::string &, const Location &)> err) {
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
-        for(int i=0;i<args.size();i++){
+        for(size_t i=0;i<args.size();i++){
             ASR::expr_t *arg_value = ASRUtils::expr_value(args[i]);
             arg_values.push_back(al, arg_value);
         }
