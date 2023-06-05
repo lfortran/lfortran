@@ -205,6 +205,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 Vec<ASR::alloc_arg_t> alloc_args;
                 alloc_args.reserve(al, 1);
                 ASR::alloc_arg_t arg;
+                arg.loc = result_var->base.loc;
                 arg.m_a = result_var;
                 arg.m_dims = dims.p;
                 arg.n_dims = dims.size();

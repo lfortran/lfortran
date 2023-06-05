@@ -938,6 +938,8 @@ namespace LCompilers {
                         // cond: cond1 || cond2
                         cond = ASRUtils::EXPR(make_LogicalBinOp_t(al, loc,
                             cond1, ASR::logicalbinopType::Or, cond2, log_type, nullptr));
+                        // TODO: is cmp_op uninitialized here?
+                        cmp_op = ASR::cmpopType::LtE; // silence a warning
                     } else if (increment > 0) {
                         cmp_op = ASR::cmpopType::LtE;
                     } else {

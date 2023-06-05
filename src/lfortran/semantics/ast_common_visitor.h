@@ -4609,10 +4609,9 @@ public:
                     case (ASR::Pow):
                         result = std::pow(left_value, right_value);
                         break;
-                    // Reconsider
                     default: {
                         LCOMPILERS_ASSERT(false);
-                        op = ASR::binopType::Pow;
+                        result = left_value; // silence a warning
                     }
                 }
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(
@@ -4647,10 +4646,9 @@ public:
                     case (ASR::Pow):
                         result = std::pow(left_value, right_value);
                         break;
-                    // Reconsider
                     default: {
                         LCOMPILERS_ASSERT(false);
-                        op = ASR::binopType::Pow;
+                        result = left_value; // silence a warning
                     }
                 }
                 value = ASR::down_cast<ASR::expr_t>(

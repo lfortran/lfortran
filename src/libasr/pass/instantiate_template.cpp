@@ -373,7 +373,7 @@ public:
                 switch (op) {
                     case (ASR::binopType::Add): { result = left_value + right_value; break; }
                     case (ASR::binopType::Div): { result = left_value / right_value; break; }
-                    default: { LCOMPILERS_ASSERT(false); } // should never happen
+                    default: { LCOMPILERS_ASSERT(false); result=0; } // should never happen
                 }
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, result, dest_type));
             }
@@ -388,7 +388,7 @@ public:
                 switch (op) {
                     case (ASR::binopType::Add): { result = left_value + right_value; break; }
                     case (ASR::binopType::Div): { result = left_value / right_value; break; }
-                    default: { LCOMPILERS_ASSERT(false); }
+                    default: { LCOMPILERS_ASSERT(false); result = 0; }
                 }
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, result, dest_type));
             }

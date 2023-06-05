@@ -787,6 +787,7 @@ public:
             der_type = ASR::down_cast<ASR::StructType_t>(der_sym);
         } else {
             LCOMPILERS_ASSERT(false);
+            return nullptr; // silence a warning
         }
         llvm::Type* type = getStructType(der_type, is_pointer);
         LCOMPILERS_ASSERT(type != nullptr);
@@ -2244,7 +2245,7 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Value* array = tmp;
         ASR::dimension_t* m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(
+        [[maybe_unused]] int n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(x.m_v), m_dims);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(x.m_v)) &&
                         n_dims == 0);
@@ -2366,7 +2367,7 @@ public:
         this->visit_expr(*m_arg);
     }
 
-    void visit_UnionTypeConstructor(const ASR::UnionTypeConstructor_t& x) {
+    void visit_UnionTypeConstructor([[maybe_unused]] const ASR::UnionTypeConstructor_t& x) {
         LCOMPILERS_ASSERT(x.n_args == 0);
     }
 
@@ -4652,8 +4653,7 @@ public:
         if( ASRUtils::is_data_only_array(array_type, ASR::abiType::Source) &&
             ASRUtils::expr_intent(array_section->m_v) != ASR::intentType::Local ) {
             ASR::dimension_t* m_dims = nullptr;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
-            LCOMPILERS_ASSERT(n_dims == value_rank);
+            LCOMPILERS_ASSERT(ASRUtils::extract_dimensions_from_ttype(array_type, m_dims) == value_rank);
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
             for( int i = 0; i < value_rank; i++ ) {
@@ -4717,9 +4717,9 @@ public:
                 llvm_value = builder->CreateBitCast(llvm_value, getStructType(struct_type_t, true));
                 builder->CreateStore(llvm_value, llvm_target);
             } else if( is_target_class && is_value_class ) {
-                ASR::Class_t* target_class_t = ASR::down_cast<ASR::Class_t>(
+                [[maybe_unused]] ASR::Class_t* target_class_t = ASR::down_cast<ASR::Class_t>(
                     ASRUtils::type_get_past_pointer(asr_target->m_type));
-                ASR::Class_t* value_class_t = ASR::down_cast<ASR::Class_t>(
+                [[maybe_unused]] ASR::Class_t* value_class_t = ASR::down_cast<ASR::Class_t>(
                     ASRUtils::type_get_past_pointer(asr_target->m_type));
                 LCOMPILERS_ASSERT(target_class_t->m_class_type == value_class_t->m_class_type);
                 llvm::Value* value_vtabid = CreateLoad(llvm_utils->create_gep(llvm_value, 0));
@@ -7688,7 +7688,9 @@ public:
                 }
                 llvm::Value *value = tmp;
                 ptr_loads = ptr_loads_copy;
-                llvm::Type *target_type;
+                // TODO: we are getting a warning of uninitialized variable,
+                // there might be a bug below.
+                llvm::Type *target_type = nullptr;
                 bool character_bindc = false;
                 switch (arg_type->type) {
                     case (ASR::ttypeType::Integer) : {
@@ -7717,7 +7719,7 @@ public:
                             ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
                             orig_arg = EXPR2VAR(func->m_args[i]);
                         } else {
-                            LCOMPILERS_ASSERT(false)
+                            throw CodeGenError("ICE: expected func_subrout->type == ASR::symbolType::Function.");
                         }
                         if (orig_arg->m_abi == ASR::abiType::BindC) {
                             character_bindc = true;
