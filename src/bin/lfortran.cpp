@@ -60,7 +60,7 @@ using LCompilers::endswith;
 using LCompilers::CompilerOptions;
 
 enum Backend {
-    llvm, cpp, x86, wasm
+    llvm, c, cpp, x86, wasm
 };
 
 std::string read_file(const std::string &filename)
@@ -1266,6 +1266,107 @@ int compile_to_object_file_cpp(const std::string &infile,
     return 0;
 }
 
+int compile_to_object_file_c(const std::string &infile,
+        const std::string &outfile,
+        bool assembly, const std::string &rtlib_header_dir,
+        CompilerOptions &compiler_options)
+{
+    std::string input = read_file(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::ASR::TranslationUnit_t* asr;
+
+    // Src -> AST -> ASR
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        result = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (result.ok) {
+        asr = result.result;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+
+    // Save .mod files
+    {
+        int err = save_mod_files(*asr, compiler_options);
+        if (err) return err;
+    }
+
+    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        // Create an empty object file (things will be actually
+        // compiled and linked when the main program is present):
+        if (compiler_options.platform == LCompilers::Platform::Windows) {
+            {
+                std::ofstream out;
+                out.open(outfile);
+                out << " ";
+            }
+        } else {
+            std::string outfile_empty = outfile + ".empty.c";
+            {
+                std::ofstream out;
+                out.open(outfile_empty);
+                out << " ";
+            }
+	    std::string CC = "cc";
+            char *env_CC = std::getenv("LFORTRAN_CC");
+            if (env_CC) CC = env_CC;
+            std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
+            int err = system(cmd.c_str());
+            if (err) {
+                std::cout << "The command '" + cmd + "' failed." << std::endl;
+                return 11;
+            }
+        }
+        return 0;
+    }
+
+    // ASR -> C
+    std::string src;
+    diagnostics.diagnostics.clear();
+    LCompilers::Result<std::string> res
+        = fe.get_c2(*asr, diagnostics, 1);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (res.ok) {
+        src = res.result;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 5;
+    }
+
+    // C -> Machine code (saves to an object file)
+    if (assembly) {
+        throw LCompilers::LCompilersException("Not implemented");
+    } else {
+        std::string cfile = outfile + ".tmp.c";
+        {
+            std::ofstream out;
+            out.open(cfile);
+            out << src;
+        }
+
+        std::string CXX = "gcc";
+        std::string options = " -I" + rtlib_header_dir;
+        std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cfile;
+        int err = system(cmd.c_str());
+        if (err) {
+            std::cout << "The command '" + cmd + "' failed." << std::endl;
+            return 11;
+        }
+    }
+
+    return 0;
+}
+
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
@@ -1404,6 +1505,22 @@ int link_executable(const std::vector<std::string> &infiles,
                     }
                 }
             }
+        }
+        return 0;
+    } else if (backend == Backend::c) {
+        std::string CXX = "gcc";
+        std::string cmd = CXX + " -o " + outfile + " ";
+        std::string base_path = "\"" + runtime_library_dir + "\"";
+        std::string runtime_lib = "lfortran_runtime";
+        for (auto &s : infiles) {
+            cmd += s + " ";
+        }
+        cmd += " -L" + base_path
+            + " -Wl,-rpath," + base_path + " -l" + runtime_lib + " -lm";
+        int err = system(cmd.c_str());
+        if (err) {
+            std::cout << "The command '" + cmd + "' failed." << std::endl;
+            return 10;
         }
         return 0;
     } else if (backend == Backend::cpp) {
@@ -1820,6 +1937,8 @@ int main(int argc, char *argv[])
 
         if (arg_backend == "llvm") {
             backend = Backend::llvm;
+        } else if (arg_backend == "c") {
+            backend = Backend::c;
         } else if (arg_backend == "cpp") {
             backend = Backend::cpp;
         } else if (arg_backend == "x86") {
@@ -1947,6 +2066,9 @@ int main(int argc, char *argv[])
                 std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
                 return 1;
 #endif
+            } else if (backend == Backend::c) {
+                return compile_to_object_file_c(arg_file, outfile, false,
+                        rtlib_c_header_dir, compiler_options);
             } else if (backend == Backend::cpp) {
                 return compile_to_object_file_cpp(arg_file, outfile, false,
                         true, rtlib_c_header_dir, compiler_options);
@@ -1981,6 +2103,9 @@ int main(int argc, char *argv[])
             } else if (backend == Backend::cpp) {
                 err = compile_to_object_file_cpp(arg_file, tmp_o, false,
                         true, rtlib_header_dir, compiler_options);
+            } else if (backend == Backend::c) {
+                err = compile_to_object_file_c(arg_file, tmp_o,
+                        false, rtlib_c_header_dir, compiler_options);
             } else {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
