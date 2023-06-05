@@ -501,6 +501,8 @@ public:
 
     void visit_Instantiate(const AST::Instantiate_t &x){
         is_instantiate = true;
+
+        /*
         std::string template_name = x.m_name;
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 0);
@@ -729,7 +731,7 @@ public:
             current_function_dependencies.erase(ASRUtils::symbol_name(s));
             current_function_dependencies.push_back(al, s2c(al, new_sym_name));
         }
-
+        */
         is_instantiate = false;
     }
 
