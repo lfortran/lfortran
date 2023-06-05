@@ -1109,8 +1109,14 @@ public:
                         obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
                         tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
                             body.size(), obj_type, ASR::arraystorageType::ColMajor);
-                        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
-                        ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                        ASR::Variable_t* v2 = nullptr;
+                        if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+                            ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
+                            v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+                        } else {
+                            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                            v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                        }
                         v2->m_value = ASRUtils::EXPR(tmp);
                         v2->m_symbolic_value = ASRUtils::EXPR(tmp);
                         SetChar var_deps_vec;
@@ -1157,7 +1163,22 @@ public:
                         throw SemanticError("The value in data must be a constant",
                             x.base.base.loc);
                     }
-                    if (ASR::is_a<ASR::Var_t>(*object)) {
+                    if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+                        ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
+                        ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+                        v2->m_value = expression_value;
+                        v2->m_symbolic_value = expression_value;
+                        SetChar var_deps_vec;
+                        var_deps_vec.reserve(al, 1);
+                        ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
+                            v2->m_symbolic_value, v2->m_value);
+                        v2->m_dependencies = var_deps_vec.p;
+                        v2->n_dependencies = var_deps_vec.size();
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                    object->base.loc, object, expression_value, nullptr));
+                        LCOMPILERS_ASSERT(current_body != nullptr)
+                        current_body->push_back(al, assign_stmt);
+                    } else if (ASR::is_a<ASR::Var_t>(*object)) {
                         // This is the following case:
                         // y / 2 /
                         ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
