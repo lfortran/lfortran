@@ -597,8 +597,8 @@ jobs:
             cd integration_tests
             ./run_tests.py -b wasm
 
-  test_cpp:
-    name: Test C++ backend
+  test_c_cpp:
+    name: Test C/C++ backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -649,7 +649,7 @@ jobs:
             cd ../../..
 
             cd integration_tests
-            ./run_tests.py -j1 -b cpp
+            ./run_tests.py -j1 -b cpp c
 
   upload_tarball:
     name: Upload Tarball
