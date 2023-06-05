@@ -1109,8 +1109,14 @@ public:
                         obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
                         tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
                             body.size(), obj_type, ASR::arraystorageType::ColMajor);
-                        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
-                        ASR::Variable_t *v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                        ASR::Variable_t* v2 = nullptr;
+                        if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+                            ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
+                            v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
+                        } else {
+                            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
+                            v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
+                        }
                         v2->m_value = ASRUtils::EXPR(tmp);
                         v2->m_symbolic_value = ASRUtils::EXPR(tmp);
                         SetChar var_deps_vec;
