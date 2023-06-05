@@ -65,6 +65,7 @@ enum class IntrinsicFunctions : int64_t {
     ListReverse,
     Sum,
     Product,
+    Max,
     // ...
 };
 
@@ -1358,6 +1359,67 @@ static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
 
 } // namespace Any
 
+namespace Max {
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args > 1, "ASR Verify: Call to max0 must have at least two arguments",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
+             "ASR Verify: Arguments to max0 must be of real or integer type",
+            x.base.base.loc, diagnostics);
+        for(int i=0;i<x.n_args;i++){
+            ASRUtils::require_impl(ASRUtils::expr_type(x.m_args[i]) == ASRUtils::expr_type(x.m_args[0]),
+            "ASR Verify: All arguments must be of the same type",
+            x.base.base.loc, diagnostics);
+        }
+    }
+
+    static ASR::expr_t *eval_Max(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+        if (ASR::is_a<ASR::Real_t>(*arg_type)) {
+            double max_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            for (size_t i = 1; i < args.size(); i++) {
+                double val = ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r;
+                max_val = std::fmax(max_val, val);
+            }
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, max_val, arg_type));
+        } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            int64_t max_val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            for (size_t i = 1; i < args.size(); i++) {
+                int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n;
+                max_val = std::fmax(max_val, val);
+            }
+            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, max_val, arg_type));
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::asr_t* create_Max(
+        Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        Vec<ASR::expr_t*> arg_values;
+        arg_values.reserve(al, args.size());
+        for(int i=0;i<args.size();i++){
+            ASR::expr_t *arg_value = ASRUtils::expr_value(args[i]);
+            arg_values.push_back(al, arg_value);
+        }
+        ASR::expr_t *value = eval_Max(al, loc, arg_values);
+        return ASR::make_IntrinsicFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Max),
+            args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
+    }
+
+    static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+        Vec<ASR::call_arg_t>& new_args, int64_t overload_id, ASR::expr_t* compile_time_value) {
+        // TODO
+    }
+
+}  // namespace max0
+
+
 namespace Sum {
 
 static inline void verify_array(ASR::expr_t* array, ASR::ttype_t* return_type,
@@ -2447,6 +2509,8 @@ namespace IntrinsicFunctionRegistry {
             {nullptr, &ListIndex::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListReverse),
             {nullptr, &ListReverse::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Max),
+            {&Max::instantiate_Max, &Max::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -2489,6 +2553,8 @@ namespace IntrinsicFunctionRegistry {
             "sum"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Product),
             "product"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Max),
+            "max"},
     };
 
 
@@ -2514,6 +2580,7 @@ namespace IntrinsicFunctionRegistry {
                 {"product", {&Product::create_Product, &Product::eval_Product}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
+                {"max0", {&Max::create_Max, &Max::eval_Max}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -2685,6 +2752,7 @@ inline std::string get_impure_intrinsic_name(int x) {
     switch (x) {
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEnd)
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEor)
+        INTRINSIC_NAME_CASE(Max)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
