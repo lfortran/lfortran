@@ -2155,7 +2155,7 @@ public:
                         throw SemanticError("The function argument " + arg + " is not found",
                             x.m_args[i]->base.loc);
                     }
-                    ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg);
+                    ASR::symbol_t *f_arg = ASRUtils::symbol_get_past_external(f_arg0);
                     if (!ASR::is_a<ASR::Function_t>(*f_arg)) {
                         throw SemanticError(
                             "The argument for " + param + " must be a function",
@@ -2180,10 +2180,8 @@ public:
                                     x.base.base.loc);
             }
             std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-            pass_instantiate_generic_symbol(al, type_subs, symbol_subs, current_scope,
+            pass_instantiate_symbol(al, type_subs, symbol_subs, current_scope,
                 temp->m_symtab, new_sym_name, s);
-            current_function_dependencies.erase(ASRUtils::symbol_name(s));
-            // current_function_dependencies.push_back(al, s2c(al, new_sym_name));
         }
 
         is_instantiate = false;
@@ -2191,37 +2189,37 @@ public:
 
     void check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
             std::map<std::string, ASR::symbol_t*> &symbol_subs,
-            ASR::Function_t *restriction, ASR::symbol_t *sym_arg, const Location& loc) {
-        std::string restriction_name = restriction->m_name;
+            ASR::Function_t *f, ASR::symbol_t *sym_arg, const Location& loc) {
+        std::string f_name = f->m_name;
         ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(sym_arg));
         std::string arg_name = arg->m_name;
-        if (restriction->n_args != arg->n_args) {
-            std::string restriction_narg = std::to_string(restriction->n_args);
-            std::string argument_narg = std::to_string(arg->n_args);
+        if (f->n_args != arg->n_args) {
+            std::string f_narg = std::to_string(f->n_args);
+            std::string arg_narg = std::to_string(arg->n_args);
             diag.add(Diagnostic(
-                "Number of arguments mismatch, restriction expects a function with " + restriction_narg
-                    + " parameters, but a function with " + argument_narg + " parameters is provided",
+                "Number of arguments mismatch, restriction expects a function with " + f_narg
+                    + " parameters, but a function with " + arg_narg + " parameters is provided",
                     Level::Error, Stage::Semantic, {
-                        Label(arg_name + " has " + argument_narg + " parameters",
+                        Label(arg_name + " has " + arg_narg + " parameters",
                                 {loc, arg->base.base.loc}),
-                        Label(restriction_name + " has " + restriction_narg + " parameters",
-                                {restriction->base.base.loc})
+                        Label(f_name + " has " + f_narg + " parameters",
+                                {f->base.base.loc})
                     }
             ));
             throw SemanticAbort();
         }
-        for (size_t i = 0; i < restriction->n_args; i++) {
-            ASR::ttype_t *restriction_parameter = ASRUtils::expr_type(restriction->m_args[i]);
-            ASR::ttype_t *arg_parameter = ASRUtils::expr_type(arg->m_args[i]);
-            if (ASR::is_a<ASR::TypeParameter_t>(*restriction_parameter)) {
-                ASR::TypeParameter_t *restriction_tp
-                    = ASR::down_cast<ASR::TypeParameter_t>(restriction_parameter);
-                if (!ASRUtils::check_equal_type(type_subs[restriction_tp->m_param],
-                                                arg_parameter)) {
-                    std::string rtype = ASRUtils::type_to_str(type_subs[restriction_tp->m_param]);
+        for (size_t i = 0; i < f->n_args; i++) {
+            ASR::ttype_t *f_param = ASRUtils::expr_type(f->m_args[i]);
+            ASR::ttype_t *arg_param = ASRUtils::expr_type(arg->m_args[i]);
+            if (ASR::is_a<ASR::TypeParameter_t>(*f_param)) {
+                ASR::TypeParameter_t *f_tp
+                    = ASR::down_cast<ASR::TypeParameter_t>(f_param);
+                if (!ASRUtils::check_equal_type(type_subs[f_tp->m_param],
+                                                arg_param)) {
+                    std::string rtype = ASRUtils::type_to_str(type_subs[f_tp->m_param]);
                     std::string rvar = ASRUtils::symbol_name(
-                                        ASR::down_cast<ASR::Var_t>(restriction->m_args[i])->m_v);
-                    std::string atype = ASRUtils::type_to_str(arg_parameter);
+                                        ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                    std::string atype = ASRUtils::type_to_str(arg_param);
                     std::string avar = ASRUtils::symbol_name(
                                         ASR::down_cast<ASR::Var_t>(arg->m_args[i])->m_v);
                     diag.add(Diagnostic(
@@ -2229,7 +2227,7 @@ public:
                         Level::Error, Stage::Semantic, {
                             Label("", {loc}),
                             Label("Restriction's parameter " + rvar + " of type " + rtype,
-                                    {restriction->m_args[i]->base.loc}),
+                                    {f->m_args[i]->base.loc}),
                             Label("Function's parameter " + avar + " of type " + atype,
                                     {arg->m_args[i]->base.loc})
                         }
@@ -2238,26 +2236,26 @@ public:
                 }
             }
         }
-        if (restriction->m_return_var) {
+        if (f->m_return_var) {
             if (!arg->m_return_var) {
                 std::string msg = "The restriction argument " + arg_name
                     + " should have a return value";
                 throw SemanticError(msg, loc);
             }
-            ASR::ttype_t *restriction_return = ASRUtils::expr_type(restriction->m_return_var);
-            ASR::ttype_t *arg_return = ASRUtils::expr_type(arg->m_return_var);
-            if (ASR::is_a<ASR::TypeParameter_t>(*restriction_return)) {
+            ASR::ttype_t *f_ret = ASRUtils::expr_type(f->m_return_var);
+            ASR::ttype_t *arg_ret = ASRUtils::expr_type(arg->m_return_var);
+            if (ASR::is_a<ASR::TypeParameter_t>(*f_ret)) {
                 ASR::TypeParameter_t *return_tp
-                    = ASR::down_cast<ASR::TypeParameter_t>(restriction_return);
-                if (!ASRUtils::check_equal_type(type_subs[return_tp->m_param], arg_return)) {
+                    = ASR::down_cast<ASR::TypeParameter_t>(f_ret);
+                if (!ASRUtils::check_equal_type(type_subs[return_tp->m_param], arg_ret)) {
                     std::string rtype = ASRUtils::type_to_str(type_subs[return_tp->m_param]);
-                    std::string atype = ASRUtils::type_to_str(arg_return);
+                    std::string atype = ASRUtils::type_to_str(arg_ret);
                     diag.add(Diagnostic(
                        "Restriction type mismatch with provided function argument",
                        Level::Error, Stage::Semantic, {
                             Label("", {loc}),
                             Label("Restriction's return type " + rtype,
-                                {restriction->m_return_var->base.loc}),
+                                {f->m_return_var->base.loc}),
                             Label("Function's return type " + atype,
                                 {arg->m_return_var->base.loc})
                        }
@@ -2272,7 +2270,7 @@ public:
                 throw SemanticError(msg, loc);
             }
         }
-        symbol_subs[restriction_name] = sym_arg;      
+        symbol_subs[f_name] = sym_arg;      
     }
 
     // TODO: use symbol instantiator?

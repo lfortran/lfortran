@@ -88,8 +88,6 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return Error();
         };
 #endif
-    std::cout << pickle(*tu, 0, 1) << std::endl;
-    // LCOMPILERS_ASSERT(false);
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
             implicit_mapping);
