@@ -4654,7 +4654,7 @@ public:
             ASRUtils::expr_intent(array_section->m_v) != ASR::intentType::Local ) {
             ASR::dimension_t* m_dims = nullptr;
             // Fill in m_dims:
-            int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+            [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
             LCOMPILERS_ASSERT(array_value_rank == value_rank);
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
