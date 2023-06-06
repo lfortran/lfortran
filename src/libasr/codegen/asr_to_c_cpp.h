@@ -2244,7 +2244,10 @@ R"(#include <stdio.h>
 
     void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
         LCOMPILERS_ASSERT(x.n_args == 1)
-        std::string out;
+        std::string out, abs_func = "abs";
+        if (ASRUtils::is_real(*x.m_type)) {
+            abs_func = "fabs";
+        }
         switch (x.m_intrinsic_id) {
             SET_INTRINSIC_NAME(Sin, "sin");
             SET_INTRINSIC_NAME(Cos, "cos");
@@ -2255,7 +2258,7 @@ R"(#include <stdio.h>
             SET_INTRINSIC_NAME(Sinh, "sinh");
             SET_INTRINSIC_NAME(Cosh, "cosh");
             SET_INTRINSIC_NAME(Tanh, "tanh");
-            SET_INTRINSIC_NAME(Abs, "abs");
+            SET_INTRINSIC_NAME(Abs, abs_func);
             SET_INTRINSIC_NAME(Exp, "exp");
             SET_INTRINSIC_NAME(Exp2, "exp2");
             SET_INTRINSIC_NAME(Expm1, "expm1");
