@@ -334,6 +334,8 @@ public:
             ASR::symbol_t* name2 = ASRUtils::symbol_get_past_external(name);
             SymbolInstantiator nested_t(al, type_subs, symbol_subs, func_scope, template_scope, nested_func_name);
             name = nested_t.instantiate_symbol(name2);
+            name = nested_t.instantiate_body(ASR::down_cast<ASR::Function_t>(name),
+                                             ASR::down_cast<ASR::Function_t>(name2));
         }
         dependencies.push_back(al, ASRUtils::symbol_name(name));
         return ASR::make_FunctionCall_t(al, x->base.base.loc, name, x->m_original_name,

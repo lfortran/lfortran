@@ -34,8 +34,11 @@ public:
     std::vector<ASR::symbol_t*> do_loop_variables;
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
-            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping),
+            CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+            std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping,
+                        instantiate_types, instantiate_symbols),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -500,49 +503,17 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
-        is_instantiate = true;
-
         std::string template_name = x.m_name;
         ASR::symbol_t *sym = current_scope->resolve_symbol(template_name);
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
 
-        std::map<std::string, ASR::ttype_t*> type_subs;
-        std::map<std::string, ASR::symbol_t*> symbol_subs;
-
-        for (size_t i=0; i<x.n_args; i++) {
-            std::string param = temp->m_args[i];
-            ASR::symbol_t *param_sym = temp->m_symtab->get_symbol(param);
-            if (AST::is_a<AST::UseSymbol_t>(*x.m_args[i])) {
-                AST::UseSymbol_t* arg_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_args[i]);
-                std::string arg = to_lower(arg_symbol->m_remote_sym);
-                if (ASR::is_a<ASR::Variable_t>(*param_sym)) {
-                    ASR::ttype_t *t = ASRUtils::symbol_type(param_sym);
-                    ASR::ttype_t* s;
-                    if (ASRUtils::is_type_parameter(*t)) {
-                        ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-                        if (arg.compare("real") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4, nullptr, 0));
-                        } else if (arg.compare("integer") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4, nullptr, 0));
-                        } else if (arg.compare("complex") == 0) {
-                            s = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4, nullptr, 0));
-                        }
-                        type_subs[tp->m_param] = s;
-                    } else {
-                        // type checking non-type parameter template arguments
-                        ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
-                        s = ASRUtils::symbol_type(arg_sym);
-                        symbol_subs[param] = arg_sym;
-                    }
-                } else if (ASR::is_a<ASR::Function_t>(*param_sym)) {
-                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(param_sym);
-                    ASR::symbol_t *f_arg = current_scope->resolve_symbol(arg);
-                    symbol_subs[f->m_name] = f_arg;
-                }
-            } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_args[i])) {
-            } 
+        if (instantiate_types.find(x.base.base.loc.first) == instantiate_types.end()) {
+            LCOMPILERS_ASSERT(false);
         }
 
+        std::map<std::string, ASR::ttype_t*> type_subs = instantiate_types[x.base.base.loc.first];
+        std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
+        
         for (size_t i = 0; i < x.n_symbols; i++){
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
             std::string generic_name = to_lower(use_symbol->m_remote_sym);
@@ -553,17 +524,12 @@ public:
                     current_scope->resolve_symbol(new_s_name));
                 pass_instantiate_function_body(al, type_subs, symbol_subs, current_scope,
                     temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
-            }
-            
+            } 
         }
-
-        is_instantiate = false;
     }
 
     /*
     void visit_Instantiate(const AST::Instantiate_t &x){
-        is_instantiate = true;
-
         std::string template_name = x.m_name;
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 0);
@@ -793,7 +759,6 @@ public:
             current_function_dependencies.push_back(al, s2c(al, new_sym_name));
         }
 
-        is_instantiate = false;
     }
     */
 
@@ -1529,14 +1494,6 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
-        /*
-        for (size_t i=0; i<x.n_decl; i++) {
-            is_Function = true;
-            if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
-                visit_unit_decl2(*x.m_decl[i]);
-            is_Function = false;
-        }
-        */
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_decl; i++) {
@@ -2711,9 +2668,12 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         diag::Diagnostics &diagnostics,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,
+                  instantiate_types, instantiate_symbols);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);

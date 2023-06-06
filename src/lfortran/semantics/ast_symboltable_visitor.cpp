@@ -95,8 +95,10 @@ public:
     };
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
-        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping) {}
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, instantiate_types, instantiate_symbols) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -845,20 +847,6 @@ public:
                                                                                 param->m_dims, param->n_dims));
                             }
                         }
-                    } else if (is_template) {
-                        /*
-                        for (const auto &pair: called_requirement) {
-                            if (pair.first.compare(derived_type_name) == 0) {
-                                ASR::asr_t *req_asr = pair.second;
-                                if (ASR::is_a<ASR::ttype_t>(*req_asr)) {
-                                    ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(req_asr);
-                                    type_param = true;
-                                    type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param,
-                                                                                    param->m_dims, param->n_dims));
-                                }
-                            }
-                        }
-                        */
                     }
                     if (!type_param) {
                         type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
@@ -2086,8 +2074,6 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
-        is_instantiate = true;
-
         std::string template_name = x.m_name;
 
         // check if the template exists
@@ -2161,11 +2147,143 @@ public:
                             "The argument for " + param + " must be a function",
                             x.m_args[i]->base.loc);
                     }
-                    check_restriction(type_subs, symbol_subs, f, f_arg, x.base.base.loc);
+                    check_restriction(type_subs, symbol_subs, f, f_arg0, x.base.base.loc);
                 } else {
                     throw SemanticError("Unsupported symbol argument", x.m_args[i]->base.loc);
                 }
             } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_args[i])) {
+                AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(x.m_args[i]);
+                ASR::binopType op;
+                std::string op_name;
+                switch (intrinsic_op->m_op) {
+                    case (AST::PLUS):
+                        op = ASR::Add;
+                        op_name = "~add";
+                        break;
+                    case (AST::MINUS):
+                        op = ASR::Sub;
+                        op_name = "~sub";
+                        break;
+                    case (AST::STAR):
+                        op = ASR::Mul;
+                        op_name = "~mul";
+                        break;
+                    case (AST::DIV):
+                        op = ASR::Div;
+                        op_name = "~div";
+                        break;
+                    default:
+                        LCOMPILERS_ASSERT(false);
+                }
+                bool is_overloaded = ASRUtils::is_op_overloaded(op, op_name, current_scope);
+                bool found = false;
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
+                std::string f_name = f->m_name;
+                // check if an alias is defined for the operator
+                if (is_overloaded) {
+                    ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
+                    ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+                    ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+                    for (size_t i = 0; i < gen_proc->n_procs; i++) {
+                        ASR::symbol_t* proc = gen_proc->m_procs[i];
+                        try {
+                            check_restriction(type_subs, symbol_subs, f, proc, x.base.base.loc);
+                            found = true;
+                            break;
+                        } catch (const SemanticError &e) {
+                            // ignore restriction error so that the next alias can be checked
+                        }
+                    }
+                }
+                // if not found, then try to build a function for intrinsic operator
+                if (!found) {
+                    if (f->n_args != 2) {
+                        throw SemanticError("The restriction " + f_name
+                            + " does not have 2 parameters", x.base.base.loc);
+                    }
+                    ASR::ttype_t *ltype = ASRUtils::subs_expr_type(type_subs, f->m_args[0]);
+                    ASR::ttype_t *rtype = ASRUtils::subs_expr_type(type_subs, f->m_args[1]);
+                    ASR::ttype_t *ftype = ASRUtils::subs_expr_type(type_subs, f->m_return_var);
+                    if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
+                        throw SemanticError("Intrinsic operator doesn't apply to "
+                            "restriction with different parameter types.", x.base.base.loc);
+                    }
+
+                    SymbolTable *parent_scope = current_scope;
+                    current_scope = al.make_new<SymbolTable>(parent_scope);
+                    Vec<ASR::expr_t*> args;
+                    args.reserve(al, 2);
+                    for (size_t i=0; i<2; i++) {
+                        std::string var_name = "arg" + std::to_string(i);
+                        ASR::asr_t *v = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
+                            s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
+                            ASR::storage_typeType::Default, ASRUtils::duplicate_type(al, ltype),
+                            nullptr,
+                            ASR::abiType::Source, ASR::accessType::Private,
+                            ASR::presenceType::Required, false);
+                        current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
+                        ASR::symbol_t *var = current_scope->get_symbol(var_name);
+                        args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var)));
+                    }
+
+                    std::string func_name;
+                    ASR::expr_t *value = nullptr;
+                    ASR::expr_t *lexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                        current_scope->get_symbol("arg0")));
+                    ASR::expr_t *rexpr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                        current_scope->get_symbol("arg1")));
+                    switch (ltype->type) {
+                        case ASR::ttypeType::Real: {
+                            func_name = op_name + "_intrinsic_real";
+                            value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x.base.base.loc,
+                                lexpr, op, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            break;
+                        }
+                        case ASR::ttypeType::Integer: {
+                            func_name = op_name + "_intrinsic_integer";
+                            value = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc,
+                                lexpr, op, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            break;
+                        }
+                        case ASR::ttypeType::Complex: {
+                            func_name = op_name + "_intrinsic_complex";
+                            value = ASRUtils::EXPR(ASR::make_ComplexBinOp_t(al, x.base.base.loc,
+                                lexpr, op, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            break;
+                        }
+                        default:
+                            throw LCompilersException("Not implemented " + std::to_string(ltype->type));
+                    }
+
+                    ASR::asr_t *return_v = ASR::make_Variable_t(al, x.base.base.loc,
+                        current_scope, s2c(al, "ret"), nullptr, 0,
+                        ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, ltype), nullptr, ASR::abiType::Source,
+                        ASR::accessType::Private, ASR::presenceType::Required, false);
+                    current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
+                    ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                        current_scope->get_symbol("ret")));
+
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
+                    ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_sym));
+                    ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
+                        target, value, nullptr));
+                    body.push_back(al, assignment);
+
+                    ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
+                        al, x.base.base.loc, current_scope, s2c(al, func_name),
+                        nullptr, 0, args.p, 2, body.p, 1, return_expr,
+                        ASR::abiType::Source, ASR::accessType::Public,
+                        ASR::deftypeType::Implementation, nullptr, false, true,
+                        false, false, false, false, false, true);
+
+                    ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
+                    parent_scope->add_symbol(func_name, op_sym);
+                    current_scope = parent_scope;
+                    symbol_subs[f->m_name] = op_sym;
+                }
             } else {
                 throw SemanticError("Unsupported template argument", x.m_args[i]->base.loc);
             }
@@ -2184,7 +2302,8 @@ public:
                 temp->m_symtab, new_sym_name, s);
         }
 
-        is_instantiate = false;
+        instantiate_types[x.base.base.loc.first] = type_subs;
+        instantiate_symbols[x.base.base.loc.first] = symbol_subs;
     }
 
     void check_restriction(std::map<std::string, ASR::ttype_t*> type_subs,
@@ -2450,9 +2569,12 @@ public:
 Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
-        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping)
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping);
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping,
+                         instantiate_types, instantiate_symbols);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

@@ -715,7 +715,6 @@ public:
     bool is_body_visitor = false;
     bool is_requirement = false;
     bool is_template = false;
-    bool is_instantiate = false;
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
@@ -737,12 +736,18 @@ public:
 
     int32_t enum_init_val;
 
+    std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
+    std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
+
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
-            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping)
+            std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+            std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
-          current_variable_type_{nullptr} {
+          current_variable_type_{nullptr},
+          instantiate_types{instantiate_types}, instantiate_symbols{instantiate_symbols} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -867,14 +872,6 @@ public:
                     v = declare_implicit_variable(loc, var_name, intent);
                 }
             } else {
-                // DONE: fix this ad-hoc solution ==> remove this solution
-                /*
-                if (is_instantiate) {
-                    ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                            1, strlen(s2c(al, var_name)), nullptr, nullptr, 0));
-                    return ASR::make_StringConstant_t(al, loc, s2c(al, var_name), type);
-                }
-                */
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
                     "'" + var_name + "' is undeclared");
