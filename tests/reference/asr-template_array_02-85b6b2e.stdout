@@ -328,11 +328,11 @@
             template_array_02:
                 (Program
                     (SymbolTable
-                        16
+                        17
                         {
                             add_integer:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     add_integer
                                     2 add_integer
                                     math
@@ -342,7 +342,7 @@
                                 ),
                             add_real:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     add_real
                                     2 add_real
                                     math
@@ -352,7 +352,7 @@
                                 ),
                             array_tmpl:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     array_tmpl
                                     7 array_tmpl
                                     template_array_02_m
@@ -362,7 +362,7 @@
                                 ),
                             operations:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     operations
                                     7 operations
                                     template_array_02_m
@@ -372,7 +372,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     test_template
                                     7 test_template
                                     template_array_02_m
@@ -382,7 +382,7 @@
                                 ),
                             zero_integer:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     zero_integer
                                     2 zero_integer
                                     math
@@ -392,7 +392,7 @@
                                 ),
                             zero_real:
                                 (ExternalSymbol
-                                    16
+                                    17
                                     zero_real
                                     2 zero_real
                                     math
@@ -405,7 +405,7 @@
                     [math
                     template_array_02_m]
                     [(SubroutineCall
-                        16 test_template
+                        17 test_template
                         ()
                         []
                         ()
@@ -466,10 +466,10 @@
                                                                     Required
                                                                     .false.
                                                                 ),
-                                                            i:
+                                                            j:
                                                                 (Variable
                                                                     14
-                                                                    i
+                                                                    j
                                                                     []
                                                                     Local
                                                                     ()
@@ -554,7 +554,7 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 14 i)
+                                                        ((Var 14 j)
                                                         (IntegerConstant 1 (Integer 4 []))
                                                         (ArraySize
                                                             (Var 14 a)
@@ -572,7 +572,7 @@
                                                                 ((ArrayItem
                                                                     (Var 14 a)
                                                                     [(()
-                                                                    (Var 14 i)
+                                                                    (Var 14 j)
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
@@ -788,137 +788,6 @@
                                     [t
                                     plus_t
                                     zero_t]
-                                ),
-                            mysum_integer:
-                                (Function
-                                    (SymbolTable
-                                        17
-                                        {
-                                            a:
-                                                (Variable
-                                                    17
-                                                    a
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [(()
-                                                    ())])
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            i:
-                                                (Variable
-                                                    17
-                                                    i
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    17
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    mysum_integer
-                                    (FunctionType
-                                        [(Integer 4 [(()
-                                        ())])]
-                                        (Integer 4 [])
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    [zero_integer
-                                    add_integer]
-                                    [(Var 17 a)]
-                                    [(=
-                                        (Var 17 r)
-                                        (FunctionCall
-                                            7 zero_integer
-                                            ()
-                                            [((ArrayItem
-                                                (Var 17 a)
-                                                [(()
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                ())]
-                                                (Integer 4 [])
-                                                ColMajor
-                                                ()
-                                            ))]
-                                            (Integer 4 [])
-                                            ()
-                                            ()
-                                        )
-                                        ()
-                                    )
-                                    (DoLoop
-                                        ()
-                                        ((Var 17 i)
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (ArraySize
-                                            (Var 17 a)
-                                            ()
-                                            (Integer 4 [])
-                                            ()
-                                        )
-                                        ())
-                                        [(=
-                                            (Var 17 r)
-                                            (FunctionCall
-                                                7 add_integer
-                                                ()
-                                                [((Var 17 r))
-                                                ((ArrayItem
-                                                    (Var 17 a)
-                                                    [(()
-                                                    (Var 17 i)
-                                                    ())]
-                                                    (Integer 4 [])
-                                                    ColMajor
-                                                    ()
-                                                ))]
-                                                (Integer 4 [])
-                                                ()
-                                                ()
-                                            )
-                                            ()
-                                        )]
-                                    )]
-                                    (Var 17 r)
-                                    Public
-                                    .false.
-                                    .false.
                                 ),
                             operations:
                                 (Requirement
@@ -1156,6 +1025,137 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            mysum_integer:
+                                                (Function
+                                                    (SymbolTable
+                                                        16
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    16
+                                                                    a
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [(()
+                                                                    ())])
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            j:
+                                                                (Variable
+                                                                    16
+                                                                    j
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    16
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    mysum_integer
+                                                    (FunctionType
+                                                        [(Integer 4 [(()
+                                                        ())])]
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    [zero_integer
+                                                    add_integer]
+                                                    [(Var 16 a)]
+                                                    [(=
+                                                        (Var 16 r)
+                                                        (FunctionCall
+                                                            7 zero_integer
+                                                            ()
+                                                            [((ArrayItem
+                                                                (Var 16 a)
+                                                                [(()
+                                                                (IntegerConstant 1 (Integer 4 []))
+                                                                ())]
+                                                                (Integer 4 [])
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            (Integer 4 [])
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (DoLoop
+                                                        ()
+                                                        ((Var 16 j)
+                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        (ArraySize
+                                                            (Var 16 a)
+                                                            ()
+                                                            (Integer 4 [])
+                                                            ()
+                                                        )
+                                                        ())
+                                                        [(=
+                                                            (Var 16 r)
+                                                            (FunctionCall
+                                                                7 add_integer
+                                                                ()
+                                                                [((Var 16 r))
+                                                                ((ArrayItem
+                                                                    (Var 16 a)
+                                                                    [(()
+                                                                    (Var 16 j)
+                                                                    ())]
+                                                                    (Integer 4 [])
+                                                                    ColMajor
+                                                                    ()
+                                                                ))]
+                                                                (Integer 4 [])
+                                                                ()
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )]
+                                                    )]
+                                                    (Var 16 r)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                ),
                                             s:
                                                 (Variable
                                                     15
@@ -1217,7 +1217,7 @@
                                     (=
                                         (Var 15 s)
                                         (FunctionCall
-                                            7 mysum_integer
+                                            15 mysum_integer
                                             ()
                                             [((Var 15 a))]
                                             (Integer 4 [])

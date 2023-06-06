@@ -25,7 +25,11 @@ filename = "../integration_tests/template_add_03.f90"
 asr = true
 
 [[test]]
-filename = "../integration_tests/template_nested.f90"
+filename = "../integration_tests/template_add_04.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_add_05.f90"
 ast = true
 asr = true
 

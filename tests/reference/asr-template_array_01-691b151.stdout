@@ -5,11 +5,11 @@
             template_array_01:
                 (Program
                     (SymbolTable
-                        7
+                        8
                         {
                             array_tmpl:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     array_tmpl
                                     2 array_tmpl
                                     template_array_01_m
@@ -19,7 +19,7 @@
                                 ),
                             r:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     r
                                     2 r
                                     template_array_01_m
@@ -29,7 +29,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     test_template
                                     2 test_template
                                     template_array_01_m
@@ -41,7 +41,7 @@
                     template_array_01
                     [template_array_01_m]
                     [(SubroutineCall
-                        7 test_template
+                        8 test_template
                         ()
                         []
                         ()
@@ -209,111 +209,6 @@
                                     array_tmpl
                                     [t]
                                 ),
-                            insert_int:
-                                (Function
-                                    (SymbolTable
-                                        8
-                                        {
-                                            i:
-                                                (Variable
-                                                    8
-                                                    i
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            lst:
-                                                (Variable
-                                                    8
-                                                    lst
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [(()
-                                                    ())])
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    8
-                                                    r
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    insert_int
-                                    (FunctionType
-                                        [(Integer 4 [(()
-                                        ())])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 8 lst)
-                                    (Var 8 i)]
-                                    [(=
-                                        (ArrayItem
-                                            (Var 8 lst)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            ())]
-                                            (Integer 4 [])
-                                            ColMajor
-                                            ()
-                                        )
-                                        (Var 8 i)
-                                        ()
-                                    )
-                                    (=
-                                        (Var 8 r)
-                                        (ArrayItem
-                                            (Var 8 lst)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            ())]
-                                            (Integer 4 [])
-                                            ColMajor
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 8 r)
-                                    Public
-                                    .false.
-                                    .false.
-                                ),
                             r:
                                 (Requirement
                                     (SymbolTable
@@ -378,6 +273,111 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                ),
+                                            insert_int:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            i:
+                                                                (Variable
+                                                                    7
+                                                                    i
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            lst:
+                                                                (Variable
+                                                                    7
+                                                                    lst
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [(()
+                                                                    ())])
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    7
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4 [])
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    insert_int
+                                                    (FunctionType
+                                                        [(Integer 4 [(()
+                                                        ())])
+                                                        (Integer 4 [])]
+                                                        (Integer 4 [])
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 7 lst)
+                                                    (Var 7 i)]
+                                                    [(=
+                                                        (ArrayItem
+                                                            (Var 7 lst)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4 []))
+                                                            ())]
+                                                            (Integer 4 [])
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        (Var 7 i)
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 7 r)
+                                                        (ArrayItem
+                                                            (Var 7 lst)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4 []))
+                                                            ())]
+                                                            (Integer 4 [])
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 7 r)
+                                                    Public
+                                                    .false.
                                                     .false.
                                                 ),
                                             r:
@@ -448,7 +448,7 @@
                                     (=
                                         (Var 6 r)
                                         (FunctionCall
-                                            2 insert_int
+                                            6 insert_int
                                             ()
                                             [((Var 6 a))
                                             ((Var 6 i))]
