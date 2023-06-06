@@ -717,8 +717,7 @@ RUN(NAME nested_11 LABELS gfortran llvm)
 RUN(NAME nested_vars1 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_vars2 LABELS gfortran llvm NOFAST)
 
-# TODO: This fails is release mode (https://github.com/lfortran/lfortran/issues/1765)
-# RUN(NAME nbody LABELS gfortran llvm NOFAST)
+RUN(NAME nbody LABELS gfortran llvm NOFAST)
 
 RUN(NAME intent_01 LABELS gfortran llvm)
 
