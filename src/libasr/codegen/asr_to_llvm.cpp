@@ -4653,7 +4653,9 @@ public:
         if( ASRUtils::is_data_only_array(array_type, ASR::abiType::Source) &&
             ASRUtils::expr_intent(array_section->m_v) != ASR::intentType::Local ) {
             ASR::dimension_t* m_dims = nullptr;
-            LCOMPILERS_ASSERT(ASRUtils::extract_dimensions_from_ttype(array_type, m_dims) == value_rank);
+            // Fill in m_dims:
+            [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+            LCOMPILERS_ASSERT(array_value_rank == value_rank);
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, value_rank * 2);
             for( int i = 0; i < value_rank; i++ ) {
