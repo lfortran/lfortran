@@ -898,6 +898,7 @@ namespace Abs {
                 {
                     call_args.reserve(al, 1);
                     ASR::call_arg_t arg;
+                    arg.loc = args[0]->base.loc;
                     arg.m_value = args[0];
                     call_args.push_back(al, arg);
                 }
@@ -1289,7 +1290,7 @@ static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
         if( overload_id == 1 ) {
             ASR::ttype_t* dim_type = ASRUtils::expr_type(new_args[1].m_value);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dim_type));
-            int kind = ASRUtils::extract_kind_from_ttype_t(dim_type);
+            [[maybe_unused]] int kind = ASRUtils::extract_kind_from_ttype_t(dim_type);
             LCOMPILERS_ASSERT(kind == 4);
             fill_func_arg("dim", dim_type);
 

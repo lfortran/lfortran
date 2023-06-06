@@ -49,6 +49,7 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
                 current_expr = &(x->m_args[i]);
                 replace_expr(x->m_args[i]);
                 ASR::call_arg_t arg0;
+                arg0.loc = (*current_expr)->base.loc;
                 arg0.m_value = *current_expr; // Use the converted arg
                 new_args.push_back(al, arg0);
                 current_expr = current_expr_copy_;
@@ -237,10 +238,13 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                 throw LCompilersException("Runtime values for dim argument is not supported yet.");
             } else {
                 int constant_dim;
-                ASRUtils::extract_value(ASRUtils::expr_value(dim), constant_dim);
-                result_var_ = get_result_var_for_constant_dim(constant_dim, n_dims,
-                                ASRUtils::symbol_name(x->m_name), x->base.base.loc,
-                                x->m_type, x->m_args[0].m_value);
+                if (ASRUtils::extract_value(ASRUtils::expr_value(dim), constant_dim)) {
+                    result_var_ = get_result_var_for_constant_dim(constant_dim, n_dims,
+                                    ASRUtils::symbol_name(x->m_name), x->base.base.loc,
+                                    x->m_type, x->m_args[0].m_value);
+                } else {
+                    throw LCompilersException("Constant dimension cannot be extracted.");
+                }
             }
         }
         result_counter += 1;

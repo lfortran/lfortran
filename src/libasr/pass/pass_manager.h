@@ -105,7 +105,7 @@ namespace LCompilers {
 
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           diag::Diagnostics &diagnostics) {
+                           [[maybe_unused]] diag::Diagnostics &diagnostics) {
             if (pass_options.pass_cumulative) {
                 int _pass_max_idx = -1, _opt_max_idx = -1;
                 for (std::string &current_pass: passes) {

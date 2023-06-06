@@ -582,8 +582,8 @@ namespace LCompilers {
             }
 
             const Location& loc = x->base.base.loc;
-            ASR::ttype_t* result_var_type = ASRUtils::expr_type(replacer->result_var);
             if( ASR::is_a<ASR::Var_t>(*replacer->result_var) ) {
+                [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(replacer->result_var);
                 LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
                                     "Initialisation using ArrayConstant is "
                                     "supported only for single dimensional arrays, found: " +

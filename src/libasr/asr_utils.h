@@ -3764,6 +3764,7 @@ static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimensi
             length = expr_duplicator.duplicate_expr(length);
         }
         ASR::dimension_t t;
+        t.loc = m_dims[i].loc;
         t.m_start = start;
         t.m_length = length;
         dims.push_back(al, t);

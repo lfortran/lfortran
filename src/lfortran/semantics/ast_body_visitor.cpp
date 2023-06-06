@@ -607,6 +607,7 @@ public:
                         break;
                     default:
                         LCOMPILERS_ASSERT(false);
+                        op = ASR::Div; // silence a warning
                 }
                 bool is_overloaded = ASRUtils::is_op_overloaded(op, op_name, current_scope);
                 bool found = false;
