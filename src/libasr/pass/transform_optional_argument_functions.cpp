@@ -257,17 +257,9 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al, const T& x) {
     }
 
     new_args.reserve(al, func->n_args);
-    for( size_t i = 0, j = 0; j < func->n_args; i++, j++ ) {
-        if( i < x.n_args ) {
-            new_args.push_back(al, x.m_args[i]);
-        } else {
-            ASR::call_arg_t empty_arg;
-            Location loc;
-            loc.first = 1, loc.last = 1;
-            empty_arg.loc = loc;
-            empty_arg.m_value = nullptr;
-            new_args.push_back(al, empty_arg);
-        }
+    for( size_t i = 0, j = 0; j < func->n_args; j++, i++ ) {
+        LCOMPILERS_ASSERT(i < x.n_args);
+        new_args.push_back(al, x.m_args[i]);
         if( ASR::is_a<ASR::Variable_t>(
                 *ASR::down_cast<ASR::Var_t>(func->m_args[j])->m_v) &&
             ASRUtils::EXPR2VAR(func->m_args[j])->m_presence ==

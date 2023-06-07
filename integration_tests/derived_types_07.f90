@@ -1,4 +1,4 @@
-module stdlib_logger
+module derived_types_07_stdlib_logger
 
     type :: logger_type
         private
@@ -19,7 +19,7 @@ contains
 
     subroutine final_logger( self )
                 type(logger_type), intent(in) :: self
-        
+
                 integer        :: iostat
                 character(256) :: message
                 integer        :: unit

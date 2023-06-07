@@ -136,6 +136,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     test_scan_module
@@ -361,6 +362,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     test_scan_verify

@@ -34,6 +34,8 @@ class LLVMEvaluator;
 class FortranEvaluator
 {
 public:
+    CompilerOptions compiler_options;
+
     FortranEvaluator(CompilerOptions compiler_options);
     ~FortranEvaluator();
 
@@ -109,7 +111,6 @@ private:
     std::unique_ptr<LLVMEvaluator> e;
     int eval_count;
 #endif
-    CompilerOptions compiler_options;
     SymbolTable *symbol_table;
     std::string run_fn;
 };

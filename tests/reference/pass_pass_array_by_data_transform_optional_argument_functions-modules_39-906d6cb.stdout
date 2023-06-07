@@ -82,12 +82,12 @@
                                         .false.
                                         .false.
                                     )
-                                    [filewrite_filedata
+                                    [filewrite
                                     join_path]
                                     []
                                     [(SubroutineCall
-                                        2 filewrite_filedata
-                                        2 filewrite_filedata
+                                        2 filewrite
+                                        ()
                                         [((FunctionCall
                                             2 join_path
                                             ()
@@ -101,12 +101,12 @@
                                             ))
                                             (())
                                             ((LogicalConstant
-                                                .true.
+                                                .false.
                                                 (Logical 4 [])
                                             ))
                                             (())
                                             ((LogicalConstant
-                                                .true.
+                                                .false.
                                                 (Logical 4 [])
                                             ))
                                             (())
@@ -126,15 +126,14 @@
                                             (Character 1 1 () [((IntegerConstant 1 (Integer 4 []))
                                             (IntegerConstant 1 (Integer 4 [])))])
                                             ColMajor
-                                        ))
-                                        ((IntegerConstant 1 (Integer 4 [])))
-                                        ((IntegerConstant 1 (Integer 4 [])))]
+                                        ))]
                                         ()
                                     )]
                                     ()
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             filewrite:
                                 (ExternalSymbol
@@ -144,16 +143,6 @@
                                     modules_39_module_fpm_filesystem_39
                                     []
                                     filewrite
-                                    Public
-                                ),
-                            filewrite_filedata:
-                                (ExternalSymbol
-                                    2
-                                    filewrite_filedata
-                                    4 filewrite_filedata
-                                    modules_39_module_fpm_filesystem_39
-                                    []
-                                    filewrite_filedata
                                     Public
                                 ),
                             join_path:
@@ -240,105 +229,7 @@
                                     Public
                                     .false.
                                     .false.
-                                ),
-                            filewrite_filedata:
-                                (Function
-                                    (SymbolTable
-                                        9
-                                        {
-                                            __1filedata:
-                                                (Variable
-                                                    9
-                                                    __1filedata
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            __2filedata:
-                                                (Variable
-                                                    9
-                                                    __2filedata
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            filedata:
-                                                (Variable
-                                                    9
-                                                    filedata
-                                                    [__1filedata
-                                                    __2filedata]
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 () [((Var 9 __1filedata)
-                                                    (Var 9 __2filedata))])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            filename:
-                                                (Variable
-                                                    9
-                                                    filename
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 () [])
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    filewrite_filedata
-                                    (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Character 1 -1 () [(()
-                                        ())])]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ""
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 9 filename)
-                                    (Var 9 filedata)
-                                    (Var 9 __1filedata)
-                                    (Var 9 __2filedata)]
-                                    []
                                     ()
-                                    Public
-                                    .false.
-                                    .false.
                                 ),
                             join_path:
                                 (Function
@@ -522,6 +413,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     modules_39_module_fpm_filesystem_39

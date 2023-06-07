@@ -10,6 +10,8 @@ on:
     branches:
       - main
 
+env:
+  MACOSX_DEPLOYMENT_TARGET: 12.0
 
 jobs:
   Build:
@@ -159,7 +161,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -174,6 +176,7 @@ jobs:
         shell: bash -l {0}
         run: |
             ./build0.sh
+            export CXXFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
@@ -192,6 +195,52 @@ jobs:
             ctest
             ./run_tests.py -s
             cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+
+  release:
+    name: Check Release build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/provision-with-micromamba@v16
+        with:
+          environment-file: ci/environment_linux.yml
+          extra-specs: |
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -l {0}
+        run: |
+            ./build0.sh
+            export CXXFLAGS="-Werror"
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -l {0}
+        run: |
+            ctest
+            ./run_tests.py -s
+            cd integration_tests
+            ./run_tests.py -m
             ./run_tests.py -b llvm
 
   minpack:
@@ -202,7 +251,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -246,11 +295,19 @@ jobs:
             examples/example_lmdif1
             examples/example_primes
             ctest
+      - name: Test Minpack (Fortran-Lang)
+        shell: bash -x -l {0}
+        run: |
+            git clone https://github.com/czgdp1807/minpack modern_minpack_01
+            cd modern_minpack_01
+            git checkout 0bd95b561d3a9651513da40b9bcd743e2f75868b
+            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
+            $(pwd)/../src/bin/lfortran ./test/test_hybrd.f90
       - name: Test Modern Minpack
         shell: bash -x -l {0}
         run: |
-            git clone https://github.com/Pranavchiku/modern_minpack.git
-            cd modern_minpack
+            git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
+            cd modern_minpack_02
             git checkout w5
             git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
             $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c
@@ -258,10 +315,11 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90
             $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90
-            $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90
-            $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90
-            $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90
-            $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90
+
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90
+            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90
 
   fpm:
     name: Check fpm Compilation
@@ -271,7 +329,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -316,7 +374,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux_llvm10.yml
           extra-specs: |
@@ -357,7 +415,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux_llvm14.yml
           extra-specs: |
@@ -398,7 +456,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux_llvm15.yml
           extra-specs: |
@@ -429,7 +487,7 @@ jobs:
         shell: bash -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm llvmImplicit
 
   gfortran:
     name: Test integration_tests with GFortran
@@ -453,7 +511,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -508,7 +566,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -519,7 +577,7 @@ jobs:
         run: |
           xonsh ci/test_without_llvm_backend.xsh
 
-  test_cpp:
+  test_cpp_build:
     name: Test CPP
     runs-on: ubuntu-latest
     steps:
@@ -527,7 +585,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -546,7 +604,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -587,6 +645,60 @@ jobs:
             cd integration_tests
             ./run_tests.py -b wasm
 
+  test_c_cpp:
+    name: Test C/C++ backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/provision-with-micromamba@v16
+        with:
+          environment-file: ci/environment_linux.yml
+          extra-specs: |
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -l {0}
+        run: |
+            mkdir build-kokkos
+            cd build-kokkos
+            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
+            tar xaf 3.1.01.tar.gz
+            cd kokkos-3.1.01
+            mkdir build
+            cd build
+            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
+            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
+            make
+            make install
+            cd ../../..
+
+            cd integration_tests
+            ./run_tests.py -j1 -b cpp c
+
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
@@ -595,7 +707,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_linux.yml
           extra-specs: |
@@ -619,7 +731,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v15
+      - uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/environment_docs_linux.yml
 

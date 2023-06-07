@@ -1,0 +1,13 @@
+{
+    "basename": "ast-program_without_line_03-e127d69",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/program_without_line_03.f90",
+    "infile_hash": "7f24b4f0125a80a40ddb1a2d400619fe7762e4b6f9ef34337b19964f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-program_without_line_03-e127d69.stderr",
+    "stderr_hash": "ae510b2f7bc81b4d0514bd7324e09fb2de2c85892cc529293c7f3154",
+    "returncode": 2
+}

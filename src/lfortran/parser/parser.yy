@@ -383,6 +383,8 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> procedure
 %type <ast> sub_or_func
 %type <vec_ast> sub_args
+%type <vec_ast> id_or_star_list
+%type <ast> id_or_star
 %type <ast> function
 %type <ast> use_statement
 %type <ast> use_statement1
@@ -592,6 +594,7 @@ script_unit
     | var_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
+    | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
     ;
 
 // ----------------------------------------------------------------------------
@@ -739,6 +742,7 @@ end_type
 
 derived_type_contains_opt
     : KW_CONTAINS sep procedure_list { $$ = $3; }
+    | KW_CONTAINS sep { LIST_NEW($$); }
     | %empty { LIST_NEW($$); }
     ;
 
@@ -1023,8 +1027,19 @@ sub_or_func
     ;
 
 sub_args
-    : "(" id_list_opt ")" { $$ = $2; }
+    : "(" id_or_star_list ")" { $$ = $2; }
     | %empty { LIST_NEW($$); }
+    ;
+
+id_or_star_list
+    : id_or_star_list "," id_or_star { $$ = $1; LIST_ADD($$, $3); }
+    | id_or_star { LIST_NEW($$); LIST_ADD($$, $1); }
+    | %empty { LIST_NEW($$); }
+    ;
+
+id_or_star
+    : id  { $$ = $1; }
+    | "*" { $$ = nullptr; }
     ;
 
 bind_opt
@@ -2295,6 +2310,7 @@ fnarray_arg
     | expr ":" expr ":" expr { $$ = ARRAY_COMP_DECL_abc($1, $3, $5, @$); }
 // keyword function argument
     | id "=" expr            { $$ = ARRAY_COMP_DECL1k($1, $3, @$); }
+    | "*" TK_INTEGER         { $$ = ARRAY_COMP_DECL_label($2, @$); }
     ;
 
 coarray_arg_list

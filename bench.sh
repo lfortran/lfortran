@@ -2,9 +2,11 @@
 #
 # Compile the latest master and a given PR in Release mode from scratch.
 #
+# Install the usual `lf` environment, and also `mamba install zlib fmt`.
+#
 # Example:
 #
-# CC=gcc-10 CXX=g++-10 ./bench.sh 448
+# ./bench.sh 448
 # bench/main/src/bin/parse
 # bench/pr/src/bin/parse
 # bench/main/src/bin/parse2
@@ -31,7 +33,7 @@ cd ..
 
 mkdir main
 cd main
-#cmake -DWITH_FMT=yes -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" ../lfortran
+#cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DWITH_FMT=yes -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" ../lfortran
 cmake -DWITH_FMT=yes ../lfortran
 make -j
 cd ..
@@ -45,7 +47,7 @@ cd ..
 
 mkdir pr
 cd pr
-#cmake -DWITH_FMT=yes -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" ../lfortran
+#cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DWITH_FMT=yes -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" ../lfortran
 cmake -DWITH_FMT=yes ../lfortran
 make -j
 cd ..

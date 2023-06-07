@@ -13,7 +13,7 @@
                     []
                     []
                 ),
-            stdlib_string_type:
+            derived_types_05_stdlib_string_type:
                 (Module
                     (SymbolTable
                         2
@@ -83,6 +83,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_integer_int32:
                                 (Function
@@ -149,6 +150,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_integer_int64:
                                 (Function
@@ -215,6 +217,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_logical_lk:
                                 (Function
@@ -281,6 +284,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType
@@ -325,7 +329,7 @@
                                     Public
                                 )
                         })
-                    stdlib_string_type
+                    derived_types_05_stdlib_string_type
                     []
                     .false.
                     .false.
@@ -400,6 +404,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_integer_int32:
                                 (Function
@@ -466,6 +471,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_integer_int64:
                                 (Function
@@ -532,6 +538,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new_string_from_logical_lk:
                                 (Function
@@ -598,13 +605,14 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (ExternalSymbol
                                     8
                                     string_type
                                     2 string_type
-                                    stdlib_string_type
+                                    derived_types_05_stdlib_string_type
                                     []
                                     string_type
                                     Public
@@ -614,7 +622,7 @@
                                     8
                                     ~string_type
                                     2 ~string_type
-                                    stdlib_string_type
+                                    derived_types_05_stdlib_string_type
                                     []
                                     ~string_type
                                     Public

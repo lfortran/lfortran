@@ -1,6 +1,6 @@
 (TranslationUnit
     [(Module
-        math
+        template_travel_math
         (TriviaNode
             [(EndOfLine)
             (EndOfLine)]
@@ -179,7 +179,7 @@
         )]
     )
     (Module
-        travel
+        template_travel_travel
         (TriviaNode
             [(EndOfLine)
             (EndOfLine)]
@@ -188,7 +188,7 @@
         )
         [(Use
             []
-            math
+            template_travel_math
             []
             .false.
             ()
@@ -674,28 +674,34 @@
                             []
                             [(()
                             d1
-                            ())
+                            ()
+                            0)
                             (()
                             d2
-                            ())]
+                            ()
+                            0)]
                             []
                             []
                         )
-                        ())
+                        ()
+                        0)
                         (()
                         (FuncCallOrArray
                             plus_T
                             []
                             [(()
                             t1
-                            ())
+                            ()
+                            0)
                             (()
                             t2
-                            ())]
+                            ()
+                            0)]
                             []
                             []
                         )
-                        ())]
+                        ()
+                        0)]
                         []
                         []
                     )
@@ -793,38 +799,46 @@
                         []
                         [(()
                         d1
-                        ())
+                        ()
+                        0)
                         (()
                         (FuncCallOrArray
                             D_divided_by_S
                             []
                             [(()
                             d1
-                            ())
+                            ()
+                            0)
                             (()
                             s1
-                            ())]
+                            ()
+                            0)]
                             []
                             []
                         )
-                        ())
+                        ()
+                        0)
                         (()
                         d2
-                        ())
+                        ()
+                        0)
                         (()
                         (FuncCallOrArray
                             D_divided_by_S
                             []
                             [(()
                             d2
-                            ())
+                            ()
+                            0)
                             (()
                             s2
-                            ())]
+                            ()
+                            0)]
                             []
                             []
                         )
-                        ())]
+                        ()
+                        0)]
                         []
                         []
                     )
@@ -845,14 +859,14 @@
         )
         [(Use
             []
-            math
+            template_travel_math
             []
             .false.
             ()
         )
         (Use
             []
-            travel
+            template_travel_travel
             []
             .false.
             ()
@@ -980,16 +994,20 @@
                     []
                     [(()
                     (Real "1.0")
-                    ())
+                    ()
+                    0)
                     (()
                     (Real "3.0")
-                    ())
+                    ()
+                    0)
                     (()
                     (Real "1.5")
-                    ())
+                    ()
+                    0)
                     (()
                     (Real "4.0")
-                    ())]
+                    ()
+                    0)]
                     []
                     []
                 )
@@ -1003,16 +1021,20 @@
                     []
                     [(()
                     (Real "1.1")
-                    ())
+                    ()
+                    0)
                     (()
                     (Real "0.5")
-                    ())
+                    ()
+                    0)
                     (()
                     (Real "2.0")
-                    ())
+                    ()
+                    0)
                     (()
                     (Real "0.75")
-                    ())]
+                    ()
+                    0)]
                     []
                     []
                 )

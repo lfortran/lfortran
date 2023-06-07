@@ -1,4 +1,4 @@
-module module_1
+module functions_15_module_1
 implicit none
 
 contains
@@ -26,10 +26,10 @@ contains
             end if
         end if
     end subroutine sub_1
-end module module_1
+end module
 
 program functions_15
-use module_1, only: sub_1
+use functions_15_module_1, only: sub_1
 implicit none
 
     integer :: a

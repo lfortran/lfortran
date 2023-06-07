@@ -3,6 +3,7 @@ program main
 
     real :: z(2)
 
+    print *, solution()
     z = solution()
     call compare_solutions(z)
 

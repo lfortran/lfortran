@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-subroutines_10-779ade9",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/subroutines_10.f90",
+    "infile_hash": "97868109f521b42642b328d8b79be02e7668b5819dc820880ec85da0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-subroutines_10-779ade9.stdout",
+    "stdout_hash": "77cac845f90c95ab93e41002c00fcc1be757d153ea2941c75c6690ae",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

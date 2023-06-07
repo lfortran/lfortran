@@ -72,6 +72,34 @@ std::string get_runtime_library_header_dir()
     return get_runtime_library_dir() + "/impure";
 }
 
+std::string get_runtime_library_c_header_dir()
+{
+    char *env_p = std::getenv("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR");
+    if (env_p) return env_p;
+
+    // The header file is in src/libasr/runtime for development, but in impure
+    // in installed version
+    std::string path;
+    int dirname_length;
+    get_executable_path(path, dirname_length);
+    std::string dirname = path.substr(0,dirname_length);
+    if (   endswith(dirname, "src/bin")
+        || endswith(dirname, "src\\bin")
+        || endswith(dirname, "SRC\\BIN")) {
+        // Development version
+        return dirname + "/../libasr/runtime";
+    } else if (endswith(dirname, "src/lpython/tests") ||
+               endswith(to_lower(dirname), "src\\lpython\\tests")) {
+        // CTest Tests
+        return dirname + "/../../libasr/runtime";
+    } else {
+        // Installed version
+        return dirname + "/../share/lpython/lib/impure";
+    }
+
+    return path;
+}
+
 std::string generate_visualize_html(std::string &astr_data_json) {
     std::hash<std::string> hasher;
     std::ofstream out;

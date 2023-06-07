@@ -49,16 +49,16 @@
                             f_string_cptr:
                                 (Function
                                     (SymbolTable
-                                        38
+                                        11
                                         {
                                             c_strlen:
                                                 (Function
                                                     (SymbolTable
-                                                        39
+                                                        12
                                                         {
                                                             r:
                                                                 (Variable
-                                                                    39
+                                                                    12
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -74,7 +74,7 @@
                                                                 ),
                                                             s:
                                                                 (Variable
-                                                                    39
+                                                                    12
                                                                     s
                                                                     []
                                                                     In
@@ -104,16 +104,17 @@
                                                         .false.
                                                     )
                                                     []
-                                                    [(Var 39 s)]
+                                                    [(Var 12 s)]
                                                     []
-                                                    (Var 39 r)
+                                                    (Var 12 r)
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             cptr:
                                                 (Variable
-                                                    38
+                                                    11
                                                     cptr
                                                     []
                                                     In
@@ -129,7 +130,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    38
+                                                    11
                                                     s
                                                     []
                                                     ReturnVar
@@ -160,25 +161,25 @@
                                     )
                                     [c_strlen
                                     f_string_cptr_n]
-                                    [(Var 38 cptr)]
+                                    [(Var 11 cptr)]
                                     [(=
-                                        (Var 38 s)
+                                        (Var 11 s)
                                         (FunctionCall
                                             2 f_string_cptr_n
                                             ()
-                                            [((Var 38 cptr))
+                                            [((Var 11 cptr))
                                             ((FunctionCall
-                                                38 c_strlen
+                                                11 c_strlen
                                                 ()
-                                                [((Var 38 cptr))]
+                                                [((Var 11 cptr))]
                                                 (Integer 8 [])
                                                 ()
                                                 ()
                                             ))]
                                             (Character 1 -3 (FunctionCall
-                                                38 c_strlen
+                                                11 c_strlen
                                                 ()
-                                                [((Var 38 cptr))]
+                                                [((Var 11 cptr))]
                                                 (Integer 8 [])
                                                 ()
                                                 ()
@@ -188,19 +189,20 @@
                                         )
                                         ()
                                     )]
-                                    (Var 38 s)
+                                    (Var 11 s)
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f_string_cptr_n:
                                 (Function
                                     (SymbolTable
-                                        40
+                                        13
                                         {
                                             cptr:
                                                 (Variable
-                                                    40
+                                                    13
                                                     cptr
                                                     []
                                                     In
@@ -216,7 +218,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    40
+                                                    13
                                                     n
                                                     []
                                                     In
@@ -232,14 +234,14 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    40
+                                                    13
                                                     s
                                                     [n]
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (Var 40 n) [])
+                                                    (Character 1 -3 (Var 13 n) [])
                                                     ()
                                                     Source
                                                     Public
@@ -267,22 +269,23 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 40 cptr)
-                                    (Var 40 n)]
+                                    [(Var 13 cptr)
+                                    (Var 13 n)]
                                     []
-                                    (Var 40 s)
+                                    (Var 13 s)
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             f_string~genericprocedure:
                                 (Function
                                     (SymbolTable
-                                        37
+                                        10
                                         {
                                             c_string:
                                                 (Variable
-                                                    37
+                                                    10
                                                     c_string
                                                     []
                                                     In
@@ -299,7 +302,7 @@
                                                 ),
                                             f_string:
                                                 (Variable
-                                                    37
+                                                    10
                                                     f_string
                                                     []
                                                     ReturnVar
@@ -330,21 +333,22 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 37 c_string)]
+                                    [(Var 10 c_string)]
                                     []
-                                    (Var 37 f_string)
+                                    (Var 10 f_string)
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_t:
                                 (StructType
                                     (SymbolTable
-                                        36
+                                        9
                                         {
                                             s:
                                                 (Variable
-                                                    36
+                                                    9
                                                     s
                                                     []
                                                     Local
@@ -377,9 +381,7 @@
                     .false.
                 ),
             iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
 )

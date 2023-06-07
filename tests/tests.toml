@@ -83,6 +83,7 @@ julia = true
 
 [[test]]
 filename = "do1.f90"
+interactive = true
 ast = true
 
 [[test]]
@@ -339,6 +340,7 @@ asr_preprocess = true
 
 [[test]]
 filename = "expr1.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -346,6 +348,7 @@ pass = "global_stmts"
 
 [[test]]
 filename = "expr2.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -354,6 +357,7 @@ pass = "global_stmts"
 
 [[test]]
 filename = "expr3.f90"
+interactive = true
 ast = true
 asr = true
 pass = "global_stmts"
@@ -361,6 +365,7 @@ llvm = true
 
 [[test]]
 filename = "expr4.f90"
+interactive = true
 ast = true
 asr = true
 pass = "global_stmts"
@@ -375,12 +380,14 @@ obj = true
 
 [[test]]
 filename = "expr6.f90"
+interactive = true
 asr = true
 pass = "global_stmts"
 llvm = true
 
 [[test]]
 filename = "expr7.f90"
+interactive = true
 tokens = true
 ast = true
 ast_f90 = true
@@ -388,11 +395,13 @@ ast_f90 = true
 [[test]]
 filename = "expr8.f90"
 tokens = true
+interactive = true
 ast = true
 ast_f90 = true
 
 [[test]]
 filename = "expr9.f90"
+interactive = true
 ast = true
 ast_f90 = true
 
@@ -618,6 +627,11 @@ filename = "../integration_tests/subroutines_09.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/subroutines_10.f90"
+ast = true
+ast_f90 = true
+
+[[test]]
 filename = "../integration_tests/data_01.f90"
 ast = true
 
@@ -631,6 +645,7 @@ asr = true
 
 [[test]]
 filename = "global_scope1.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -638,6 +653,7 @@ pass = "global_stmts"
 
 [[test]]
 filename = "global_scope2.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -645,6 +661,7 @@ pass = "global_stmts"
 
 [[test]]
 filename = "global_scope3.f90"
+interactive = true
 ast = true
 asr = true
 llvm = true
@@ -652,30 +669,42 @@ pass = "global_stmts"
 
 [[test]]
 filename = "global_scope4.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
 
 [[test]]
 filename = "global_scope5.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
 
 [[test]]
 filename = "global_scope6.f90"
+interactive = true
+asr = true
+llvm = true
+pass = "global_stmts"
+
+[[test]]
+filename = "global_scope7.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
 
 [[test]]
 filename = "global_scope8.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
 
 [[test]]
 filename = "global_scope9.f90"
+interactive = true
 asr = true
 llvm = true
 pass = "global_stmts"
@@ -1083,6 +1112,10 @@ extrafiles = "../integration_tests/derived_types_19_module.f90"
 [[test]]
 filename = "derived_types_07.f90"
 asr = true
+
+[[test]]
+filename = "derived_types_09.f90"
+ast = true
 
 [[test]]
 filename = "modules1.f90"
@@ -1519,6 +1552,7 @@ mod_to_asr = true
 
 [[test]]
 filename = "fmt1.f90"
+interactive = true
 ast = true
 ast_f90 = true
 
@@ -1529,11 +1563,13 @@ ast_f90 = true
 
 [[test]]
 filename = "associate1.f90"
+interactive = true
 ast = true
 ast_f90 = true
 
 [[test]]
 filename = "fn_call1.f90"
+interactive = true
 ast = true
 ast_f90 = true
 
@@ -2011,12 +2047,6 @@ filename = "../integration_tests/string_12.f90"
 asr = true
 
 [[test]]
-filename = "global_scope7.f90"
-asr = true
-llvm = true
-pass = "global_stmts"
-
-[[test]]
 filename = "../integration_tests/parsing_01.f90"
 ast = true
 
@@ -2311,6 +2341,11 @@ ast_f90 = true
 filename = "print2.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "print3.f90"
+print_leading_space = true
+asr = true
 
 [[test]]
 filename = "uppercase1.f90"
@@ -2655,6 +2690,26 @@ asr = true
 pass = "pass_array_by_data,transform_optional_argument_functions"
 
 [[test]]
+filename = "../integration_tests/modules_43.f90"
+asr = true
+pass = "array_op"
+
+[[test]]
+filename = "../integration_tests/modules_44.f90"
+asr = true
+extrafiles = "../integration_tests/modules_44_module.f90"
+pass = "pass_array_by_data"
+
+[[test]]
+filename = "../integration_tests/modules_45.f90"
+asr = true
+pass = "pass_array_by_data,transform_optional_argument_functions"
+
+[[test]]
+filename = "../integration_tests/modules_48.f90"
+asr = true
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 
@@ -2689,6 +2744,10 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "../integration_tests/implicit_interface_04.f90"
 asr_implicit_interface_and_typing_with_llvm = true
+
+[[test]]
+filename = "external_01.f90"
+asr_implicit_interface_and_typing = true
 
 [[test]]
 filename = "dimension_attr2.f90"
@@ -2962,6 +3021,7 @@ asr = true
 
 [[test]]
 filename = "no_prescan_include1.f90"
+interactive = true
 ast = true
 ast_no_prescan = true
 
@@ -3076,6 +3136,34 @@ filename = "errors/implicit_typing3.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "errors/derived_type_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/derived_type_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/derived_type_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/derived_type_04.f90"
+asr = true
+
+[[test]]
+filename = "errors/derived_type_05.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/array_02.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/where_02.f90"
 asr = true
 pass = "where"
@@ -3089,3 +3177,76 @@ pass = "where"
 filename = "../integration_tests/where_04.f90"
 asr = true
 pass = "where"
+
+[[test]]
+filename = "common2.f"
+ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/common_03.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/common_04.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/common_05.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/common_06.f90"
+asr = true
+
+[[test]]
+filename = "errors/common1.f90"
+asr = true
+
+# Parser
+
+[[test]]
+filename = "parser/program_without_line_01.f90"
+ast = true
+
+[[test]]
+filename = "parser/program_without_line_02.f90"
+ast = true
+
+[[test]]
+filename = "parser/program_without_line_03.f90"
+ast = true
+
+[[test]]
+filename = "parser/program_without_line_04.f90"
+ast = true
+
+[[test]]
+filename = "parser/program_without_line_05.f90"
+ast = true
+
+[[test]]
+filename = "parser/program_without_line_06.f90"
+ast = true
+
+[[test]]
+filename = "parser/program_without_line_07.f90"
+ast = true
+
+# Parser errors
+
+[[test]]
+filename = "errors/program_without_line_01.f90"
+ast = true
+
+[[test]]
+filename = "errors/program_without_line_02.f90"
+ast = true
+
+[[test]]
+filename = "errors/program_without_line_03.f90"
+ast = true
+
+[[test]]
+filename = "errors/program_without_line_04.f90"
+ast = true

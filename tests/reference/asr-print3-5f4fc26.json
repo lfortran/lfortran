@@ -1,0 +1,13 @@
+{
+    "basename": "asr-print3-5f4fc26",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/print3.f90",
+    "infile_hash": "891fa35fc5d09524ef73c8c3b92bcd5a4bede01e35fdf0f116df99b2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-print3-5f4fc26.stdout",
+    "stdout_hash": "5df17837338b4c9ffbb955d6d7e59bb74b67d2a44357db5f6a71005e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

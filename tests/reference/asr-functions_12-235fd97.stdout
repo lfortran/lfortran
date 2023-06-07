@@ -96,7 +96,8 @@
                                                     (Character 1 -3 (FunctionCall
                                                         3 len
                                                         ()
-                                                        [((Var 3 string))]
+                                                        [((Var 3 string))
+                                                        (())]
                                                         (Integer 4 [])
                                                         ()
                                                         ()
@@ -152,7 +153,8 @@
                                                 0
                                                 (Character 1 -1 () [])
                                                 ()
-                                            ))]
+                                            ))
+                                            (())]
                                             (Integer 4 [])
                                             ()
                                             ()
@@ -175,6 +177,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     functions_12

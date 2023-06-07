@@ -118,6 +118,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             dependency_config_t:
                                 (StructType
@@ -507,6 +508,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     fpm_dependency

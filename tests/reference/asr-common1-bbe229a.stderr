@@ -1,0 +1,5 @@
+semantic error: Duplicate DIMENSION attribute specified
+ --> tests/errors/common1.f90:3:12
+  |
+3 |     common /rowns/ rowns(209)
+  |            ^^^^^^^^^^^^^^^^^^ 

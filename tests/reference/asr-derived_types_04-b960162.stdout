@@ -2,7 +2,18 @@
     (SymbolTable
         1
         {
-            bitset:
+            debug:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            
+                        })
+                    debug
+                    []
+                    []
+                ),
+            derived_types_04_bitset:
                 (Module
                     (SymbolTable
                         2
@@ -72,6 +83,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             bitset_type:
                                 (StructType
@@ -116,21 +128,10 @@
                                     ()
                                 )
                         })
-                    bitset
+                    derived_types_04_bitset
                     []
                     .false.
                     .false.
-                ),
-            debug:
-                (Program
-                    (SymbolTable
-                        5
-                        {
-                            
-                        })
-                    debug
-                    []
-                    []
                 )
         })
     []

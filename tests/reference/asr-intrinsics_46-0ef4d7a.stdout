@@ -216,6 +216,18 @@
                         )
                         ()
                     )
+                    (=
+                        (Var 2 c_1)
+                        (StringChr
+                            (IntegerConstant 100 (Integer 4 []))
+                            (Character 1 1 () [])
+                            (StringConstant
+                                "d"
+                                (Character 1 1 () [])
+                            )
+                        )
+                        ()
+                    )
                     (If
                         (IntegerCompare
                             (Var 2 i)
@@ -327,7 +339,27 @@
                         (IntegerCompare
                             (Var 2 c)
                             NotEq
-                            (IntegerConstant 98 (Integer 4 []))
+                            (IntegerConstant 100 (Integer 4 []))
+                            (Logical 4 [])
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (StringCompare
+                            (StringChr
+                                (Var 2 c)
+                                (Character 1 1 () [])
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "d"
+                                (Character 1 1 () [])
+                            )
                             (Logical 4 [])
                             ()
                         )

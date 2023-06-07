@@ -111,7 +111,7 @@ public:
     // Use std::complex<float/double> or float/double complex
     bool gen_stdcomplex;
     bool is_c;
-    std::set<std::string> headers;
+    std::set<std::string> headers, user_headers;
     std::vector<std::string> tmp_buffer_src;
 
     SymbolTable* global_scope;
@@ -394,6 +394,14 @@ R"(#include <stdio.h>
                     case (4) : sub = "int32_t "; break;
                     case (8) : sub = "int64_t "; break;
                 }
+            } else if (ASRUtils::is_unsigned_integer(*return_var->m_type)) {
+                int kind = ASR::down_cast<ASR::UnsignedInteger_t>(return_var->m_type)->m_kind;
+                switch (kind) {
+                    case (1) : sub = "uint8_t "; break;
+                    case (2) : sub = "uint16_t "; break;
+                    case (4) : sub = "uint32_t "; break;
+                    case (8) : sub = "uint64_t "; break;
+                }
             } else if (ASRUtils::is_real(*return_var->m_type)) {
                 bool is_float = ASR::down_cast<ASR::Real_t>(return_var->m_type)->m_kind == 4;
                 if (is_float) {
@@ -443,6 +451,9 @@ R"(#include <stdio.h>
             } else if (ASR::is_a<ASR::TypeParameter_t>(*return_var->m_type)) {
                 has_typevar = true;
                 return "";
+            } else if (ASR::is_a<ASR::Dict_t>(*return_var->m_type)) {
+                ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(return_var->m_type);
+                sub = c_ds_api->get_dict_type(dict_type) + " ";
             } else {
                 throw CodeGenError("Return type not supported in function '" +
                     std::string(x.m_name) +
@@ -539,9 +550,16 @@ R"(#include <stdio.h>
             src = "";
             return;
         }
-        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
-            && ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
-            sub += ";\n";
+        ASR::FunctionType_t *f_type = ASRUtils::get_FunctionType(x);
+        if (f_type->m_abi == ASR::abiType::BindC
+            && f_type->m_deftype == ASR::deftypeType::Interface) {
+            if (x.m_c_header) {
+                user_headers.insert(std::string(x.m_c_header));
+                src = "";
+                return;
+            } else {
+                sub += ";\n";
+            }
         } else {
             sub += "\n";
 
@@ -660,6 +678,16 @@ R"(#include <stdio.h>
             std::string indent(indentation_level*indentation_spaces, ' ');
             tmp_buffer_src.push_back(check_tmp_buffer() + indent + c_ds_api->get_list_type(list_type) + " " +
                                 const_name + " = " + src + ";\n");
+            src = const_name;
+            return;
+        } else if( ASR::is_a<ASR::Dict_t>(*x.m_type) ) {
+            ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(x.m_type);
+            const_name += std::to_string(const_vars_count);
+            const_vars_count += 1;
+            const_name = current_scope->get_unique_name(const_name);
+            std::string indent(indentation_level*indentation_spaces, ' ');
+            tmp_buffer_src.push_back(check_tmp_buffer() + indent + c_ds_api->get_dict_type(dict_type) +
+                                " " + const_name + " = " + src + ";\n");
             src = const_name;
             return;
         }
@@ -798,6 +826,9 @@ R"(#include <stdio.h>
             }
             src = check_tmp_buffer() + src_tmp;
             return;
+        } else if (ASR::is_a<ASR::DictItem_t>(*x.m_target)) {
+            self().visit_DictItem(*ASR::down_cast<ASR::DictItem_t>(x.m_target));
+            target = src;
         } else {
             LCOMPILERS_ASSERT(false)
         }
@@ -912,8 +943,20 @@ R"(#include <stdio.h>
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         src = "\"";
         std::string s = x.m_s;
-        for (size_t idx=0; idx < s.size(); idx++) {
-            src += s[idx];
+        for (size_t idx = 0; idx < s.size(); idx++) {
+            if (s[idx] == '\n') {
+                src += "\\n";
+            } else if (s[idx] == '\t') {
+                src += "\\t";
+            }  else if (s[idx] == '\r') {
+                src += "\\r";
+            }else if (s[idx] == '\\') {
+                src += "\\\\";
+            } else if (s[idx] == '\"') {
+                src += "\\\"";
+            } else {
+                src += s[idx];
+            }
         }
         src += "\"";
         last_expr_precedence = 2;
@@ -1049,15 +1092,22 @@ R"(#include <stdio.h>
     void visit_DictItem(const ASR::DictItem_t& x) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(x.m_a));
-        std::string dict_get_fun = c_ds_api->get_dict_get_func(dict_type);
-
         this->visit_expr(*x.m_a);
         std::string d_var = std::move(src);
 
         this->visit_expr(*x.m_key);
         std::string k = std::move(src);
 
-        src = dict_get_fun + "(&" + d_var + ", " + k + ")";
+        if (x.m_default) {
+            this->visit_expr(*x.m_default);
+            std::string def_value = std::move(src);
+            std::string dict_get_fun = c_ds_api->get_dict_get_func(dict_type,
+                                                                    true);
+            src = dict_get_fun + "(&" + d_var + ", " + k + ", " + def_value + ")";
+        } else {
+            std::string dict_get_fun = c_ds_api->get_dict_get_func(dict_type);
+            src = dict_get_fun + "(&" + d_var + ", " + k + ")";
+        }
     }
 
     void visit_ListAppend(const ASR::ListAppend_t& x) {
@@ -1340,12 +1390,18 @@ R"(#include <stdio.h>
                 // src = src;
                 break;
             }
+            case (ASR::cast_kindType::IntegerToUnsignedInteger) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                src = "(uint" + std::to_string(dest_kind * 8) + "_t)(" + src + ")";
+                last_expr_precedence = 2;
+                break;
+            }
             case (ASR::cast_kindType::ComplexToComplex) : {
                 break;
             }
             case (ASR::cast_kindType::IntegerToComplex) : {
                 if (is_c) {
-                    headers.insert("complex");
+                    headers.insert("complex.h");
                     src = "CMPLX(" + src + ", 0)";
                 } else {
                     src = "std::complex<double>(" + src + ")";
@@ -1355,7 +1411,7 @@ R"(#include <stdio.h>
             }
             case (ASR::cast_kindType::ComplexToReal) : {
                 if (is_c) {
-                    headers.insert("complex");
+                    headers.insert("complex.h");
                     src = "creal(" + src + ")";
                 } else {
                     src = "std::real(" + src + ")";
@@ -1365,7 +1421,7 @@ R"(#include <stdio.h>
             }
             case (ASR::cast_kindType::RealToComplex) : {
                 if (is_c) {
-                    headers.insert("complex");
+                    headers.insert("complex.h");
                     src = "CMPLX(" + src + ", 0.0)";
                 } else {
                     src = "std::complex<double>(" + src + ")";
@@ -1480,6 +1536,10 @@ R"(#include <stdio.h>
         handle_Compare(x);
     }
 
+    void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t &x) {
+        handle_Compare(x);
+    }
+
     void visit_RealCompare(const ASR::RealCompare_t &x) {
         handle_Compare(x);
     }
@@ -1493,6 +1553,10 @@ R"(#include <stdio.h>
     }
 
     void visit_StringCompare(const ASR::StringCompare_t &x) {
+        handle_Compare(x);
+    }
+
+    void visit_CPtrCompare(const ASR::CPtrCompare_t &x) {
         handle_Compare(x);
     }
 
@@ -1562,7 +1626,7 @@ R"(#include <stdio.h>
         self().visit_expr(*x.m_arg);
         int expr_precedence = last_expr_precedence;
         last_expr_precedence = 3;
-        if (expr_precedence <= last_expr_precedence) {
+        if (expr_precedence < last_expr_precedence) {
             src = "-" + src;
         } else {
             src = "-(" + src + ")";
@@ -1570,7 +1634,7 @@ R"(#include <stdio.h>
     }
 
     void visit_ComplexRe(const ASR::ComplexRe_t &x) {
-        headers.insert("complex");
+        headers.insert("complex.h");
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         if (is_c) {
@@ -1581,7 +1645,7 @@ R"(#include <stdio.h>
     }
 
     void visit_ComplexIm(const ASR::ComplexIm_t &x) {
-        headers.insert("complex");
+        headers.insert("complex.h");
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
         if (is_c) {
@@ -1601,6 +1665,10 @@ R"(#include <stdio.h>
         } else {
             src = "!(" + src + ")";
         }
+    }
+
+    void visit_PointerNullConstant(const ASR::PointerNullConstant_t& /*x*/) {
+        src = "NULL";
     }
 
     void visit_GetPointer(const ASR::GetPointer_t& x) {
@@ -1627,6 +1695,10 @@ R"(#include <stdio.h>
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+        handle_BinOp(x);
+    }
+
+    void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {
         handle_BinOp(x);
     }
 
@@ -1660,7 +1732,7 @@ R"(#include <stdio.h>
             case (ASR::binopType::Pow) : {
                 src = "pow(" + left + ", " + right + ")";
                 if (is_c) {
-                    headers.insert("math");
+                    headers.insert("math.h");
                 } else {
                     src = "std::" + src;
                 }
@@ -1739,23 +1811,56 @@ R"(#include <stdio.h>
 
     void visit_Allocate(const ASR::Allocate_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string out = indent + "// FIXME: allocate(";
+        std::string out = "";
         for (size_t i=0; i<x.n_args; i++) {
             ASR::symbol_t* tmp_sym = nullptr;
+            ASR::ttype_t* type = nullptr;
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 tmp_sym = tmp_var->m_v;
+                type = ASRUtils::expr_type(tmp_expr);
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
                                     std::to_string(tmp_expr->type),
                                     tmp_expr->base.loc);
             }
-            //ASR::dimension_t* dims = x.m_args[i].m_dims;
-            //size_t n_dims = x.m_args[i].n_dims;
-            out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
+            std::string sym = ASRUtils::symbol_name(tmp_sym);
+            if (ASRUtils::is_array(type)) {
+                std::string size_str = "1";
+                out += indent + sym + "->n_dims = " + std::to_string(x.m_args[i].n_dims) + ";\n";
+                for (size_t j=0; j<x.m_args[i].n_dims; j++) {
+                    std::string st, l;
+                    if (x.m_args[i].m_dims[j].m_start) {
+                        self().visit_expr(*x.m_args[i].m_dims[j].m_start);
+                        st = src;
+                    } else {
+                        st = "0";
+                    }
+                    if (x.m_args[i].m_dims[j].m_length) {
+                        self().visit_expr(*x.m_args[i].m_dims[j].m_length);
+                        l = src;
+                    } else {
+                        l = "1";
+                    }
+                    size_str += "*" + l;
+                    out += indent + sym + "->dims[" + std::to_string(j) + "].lower_bound = ";
+                    out += st + ";\n";
+                    out += indent + sym + "->dims[" + std::to_string(j) + "].length = ";
+                    out += l + ";\n";
+                }
+                std::string ty = CUtils::get_c_type_from_ttype_t(type);
+                size_str += "*sizeof(" + ty + ")";
+                out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc(" + size_str + ")";
+                out += ";\n";
+                out += indent + sym + "->is_allocated = true;\n";
+            } else {
+                std::string ty = CUtils::get_c_type_from_ttype_t(type), size_str;
+                size_str = "sizeof(" + ty + ")";
+                out += indent + sym + " = (" + ty + "*) _lfortran_malloc(" + size_str + ")";
+                out += ";\n";
+            }
         }
-        out += ");\n";
         src = out;
     }
 
@@ -2139,7 +2244,10 @@ R"(#include <stdio.h>
 
     void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
         LCOMPILERS_ASSERT(x.n_args == 1)
-        std::string out;
+        std::string out, abs_func = "abs";
+        if (ASRUtils::is_real(*x.m_type)) {
+            abs_func = "fabs";
+        }
         switch (x.m_intrinsic_id) {
             SET_INTRINSIC_NAME(Sin, "sin");
             SET_INTRINSIC_NAME(Cos, "cos");
@@ -2147,13 +2255,20 @@ R"(#include <stdio.h>
             SET_INTRINSIC_NAME(Asin, "asin");
             SET_INTRINSIC_NAME(Acos, "acos");
             SET_INTRINSIC_NAME(Atan, "atan");
-            SET_INTRINSIC_NAME(Abs, "abs");
+            SET_INTRINSIC_NAME(Sinh, "sinh");
+            SET_INTRINSIC_NAME(Cosh, "cosh");
+            SET_INTRINSIC_NAME(Tanh, "tanh");
+            SET_INTRINSIC_NAME(Abs, abs_func);
+            SET_INTRINSIC_NAME(Exp, "exp");
+            SET_INTRINSIC_NAME(Exp2, "exp2");
+            SET_INTRINSIC_NAME(Expm1, "expm1");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
                     + "` is not implemented");
             }
         }
+        headers.insert("math.h");
         this->visit_expr(*x.m_args[0]);
         out += "(" + src + ")";
         src = out;

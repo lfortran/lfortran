@@ -115,7 +115,7 @@ ifcont6:                                          ; preds = %else5, %then4
   %28 = icmp eq i1 %27, false
   %29 = select i1 %28, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
-  store i8* getelementptr inbounds ([3 x i8], [3 x i8]* @11, i32 0, i32 0), i8** %c, align 8
+  call void @_lfortran_strcpy(i8** %c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @11, i32 0, i32 0), i8 0)
   %30 = load i8*, i8** %c, align 8
   %31 = alloca i8*, align 8
   store i8* %30, i8** %31, align 8
@@ -187,7 +187,7 @@ ifcont15:                                         ; preds = %else14, %then13
   %56 = icmp eq i1 %55, false
   %57 = select i1 %56, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* %57, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
-  store i8* getelementptr inbounds ([3 x i8], [3 x i8]* @21, i32 0, i32 0), i8** %c, align 8
+  call void @_lfortran_strcpy(i8** %c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @21, i32 0, i32 0), i8 0)
   %58 = load i8*, i8** %c, align 8
   %59 = alloca i8*, align 8
   store i8* %58, i8** %59, align 8
@@ -289,6 +289,8 @@ declare i1 @_lpython_str_compare_gte(i8**, i8**)
 declare i1 @_lpython_str_compare_lte(i8**, i8**)
 
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lfortran_strcpy(i8**, i8*, i8)
 
 declare i8* @_lfortran_str_slice_assign(i8*, i8*, i32, i32, i32, i1, i1)
 

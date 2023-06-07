@@ -2,11 +2,11 @@
     "basename": "asr-kwargs_02-1588831",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/kwargs_02.f90",
-    "infile_hash": "8d5322cf8bcf42b96ba5ad60e9410309159c7c0e999797cef4da7d6e",
+    "infile_hash": "b134c269925633b5b9f943802cb7efd683082e7567d4ef0e90d9ed47",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-kwargs_02-1588831.stdout",
-    "stdout_hash": "394b82fbde7931239a9dcb507e8709c9f947979f4b26f6be6a30cb95",
+    "stdout_hash": "49e0d32618e0d9be1a811a51991c625c7a8f633de5a36f6f7f090cf6",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

@@ -119,20 +119,21 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             sub_1:
                                 (ExternalSymbol
                                     4
                                     sub_1
                                     2 sub_1
-                                    module_1
+                                    functions_15_module_1
                                     []
                                     sub_1
                                     Public
                                 )
                         })
                     functions_15
-                    [module_1]
+                    [functions_15_module_1]
                     [(=
                         (Var 4 a)
                         (IntegerConstant 1 (Integer 4 []))
@@ -266,7 +267,7 @@
                         [(FunctionCall
                             4 f
                             ()
-                            []
+                            [(())]
                             (Logical 4 [])
                             ()
                             ()
@@ -283,9 +284,7 @@
                         ()
                     )]
                 ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            module_1:
+            functions_15_module_1:
                 (Module
                     (SymbolTable
                         2
@@ -582,13 +581,16 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
-                    module_1
+                    functions_15_module_1
                     [lfortran_intrinsic_builtin]
                     .false.
                     .false.
-                )
+                ),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin)
         })
     []
 )

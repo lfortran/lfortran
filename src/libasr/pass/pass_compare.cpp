@@ -149,6 +149,7 @@ public:
             }
             default: {
                 LCOMPILERS_ASSERT(false);
+                return nullptr; // silence a warning
             }
         }
     }

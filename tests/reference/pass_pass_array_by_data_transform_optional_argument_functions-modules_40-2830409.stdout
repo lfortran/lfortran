@@ -163,7 +163,7 @@
                                                                 [((Var 6 stack))
                                                                 (())
                                                                 ((LogicalConstant
-                                                                    .true.
+                                                                    .false.
                                                                     (Logical 4 [])
                                                                 ))]
                                                                 ()
@@ -175,6 +175,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             resize:
                                                 (Function
@@ -262,6 +263,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     parse_select
@@ -288,6 +290,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             tfc:
                                 (Variable

@@ -9,16 +9,18 @@ Variable is a **symbol** node representing a variable declaration.
 ```
 Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
     intent intent, expr? symbolic_value, expr? value, storage_type storage,
-    ttype type, abi abi, access access, presence presence, bool value_attr)
+    ttype type, symbol type_declaration,
+    abi abi, access access, presence presence, bool value_attr)
 ```
 
 ### Arguments
 
-`parent_symtab` the parent symbol table that contains the variable
+`parent_symtab` integer id of the parent symbol table that contains the variable
 
 `name` the name of the variable
 
-`dependencies` other symbols that this variable depends on
+`dependencies` other symbols that this variable depends on; must all be defined
+in the `parent_symtab`
 
 `intent` specifies intent (Local, `intent(in)`, `intent(inout)`, etc.)
 
@@ -31,7 +33,11 @@ constant (e.g., can contain binary operations, other variables, etc.)
 
 `storage` whether `Save`, `Parameter`, `Allocatable`
 
-`type` the type of the variable
+`type` the ttype of the variable
+
+`type_declaration` null for primitive types; for composite types that are
+declared elsewhere in the program (struct, function, enum) it points to the
+symbol that declares the type
 
 `abi` abi such as: `Source`, `Interface`, `BindC`
 
@@ -41,9 +47,6 @@ constant (e.g., can contain binary operations, other variables, etc.)
 
 `value_attr` if true, this parameter has a `value` attribute set
 
-`type_declaration` null for primitive types; for composite types that are
-declared elsewhere in the program (struct, function, enum) it points to the
-symbol that declares the type
 
 ### Return values
 
@@ -51,19 +54,22 @@ None.
 
 ## Description
 
-The `Variable` node is used to represent a declaration of any variable in the
-program. It contais information about the type, visibility, compile time value,
-etc. The type of the variable can be any of the primitive types like integer,
-real, complex, pointers, arrays and other more complicated types like
-struct, classes, enums and function pointers.
+A `Variable` node represents a declaration of any variable in the
+program. It contais information about the type, visibility, compile-time value,
+etc.
 
-`Variable` has a type, like `StructType`. If the type is declared elsewhere
-than the variable (such as struct, function or enum), the `type_declaration`
-member points to the symbol that declares the type; otherwise
-`type_declaration` is null.
+The type of the variable can be any of the primitive types like integer,
+real, complex, pointers, arrays. In such cases, the `type_declaration` member of
+the `Variable` is null.
 
-When you want to use a variable in an expression, use the `Var` expression node
-to represent it.
+`Variable` might also have a non-primitive type like `StructType`, or types for
+classes, enums, and function pointers. Such types are not declared inline to the
+`Variable` node itself. In such cases, the `type_declaration` member of
+`Variable` points to the symbol containing the declaration of the type.
+
+`Variable` represents declarations of variables. `Var` nodes represent instances
+of variables in code. To represent the use of a variable in an expression,
+employ the ASR `expr Var` node.
 
 ## Examples
 
@@ -100,6 +106,7 @@ ASR:
                                     Public
                                     Required
                                     .false.
+                                    ()
                                 )
 
                         })

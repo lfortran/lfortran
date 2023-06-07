@@ -1,4 +1,4 @@
-module stdlib_logger
+module kwargs_02_stdlib_logger
 type :: logger_type
 
 contains
@@ -26,7 +26,7 @@ contains
         integer, intent(out), optional :: unit
     end subroutine log_io_error
 
-end module stdlib_logger
+end module kwargs_02_stdlib_logger
 
 program kwargs_02
 end program

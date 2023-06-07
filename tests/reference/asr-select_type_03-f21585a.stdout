@@ -166,6 +166,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             get_table:
                                 (Function
@@ -404,6 +405,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_stat:
                                 (ExternalSymbol

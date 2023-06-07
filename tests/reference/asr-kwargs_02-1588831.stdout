@@ -13,7 +13,7 @@
                     []
                     []
                 ),
-            stdlib_logger:
+            kwargs_02_stdlib_logger:
                 (Module
                     (SymbolTable
                         2
@@ -120,6 +120,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             log_io_error:
                                 (Function
@@ -224,6 +225,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             logger_type:
                                 (StructType
@@ -262,8 +264,8 @@
                                     ()
                                 )
                         })
-                    stdlib_logger
-                    [stdlib_logger]
+                    kwargs_02_stdlib_logger
+                    [kwargs_02_stdlib_logger]
                     .false.
                     .false.
                 )

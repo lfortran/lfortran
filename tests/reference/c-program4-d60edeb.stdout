@@ -59,6 +59,7 @@ float func2(float a, float b)
 
 int main(int argc, char* argv[])
 {
+    _lpython_set_argv(argc, argv);
     float x;
     float y;
     float z;

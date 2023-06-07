@@ -92,7 +92,19 @@
                                                     [(=
                                                         (Var 12 target)
                                                         (StructInstanceMember
-                                                            (Var 9 targets)
+                                                            (ArrayItem
+                                                                (Var 9 targets)
+                                                                [(()
+                                                                (Var 9 i)
+                                                                ())]
+                                                                (Struct
+                                                                    2 build_target_ptr
+                                                                    [(()
+                                                                    ())]
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
                                                             9 1_build_target_ptr_ptr
                                                             (Pointer
                                                                 (Struct
@@ -117,6 +129,14 @@
                                                             (Character 1 -2 () [])
                                                             ()
                                                         )
+                                                        ()
+                                                    )
+                                                    (Allocate
+                                                        [((Var 9 build_dirs)
+                                                        [((IntegerConstant 1 (Integer 4 []))
+                                                        (IntegerConstant 2 (Integer 4 [])))])]
+                                                        ()
+                                                        ()
                                                         ()
                                                     )
                                                     (=
@@ -318,6 +338,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             build_target_ptr:
                                 (StructType
@@ -515,6 +536,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             fpm_build_settings:
                                 (StructType

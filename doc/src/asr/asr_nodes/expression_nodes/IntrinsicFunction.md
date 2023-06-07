@@ -31,9 +31,13 @@ or the middle-end (optimizer) needs to have some special logic for. Typically a
 math function, but does not have to be.
 
 IntrinsicFunction is both side-effect-free (no writes to global variables) and
-deterministic (no reads from global variables). They are also elemental: can be
-vectorized over any argument(s). They can be used inside parallel code and
-cached.
+deterministic (no reads from global variables). They can be used inside parallel code and
+cached. There are two kinds:
+
+* `elemental`: the function is defined as a scalar function and it can be
+  vectorized over any argument(s). Examples: `Sin`, `Cos`, `LegendreP`, `Abs`
+* `non-elemental`: it accepts arrays as arguments and the function cannot be
+  defined as a scalar function. Examples: `Sum`, `Any`, `MinLoc`
 
 The `intrinsic_id` determines the generic function uniquely (`Sin` and `Abs`
 have different number, but `IntegerAbs` and `RealAbs` share the number) and

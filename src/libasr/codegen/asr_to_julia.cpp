@@ -1441,8 +1441,16 @@ public:
     {
         src = "\"";
         std::string s = x.m_s;
-        for (size_t idx=0; idx < s.size(); idx++) {
-            src += s[idx];
+        for (size_t idx = 0; idx < s.size(); idx++) {
+            if (s[idx] == '\n') {
+                src += "\\n";
+            } else if (s[idx] == '\\') {
+                src += "\\\\";
+            } else if (s[idx] == '\"') {
+                src += "\\\"";
+            } else {
+                src += s[idx];
+            }
         }
         src += "\"";
         last_expr_precedence = julia_prec::Base;
@@ -1892,7 +1900,13 @@ public:
             SET_INTRINSIC_NAME(Asin, "asin");
             SET_INTRINSIC_NAME(Acos, "acos");
             SET_INTRINSIC_NAME(Atan, "atan");
+            SET_INTRINSIC_NAME(Sinh, "sinh");
+            SET_INTRINSIC_NAME(Cosh, "cosh");
+            SET_INTRINSIC_NAME(Tanh, "tanh");
             SET_INTRINSIC_NAME(Abs, "abs");
+            SET_INTRINSIC_NAME(Exp, "exp");
+            SET_INTRINSIC_NAME(Exp2, "exp2");
+            SET_INTRINSIC_NAME(Expm1, "expm1");
             SET_INTRINSIC_NAME(Sum, "sum");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"

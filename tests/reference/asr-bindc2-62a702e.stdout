@@ -166,12 +166,15 @@
                                 (IntegerConstant 1 (Integer 4 []))
                                 (Integer 4 [])
                                 LBound
-                                ()
+                                (IntegerConstant 1 (Integer 4 []))
                             )
                             NotEq
                             (IntegerConstant 1 (Integer 4 []))
                             (Logical 4 [])
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -185,12 +188,15 @@
                                 (IntegerConstant 1 (Integer 4 []))
                                 (Integer 4 [])
                                 UBound
-                                ()
+                                (IntegerConstant 3 (Integer 4 []))
                             )
                             NotEq
                             (IntegerConstant 3 (Integer 4 []))
                             (Logical 4 [])
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -204,12 +210,15 @@
                                 (IntegerConstant 2 (Integer 4 []))
                                 (Integer 4 [])
                                 LBound
-                                ()
+                                (IntegerConstant 1 (Integer 4 []))
                             )
                             NotEq
                             (IntegerConstant 1 (Integer 4 []))
                             (Logical 4 [])
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -223,12 +232,15 @@
                                 (IntegerConstant 2 (Integer 4 []))
                                 (Integer 4 [])
                                 UBound
-                                ()
+                                (IntegerConstant 4 (Integer 4 []))
                             )
                             NotEq
                             (IntegerConstant 4 (Integer 4 []))
                             (Logical 4 [])
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -260,6 +272,7 @@
                         (Var 2 queries)
                         (Var 2 x)
                         (Var 2 newshape)
+                        ()
                     )
                     (If
                         (IntegerCompare
@@ -268,12 +281,15 @@
                                 (IntegerConstant 1 (Integer 4 []))
                                 (Integer 4 [])
                                 LBound
-                                ()
+                                (IntegerConstant 1 (Integer 4 []))
                             )
                             NotEq
                             (IntegerConstant 1 (Integer 4 []))
                             (Logical 4 [])
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -287,12 +303,15 @@
                                 (IntegerConstant 1 (Integer 4 []))
                                 (Integer 4 [])
                                 UBound
-                                ()
+                                (IntegerConstant 3 (Integer 4 []))
                             )
                             NotEq
                             (IntegerConstant 3 (Integer 4 []))
                             (Logical 4 [])
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -306,12 +325,15 @@
                                 (IntegerConstant 2 (Integer 4 []))
                                 (Integer 4 [])
                                 LBound
-                                ()
+                                (IntegerConstant 1 (Integer 4 []))
                             )
                             NotEq
                             (IntegerConstant 1 (Integer 4 []))
                             (Logical 4 [])
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -325,12 +347,15 @@
                                 (IntegerConstant 2 (Integer 4 []))
                                 (Integer 4 [])
                                 UBound
-                                ()
+                                (IntegerConstant 4 (Integer 4 []))
                             )
                             NotEq
                             (IntegerConstant 4 (Integer 4 []))
                             (Logical 4 [])
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4 [])
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -503,9 +528,7 @@
                     )]
                 ),
             iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding)
         })
     []
 )

@@ -167,6 +167,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             f:
                                                 (Function
@@ -263,6 +264,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -407,6 +409,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -526,6 +529,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -646,6 +650,7 @@
                                                     Public
                                                     .false.
                                                     .true.
+                                                    ()
                                                 )
                                         })
                                     test_template
@@ -741,6 +746,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     template_add_03_m

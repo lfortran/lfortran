@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            derived_types_14:
+            derived_types_17:
                 (Program
                     (SymbolTable
                         8
@@ -12,14 +12,14 @@
                                     8
                                     sub_2
                                     6 sub_2
-                                    module_2
+                                    derived_types_17_module_2
                                     []
                                     sub_2
                                     Public
                                 )
                         })
-                    derived_types_14
-                    [module_2]
+                    derived_types_17
+                    [derived_types_17_module_2]
                     [(SubroutineCall
                         8 sub_2
                         ()
@@ -27,7 +27,7 @@
                         ()
                     )]
                 ),
-            module_1:
+            derived_types_17_module_1:
                 (Module
                     (SymbolTable
                         2
@@ -116,6 +116,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             subtract:
                                 (Function
@@ -201,6 +202,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t_1:
                                 (StructType
@@ -235,12 +237,12 @@
                                     ()
                                 )
                         })
-                    module_1
+                    derived_types_17_module_1
                     []
                     .false.
                     .false.
                 ),
-            module_2:
+            derived_types_17_module_2:
                 (Module
                     (SymbolTable
                         6
@@ -250,7 +252,7 @@
                                     6
                                     add
                                     2 add
-                                    module_1
+                                    derived_types_17_module_1
                                     []
                                     add
                                     Public
@@ -265,7 +267,7 @@
                                                     7
                                                     1_t_1
                                                     2 t_1
-                                                    module_1
+                                                    derived_types_17_module_1
                                                     []
                                                     t_1
                                                     Public
@@ -324,20 +326,21 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             subtract:
                                 (ExternalSymbol
                                     6
                                     subtract
                                     2 subtract
-                                    module_1
+                                    derived_types_17_module_1
                                     []
                                     subtract
                                     Public
                                 )
                         })
-                    module_2
-                    [module_1]
+                    derived_types_17_module_2
+                    [derived_types_17_module_1]
                     .false.
                     .false.
                 )

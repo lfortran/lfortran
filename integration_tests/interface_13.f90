@@ -1,4 +1,4 @@
-module module_1
+module interface_13_module_1
     implicit none
     interface operator(.mul.)
         module procedure multiply
@@ -11,10 +11,10 @@ contains
         integer, intent(in) :: b
         multiply = a *  b
     end function multiply
-end module module_1
+end module
 
-module module_2
-    use module_1, only: operator(.mul.)
+module interface_13_module_2
+    use interface_13_module_1, only: operator(.mul.)
     implicit none
 
 contains
@@ -24,10 +24,10 @@ contains
         res = 123 .mul. 456
         if (res /= 56088) error stop
     end subroutine compute
-end module module_2
+end module
 
 program interface_13
-    use module_2
+    use interface_13_module_2
     implicit none
     call compute()
 end program interface_13

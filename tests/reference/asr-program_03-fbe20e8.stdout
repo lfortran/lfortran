@@ -76,6 +76,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             apply:
                                 (Function
@@ -141,6 +142,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -221,6 +223,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             z:
                                 (Variable

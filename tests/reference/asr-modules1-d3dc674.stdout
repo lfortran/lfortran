@@ -72,6 +72,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t1:
                                 (StructType
@@ -223,6 +224,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t1:
                                 (ExternalSymbol

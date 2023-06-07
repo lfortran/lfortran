@@ -10,6 +10,7 @@
 #include <lfortran/ast_to_src.h>
 #include <lfortran/ast_to_openmp.h>
 #include <libasr/config.h>
+#include <libasr/utils.h>
 
 std::string read_file(const std::string &filename)
 {
@@ -34,8 +35,9 @@ int emit_ast_openmp(const std::string &infile)
     // Src -> AST
     LCompilers::diag::Diagnostics diagnostics;
     Allocator al(64*1024*1024);
+    LCompilers::CompilerOptions co;
     LCompilers::LFortran::AST::TranslationUnit_t* ast;
-    ast = LCompilers::TRY(LCompilers::LFortran::parse(al, input, diagnostics));
+    ast = LCompilers::TRY(LCompilers::LFortran::parse(al, input, diagnostics, co));
 
     // AST -> Source
     // FIXME: For now we only transform the first node in the list:

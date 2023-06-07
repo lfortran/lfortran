@@ -17,8 +17,10 @@ TEST_CASE("Check ast_to_json()") {
     LCompilers::LFortran::AST::ast_t* result;
     rapidjson::Document d1, d2;
     LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
 
-    result = TRY(parse(al, "2*x", diagnostics))->m_items[0];
+    result = TRY(parse(al, "2*x", diagnostics, co))->m_items[0];
     s = LCompilers::LFortran::ast_to_json(*result);
     std::cout << s << std::endl;
     r = R"(
@@ -40,14 +42,14 @@ TEST_CASE("Check ast_to_json()") {
     CHECK(d1 == d2);
 
 
-    result = TRY(parse(al, "(2*x)", diagnostics))->m_items[0];
+    result = TRY(parse(al, "(2*x)", diagnostics, co))->m_items[0];
     s = LCompilers::LFortran::ast_to_json(*result);
     std::cout << s << std::endl;
     d1.Parse(s);
     CHECK(d1 == d2);
 
 
-    result = TRY(parse(al, "2*x**y", diagnostics))->m_items[0];
+    result = TRY(parse(al, "2*x**y", diagnostics, co))->m_items[0];
     s = LCompilers::LFortran::ast_to_json(*result);
     std::cout << s << std::endl;
     r = R"(

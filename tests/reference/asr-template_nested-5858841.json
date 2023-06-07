@@ -6,7 +6,11 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-template_nested-5858841.stdout",
+<<<<<<< HEAD
     "stdout_hash": "b81750cddd9b0ae4c0d0dbdca15819bda6e4adaff55163595abec100",
+=======
+    "stdout_hash": "3d50ad176afa7740c38f4a8066b541a584057d032eade96e1728654f",
+>>>>>>> main
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

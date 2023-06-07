@@ -6,7 +6,7 @@ dependencies:
   - toml
   - pytest
   - jupyter
-  - nbconvert=7.3.1
+  - nbconvert=7.4.0
   - xeus=3.0.5
   - xeus-zmq=1.0.2
   - xtl

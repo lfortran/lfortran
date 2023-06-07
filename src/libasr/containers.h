@@ -123,6 +123,10 @@ struct Vec {
         return n;
     }
 
+    bool empty() const {
+        return n == 0;
+    }
+
     void resize(Allocator &al, size_t max){
         reserve(al, max);
         n = max;
@@ -234,6 +238,10 @@ struct Str {
 
     // Returns a copy of the string as a NULL terminated std::string
     std::string str() const { return std::string(p, n); }
+
+    char operator[](size_t pos) {
+        return p[pos];
+    }
 
     // Initializes Str from std::string by making a copy excluding the null char
     void from_str(Allocator &al, const std::string &s) {

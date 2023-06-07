@@ -117,7 +117,8 @@
                                         "return_var": [],
                                         "access": "Public",
                                         "deterministic": false,
-                                        "side_effect_free": false
+                                        "side_effect_free": false,
+                                        "c_header": []
                                     },
                                     "loc": {
                                         "first": 220,
@@ -341,7 +342,8 @@
                                         "return_var": [],
                                         "access": "Public",
                                         "deterministic": false,
-                                        "side_effect_free": false
+                                        "side_effect_free": false,
+                                        "c_header": []
                                     },
                                     "loc": {
                                         "first": 65,

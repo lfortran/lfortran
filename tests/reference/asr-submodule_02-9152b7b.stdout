@@ -153,6 +153,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             point_dist_subrout:
                                 (Function
@@ -245,6 +246,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             rkind:
                                 (ExternalSymbol
@@ -267,16 +269,6 @@
                     (SymbolTable
                         9
                         {
-                            1_point:
-                                (ExternalSymbol
-                                    9
-                                    1_point
-                                    5 point
-                                    points
-                                    []
-                                    point
-                                    Public
-                                ),
                             point:
                                 (ExternalSymbol
                                     9
@@ -297,7 +289,7 @@
                                                     10
                                                     1_point_x
                                                     6 x
-                                                    1_point
+                                                    point
                                                     []
                                                     x
                                                     Public
@@ -307,7 +299,7 @@
                                                     10
                                                     1_point_y
                                                     6 y
-                                                    1_point
+                                                    point
                                                     []
                                                     y
                                                     Public
@@ -493,6 +485,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             point_dist_subrout:
                                 (Function
@@ -504,7 +497,7 @@
                                                     11
                                                     1_point_x
                                                     6 x
-                                                    1_point
+                                                    point
                                                     []
                                                     x
                                                     Public
@@ -514,7 +507,7 @@
                                                     11
                                                     1_point_y
                                                     6 y
-                                                    1_point
+                                                    point
                                                     []
                                                     y
                                                     Public
@@ -702,6 +695,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             rkind:
                                 (ExternalSymbol

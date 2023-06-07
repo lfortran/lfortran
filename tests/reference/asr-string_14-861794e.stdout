@@ -2,7 +2,18 @@
     (SymbolTable
         1
         {
-            stdlib_string_type:
+            string_14:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            
+                        })
+                    string_14
+                    []
+                    []
+                ),
+            string_14_stdlib_string_type:
                 (Module
                     (SymbolTable
                         2
@@ -173,6 +184,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType
@@ -347,23 +359,13 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
-                    stdlib_string_type
+                    string_14_stdlib_string_type
                     []
                     .false.
                     .false.
-                ),
-            string_14:
-                (Program
-                    (SymbolTable
-                        6
-                        {
-                            
-                        })
-                    string_14
-                    []
-                    []
                 )
         })
     []

@@ -1,4 +1,4 @@
-module testmod_der1
+module nested_07_testmod_der1
 private
 public fcn
 contains
@@ -21,7 +21,7 @@ end module
 
 
 program main
-use testmod_der1, only: fcn
+use nested_07_testmod_der1, only: fcn
 real :: x, fvec
 ! The following starting values provide a rough fit.
 x = 1.0

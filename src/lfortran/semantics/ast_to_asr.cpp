@@ -27,6 +27,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         SymbolTable *symbol_table,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols);
 
@@ -36,6 +37,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols);
 
@@ -78,11 +80,13 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     CompilerOptions &compiler_options)
 {
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
+    std::map<uint64_t, ASR::symbol_t*> common_variables_hash;
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> instantiate_symbols;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
-        compiler_options, implicit_mapping, instantiate_types, instantiate_symbols);
+        compiler_options, implicit_mapping, common_variables_hash,
+        instantiate_types, instantiate_symbols);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -96,7 +100,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
 #endif
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
-            implicit_mapping, instantiate_types, instantiate_symbols);
+            implicit_mapping, common_variables_hash,
+            instantiate_types, instantiate_symbols);
         if (res.ok) {
             tu = res.result;
         } else {

@@ -139,6 +139,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             child_value:
                                 (StructType
@@ -208,6 +209,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             new:
                                 (GenericProcedure
@@ -252,6 +254,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             toml_value:
                                 (StructType
@@ -329,6 +332,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             check_proc:
                                 (ExternalSymbol

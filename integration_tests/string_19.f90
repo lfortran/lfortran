@@ -1,4 +1,4 @@
-module stdlib_string_type
+module string_19_stdlib_string_type
 implicit none
 
 type :: string_type
@@ -30,8 +30,8 @@ end function char_string
 
 end module
 
-module stdlib_strings
-use stdlib_string_type
+module string_19_stdlib_strings
+use string_19_stdlib_string_type
 implicit none
 
 interface padl
@@ -98,6 +98,6 @@ contains
 end module
 
 program stdlib_strings_use
-use stdlib_strings
+use string_19_stdlib_strings
 implicit none
 end program

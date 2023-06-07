@@ -177,6 +177,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             call_add_generic:
                                                 (Function
@@ -288,6 +289,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             f:
                                                 (Function
@@ -384,6 +386,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -496,6 +499,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             r:
                                 (Requirement
@@ -597,6 +601,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -716,6 +721,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             a:
                                                 (Variable
@@ -822,6 +828,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -965,6 +972,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     template_nested_m

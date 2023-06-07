@@ -1,0 +1,13 @@
+{
+    "basename": "pass_pass_array_by_data_transform_optional_argument_functions-modules_45-db3a04a",
+    "cmd": "lfortran --pass=pass_array_by_data,transform_optional_argument_functions --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/modules_45.f90",
+    "infile_hash": "d68539c460764050c432f216e8ceed7eded8bf09258747500769b39e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_pass_array_by_data_transform_optional_argument_functions-modules_45-db3a04a.stdout",
+    "stdout_hash": "974f3ea9bbffb6ceabe924c5c2aca7c83c9098a8626e871befe80036",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

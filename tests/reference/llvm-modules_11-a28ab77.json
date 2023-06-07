@@ -2,11 +2,11 @@
     "basename": "llvm-modules_11-a28ab77",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/modules_11.f90",
-    "infile_hash": "3adf54a582ee98feab0583ed3cb0093df888f323e87e2cb7defcef52",
+    "infile_hash": "f19a5ba8d01ebaae3da78891afbae58462d711a364274aa3a5569fa1",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-modules_11-a28ab77.stdout",
-    "stdout_hash": "830fd38c6b43fdffaf39aaca1642dea5f911c711792fe41c37f0d52e",
+    "stdout_hash": "7f116a10767b55d93ba4507a072e7dffce616aa9a69df7b5f14ff57b",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

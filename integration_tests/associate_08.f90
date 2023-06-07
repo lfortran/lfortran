@@ -1,4 +1,4 @@
-module module_1
+module associate_08_module_1
     implicit none
 
     type t_1
@@ -25,10 +25,10 @@ contains
             target%type_2(0)%i = 345
         end associate
     end subroutine sub_2
-end module module_1
+end module
 
 program associate2
-    use module_1
+    use associate_08_module_1
     implicit none
     type(t_2) :: type_1
     call sub_1(type_1, 123)

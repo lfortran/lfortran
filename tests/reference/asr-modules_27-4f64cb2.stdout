@@ -200,6 +200,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             get_elem_keyval:
                                 (Function
@@ -302,6 +303,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             get_elem_table:
                                 (Function
@@ -411,6 +413,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             get_value:
                                 (GenericProcedure
@@ -551,6 +554,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             get_value_float_sp:
                                 (Function
@@ -631,6 +635,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             global_var:
                                 (Variable

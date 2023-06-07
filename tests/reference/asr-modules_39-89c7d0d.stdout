@@ -98,7 +98,10 @@
                                             ((StringConstant
                                                 ".gitignore"
                                                 (Character 1 10 () [])
-                                            ))]
+                                            ))
+                                            (())
+                                            (())
+                                            (())]
                                             (Character 1 -2 () [])
                                             ()
                                             ()
@@ -118,6 +121,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             filewrite:
                                 (ExternalSymbol
@@ -213,6 +217,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             join_path:
                                 (Function
@@ -345,6 +350,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     modules_39_module_fpm_filesystem_39

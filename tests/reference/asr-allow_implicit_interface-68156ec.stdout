@@ -2,14 +2,6 @@
     (SymbolTable
         1
         {
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
             prho:
                 (Function
                     (SymbolTable
@@ -18,11 +10,11 @@
                             alnorm:
                                 (Function
                                     (SymbolTable
-                                        228
+                                        3
                                         {
                                             alnorm_arg_0:
                                                 (Variable
-                                                    228
+                                                    3
                                                     alnorm_arg_0
                                                     []
                                                     Unspecified
@@ -38,7 +30,7 @@
                                                 ),
                                             alnorm_arg_1:
                                                 (Variable
-                                                    228
+                                                    3
                                                     alnorm_arg_1
                                                     []
                                                     Unspecified
@@ -54,7 +46,7 @@
                                                 ),
                                             alnorm_return_var_name:
                                                 (Variable
-                                                    228
+                                                    3
                                                     alnorm_return_var_name
                                                     []
                                                     ReturnVar
@@ -85,13 +77,14 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 228 alnorm_arg_0)
-                                    (Var 228 alnorm_arg_1)]
+                                    [(Var 3 alnorm_arg_0)
+                                    (Var 3 alnorm_arg_1)]
                                     []
-                                    (Var 228 alnorm_return_var_name)
+                                    (Var 3 alnorm_return_var_name)
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -112,11 +105,11 @@
                             dgetrf:
                                 (Function
                                     (SymbolTable
-                                        229
+                                        4
                                         {
                                             dgetrf_arg_0:
                                                 (Variable
-                                                    229
+                                                    4
                                                     dgetrf_arg_0
                                                     []
                                                     Unspecified
@@ -132,7 +125,7 @@
                                                 ),
                                             dgetrf_arg_1:
                                                 (Variable
-                                                    229
+                                                    4
                                                     dgetrf_arg_1
                                                     []
                                                     Unspecified
@@ -148,7 +141,7 @@
                                                 ),
                                             dgetrf_arg_2:
                                                 (Variable
-                                                    229
+                                                    4
                                                     dgetrf_arg_2
                                                     []
                                                     Unspecified
@@ -180,34 +173,15 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 229 dgetrf_arg_0)
-                                    (Var 229 dgetrf_arg_1)
-                                    (Var 229 dgetrf_arg_2)]
+                                    [(Var 4 dgetrf_arg_0)
+                                    (Var 4 dgetrf_arg_1)
+                                    (Var 4 dgetrf_arg_2)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
-                                ),
-                            exp:
-                                (ExternalSymbol
-                                    2
-                                    exp
-                                    4 exp
-                                    lfortran_intrinsic_math
-                                    []
-                                    exp
-                                    Private
-                                ),
-                            exp@dexp:
-                                (ExternalSymbol
-                                    2
-                                    exp@dexp
-                                    4 dexp
-                                    lfortran_intrinsic_math
-                                    []
-                                    dexp
-                                    Private
+                                    ()
                                 ),
                             one:
                                 (Variable
@@ -376,8 +350,7 @@
                         .false.
                         .false.
                     )
-                    [exp@dexp
-                    alnorm
+                    [alnorm
                     dgetrf]
                     []
                     [(=
@@ -418,18 +391,17 @@
                             (RealBinOp
                                 (Var 2 u)
                                 Div
-                                (FunctionCall
-                                    2 exp@dexp
-                                    2 exp
-                                    [((RealBinOp
+                                (IntrinsicFunction
+                                    Exp
+                                    [(RealBinOp
                                         (Var 2 y)
                                         Div
                                         (Var 2 two)
                                         (Real 8 [])
                                         ()
-                                    ))]
+                                    )]
+                                    0
                                     (Real 8 [])
-                                    ()
                                     ()
                                 )
                                 (Real 8 [])
@@ -496,6 +468,7 @@
                     Public
                     .false.
                     .false.
+                    ()
                 )
         })
     []

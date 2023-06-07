@@ -889,6 +889,50 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
+    void lex_common_block_part(unsigned char *&cur) {
+        // tokenize / block_1 / a, b
+        bool first_slash = true;
+        while(!next_is_eol(cur)) {
+            if (*(cur+1) == '/' && !first_slash) {
+                if (*cur != ',') {
+                    cur+=1;
+                } 
+                unsigned char *end = cur;
+                // tokenize uptil here
+                tokenize_until(end);
+                t.cur = cur;
+                break;
+            } else if (*(cur+1) == '/') {
+                first_slash = false;
+            }
+            cur++;
+        }
+        if (next_is_eol(cur)) {
+            tokenize_until(cur);
+            t.cur = cur;
+        }
+    }
+
+    bool lex_common_block(unsigned char *&cur) {
+        push_token_advance(cur, "common");
+        while(*cur == '/') {
+            lex_common_block_part(cur);
+            // handle an optional comma
+            if(*cur == '\n') {
+                break;
+            }
+            push_token_no_advance(cur, "comma");
+            if (*cur == ',') {
+                cur++;
+                t.cur = cur;
+            }
+        }
+        next_line(cur);
+        tokenize_until(cur);
+        LCOMPILERS_ASSERT(*(t.cur-1) == '\n');
+        return true;
+    }
+
     bool lex_body_statement(unsigned char *&cur) {
         int64_t l = eat_label(cur);
         if (lex_declaration(cur)) {
@@ -951,9 +995,7 @@ struct FixedFormRecursiveDescent {
         }
 
         if (next_is(cur, "common")) {
-            push_token_advance(cur, "common");
-            tokenize_line(cur);
-            return true;
+            return lex_common_block(cur);
         }
 
         if (next_is(cur, "save")) {

@@ -34,12 +34,12 @@ namespace LCompilers {
 
 FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
     :
+    compiler_options{compiler_options},
     al{1024*1024},
 #ifdef HAVE_LFORTRAN_LLVM
     e{std::make_unique<LLVMEvaluator>()},
     eval_count{0},
 #endif
-    compiler_options{compiler_options},
     symbol_table{nullptr}
 {
 }
@@ -205,8 +205,7 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         code = &tmp;
     }
     Result<LFortran::AST::TranslationUnit_t*>
-        res = LFortran::parse(al, *code, diagnostics,
-        compiler_options.fixed_form);
+        res = LFortran::parse(al, *code, diagnostics, compiler_options);
     if (res.ok) {
         return res.result;
     } else {
@@ -463,7 +462,7 @@ Result<std::string> FortranEvaluator::get_c(const std::string &code,
 Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
-    // ASR -> C++
+    // ASR -> C
     return asr_to_c(al, asr, diagnostics, compiler_options,
                     default_lower_bound);
 }

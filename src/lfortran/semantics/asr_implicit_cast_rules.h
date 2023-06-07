@@ -6,7 +6,7 @@
 #include <lfortran/semantics/semantic_exception.h>
 
 
-#define num_types 6
+#define num_types 7
 
 namespace LCompilers::LFortran {
 class ImplicitCastRules {
@@ -17,6 +17,7 @@ private:
   static const int error_case = -2;
   static const int integer_to_real = ASR::cast_kindType::IntegerToReal;
   static const int integer_to_integer = ASR::cast_kindType::IntegerToInteger;
+  static const int integer_to_unsigned_integer = ASR::cast_kindType::IntegerToUnsignedInteger;
   static const int real_to_integer = ASR::cast_kindType::RealToInteger;
   static const int real_to_complex = ASR::cast_kindType::RealToComplex;
   static const int integer_to_complex = ASR::cast_kindType::IntegerToComplex;
@@ -31,6 +32,7 @@ private:
   //! Stores the variable part of error messages to be passed to SemanticError.
   static constexpr const char *type_names[num_types][2] = {
       {"Integer", "Integer Pointer"},
+      {"UnsignedInteger", "Unsigned Integer Pointer"},
       {"Real", "Integer or Real or Real Pointer"},
       {"Complex", "Integer, Real or Complex or Complex Pointer"},
       {"Character", "Character Pointer"},
@@ -47,27 +49,31 @@ private:
   static constexpr const int rule_map[num_types][num_types] = {
 
       // Integer
-      {integer_to_integer, integer_to_real, integer_to_complex, error_case,
+      {integer_to_integer, integer_to_unsigned_integer, integer_to_real, integer_to_complex, error_case,
        integer_to_logical, error_case},
 
+      // Unsigned Integer
+      {error_case, error_case, error_case, error_case, error_case,
+       error_case, error_case},
+
       // Real
-      {real_to_integer, real_to_real, real_to_complex, default_case,
+      {real_to_integer, error_case, real_to_real, real_to_complex, default_case,
        default_case, default_case},
 
       // Complex
-      {complex_to_integer, complex_to_real, complex_to_complex, default_case,
+      {complex_to_integer, error_case, complex_to_real, complex_to_complex, default_case,
        default_case, default_case},
 
       // Character
-      {default_case, default_case, default_case, default_case, default_case,
+      {default_case, default_case, default_case, default_case, default_case, default_case,
        default_case},
 
       // Logical
-      {default_case, default_case, default_case, default_case, default_case,
+      {default_case, default_case, default_case, default_case, default_case, default_case,
        default_case},
 
       // Derived
-      {default_case, default_case, default_case, default_case, default_case,
+      {default_case, default_case, default_case, default_case, default_case, default_case,
        default_case},
   };
 
@@ -77,6 +83,7 @@ private:
    */
   static constexpr const int type_priority[num_types] = {
       4,  // Integer
+      -1,  // Unsigned Integer
       5,  // Real
       6,  // Complex
       -1, // Character

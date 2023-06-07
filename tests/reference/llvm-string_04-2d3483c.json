@@ -2,11 +2,11 @@
     "basename": "llvm-string_04-2d3483c",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/../integration_tests/string_04.f90",
-    "infile_hash": "1b092d9e71bbd1bc23e03b5570e3cdb8b87541e92970a9a2cd7719f5",
+    "infile_hash": "5dec930fb518a93b9004858a969c334193bb0a84dcadc023b57d5c10",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-string_04-2d3483c.stdout",
-    "stdout_hash": "b3fb313cda00e3fda9364cf06dc46ad450e9baefbab0b5a92c663966",
+    "stdout_hash": "0511eb13de83477e24fd8698641a7071c4f2416eeaad2c2c25bfd232",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

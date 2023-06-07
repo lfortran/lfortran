@@ -175,12 +175,12 @@
         )
         (Format
             500
-            " "IARRAY =", *( I0, :, ",")"
+            " \"IARRAY =\", *( I0, :, \",\")"
             ()
         )
         (Format
             501
-            "*( I0, :, ",")"
+            "*( I0, :, \",\")"
             ()
         )
         (Format
@@ -250,7 +250,7 @@
         )
         (Format
             640
-            ""Table form of A"/(2F8.2)"
+            "\"Table form of A\"/(2F8.2)"
             ()
         )
         (Format
@@ -270,12 +270,12 @@
         )
         (Format
             680
-            "/"xx""
+            "/\"xx\""
             ()
         )
         (Format
             690
-            "/ "xx""
+            "/ \"xx\""
             ()
         )
         (Format

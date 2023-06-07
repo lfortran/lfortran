@@ -32,6 +32,7 @@ interface mod
     module procedure i8mod, i16mod, imod, i64mod, smod, dmod
 end interface
 
+! TODO: Implement merge in IntrinsicFunction
 interface merge
     module procedure mergei8, mergei16, mergei32, mergei64, merger32, merger64, mergez32, mergez64, mergechar, mergelogical
 end interface
@@ -524,7 +525,7 @@ function mergechar(tsource, fsource, mask) result(r)
     character(len=*), intent(in) :: tsource(:)
     character(len=*), intent(in) :: fsource(:)
     logical, intent(in) :: mask(:)
-    character(len=len(tsource)) :: r
+    character(len=len(tsource(0))) :: r
 end function
 
 function mergelogical(tsource, fsource, mask) result(r)

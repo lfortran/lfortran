@@ -4,7 +4,7 @@
         {
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            string_module:
+            string_17_string_module:
                 (Module
                     (SymbolTable
                         2
@@ -131,7 +131,8 @@
                                                     4 1_string_type_raw
                                                     (Character 1 -2 () [])
                                                     ()
-                                                ))]
+                                                ))
+                                                (())]
                                                 (Integer 4 [])
                                                 ()
                                                 ()
@@ -148,6 +149,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             maybe:
                                 (Function
@@ -288,6 +290,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             string_type:
                                 (StructType
@@ -322,7 +325,7 @@
                                     ()
                                 )
                         })
-                    string_module
+                    string_17_string_module
                     [lfortran_intrinsic_builtin]
                     .false.
                     .false.

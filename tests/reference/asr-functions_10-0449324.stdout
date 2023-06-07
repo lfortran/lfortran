@@ -117,6 +117,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             merger32:
                                 (Function
@@ -219,6 +220,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             merger64:
                                 (Function
@@ -321,6 +323,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     kwarg_gp
@@ -504,7 +507,8 @@
                             6 mergegp@mergei32
                             6 mergegp
                             [((Var 6 a1))
-                            ((Var 6 b1))]
+                            ((Var 6 b1))
+                            (())]
                             (Integer 4 [])
                             ()
                             ()
@@ -548,7 +552,8 @@
                             6 mergegp@merger32
                             6 mergegp
                             [((Var 6 a2))
-                            ((Var 6 b2))]
+                            ((Var 6 b2))
+                            (())]
                             (Real 4 [])
                             ()
                             ()

@@ -223,6 +223,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             solution:
                                 (Function
@@ -264,7 +265,15 @@
                                     )
                                     []
                                     []
-                                    [(=
+                                    [(Allocate
+                                        [((Var 4 x)
+                                        [((IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4 [])))])]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (=
                                         (Var 4 x)
                                         (ArrayConstant
                                             [(RealConstant
@@ -285,6 +294,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     main

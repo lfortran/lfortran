@@ -160,7 +160,8 @@
                                                             [(SubroutineCall
                                                                 5 resize
                                                                 ()
-                                                                [((Var 6 stack))]
+                                                                [((Var 6 stack))
+                                                                (())]
                                                                 ()
                                                             )]
                                                             []
@@ -170,6 +171,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             resize:
                                                 (Function
@@ -240,6 +242,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     parse_select
@@ -266,6 +269,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             tfc:
                                 (Variable

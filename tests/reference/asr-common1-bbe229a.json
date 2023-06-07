@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common1-bbe229a",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/common1.f90",
+    "infile_hash": "8f3a2e387c1b0481198ba4f773ea74e1bed5023a9fb121822a194e6e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-common1-bbe229a.stderr",
+    "stderr_hash": "15f4a1bf8b0682b1f3220b2425b3bc2973b1be507249aad7a47a55e0",
+    "returncode": 2
+}

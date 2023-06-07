@@ -50,7 +50,7 @@
                                     5
                                     get_value
                                     2 get_value
-                                    tomlf_build_array
+                                    subroutines_09_tomlf_build_array
                                     []
                                     get_value
                                     Public
@@ -60,7 +60,7 @@
                                     5
                                     get_value@get_elem_table
                                     2 get_elem_table
-                                    tomlf_build_array
+                                    subroutines_09_tomlf_build_array
                                     []
                                     get_elem_table
                                     Private
@@ -70,7 +70,7 @@
                                     5
                                     get_value@get_elem_value_string
                                     2 get_elem_value_string
-                                    tomlf_build_array
+                                    subroutines_09_tomlf_build_array
                                     []
                                     get_elem_value_string
                                     Private
@@ -111,7 +111,7 @@
                                 )
                         })
                     main
-                    [tomlf_build_array]
+                    [subroutines_09_tomlf_build_array]
                     [(SubroutineCall
                         5 get_value@get_elem_table
                         5 get_value
@@ -132,7 +132,7 @@
                         ()
                     )]
                 ),
-            tomlf_build_array:
+            subroutines_09_tomlf_build_array:
                 (Module
                     (SymbolTable
                         2
@@ -248,6 +248,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             get_elem_value_string:
                                 (Function
@@ -378,6 +379,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             get_value:
                                 (GenericProcedure
@@ -388,7 +390,7 @@
                                     Public
                                 )
                         })
-                    tomlf_build_array
+                    subroutines_09_tomlf_build_array
                     []
                     .false.
                     .false.

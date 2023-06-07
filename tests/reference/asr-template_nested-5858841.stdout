@@ -151,6 +151,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             add_real:
                                 (Function
@@ -241,6 +242,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             add_t:
                                 (Template
@@ -333,6 +335,8 @@
                                                         .false.
                                                         .false.
                                                         .false.
+<<<<<<< HEAD
+=======
                                                     )
                                                     [f]
                                                     [(Var 7 x)
@@ -357,6 +361,255 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
+                                                ),
+                                            call_add_generic:
+                                                (Function
+                                                    (SymbolTable
+                                                        8
+                                                        {
+                                                            x:
+                                                                (Variable
+                                                                    8
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    8
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            z:
+                                                                (Variable
+                                                                    8
+                                                                    z
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    call_add_generic
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            []
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            []
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                            []
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    [add_generic]
+                                                    [(Var 8 x)
+                                                    (Var 8 y)]
+                                                    [(=
+                                                        (Var 8 z)
+                                                        (FunctionCall
+                                                            5 add_generic
+                                                            ()
+                                                            [((Var 8 x))
+                                                            ((Var 8 y))]
+                                                            (TypeParameter
+                                                                t
+                                                                []
+                                                            )
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 8 z)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            f:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            x:
+                                                                (Variable
+                                                                    6
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    6
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            z:
+                                                                (Variable
+                                                                    6
+                                                                    z
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                        []
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    f
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                            []
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                            []
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                            []
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 6 x)
+                                                    (Var 6 y)]
+                                                    []
+                                                    (Var 6 z)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    5
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                        []
+>>>>>>> main
+                                                    )
+                                                    [f]
+                                                    [(Var 7 x)
+                                                    (Var 7 y)]
+                                                    [(=
+                                                        (Var 7 z)
+                                                        (FunctionCall
+                                                            5 f
+                                                            ()
+                                                            [((Var 7 x))
+                                                            ((Var 7 y))]
+                                                            (TypeParameter
+                                                                t
+                                                                []
+                                                            )
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 7 z)
+                                                    Public
+                                                    .false.
+                                                    .false.
+<<<<<<< HEAD
                                                 ),
                                             call_add_generic:
                                                 (Function
@@ -583,6 +836,8 @@
                                                     Private
                                                     Required
                                                     .false.
+=======
+>>>>>>> main
                                                 )
                                         })
                                     add_t
@@ -676,6 +931,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             r:
                                 (Requirement
@@ -777,6 +1033,10 @@
                                                     Private
                                                     .false.
                                                     .false.
+<<<<<<< HEAD
+=======
+                                                    ()
+>>>>>>> main
                                                 ),
                                             t:
                                                 (Variable
@@ -965,6 +1225,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 )
                         })
                     template_nested_m

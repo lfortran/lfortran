@@ -197,6 +197,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             f:
                                                 (Function
@@ -293,6 +294,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -405,6 +407,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             func_arg_real:
                                 (Function
@@ -493,6 +496,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             r:
                                 (Requirement
@@ -594,6 +598,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -713,6 +718,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -833,6 +839,7 @@
                                                     Public
                                                     .false.
                                                     .true.
+                                                    ()
                                                 )
                                         })
                                     test_template
@@ -928,6 +935,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             ~add:
                                 (CustomOperator

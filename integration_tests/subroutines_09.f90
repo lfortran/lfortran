@@ -1,4 +1,4 @@
-module tomlf_build_array
+module subroutines_09_tomlf_build_array
     implicit none
     private
 
@@ -59,11 +59,11 @@ module tomlf_build_array
  end subroutine get_elem_value_string
 
 
- end module tomlf_build_array
+ end module
 
 
  program main
-    use tomlf_build_array, only: get_value
+    use subroutines_09_tomlf_build_array, only: get_value
     implicit none
 
     integer :: a = 10, pos

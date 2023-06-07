@@ -142,6 +142,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             func2:
                                 (Function
@@ -350,6 +351,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             x:
                                 (Variable

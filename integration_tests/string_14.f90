@@ -1,4 +1,4 @@
-module stdlib_string_type
+module string_14_stdlib_string_type
     type :: string_type
         sequence
         private

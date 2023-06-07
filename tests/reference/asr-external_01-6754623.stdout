@@ -1,0 +1,149 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            foo:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4 [])
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            f_arg_0:
+                                                (Variable
+                                                    3
+                                                    f_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            f_return_var_name:
+                                                (Variable
+                                                    3
+                                                    f_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4 [])
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        [(Complex 4 [])]
+                                        (Real 4 [])
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 f_arg_0)]
+                                    []
+                                    (Var 3 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    foo
+                    (FunctionType
+                        [(Complex 4 [])
+                        (Complex 4 [])
+                        (Real 4 [])]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    [f]
+                    [(Var 2 a)
+                    (Var 2 b)
+                    (Var 2 f)]
+                    [(=
+                        (Var 2 a)
+                        (Cast
+                            (FunctionCall
+                                2 f
+                                ()
+                                [((Var 2 b))]
+                                (Real 4 [])
+                                ()
+                                ()
+                            )
+                            RealToComplex
+                            (Complex 4 [])
+                            ()
+                        )
+                        ()
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

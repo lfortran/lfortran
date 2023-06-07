@@ -2,26 +2,6 @@
     (SymbolTable
         1
         {
-            1_t_1:
-                (ExternalSymbol
-                    1
-                    1_t_1
-                    2 t_1
-                    module_1
-                    []
-                    t_1
-                    Public
-                ),
-            1_t_2:
-                (ExternalSymbol
-                    1
-                    1_t_2
-                    2 t_2
-                    module_1
-                    []
-                    t_2
-                    Public
-                ),
             associate2:
                 (Program
                     (SymbolTable
@@ -32,7 +12,7 @@
                                     7
                                     1_t_1_i
                                     3 i
-                                    1_t_1
+                                    t_1
                                     []
                                     i
                                     Public
@@ -42,7 +22,7 @@
                                     7
                                     1_t_2_type_2
                                     4 type_2
-                                    1_t_2
+                                    t_2
                                     []
                                     type_2
                                     Public
@@ -52,7 +32,7 @@
                                     7
                                     sub_1
                                     2 sub_1
-                                    module_1
+                                    associate_08_module_1
                                     []
                                     sub_1
                                     Public
@@ -62,7 +42,7 @@
                                     7
                                     sub_2
                                     2 sub_2
-                                    module_1
+                                    associate_08_module_1
                                     []
                                     sub_2
                                     Public
@@ -72,7 +52,7 @@
                                     7
                                     t_1
                                     2 t_1
-                                    module_1
+                                    associate_08_module_1
                                     []
                                     t_1
                                     Public
@@ -82,7 +62,7 @@
                                     7
                                     t_2
                                     2 t_2
-                                    module_1
+                                    associate_08_module_1
                                     []
                                     t_2
                                     Public
@@ -108,7 +88,7 @@
                                 )
                         })
                     associate2
-                    [module_1]
+                    [associate_08_module_1]
                     [(SubroutineCall
                         7 sub_1
                         ()
@@ -139,7 +119,7 @@
                         ()
                     )]
                 ),
-            module_1:
+            associate_08_module_1:
                 (Module
                     (SymbolTable
                         2
@@ -300,6 +280,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             sub_2:
                                 (Function
@@ -465,6 +446,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                 ),
                             t_1:
                                 (StructType
@@ -537,7 +519,7 @@
                                     ()
                                 )
                         })
-                    module_1
+                    associate_08_module_1
                     []
                     .false.
                     .false.
