@@ -377,19 +377,19 @@ RUN(NAME int_02 LABELS gfortran wasm) # int symboltable
 RUN(NAME int_03 LABELS gfortran llvm NOFAST) # large int and prints array
 
 RUN(NAME intrinsics_01 LABELS gfortran) # sqrt, abs, log
-RUN(NAME intrinsics_02 LABELS gfortran llvm NOFAST) # sin
-RUN(NAME intrinsics_03 LABELS gfortran llvm NOFAST) # cos
-RUN(NAME intrinsics_04 LABELS gfortran llvm NOFAST) # tan
-RUN(NAME intrinsics_04s LABELS gfortran llvm NOFAST) # ctan
-RUN(NAME intrinsics_05 LABELS gfortran llvm NOFAST) # hyperbolics
-RUN(NAME intrinsics_06 LABELS gfortran llvm NOFAST) # inverse trignometric
-RUN(NAME intrinsics_07 LABELS gfortran wasm) # kind
-RUN(NAME intrinsics_08 LABELS gfortran wasm) # tiny symboltable
-RUN(NAME intrinsics_09 LABELS gfortran wasm) # tiny body
+RUN(NAME intrinsics_02 LABELS gfortran llvm) # sin
+RUN(NAME intrinsics_03 LABELS gfortran llvm) # cos
+RUN(NAME intrinsics_04 LABELS gfortran llvm) # tan
+RUN(NAME intrinsics_04s LABELS gfortran llvm) # ctan
+RUN(NAME intrinsics_05 LABELS gfortran llvm) # hyperbolics
+RUN(NAME intrinsics_06 LABELS gfortran llvm) # inverse trignometric
+RUN(NAME intrinsics_07 LABELS gfortran llvm wasm) # kind
+RUN(NAME intrinsics_08 LABELS gfortran llvm wasm) # tiny symboltable
+RUN(NAME intrinsics_09 LABELS gfortran llvm wasm) # tiny body
 RUN(NAME intrinsics_10 LABELS gfortran llvm wasm) # real body
 RUN(NAME intrinsics_11 LABELS gfortran llvm wasm) # real symboltable
 RUN(NAME intrinsics_12 LABELS gfortran llvm wasm) # kind body
-RUN(NAME intrinsics_13 LABELS gfortran wasm) # kind symboltable
+RUN(NAME intrinsics_13 LABELS gfortran llvm wasm) # kind symboltable
 RUN(NAME intrinsics_14 LABELS gfortran llvm) # selected_real,int_kind body
 RUN(NAME intrinsics_15 LABELS gfortran llvm) # real
 RUN(NAME intrinsics_16 LABELS gfortran llvm) # aimag
@@ -398,7 +398,7 @@ RUN(NAME intrinsics_18 LABELS gfortran llvm)
 RUN(NAME intrinsics_18c LABELS gfortran llvm)
 RUN(NAME intrinsics_19 LABELS gfortran llvm)
 RUN(NAME intrinsics_19c LABELS gfortran llvm)
-RUN(NAME intrinsics_20 LABELS gfortran llvm NOFAST)
+RUN(NAME intrinsics_20 LABELS gfortran llvm)
 RUN(NAME intrinsics_21 LABELS gfortran llvm wasm NOFAST) # modulo and mod
 RUN(NAME intrinsics_22 LABELS gfortran llvm wasm)
 RUN(NAME intrinsics_23 LABELS gfortran llvm) # huge
@@ -427,7 +427,7 @@ RUN(NAME intrinsics_45 LABELS gfortran llvm wasm) # iso_fortran_env
 RUN(NAME intrinsics_46 LABELS gfortran llvm) # ichar & iachar
 RUN(NAME intrinsics_47 LABELS gfortran llvm NOFAST) # all
 RUN(NAME intrinsics_48 LABELS gfortran llvm NOFAST)
-RUN(NAME intrinsics_49 LABELS gfortran llvm NOFAST)
+RUN(NAME intrinsics_49 LABELS gfortran llvm)
 RUN(NAME intrinsics_50 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_51 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
