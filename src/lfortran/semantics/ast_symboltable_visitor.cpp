@@ -832,25 +832,7 @@ public:
                             + derived_type_name + "' not declared", x.base.base.loc);
 
                     }
-
-                    // TODO: abstract this into a function
-                    bool type_param = false;
-                    if (is_requirement) {
-                        for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
-                            ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(current_requirement_type_parameters[i]);
-                            std::string name = std::string(param->m_param);
-                            if (name.compare(derived_type_name) == 0) {
-                                type_param = true;
-                                // TODO: if current_requirement_type_parameters can be replaced with
-                                // std::vector<ASR::ttype_t*> then use duplicate instead
-                                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param,
-                                                                                param->m_dims, param->n_dims));
-                            }
-                        }
-                    }
-                    if (!type_param) {
-                        type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
-                    }
+                    type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
                     break;
                 }
                 default :
@@ -971,14 +953,12 @@ public:
         if (is_requirement) {
             ASR::asr_t *tp = ASR::make_TypeParameter_t(
                 al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0);
-            current_requirement_type_parameters.push_back(tp);
             tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
                 s2c(al, to_lower(x.m_name)), nullptr, 0, ASRUtils::intent_in,
                 nullptr, nullptr, ASR::storage_typeType::Default, 
                 ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, 
                 dflt_access, ASR::presenceType::Required, false);
             current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
-            is_derived_type = false;
             return;
         }
         SymbolTable *parent_scope = current_scope;
@@ -2068,7 +2048,7 @@ public:
 
         current_scope = parent_scope;
         current_template_args.clear();
-        current_template_map.clear();
+        context_map.clear();
         is_template = false;
 
     }
@@ -2400,7 +2380,7 @@ public:
                 ASR::ttype_t* t = ASRUtils::duplicate_type(al, v->m_type);
                 if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
                     ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-                    current_template_map[tp->m_param] = name;
+                    context_map[tp->m_param] = name;
                     t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, 
                         tp->base.base.loc, s2c(al, name), tp->m_dims, tp->n_dims));
                 }
@@ -2426,9 +2406,9 @@ public:
                     ASR::ttype_t* param_type = ASRUtils::expr_type(f->m_args[i]);
                     if (ASR::is_a<ASR::TypeParameter_t>(*param_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(param_type);
-                        if (current_template_map.find(tp->m_param) != current_template_map.end()) {
+                        if (context_map.find(tp->m_param) != context_map.end()) {
                             param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param]),
+                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param]),
                                 tp->m_dims, tp->n_dims));
                         }
                     }
@@ -2467,9 +2447,9 @@ public:
                     ASR::ttype_t *return_type = ASRUtils::expr_type(f->m_return_var);
                     if (ASR::is_a<ASR::TypeParameter_t>(*return_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(return_type);
-                        if (current_template_map.find(tp->m_param) != current_template_map.end()) {
+                        if (context_map.find(tp->m_param) != context_map.end()) {
                             return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param]),
+                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param]),
                                 tp->m_dims, tp->n_dims));
                         }
                     }

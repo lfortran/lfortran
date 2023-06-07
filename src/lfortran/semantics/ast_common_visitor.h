@@ -713,19 +713,10 @@ public:
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
     bool is_derived_type = false;
     bool is_body_visitor = false;
-    bool is_requirement = false;
-    bool is_template = false;
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
-
-    // fields for generics
-    std::vector<ASR::asr_t*> current_requirement_type_parameters;
-    std::map<std::string, ASR::asr_t*> called_requirement;
-
-    std::vector<std::string> current_template_args;
-    std::map<std::string, std::string> current_template_map;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
@@ -736,6 +727,11 @@ public:
 
     int32_t enum_init_val;
 
+    // fields for generics
+    bool is_requirement = false;
+    bool is_template = false;
+    std::vector<std::string> current_template_args;
+    std::map<std::string, std::string> context_map;
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
 
