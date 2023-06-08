@@ -656,8 +656,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             // Macros are ignored for now:
             "#" [^\n\x00]* newline { line_num++; cur_line=cur; continue; }
 
-            string1 { token_str(yylval.string); RET(TK_STRING) }
-            string2 { token_str(yylval.string); RET(TK_STRING) }
+            string1 { token_str(al, yylval.string, '"'); RET(TK_STRING) }
+            string2 { token_str(al, yylval.string, '\''); RET(TK_STRING) }
 
             defop { token(yylval.string); RET(TK_DEF_OP) }
             name { token(yylval.string); RET(TK_NAME) }
