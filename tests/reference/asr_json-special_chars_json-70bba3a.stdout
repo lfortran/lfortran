@@ -22,12 +22,12 @@
                                         {
                                             "node": "StringConstant",
                                             "fields": {
-                                                "s": "A \"\"string\"\".",
+                                                "s": "A \"string\".",
                                                 "type": {
                                                     "node": "Character",
                                                     "fields": {
                                                         "kind": 1,
-                                                        "len": 13,
+                                                        "len": 11,
                                                         "len_expr": []
                                                     },
                                                     "loc": {
