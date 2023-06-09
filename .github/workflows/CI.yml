@@ -63,10 +63,10 @@ jobs:
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
-        shell: cmd /C CALL {0}
+        shell: bash -l {0}
         run: |
-            call micromamba activate lf
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            # call micromamba activate lf
+            # call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\build_tmp.xsh
 
       - name: Test (Linux / macOS)
@@ -77,10 +77,10 @@ jobs:
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
-        shell: cmd /C CALL {0}
+        shell: bash -l {0}
         run: |
-            call micromamba activate lf
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            # call micromamba activate lf
+            # call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
   build_to_wasm_and_upload:
