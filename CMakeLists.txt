@@ -172,6 +172,11 @@ if (WITH_LLVM)
     llvm_map_components_to_libnames(llvm_libs ${LFORTRAN_LLVM_COMPONENTS})
     unset(LFORTRAN_LLVM_COMPONENTS)
 
+    # workaround for https://github.com/llvm/llvm-project/issues/34593
+    if (NOT TARGET LLVMCore)
+        set (llvm_libs "LLVM")
+    endif ()
+
     add_library(p::llvm INTERFACE IMPORTED)
     set_property(TARGET p::llvm PROPERTY INTERFACE_INCLUDE_DIRECTORIES
         ${LLVM_INCLUDE_DIRS})
