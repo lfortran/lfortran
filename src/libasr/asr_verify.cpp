@@ -1007,16 +1007,28 @@ public:
             std::string(ASRUtils::symbol_name(x.m_derived_type)) +
             "' cannot point outside of its symbol table, owner: " +
             symbol_owner);
-        for (size_t i=0; i<x.n_dims; i++) {
+    }
+
+    void visit_Array(const Array_t& x) {
+        visit_ttype(*x.m_type);
+        require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
+        require(!ASR::is_a<ASR::Array_t>(*x.m_type), "Array type cannot be nested.")
+        for (size_t i = 0; i < x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
         }
     }
 
-    /*
     void visit_Pointer(const Pointer_t &x) {
+        require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
+            "Pointer type conflicts with Allocatable type");
         visit_ttype(*x.m_type);
     }
-    */
+
+    void visit_Allocatable(const Allocatable_t &x) {
+        require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
+            "Allocatable type conflicts with Pointer type");
+        visit_ttype(*x.m_type);
+    }
 
 };
 
