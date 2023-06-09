@@ -1,0 +1,13 @@
+{
+    "basename": "asr-external2-e21d7a5",
+    "cmd": "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/external2.f90",
+    "infile_hash": "dfe22f031dc3f7982626b0de475e61ab3c4ffd0ecc03aa05e86937a7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-external2-e21d7a5.stdout",
+    "stdout_hash": "92162720c5fc172bad82e5d9e35cd97e1a39499cda275539c5dd636d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
