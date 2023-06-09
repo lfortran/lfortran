@@ -219,7 +219,144 @@
                         })
                     intrinsics_13
                     [lfortran_intrinsic_kind]
-                    []
+                    [(If
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 p)
+                                    NotEq
+                                    (IntegerConstant 4 (Integer 4))
+                                    (Logical 4)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                )
+                                And
+                                (IntegerCompare
+                                    (Var 2 p1)
+                                    NotEq
+                                    (IntegerConstant 4 (Integer 4))
+                                    (Logical 4)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                )
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            And
+                            (IntegerCompare
+                                (Var 2 p2)
+                                NotEq
+                                (IntegerConstant 8 (Integer 4))
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 p3)
+                                    NotEq
+                                    (IntegerConstant 8 (Integer 4))
+                                    (Logical 4)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                )
+                                And
+                                (IntegerCompare
+                                    (Var 2 p4)
+                                    NotEq
+                                    (IntegerConstant 4 (Integer 4))
+                                    (Logical 4)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                )
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            And
+                            (IntegerCompare
+                                (Var 2 p5)
+                                NotEq
+                                (IntegerConstant 4 (Integer 4))
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalBinOp
+                            (IntegerCompare
+                                (Var 2 p6)
+                                NotEq
+                                (IntegerConstant 8 (Integer 4))
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            And
+                            (IntegerCompare
+                                (Var 2 p7)
+                                NotEq
+                                (IntegerConstant 4 (Integer 4))
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                            )
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
                 ),
             lfortran_intrinsic_kind:
                 (IntrinsicModule lfortran_intrinsic_kind)
