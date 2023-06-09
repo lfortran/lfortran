@@ -63,11 +63,17 @@ jobs:
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
-        shell: bash -l {0}
+        shell: cmd
         run: |
-            # call micromamba activate lf
-            # call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci/build_tmp.xsh
+            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+            call micromamba activate lf
+            set LFORTRAN_CMAKE_GENERATOR=Ninja
+            set WIN=1
+            set MACOS=0
+            set ENABLE_RUNTIME_STACKTRACE=no
+            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            xonsh ci\build_tmp.xsh
 
       - name: Test (Linux / macOS)
         shell: bash -l {0}
@@ -77,11 +83,17 @@ jobs:
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
-        shell: bash -l {0}
+        shell: cmd
         run: |
-            # call micromamba activate lf
-            # call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci/test.xsh
+            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+            call micromamba activate lf
+            set LFORTRAN_CMAKE_GENERATOR=Ninja
+            set WIN=1
+            set MACOS=0
+            set ENABLE_RUNTIME_STACKTRACE=no
+            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            xonsh ci\test.xsh
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
