@@ -1371,6 +1371,28 @@ static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR:
     return nullptr;
 }
 
+static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::ttype_t* asr_type) {
+    asr_type = ASRUtils::type_get_past_array(asr_type);
+    switch (asr_type->type) {
+        case ASR::ttypeType::Integer: {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 1, asr_type));
+        }
+        case ASR::ttypeType::Real: {
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, asr_type));
+        }
+        case ASR::ttypeType::Complex: {
+            return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 1.0, asr_type));
+        }
+        case ASR::ttypeType::Logical: {
+            return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, true, asr_type));
+        }
+        default: {
+            throw LCompilersException("get_constant_one_with_given_type: Not implemented " + std::to_string(asr_type->type));
+        }
+    }
+    return nullptr;
+}
+
 const ASR::intentType intent_local=ASR::intentType::Local; // local variable (not a dummy argument)
 const ASR::intentType intent_in   =ASR::intentType::In; // dummy argument, intent(in)
 const ASR::intentType intent_out  =ASR::intentType::Out; // dummy argument, intent(out)
