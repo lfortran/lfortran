@@ -67,7 +67,7 @@ jobs:
         run: |
             # call micromamba activate lf
             # call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\build_tmp.xsh
+            xonsh ci/build_tmp.xsh
 
       - name: Test (Linux / macOS)
         shell: bash -l {0}
@@ -81,7 +81,7 @@ jobs:
         run: |
             # call micromamba activate lf
             # call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\test.xsh
+            xonsh ci/test.xsh
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
