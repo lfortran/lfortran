@@ -350,6 +350,8 @@ RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm NOFAST)
 RUN(NAME sum_01 LABELS gfortran llvm NOFAST)
 RUN(NAME sum_02 LABELS gfortran llvm NOFAST)
+RUN(NAME product_01 LABELS gfortran llvm NOFAST)
+RUN(NAME product_02 LABELS gfortran llvm NOFAST)
 
 RUN(NAME reserved_01 LABELS gfortran llvm wasm)
 RUN(NAME reserved_02 LABELS gfortran llvm NOFAST)

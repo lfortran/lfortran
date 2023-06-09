@@ -711,6 +711,8 @@ public:
         {"any", {IntrinsicSignature({"dim"}, 1, 2)}},
         {"sum", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                  IntrinsicSignature({"mask"}, 1, 2)}},
+        {"product", {IntrinsicSignature({"dim", "mask"}, 1, 3),
+                 IntrinsicSignature({"mask"}, 1, 2)}},
     };
 
 
