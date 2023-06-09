@@ -35,8 +35,8 @@ public:
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash),
+            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::vector<std::string>& external_procedures)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -2068,7 +2068,7 @@ public:
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
-        if (!original_sym) {
+        if (!original_sym || (original_sym && std::find(external_procedures.begin(), external_procedures.end(), sub_name) != external_procedures.end())) {
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
             if (!original_sym && compiler_options.implicit_interface) {
                 ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
@@ -2831,9 +2831,10 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         ASR::asr_t *unit,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::vector<std::string>& external_procedures)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);

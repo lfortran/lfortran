@@ -100,8 +100,8 @@ public:
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash) {}
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::vector<std::string>& external_procedures)
+      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -543,6 +543,9 @@ public:
             if (current_scope->get_symbol(arg_s) == nullptr) {
                 if (compiler_options.implicit_typing) {
                     ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
+                    if (t == nullptr) {
+                        throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                    }
                     declare_implicit_variable2(x.base.base.loc, arg_s,
                         ASRUtils::intent_unspecified, t);
                 } else {
@@ -2418,9 +2421,10 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+        std::vector<std::string>& external_procedures)
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash);
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {
