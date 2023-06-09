@@ -1349,16 +1349,11 @@ static inline Vec<char*> get_scope_names(Allocator &al, const SymbolTable *symta
     return scope_names;
 }
 
-static inline ASR::expr_t* get_constant_expression_with_given_type(Allocator& al, ASR::ttype_t* asr_type,
-    bool set_to_addition_identity=false) {
+static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR::ttype_t* asr_type) {
     asr_type = ASRUtils::type_get_past_array(asr_type);
     switch (asr_type->type) {
         case ASR::ttypeType::Integer: {
-            int64_t value = -1;
-            if( set_to_addition_identity ) {
-                value = 0;
-            }
-            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, value, asr_type));
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, 0, asr_type));
         }
         case ASR::ttypeType::Real: {
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 0.0, asr_type));
@@ -1370,7 +1365,7 @@ static inline ASR::expr_t* get_constant_expression_with_given_type(Allocator& al
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, false, asr_type));
         }
         default: {
-            throw LCompilersException("Not implemented " + std::to_string(asr_type->type));
+            throw LCompilersException("get_constant_zero_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;

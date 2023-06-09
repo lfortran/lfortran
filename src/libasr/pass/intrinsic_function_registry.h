@@ -1572,7 +1572,7 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
         [=, &al, &fn_body] {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
-            ASR::expr_t* zero = ASRUtils::get_constant_expression_with_given_type(al, element_type, true);
+            ASR::expr_t* zero = ASRUtils::get_constant_zero_with_given_type(al, element_type);
             ASR::stmt_t* return_var_init = Assignment(return_var, zero);
             fn_body.push_back(al, return_var_init);
         },
@@ -1595,7 +1595,7 @@ static inline void generate_body_for_array_mask_input(Allocator& al, const Locat
         [=, &al, &fn_body] {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
-            ASR::expr_t* zero = ASRUtils::get_constant_expression_with_given_type(al, element_type, true);
+            ASR::expr_t* zero = ASRUtils::get_constant_zero_with_given_type(al, element_type);
             ASR::stmt_t* return_var_init = Assignment(return_var, zero);
             fn_body.push_back(al, return_var_init);
         },
@@ -1626,7 +1626,7 @@ static inline void generate_body_for_array_dim_input(
         idx_vars, target_idx_vars, doloop_body,
         [=, &al, &fn_body] () {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
-            ASR::expr_t* zero = ASRUtils::get_constant_expression_with_given_type(al, array_type, true);
+            ASR::expr_t* zero = ASRUtils::get_constant_zero_with_given_type(al, array_type);
             ASR::stmt_t* result_init = Assignment(result, zero);
             fn_body.push_back(al, result_init);
         },
@@ -1652,7 +1652,7 @@ static inline void generate_body_for_array_dim_mask_input(
         idx_vars, target_idx_vars, doloop_body,
         [=, &al, &fn_body] () {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
-            ASR::expr_t* zero = ASRUtils::get_constant_expression_with_given_type(al, array_type, true);
+            ASR::expr_t* zero = ASRUtils::get_constant_zero_with_given_type(al, array_type);
             ASR::stmt_t* result_init = Assignment(result, zero);
             fn_body.push_back(al, result_init);
         },
