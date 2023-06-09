@@ -43,10 +43,10 @@
                                     idx
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -62,8 +62,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -96,10 +99,13 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (Integer 2 [(()
-                                        ())
-                                        (()
-                                        ())])
+                                        (Array
+                                            (Integer 2)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
                                     )
                                     ()
                                     Source
@@ -116,10 +122,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 2 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 2)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -133,26 +142,26 @@
                         (ArrayItem
                             (Var 2 newshape)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
                         ()
                     )
                     (=
                         (ArrayItem
                             (Var 2 newshape)
                             [(()
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4))
                         ()
                     )
                     (=>
@@ -163,17 +172,17 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 xv)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 LBound
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -185,17 +194,17 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 xv)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 UBound
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -207,17 +216,17 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 xv)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 LBound
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -229,17 +238,17 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 xv)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 UBound
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -252,15 +261,15 @@
                             (ArraySize
                                 (Var 2 xv)
                                 ()
-                                (Integer 4 [])
-                                (IntegerConstant 12 (Integer 4 []))
+                                (Integer 4)
+                                (IntegerConstant 12 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 12 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 12 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -278,17 +287,17 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 xv)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 LBound
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -300,17 +309,17 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 xv)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 UBound
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -322,17 +331,17 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 xv)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 LBound
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -344,17 +353,17 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 xv)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 UBound
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -367,15 +376,15 @@
                             (ArraySize
                                 (Var 2 xv)
                                 ()
-                                (Integer 4 [])
-                                (IntegerConstant 12 (Integer 4 []))
+                                (Integer 4)
+                                (IntegerConstant 12 (Integer 4))
                             )
                             NotEq
-                            (IntegerConstant 12 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 12 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -387,15 +396,15 @@
                         ()
                         [(ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             UBound
                             ()
                         )]
@@ -406,15 +415,15 @@
                         ()
                         [(ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
                             UBound
                             ()
                         )]
@@ -426,7 +435,7 @@
                         [(ArraySize
                             (Var 2 x)
                             ()
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -436,14 +445,14 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 LBound
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -455,14 +464,14 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 UBound
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -474,14 +483,14 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 LBound
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -493,14 +502,14 @@
                         (IntegerCompare
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 UBound
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -513,12 +522,12 @@
                             (ArraySize
                                 (Var 2 x)
                                 ()
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 6 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 6 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

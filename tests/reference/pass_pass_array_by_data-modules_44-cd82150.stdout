@@ -48,7 +48,6 @@
                                     Default
                                     (Struct
                                         9 fpm_new_settings
-                                        []
                                     )
                                     ()
                                     Source
@@ -104,9 +103,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 -2 ())
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -124,7 +128,6 @@
                                                     Default
                                                     (Struct
                                                         2 fpm_new_settings
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -137,7 +140,6 @@
                                     (FunctionType
                                         [(Struct
                                             2 fpm_new_settings
-                                            []
                                         )]
                                         ()
                                         Source
@@ -150,12 +152,12 @@
                                         .false.
                                         .false.
                                     )
-                                    [warnwrite]
+                                    [warnwrite_data]
                                     [(Var 8 settings)]
                                     [(Allocate
                                         [((Var 8 littlefile)
-                                        [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 2 (Integer 4 [])))])]
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))])]
                                         ()
                                         ()
                                         ()
@@ -165,28 +167,44 @@
                                         (ArrayConstant
                                             [(StringConstant
                                                 "# "
-                                                (Character 1 2 () [])
+                                                (Character 1 2 ())
                                             )
                                             (StringConstant
                                                 "My cool new project!"
-                                                (Character 1 20 () [])
+                                                (Character 1 20 ())
                                             )]
-                                            (Character 1 80 () [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 2 (Integer 4 [])))])
+                                            (Array
+                                                (Character 1 80 ())
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4)))]
+                                            )
                                             ColMajor
                                         )
                                         ()
                                     )
                                     (SubroutineCall
-                                        2 warnwrite
-                                        ()
+                                        2 warnwrite_data
+                                        2 warnwrite_data
                                         [((StructInstanceMember
                                             (Var 8 settings)
                                             8 1_fpm_new_settings_name
-                                            (Character 1 -2 () [])
+                                            (Character 1 -2 ())
                                             ()
                                         ))
-                                        ((Var 8 littlefile))]
+                                        ((Var 8 littlefile))
+                                        ((ArrayBound
+                                            (Var 8 littlefile)
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
+                                            LBound
+                                            ()
+                                        ))
+                                        ((ArraySize
+                                            (Var 8 littlefile)
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
+                                            ()
+                                        ))]
                                         ()
                                     )
                                     (ImplicitDeallocate
@@ -211,8 +229,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -243,8 +263,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -270,6 +292,16 @@
                                     modules_44_module_fpm_filesystem
                                     []
                                     warnwrite
+                                    Public
+                                ),
+                            warnwrite_data:
+                                (ExternalSymbol
+                                    2
+                                    warnwrite_data
+                                    4 warnwrite_data
+                                    modules_44_module_fpm_filesystem
+                                    []
+                                    warnwrite_data
                                     Public
                                 )
                         })
@@ -297,8 +329,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [(()
-                                                    ())])
+                                                    (Array
+                                                        (Character 1 -1 ())
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -314,7 +349,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -324,9 +359,12 @@
                                         })
                                     warnwrite
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Character 1 -1 () [(()
-                                        ())])]
+                                        [(Character 1 -1 ())
+                                        (Array
+                                            (Character 1 -1 ())
+                                            [(()
+                                            ())]
+                                        )]
                                         ()
                                         Source
                                         Implementation
@@ -341,6 +379,112 @@
                                     []
                                     [(Var 5 fname)
                                     (Var 5 data)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            warnwrite_data:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            __1data:
+                                                (Variable
+                                                    10
+                                                    __1data
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            __2data:
+                                                (Variable
+                                                    10
+                                                    __2data
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            data:
+                                                (Variable
+                                                    10
+                                                    data
+                                                    [__1data
+                                                    __2data]
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Character 1 -1 ())
+                                                        [((Var 10 __1data)
+                                                        (Var 10 __2data))]
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            fname:
+                                                (Variable
+                                                    10
+                                                    fname
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 -1 ())
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    warnwrite_data
+                                    (FunctionType
+                                        [(Character 1 -1 ())
+                                        (Array
+                                            (Character 1 -1 ())
+                                            [(()
+                                            ())]
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ""
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 10 fname)
+                                    (Var 10 data)
+                                    (Var 10 __1data)
+                                    (Var 10 __2data)]
                                     []
                                     ()
                                     Public

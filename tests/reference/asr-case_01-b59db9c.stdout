@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -44,74 +44,74 @@
                     []
                     [(=
                         (Var 2 i)
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4))
                         ()
                     )
                     (Select
                         (Var 2 i)
                         [(CaseStmt
-                            [(IntegerConstant 1 (Integer 4 []))]
+                            [(IntegerConstant 1 (Integer 4))]
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 10 (Integer 4 []))
+                                (IntegerConstant 10 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "1"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt
-                            [(IntegerConstant 2 (Integer 4 []))]
+                            [(IntegerConstant 2 (Integer 4))]
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 20 (Integer 4 []))
+                                (IntegerConstant 20 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "2"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt
-                            [(IntegerConstant 3 (Integer 4 []))]
+                            [(IntegerConstant 3 (Integer 4))]
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 30 (Integer 4 []))
+                                (IntegerConstant 30 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "3"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt
-                            [(IntegerConstant 4 (Integer 4 []))]
+                            [(IntegerConstant 4 (Integer 4))]
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 40 (Integer 4 []))
+                                (IntegerConstant 40 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "4"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
@@ -123,8 +123,8 @@
                         (IntegerCompare
                             (Var 2 out)
                             NotEq
-                            (IntegerConstant 40 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 40 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -135,36 +135,36 @@
                     (Select
                         (Var 2 i)
                         [(CaseStmt
-                            [(IntegerConstant 1 (Integer 4 []))]
+                            [(IntegerConstant 1 (Integer 4))]
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 11 (Integer 4 []))
+                                (IntegerConstant 11 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "1"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt
-                            [(IntegerConstant 2 (Integer 4 []))
-                            (IntegerConstant 3 (Integer 4 []))
-                            (IntegerConstant 4 (Integer 4 []))]
+                            [(IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 4 (Integer 4))]
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 22 (Integer 4 []))
+                                (IntegerConstant 22 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "2,3,4"
-                                    (Character 1 5 () [])
+                                    (Character 1 5 ())
                                 )]
                                 ()
                                 ()
@@ -176,8 +176,8 @@
                         (IntegerCompare
                             (Var 2 out)
                             NotEq
-                            (IntegerConstant 22 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 22 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

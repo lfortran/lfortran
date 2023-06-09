@@ -65,10 +65,11 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Class
-                                        5 fpm_run_settings
-                                        []
+                                    Default
+                                    (Allocatable
+                                        (Class
+                                            5 fpm_run_settings
+                                        )
                                     )
                                     ()
                                     Source
@@ -100,12 +101,12 @@
                             (StructInstanceMember
                                 (Var 5 settings)
                                 5 1_fpm_run_settings_int
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 0 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 0 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -121,27 +122,27 @@
                                     (StructInstanceMember
                                         (Var 5 settings)
                                         5 1_fpm_run_settings_float
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000001
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -154,15 +155,15 @@
                             (StructInstanceMember
                                 (Var 5 settings)
                                 5 1_fpm_run_settings_bool
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             NEqv
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -193,7 +194,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -209,7 +210,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -225,7 +226,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -258,10 +259,11 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Class
-                                                        2 fpm_run_settings
-                                                        []
+                                                    Default
+                                                    (Allocatable
+                                                        (Class
+                                                            2 fpm_run_settings
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -272,9 +274,10 @@
                                         })
                                     get_command_line_settings
                                     (FunctionType
-                                        [(Class
-                                            2 fpm_run_settings
-                                            []
+                                        [(Allocatable
+                                            (Class
+                                                2 fpm_run_settings
+                                            )
                                         )]
                                         ()
                                         Source
@@ -293,18 +296,17 @@
                                         (Var 4 cmd_settings)
                                         (StructTypeConstructor
                                             2 fpm_run_settings
-                                            [((IntegerConstant 0 (Integer 4 [])))
+                                            [((IntegerConstant 0 (Integer 4)))
                                             ((RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             ))
                                             ((LogicalConstant
                                                 .true.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             ))]
                                             (Struct
                                                 2 fpm_run_settings
-                                                []
                                             )
                                             ()
                                         )

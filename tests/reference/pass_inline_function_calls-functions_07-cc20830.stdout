@@ -44,20 +44,20 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4 []))
+                                        (IntegerConstant 5 (Integer 4))
                                         IntegerToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             5.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         5.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -73,7 +73,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -89,7 +89,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -105,7 +105,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -121,7 +121,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -137,7 +137,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -153,7 +153,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -169,7 +169,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -201,9 +201,9 @@
                             Add
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -215,9 +215,9 @@
                             Add
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -229,9 +229,9 @@
                             Add
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -267,7 +267,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -283,7 +283,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -293,8 +293,8 @@
                                         })
                                     f_a
                                     (FunctionType
-                                        [(Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -314,9 +314,9 @@
                                             Add
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -362,7 +362,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -378,7 +378,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -394,7 +394,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -410,7 +410,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -420,8 +420,8 @@
                                         })
                                     f_b
                                     (FunctionType
-                                        [(Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -446,9 +446,9 @@
                                             Add
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -460,9 +460,9 @@
                                             Add
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -518,7 +518,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -534,7 +534,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -550,7 +550,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -566,7 +566,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -582,7 +582,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -598,7 +598,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -608,8 +608,8 @@
                                         })
                                     f_c
                                     (FunctionType
-                                        [(Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -639,9 +639,9 @@
                                             Add
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -653,9 +653,9 @@
                                             Add
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -667,9 +667,9 @@
                                             Add
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()

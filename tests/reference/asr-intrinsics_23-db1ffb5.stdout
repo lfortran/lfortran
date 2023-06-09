@@ -66,14 +66,14 @@
                                     (FunctionCall
                                         2 huge@i32huge
                                         2 huge
-                                        [((IntegerConstant 0 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 2147483647 (Integer 4 []))
+                                        [((IntegerConstant 0 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 2147483647 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 2147483647 (Integer 4 []))
+                                    (IntegerConstant 2147483647 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -89,14 +89,14 @@
                                     (FunctionCall
                                         2 huge@i64huge
                                         2 huge
-                                        [((IntegerConstant 0 (Integer 8 [])))]
-                                        (Integer 8 [])
-                                        (IntegerConstant 9223372036854775807 (Integer 8 []))
+                                        [((IntegerConstant 0 (Integer 8)))]
+                                        (Integer 8)
+                                        (IntegerConstant 9223372036854775807 (Integer 8))
                                         ()
                                     )
-                                    (IntegerConstant 9223372036854775807 (Integer 8 []))
+                                    (IntegerConstant 9223372036854775807 (Integer 8))
                                     Parameter
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -114,21 +114,21 @@
                                         2 huge
                                         [((RealConstant
                                             0.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         ))]
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             340282346638528859811704183484516925440.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
                                         340282346638528859811704183484516925440.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -146,21 +146,21 @@
                                         2 huge
                                         [((RealConstant
                                             0.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         ))]
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                         ()
                                     )
                                     (RealConstant
                                         179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Parameter
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -184,17 +184,17 @@
                         [(FunctionCall
                             2 huge@i32huge
                             2 huge
-                            [((IntegerConstant 0 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 2147483647 (Integer 4 []))
+                            [((IntegerConstant 0 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 2147483647 (Integer 4))
                             ()
                         )
                         (FunctionCall
                             2 huge@i64huge
                             2 huge
-                            [((IntegerConstant 0 (Integer 8 [])))]
-                            (Integer 8 [])
-                            (IntegerConstant 9223372036854775807 (Integer 8 []))
+                            [((IntegerConstant 0 (Integer 8)))]
+                            (Integer 8)
+                            (IntegerConstant 9223372036854775807 (Integer 8))
                             ()
                         )
                         (FunctionCall
@@ -202,12 +202,12 @@
                             2 huge
                             [((RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             ))]
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 340282346638528859811704183484516925440.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             ()
                         )
@@ -216,12 +216,12 @@
                             2 huge
                             [((RealConstant
                                 0.000000
-                                (Real 8 [])
+                                (Real 8)
                             ))]
-                            (Real 8 [])
+                            (Real 8)
                             (RealConstant
                                 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
                             ()
                         )]

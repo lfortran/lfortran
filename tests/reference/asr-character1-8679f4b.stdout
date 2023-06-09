@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                     ()
                                     Source
                                     Public
@@ -26,7 +26,7 @@
                         })
                     xerror
                     (FunctionType
-                        [(Character 1 1 () [])]
+                        [(Character 1 1 ())]
                         ()
                         Source
                         Implementation
@@ -44,8 +44,8 @@
                         ()
                         [(StringItem
                             (Var 2 mess)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Character 1 1 () [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Character 1 1 ())
                             ()
                         )]
                         ()

@@ -20,14 +20,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -42,8 +42,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -75,14 +77,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -97,8 +99,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -113,14 +117,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -135,14 +139,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -157,14 +161,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -179,14 +183,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -201,14 +205,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -223,14 +227,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -268,10 +272,11 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Class
-                                                        4 fpm_cmd_settings
-                                                        []
+                                                    Default
+                                                    (Allocatable
+                                                        (Class
+                                                            4 fpm_cmd_settings
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -282,9 +287,10 @@
                                         })
                                     get_command_line_settings
                                     (FunctionType
-                                        [(Class
-                                            4 fpm_cmd_settings
-                                            []
+                                        [(Allocatable
+                                            (Class
+                                                4 fpm_cmd_settings
+                                            )
                                         )]
                                         ()
                                         Source
@@ -315,35 +321,41 @@
                                                 [((ArrayConstant
                                                     [(StringConstant
                                                         "src"
-                                                        (Character 1 3 () [])
+                                                        (Character 1 3 ())
                                                     )
                                                     (StringConstant
                                                         "lib"
-                                                        (Character 1 3 () [])
+                                                        (Character 1 3 ())
                                                     )
                                                     (StringConstant
                                                         "app"
-                                                        (Character 1 3 () [])
+                                                        (Character 1 3 ())
                                                     )
                                                     (StringConstant
                                                         "test"
-                                                        (Character 1 4 () [])
+                                                        (Character 1 4 ())
                                                     )
                                                     (StringConstant
                                                         "example"
-                                                        (Character 1 7 () [])
+                                                        (Character 1 7 ())
                                                     )]
-                                                    (Character 1 10 () [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 5 (Integer 4 [])))])
+                                                    (Array
+                                                        (Character 1 10 ())
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4)))]
+                                                    )
                                                     ColMajor
                                                 ))]
-                                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                (IntegerConstant 5 (Integer 4 [])))])
+                                                (Array
+                                                    (Logical 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 5 (Integer 4)))]
+                                                )
                                                 ()
                                                 ()
                                             )]
                                             0
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(=
@@ -353,37 +365,36 @@
                                                 [(())
                                                 ((LogicalConstant
                                                     .true.
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                 ))
                                                 ((StringConstant
                                                     "xyz"
-                                                    (Character 1 3 () [])
+                                                    (Character 1 3 ())
                                                 ))
                                                 ((LogicalConstant
                                                     .true.
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                 ))
                                                 ((LogicalConstant
                                                     .true.
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                 ))
                                                 ((LogicalConstant
                                                     .false.
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                 ))
                                                 ((LogicalConstant
                                                     .false.
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                 ))
                                                 (())
                                                 (())
                                                 ((LogicalConstant
                                                     .false.
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                 ))]
                                                 (Struct
                                                     4 fpm_new_settings
-                                                    []
                                                 )
                                                 ()
                                             )
@@ -432,7 +443,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -448,7 +459,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -458,8 +469,8 @@
                                         })
                                     specified
                                     (FunctionType
-                                        [(Character 1 -1 () [])]
-                                        (Logical 4 [])
+                                        [(Character 1 -1 ())]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -476,7 +487,7 @@
                                         (Var 10 specified)
                                         (LogicalConstant
                                             .false.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         ()
                                     )]
@@ -505,10 +516,11 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Class
-                                        2 fpm_cmd_settings
-                                        []
+                                    Default
+                                    (Allocatable
+                                        (Class
+                                            2 fpm_cmd_settings
+                                        )
                                     )
                                     ()
                                     Source

@@ -18,15 +18,15 @@
                                         ()
                                         [((RealConstant
                                             0.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         ))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -54,27 +54,27 @@
                                         [(RealUnaryMinus
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 -1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )]
                                         0
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             3.141593
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         3.141593
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -92,27 +92,27 @@
                                         [(RealUnaryMinus
                                             (RealConstant
                                                 1.000000
-                                                (Real 8 [])
+                                                (Real 8)
                                             )
-                                            (Real 8 [])
+                                            (Real 8)
                                             (RealConstant
                                                 -1.000000
-                                                (Real 8 [])
+                                                (Real 8)
                                             )
                                         )]
                                         0
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             3.141593
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
                                     (RealConstant
                                         3.141593
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Parameter
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -130,43 +130,43 @@
                                         [(RealBinOp
                                             (Cast
                                                 (IntegerBinOp
-                                                    (IntegerConstant 3 (Integer 4 []))
+                                                    (IntegerConstant 3 (Integer 4))
                                                     Add
-                                                    (IntegerConstant 4 (Integer 4 []))
-                                                    (Integer 4 [])
-                                                    (IntegerConstant 7 (Integer 4 []))
+                                                    (IntegerConstant 4 (Integer 4))
+                                                    (Integer 4)
+                                                    (IntegerConstant 7 (Integer 4))
                                                 )
                                                 IntegerToReal
-                                                (Real 4 [])
+                                                (Real 4)
                                                 (RealConstant
                                                     7.000000
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                 )
                                             )
                                             Mul
                                             (RealConstant
                                                 7.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 49.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )]
                                         0
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             0.300593
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         0.300593
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -182,7 +182,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -195,10 +195,10 @@
                                     y2
                                     []
                                     Local
-                                    (IntegerConstant 3 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -228,7 +228,7 @@
                     )
                     (=
                         (Var 2 y)
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4))
                         ()
                     )
                     (Print
@@ -238,35 +238,35 @@
                             [(RealBinOp
                                 (Cast
                                     (IntegerBinOp
-                                        (IntegerConstant 3 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4))
                                         Add
-                                        (IntegerConstant 4 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant 7 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant 7 (Integer 4))
                                     )
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         7.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
                                 Mul
                                 (RealConstant
                                     7.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     49.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )]
                             0
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 0.300593
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )]
                         ()
@@ -281,24 +281,24 @@
                                     (IntegerBinOp
                                         (Var 2 y)
                                         Add
-                                        (IntegerConstant 4 (Integer 4 []))
-                                        (Integer 4 [])
+                                        (IntegerConstant 4 (Integer 4))
+                                        (Integer 4)
                                         ()
                                     )
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )
                                 Mul
                                 (RealConstant
                                     7.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )]
                             0
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )]
                         ()
@@ -313,33 +313,33 @@
                                     (IntegerBinOp
                                         (Var 2 y2)
                                         Add
-                                        (IntegerConstant 4 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant 7 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant 7 (Integer 4))
                                     )
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         7.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
                                 Mul
                                 (RealConstant
                                     7.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     49.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )]
                             0
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 0.300593
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )]
                         ()
@@ -355,41 +355,41 @@
                                         (Var 2 x)
                                         Add
                                         (Cast
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             IntegerToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             1.300593
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )]
                                     0
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         0.266928
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
                                 Pow
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     0.071250
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
                             Add
@@ -400,47 +400,47 @@
                                         (Var 2 x)
                                         Add
                                         (Cast
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             IntegerToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 1.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             1.300593
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )]
                                     0
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         0.963717
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
                                 Pow
                                 (Cast
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     0.928750
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )]
                         ()

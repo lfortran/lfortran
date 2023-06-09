@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -28,9 +28,29 @@
                                     2
                                     tiny
                                     4 tiny
-                                    lfortran_intrinsic_builtin
+                                    lfortran_intrinsic_math
                                     []
                                     tiny
+                                    Private
+                                ),
+                            tiny@dtiny:
+                                (ExternalSymbol
+                                    2
+                                    tiny@dtiny
+                                    4 dtiny
+                                    lfortran_intrinsic_math
+                                    []
+                                    dtiny
+                                    Private
+                                ),
+                            tiny@stiny:
+                                (ExternalSymbol
+                                    2
+                                    tiny@stiny
+                                    4 stiny
+                                    lfortran_intrinsic_math
+                                    []
+                                    stiny
                                     Private
                                 ),
                             x:
@@ -40,25 +60,25 @@
                                     []
                                     Local
                                     (FunctionCall
+                                        2 tiny@stiny
                                         2 tiny
-                                        ()
                                         [((RealConstant
                                             1.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         ))]
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             0.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )
                                     (RealConstant
                                         0.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -71,31 +91,23 @@
                                     y
                                     [b]
                                     Local
-                                    (Cast
-                                        (FunctionCall
-                                            2 tiny
-                                            ()
-                                            [((Var 2 b))]
-                                            (Real 4 [])
-                                            (RealConstant
-                                                0.000000
-                                                (Real 8 [])
-                                            )
-                                            ()
-                                        )
-                                        RealToReal
-                                        (Real 8 [])
+                                    (FunctionCall
+                                        2 tiny@dtiny
+                                        2 tiny
+                                        [((Var 2 b))]
+                                        (Real 8)
                                         (RealConstant
                                             0.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
+                                        ()
                                     )
                                     (RealConstant
                                         0.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Parameter
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -104,7 +116,7 @@
                                 )
                         })
                     intrinsics_08
-                    [lfortran_intrinsic_builtin]
+                    [lfortran_intrinsic_math]
                     [(Print
                         ()
                         [(Var 2 x)]
@@ -118,8 +130,14 @@
                         ()
                     )]
                 ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math)
         })
     []
 )

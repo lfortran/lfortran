@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -79,22 +79,22 @@
                         (RealBinOp
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             Div
                             (Cast
-                                (IntegerConstant 7 (Integer 4 []))
+                                (IntegerConstant 7 (Integer 4))
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     7.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 0.142857
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -105,29 +105,29 @@
                             (RealBinOp
                                 (RealConstant
                                     1.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 Div
                                 (Cast
-                                    (IntegerConstant 7 (Integer 4 []))
+                                    (IntegerConstant 7 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         7.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     0.142857
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
                             RealToReal
-                            (Real 8 [])
+                            (Real 8)
                             (RealConstant
                                 0.142857
-                                (Real 8 [])
+                                (Real 8)
                             )
                         )
                         ()
@@ -137,22 +137,22 @@
                         (RealBinOp
                             (RealConstant
                                 1.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
                             Div
                             (Cast
-                                (IntegerConstant 7 (Integer 4 []))
+                                (IntegerConstant 7 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     7.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Real 8 [])
+                            (Real 8)
                             (RealConstant
                                 0.142857
-                                (Real 8 [])
+                                (Real 8)
                             )
                         )
                         ()
@@ -162,22 +162,22 @@
                         (RealBinOp
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             Div
                             (Cast
-                                (IntegerConstant 7 (Integer 4 []))
+                                (IntegerConstant 7 (Integer 4))
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     7.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 0.142857
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()

@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "Dominic"
-                                        (Character 1 7 () [])
+                                        (Character 1 7 ())
                                     )
                                     (StringConstant
                                         "Dominic"
-                                        (Character 1 7 () [])
+                                        (Character 1 7 ())
                                     )
                                     Save
-                                    (Character 1 7 () [])
+                                    (Character 1 7 ())
                                     ()
                                     Source
                                     Public
@@ -36,7 +36,7 @@
                         ()
                         [(StringConstant
                             "My name is "
-                            (Character 1 11 () [])
+                            (Character 1 11 ())
                         )
                         (Var 2 my_name)]
                         ()

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -31,17 +31,17 @@
                         (ComplexConstructor
                             (RealConstant
                                 3.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 4.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Complex 4 [])
+                            (Complex 4)
                             (ComplexConstant
                                 3.000000
                                 4.000000
-                                (Complex 4 [])
+                                (Complex 4)
                             )
                         )
                         ()
@@ -54,17 +54,17 @@
                             (Cast
                                 (RealConstant
                                     4.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 RealToComplex
-                                (Complex 4 [])
+                                (Complex 4)
                                 (ComplexConstant
                                     4.000000
                                     0.000000
-                                    (Complex 4 [])
+                                    (Complex 4)
                                 )
                             )
-                            (Complex 4 [])
+                            (Complex 4)
                             ()
                         )
                         ()
@@ -79,14 +79,14 @@
                         (Var 2 x)
                         (ComplexBinOp
                             (Cast
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 IntegerToComplex
-                                (Complex 4 [])
+                                (Complex 4)
                                 ()
                             )
                             Mul
                             (Var 2 x)
-                            (Complex 4 [])
+                            (Complex 4)
                             ()
                         )
                         ()
@@ -105,20 +105,20 @@
                             (ComplexConstructor
                                 (RealConstant
                                     0.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 (RealConstant
                                     3.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Complex 4 [])
+                                (Complex 4)
                                 (ComplexConstant
                                     0.000000
                                     3.000000
-                                    (Complex 4 [])
+                                    (Complex 4)
                                 )
                             )
-                            (Complex 4 [])
+                            (Complex 4)
                             ()
                         )
                         ()

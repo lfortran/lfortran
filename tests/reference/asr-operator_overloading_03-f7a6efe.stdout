@@ -15,14 +15,14 @@
                                     Local
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     Parameter
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -67,14 +67,14 @@
                                     Local
                                     (LogicalConstant
                                         .true.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     (LogicalConstant
                                         .true.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     Parameter
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -108,23 +108,23 @@
                         ()
                         [(StringConstant
                             "T>T:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedCompare
                             (Var 6 t)
                             Gt
                             (Var 6 t)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                             (FunctionCall
                                 6 greater_than_inverse
                                 6 ~gt
                                 [((Var 6 t))
                                 ((Var 6 t))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -136,23 +136,23 @@
                         ()
                         [(StringConstant
                             "T>F:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedCompare
                             (Var 6 t)
                             Gt
                             (Var 6 f)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                             (FunctionCall
                                 6 greater_than_inverse
                                 6 ~gt
                                 [((Var 6 t))
                                 ((Var 6 f))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -164,23 +164,23 @@
                         ()
                         [(StringConstant
                             "F>T:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedCompare
                             (Var 6 f)
                             Gt
                             (Var 6 t)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                             (FunctionCall
                                 6 greater_than_inverse
                                 6 ~gt
                                 [((Var 6 f))
                                 ((Var 6 t))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -192,23 +192,23 @@
                         ()
                         [(StringConstant
                             "F>F:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedCompare
                             (Var 6 f)
                             Gt
                             (Var 6 f)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                             (FunctionCall
                                 6 greater_than_inverse
                                 6 ~gt
                                 [((Var 6 f))
                                 ((Var 6 f))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -220,23 +220,23 @@
                         ()
                         [(StringConstant
                             "T<T:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedCompare
                             (Var 6 t)
                             Lt
                             (Var 6 t)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                             (FunctionCall
                                 6 less_than_inverse
                                 6 ~lt
                                 [((Var 6 t))
                                 ((Var 6 t))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -248,23 +248,23 @@
                         ()
                         [(StringConstant
                             "T<F:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedCompare
                             (Var 6 t)
                             Lt
                             (Var 6 f)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                             (FunctionCall
                                 6 less_than_inverse
                                 6 ~lt
                                 [((Var 6 t))
                                 ((Var 6 f))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -276,23 +276,23 @@
                         ()
                         [(StringConstant
                             "F<T:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedCompare
                             (Var 6 f)
                             Lt
                             (Var 6 t)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                             (FunctionCall
                                 6 less_than_inverse
                                 6 ~lt
                                 [((Var 6 f))
                                 ((Var 6 t))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -304,23 +304,23 @@
                         ()
                         [(StringConstant
                             "F<F:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedCompare
                             (Var 6 f)
                             Lt
                             (Var 6 f)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                             (FunctionCall
                                 6 less_than_inverse
                                 6 ~lt
                                 [((Var 6 f))
                                 ((Var 6 f))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -348,7 +348,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -364,7 +364,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -380,7 +380,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -390,9 +390,9 @@
                                         })
                                     greater_than_inverse
                                     (FunctionType
-                                        [(Logical 4 [])
-                                        (Logical 4 [])]
-                                        (Logical 4 [])
+                                        [(Logical 4)
+                                        (Logical 4)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -414,29 +414,29 @@
                                                 (LogicalBinOp
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     And
                                                     (Var 3 log2)
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
                                             Eqv
                                             (LogicalConstant
                                                 .false.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(=
                                             (Var 3 greater_than_inverse)
                                             (LogicalConstant
                                                 .true.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
                                             ()
                                         )]
@@ -444,7 +444,7 @@
                                             (Var 3 greater_than_inverse)
                                             (LogicalConstant
                                                 .false.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
                                             ()
                                         )]
@@ -469,7 +469,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -485,7 +485,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -501,7 +501,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -511,9 +511,9 @@
                                         })
                                     less_than_inverse
                                     (FunctionType
-                                        [(Logical 4 [])
-                                        (Logical 4 [])]
-                                        (Logical 4 [])
+                                        [(Logical 4)
+                                        (Logical 4)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -535,29 +535,29 @@
                                                 (LogicalBinOp
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     And
                                                     (Var 4 log2)
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
                                             Eqv
                                             (LogicalConstant
                                                 .true.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(=
                                             (Var 4 less_than_inverse)
                                             (LogicalConstant
                                                 .true.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
                                             ()
                                         )]
@@ -565,7 +565,7 @@
                                             (Var 4 less_than_inverse)
                                             (LogicalConstant
                                                 .false.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
                                             ()
                                         )]
@@ -590,7 +590,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -606,7 +606,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -622,7 +622,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -632,9 +632,9 @@
                                         })
                                     less_than_overload_use
                                     (FunctionType
-                                        [(Logical 4 [])
-                                        (Logical 4 [])]
-                                        (Logical 4 [])
+                                        [(Logical 4)
+                                        (Logical 4)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -654,14 +654,14 @@
                                             (Var 5 log1)
                                             Lt
                                             (Var 5 log2)
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             (FunctionCall
                                                 2 less_than_inverse
                                                 2 ~lt
                                                 [((Var 5 log1))
                                                 ((Var 5 log2))]
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )

@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 2 n))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 n))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,8 +36,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 2 n))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 n))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -50,7 +56,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -66,7 +72,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -82,7 +88,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -92,15 +98,18 @@
                         })
                     f
                     (FunctionType
-                        [(Integer 4 [])
-                        (Real 4 [])
-                        (Integer 4 [])
-                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                        (FunctionParam
-                            2
-                            (Integer 4 [])
-                            ()
-                        ))])]
+                        [(Integer 4)
+                        (Real 4)
+                        (Integer 4)
+                        (Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4))
+                            (FunctionParam
+                                2
+                                (Integer 4)
+                                ()
+                            ))]
+                        )]
                         ()
                         Source
                         Implementation
@@ -119,18 +128,18 @@
                     (Var 2 b)]
                     [(=
                         (Var 2 ifault)
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 r)
                         (Cast
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 3.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -155,8 +164,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 3 n))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 3 n))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -172,8 +184,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 3 n))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 3 n))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -189,7 +204,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -205,7 +220,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -221,7 +236,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -237,7 +252,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -247,16 +262,19 @@
                         })
                     g
                     (FunctionType
-                        [(Integer 4 [])
-                        (Real 4 [])
-                        (Integer 4 [])
-                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                        (FunctionParam
-                            2
-                            (Integer 4 [])
-                            ()
-                        ))])]
-                        (Integer 4 [])
+                        [(Integer 4)
+                        (Real 4)
+                        (Integer 4)
+                        (Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4))
+                            (FunctionParam
+                                2
+                                (Integer 4)
+                                ()
+                            ))]
+                        )]
+                        (Integer 4)
                         Source
                         Implementation
                         ()
@@ -274,18 +292,18 @@
                     (Var 3 b)]
                     [(=
                         (Var 3 ifault)
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4))
                         ()
                     )
                     (=
                         (Var 3 r)
                         (Cast
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 3.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()

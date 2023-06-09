@@ -54,12 +54,12 @@
                         (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_a
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             10.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -67,12 +67,12 @@
                         (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_b
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             20.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -102,7 +102,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -118,7 +118,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -134,7 +134,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -165,7 +165,6 @@
                                     Default
                                     (Struct
                                         8 b
-                                        []
                                     )
                                     ()
                                     Source
@@ -198,7 +197,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -214,7 +213,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -230,7 +229,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -246,7 +245,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -278,7 +277,6 @@
                                     Default
                                     (Struct
                                         6 c
-                                        []
                                     )
                                     ()
                                     Source
@@ -311,7 +309,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -327,7 +325,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -343,8 +341,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 5 (Integer 4 [])))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -375,7 +376,6 @@
                                     Default
                                     (Struct
                                         3 sample
-                                        []
                                     )
                                     ()
                                     Source
@@ -423,7 +423,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -475,27 +475,27 @@
                                     (StructInstanceMember
                                         (Var 2 struct_instance_sample)
                                         2 1_sample_a
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         10.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -511,27 +511,27 @@
                                     (StructInstanceMember
                                         (Var 2 struct_instance_sample)
                                         2 1_sample_b
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         20.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -544,13 +544,13 @@
                         [(StructInstanceMember
                             (Var 2 struct_instance_sample)
                             2 1_sample_a
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 2 struct_instance_sample)
                             2 1_sample_b
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (Var 2 e)]

@@ -15,13 +15,18 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Integer 4 [(()
-                                    ())
-                                    (()
-                                    ())
-                                    (()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -41,13 +46,18 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())
-                                                    (()
-                                                    ())
-                                                    (()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())
+                                                            (()
+                                                            ())
+                                                            (()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -57,12 +67,17 @@
                                         })
                                     f
                                     (FunctionType
-                                        [(Integer 4 [(()
-                                        ())
-                                        (()
-                                        ())
-                                        (()
-                                        ())])]
+                                        [(Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
+                                                ())]
+                                            )
+                                        )]
                                         ()
                                         Source
                                         Implementation
@@ -78,12 +93,12 @@
                                     [(Var 3 c)]
                                     [(Allocate
                                         [((Var 3 c)
-                                        [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 3 (Integer 4 [])))
-                                        ((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 3 (Integer 4 [])))
-                                        ((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 3 (Integer 4 [])))])]
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))])]
                                         ()
                                         ()
                                         ()
@@ -92,19 +107,19 @@
                                         (ArrayItem
                                             (Var 3 c)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 99 (Integer 4 []))
+                                        (IntegerConstant 99 (Integer 4))
                                         ()
                                     )]
                                     ()
@@ -127,7 +142,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -142,13 +157,18 @@
                                                     Unspecified
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())
-                                                    (()
-                                                    ())
-                                                    (()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())
+                                                            (()
+                                                            ())
+                                                            (()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -158,13 +178,18 @@
                                         })
                                     g
                                     (FunctionType
-                                        [(Integer 4 [(()
-                                        ())
-                                        (()
-                                        ())
-                                        (()
-                                        ())])]
-                                        (Integer 4 [])
+                                        [(Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
+                                                ())]
+                                            )
+                                        )]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -182,15 +207,15 @@
                                         [(ArrayItem
                                             (Var 4 x)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -211,15 +236,15 @@
                                         [(ArrayItem
                                             (Var 4 x)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -230,24 +255,24 @@
                                         (ArrayItem
                                             (Var 4 x)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (Var 4 r)
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ()
                                     )]
                                     (Var 4 r)
@@ -269,13 +294,18 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())
-                                                    (()
-                                                    ())
-                                                    (()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())
+                                                            (()
+                                                            ())
+                                                            (()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -285,12 +315,17 @@
                                         })
                                     h
                                     (FunctionType
-                                        [(Integer 4 [(()
-                                        ())
-                                        (()
-                                        ())
-                                        (()
-                                        ())])]
+                                        [(Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
+                                                ())]
+                                            )
+                                        )]
                                         ()
                                         Source
                                         Implementation
@@ -309,15 +344,15 @@
                                         [(ArrayItem
                                             (Var 5 c)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -338,15 +373,15 @@
                                         [(ArrayItem
                                             (Var 5 c)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -357,19 +392,19 @@
                                         (ArrayItem
                                             (Var 5 c)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )]
                                     ()
@@ -387,7 +422,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -403,7 +438,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -415,17 +450,17 @@
                     []
                     [(=
                         (Var 2 stat)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (Allocate
                         [((Var 2 c)
-                        [((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 [])))
-                        ((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 [])))
-                        ((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 [])))])]
+                        [((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4)))
+                        ((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4)))
+                        ((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4)))])]
                         (Var 2 stat)
                         ()
                         ()
@@ -434,8 +469,8 @@
                         (IntegerCompare
                             (Var 2 stat)
                             NotEq
-                            (IntegerConstant 0 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 0 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -447,19 +482,19 @@
                         (ArrayItem
                             (Var 2 c)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4))
                         ()
                     )
                     (ImplicitDeallocate
@@ -477,7 +512,7 @@
                             2 g
                             ()
                             [((Var 2 c))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -488,15 +523,15 @@
                         [(ArrayItem
                             (Var 2 c)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )]

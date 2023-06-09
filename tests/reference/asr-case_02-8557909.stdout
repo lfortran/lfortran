@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -44,96 +44,96 @@
                     []
                     [(=
                         (Var 2 marks)
-                        (IntegerConstant 81 (Integer 4 []))
+                        (IntegerConstant 81 (Integer 4))
                         ()
                     )
                     (Select
                         (Var 2 marks)
                         [(CaseStmt_Range
-                            (IntegerConstant 91 (Integer 4 []))
-                            (IntegerConstant 100 (Integer 4 []))
+                            (IntegerConstant 91 (Integer 4))
+                            (IntegerConstant 100 (Integer 4))
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 0 (Integer 4 []))
+                                (IntegerConstant 0 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "Excellent!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 81 (Integer 4 []))
-                            (IntegerConstant 90 (Integer 4 []))
+                            (IntegerConstant 81 (Integer 4))
+                            (IntegerConstant 90 (Integer 4))
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "Very good!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 71 (Integer 4 []))
-                            (IntegerConstant 80 (Integer 4 []))
+                            (IntegerConstant 71 (Integer 4))
+                            (IntegerConstant 80 (Integer 4))
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "Well done!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 61 (Integer 4 []))
-                            (IntegerConstant 70 (Integer 4 []))
+                            (IntegerConstant 61 (Integer 4))
+                            (IntegerConstant 70 (Integer 4))
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "Not bad!"
-                                    (Character 1 8 () [])
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 41 (Integer 4 []))
-                            (IntegerConstant 60 (Integer 4 []))
+                            (IntegerConstant 41 (Integer 4))
+                            (IntegerConstant 60 (Integer 4))
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "You passed!"
-                                    (Character 1 11 () [])
+                                    (Character 1 11 ())
                                 )]
                                 ()
                                 ()
@@ -141,17 +141,17 @@
                         )
                         (CaseStmt_Range
                             ()
-                            (IntegerConstant 40 (Integer 4 []))
+                            (IntegerConstant 40 (Integer 4))
                             [(=
                                 (Var 2 out)
-                                (IntegerConstant 5 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
                                 ()
                             )
                             (Print
                                 ()
                                 [(StringConstant
                                     "Better try again!"
-                                    (Character 1 17 () [])
+                                    (Character 1 17 ())
                                 )]
                                 ()
                                 ()
@@ -159,14 +159,14 @@
                         )]
                         [(=
                             (Var 2 out)
-                            (IntegerConstant 6 (Integer 4 []))
+                            (IntegerConstant 6 (Integer 4))
                             ()
                         )
                         (Print
                             ()
                             [(StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () [])
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -176,7 +176,7 @@
                         ()
                         [(StringConstant
                             "Your marks are "
-                            (Character 1 15 () [])
+                            (Character 1 15 ())
                         )
                         (Var 2 marks)]
                         ()
@@ -186,8 +186,8 @@
                         (IntegerCompare
                             (Var 2 out)
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -198,65 +198,65 @@
                     (Select
                         (Var 2 marks)
                         [(CaseStmt_Range
-                            (IntegerConstant 91 (Integer 4 []))
-                            (IntegerConstant 100 (Integer 4 []))
+                            (IntegerConstant 91 (Integer 4))
+                            (IntegerConstant 100 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Excellent!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 81 (Integer 4 []))
-                            (IntegerConstant 90 (Integer 4 []))
+                            (IntegerConstant 81 (Integer 4))
+                            (IntegerConstant 90 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Very good!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 71 (Integer 4 []))
-                            (IntegerConstant 80 (Integer 4 []))
+                            (IntegerConstant 71 (Integer 4))
+                            (IntegerConstant 80 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Well done!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 61 (Integer 4 []))
-                            (IntegerConstant 70 (Integer 4 []))
+                            (IntegerConstant 61 (Integer 4))
+                            (IntegerConstant 70 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Not bad!"
-                                    (Character 1 8 () [])
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 41 (Integer 4 []))
-                            (IntegerConstant 60 (Integer 4 []))
+                            (IntegerConstant 41 (Integer 4))
+                            (IntegerConstant 60 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "You passed!"
-                                    (Character 1 11 () [])
+                                    (Character 1 11 ())
                                 )]
                                 ()
                                 ()
@@ -264,12 +264,12 @@
                         )
                         (CaseStmt_Range
                             ()
-                            (IntegerConstant 40 (Integer 4 []))
+                            (IntegerConstant 40 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Better try again!"
-                                    (Character 1 17 () [])
+                                    (Character 1 17 ())
                                 )]
                                 ()
                                 ()
@@ -279,7 +279,7 @@
                             ()
                             [(StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () [])
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -289,7 +289,7 @@
                         ()
                         [(StringConstant
                             "Your marks are "
-                            (Character 1 15 () [])
+                            (Character 1 15 ())
                         )
                         (Var 2 marks)]
                         ()
@@ -298,65 +298,65 @@
                     (Select
                         (Var 2 marks)
                         [(CaseStmt_Range
-                            (IntegerConstant 91 (Integer 4 []))
-                            (IntegerConstant 100 (Integer 4 []))
+                            (IntegerConstant 91 (Integer 4))
+                            (IntegerConstant 100 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Excellent!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 81 (Integer 4 []))
-                            (IntegerConstant 90 (Integer 4 []))
+                            (IntegerConstant 81 (Integer 4))
+                            (IntegerConstant 90 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Very good!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 71 (Integer 4 []))
-                            (IntegerConstant 80 (Integer 4 []))
+                            (IntegerConstant 71 (Integer 4))
+                            (IntegerConstant 80 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Well done!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 61 (Integer 4 []))
-                            (IntegerConstant 70 (Integer 4 []))
+                            (IntegerConstant 61 (Integer 4))
+                            (IntegerConstant 70 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Not bad!"
-                                    (Character 1 8 () [])
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 41 (Integer 4 []))
-                            (IntegerConstant 60 (Integer 4 []))
+                            (IntegerConstant 41 (Integer 4))
+                            (IntegerConstant 60 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "You passed!"
-                                    (Character 1 11 () [])
+                                    (Character 1 11 ())
                                 )]
                                 ()
                                 ()
@@ -364,12 +364,12 @@
                         )
                         (CaseStmt_Range
                             ()
-                            (IntegerConstant 40 (Integer 4 []))
+                            (IntegerConstant 40 (Integer 4))
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Better try again!"
-                                    (Character 1 17 () [])
+                                    (Character 1 17 ())
                                 )]
                                 ()
                                 ()
@@ -379,7 +379,7 @@
                             ()
                             [(StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () [])
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -389,7 +389,7 @@
                         ()
                         [(StringConstant
                             "Your marks are "
-                            (Character 1 15 () [])
+                            (Character 1 15 ())
                         )
                         (Var 2 marks)]
                         ()

@@ -15,7 +15,7 @@
                         ()
                         [(StringConstant
                             "running modules_27 program"
-                            (Character 1 26 () [])
+                            (Character 1 26 ())
                         )]
                         ()
                         ()
@@ -113,7 +113,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [])
+                                                    (Complex 4)
                                                     ()
                                                     Source
                                                     Public
@@ -129,7 +129,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -146,7 +146,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                     )
                                                     ()
                                                     Source
@@ -163,7 +163,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -173,12 +173,12 @@
                                         })
                                     get_elem_array
                                     (FunctionType
-                                        [(Complex 4 [])
-                                        (Integer 4 [])
+                                        [(Complex 4)
+                                        (Integer 4)
                                         (Pointer
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Integer 4 [])]
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -216,7 +216,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -232,7 +232,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -249,7 +249,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Complex 4 [])
+                                                        (Complex 4)
                                                     )
                                                     ()
                                                     Source
@@ -266,7 +266,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -276,12 +276,12 @@
                                         })
                                     get_elem_keyval
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)
                                         (Pointer
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
-                                        (Integer 4 [])]
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -319,7 +319,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -335,7 +335,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -352,7 +352,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                     )
                                                     ()
                                                     Source
@@ -369,7 +369,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -379,12 +379,12 @@
                                         })
                                     get_elem_table
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)
                                         (Pointer
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Integer 4 [])]
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -405,7 +405,7 @@
                                         (Var 4 global_var)
                                         (RealConstant
                                             1.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )]
@@ -489,7 +489,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [])
+                                                    (Complex 4)
                                                     ()
                                                     Source
                                                     Public
@@ -505,7 +505,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -521,7 +521,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     Source
                                                     Public
@@ -531,9 +531,9 @@
                                         })
                                     get_value_float_dp
                                     (FunctionType
-                                        [(Complex 4 [])
-                                        (Real 8 [])
-                                        (Integer 4 [])]
+                                        [(Complex 4)
+                                        (Real 8)
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -570,7 +570,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [])
+                                                    (Complex 4)
                                                     ()
                                                     Source
                                                     Public
@@ -586,7 +586,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -602,7 +602,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -612,9 +612,9 @@
                                         })
                                     get_value_float_sp
                                     (FunctionType
-                                        [(Complex 4 [])
-                                        (Real 4 [])
-                                        (Integer 4 [])]
+                                        [(Complex 4)
+                                        (Real 4)
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -646,7 +646,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public

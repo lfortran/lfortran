@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -45,19 +45,19 @@
                     [(=
                         (Var 2 r)
                         (Cast
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 2.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
                     )
                     (=
                         (Var 2 i)
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
                         ()
                     )
                     (If
@@ -65,7 +65,7 @@
                             (Var 2 i)
                             Lt
                             (Var 2 i)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -78,7 +78,7 @@
                             (Var 2 r)
                             Lt
                             (Var 2 r)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -93,10 +93,10 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -109,12 +109,12 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Lt
                             (Var 2 r)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -127,7 +127,7 @@
                             (Var 2 i)
                             Gt
                             (Var 2 i)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -140,7 +140,7 @@
                             (Var 2 r)
                             Gt
                             (Var 2 r)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -155,10 +155,10 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -171,12 +171,12 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 r)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -189,7 +189,7 @@
                             (Var 2 i)
                             NotEq
                             (Var 2 i)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -202,7 +202,7 @@
                             (Var 2 r)
                             NotEq
                             (Var 2 r)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -217,10 +217,10 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -233,12 +233,12 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             NotEq
                             (Var 2 r)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -251,13 +251,13 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             LtE
                             (Var 2 i)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -271,20 +271,20 @@
                                 (Var 2 r)
                                 Add
                                 (Cast
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             LtE
                             (Var 2 r)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -298,25 +298,25 @@
                                 (Var 2 r)
                                 Add
                                 (Cast
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             LtE
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -330,17 +330,17 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Add
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (Integer 4 [])
+                                    (IntegerConstant 1 (Integer 4))
+                                    (Integer 4)
                                     ()
                                 )
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             LtE
                             (Var 2 r)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -355,11 +355,11 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -375,18 +375,18 @@
                                 (Var 2 r)
                                 Add
                                 (Cast
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -402,15 +402,15 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Add
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (Integer 4 [])
+                                    (IntegerConstant 1 (Integer 4))
+                                    (Integer 4)
                                     ()
                                 )
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -423,7 +423,7 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             GtE
@@ -431,18 +431,18 @@
                                 (Var 2 r)
                                 Add
                                 (Cast
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -457,11 +457,11 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -477,18 +477,18 @@
                                 (Var 2 r)
                                 Add
                                 (Cast
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -504,15 +504,15 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Add
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (Integer 4 [])
+                                    (IntegerConstant 1 (Integer 4))
+                                    (Integer 4)
                                     ()
                                 )
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -525,7 +525,7 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Eq
@@ -533,18 +533,18 @@
                                 (Var 2 r)
                                 Add
                                 (Cast
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

@@ -8,10 +8,10 @@
                     x
                     []
                     Local
-                    (IntegerConstant 6 (Integer 4 []))
-                    (IntegerConstant 6 (Integer 4 []))
+                    (IntegerConstant 6 (Integer 4))
+                    (IntegerConstant 6 (Integer 4))
                     Save
-                    (Integer 4 [])
+                    (Integer 4)
                     ()
                     Source
                     Public
@@ -20,10 +20,10 @@
                 )
         })
     [(IntegerBinOp
-        (IntegerConstant 2 (Integer 4 []))
+        (IntegerConstant 2 (Integer 4))
         Mul
         (Var 1 x)
-        (Integer 4 [])
+        (Integer 4)
         ()
     )
     (=
@@ -31,8 +31,8 @@
         (IntegerBinOp
             (Var 1 x)
             Add
-            (IntegerConstant 1 (Integer 4 []))
-            (Integer 4 [])
+            (IntegerConstant 1 (Integer 4))
+            (Integer 4)
             ()
         )
         ()

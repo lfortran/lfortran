@@ -25,14 +25,14 @@
                                     Local
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     Parameter
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -57,14 +57,14 @@
                                     Local
                                     (LogicalConstant
                                         .true.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     (LogicalConstant
                                         .true.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     Parameter
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -98,20 +98,20 @@
                         ()
                         [(StringConstant
                             "T*T:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedBinOp
                             (Var 5 t)
                             Mul
                             (Var 5 t)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             (FunctionCall
                                 5 logical_and
                                 5 ~mul
                                 [((Var 5 t))
                                 ((Var 5 t))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -123,20 +123,20 @@
                         ()
                         [(StringConstant
                             "T*F:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedBinOp
                             (Var 5 t)
                             Mul
                             (Var 5 f)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             (FunctionCall
                                 5 logical_and
                                 5 ~mul
                                 [((Var 5 t))
                                 ((Var 5 f))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -148,20 +148,20 @@
                         ()
                         [(StringConstant
                             "F*T:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedBinOp
                             (Var 5 f)
                             Mul
                             (Var 5 t)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             (FunctionCall
                                 5 logical_and
                                 5 ~mul
                                 [((Var 5 f))
                                 ((Var 5 t))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -173,20 +173,20 @@
                         ()
                         [(StringConstant
                             "F*F:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedBinOp
                             (Var 5 f)
                             Mul
                             (Var 5 f)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             (FunctionCall
                                 5 logical_and
                                 5 ~mul
                                 [((Var 5 f))
                                 ((Var 5 f))]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                                 ()
                             )
@@ -198,20 +198,20 @@
                         ()
                         [(StringConstant
                             "T+T:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedBinOp
                             (Var 5 t)
                             Add
                             (Var 5 t)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             (FunctionCall
                                 5 bin_add
                                 5 ~add
                                 [((Var 5 t))
                                 ((Var 5 t))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
@@ -223,20 +223,20 @@
                         ()
                         [(StringConstant
                             "T+F:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedBinOp
                             (Var 5 t)
                             Add
                             (Var 5 f)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             (FunctionCall
                                 5 bin_add
                                 5 ~add
                                 [((Var 5 t))
                                 ((Var 5 f))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
@@ -248,20 +248,20 @@
                         ()
                         [(StringConstant
                             "F+T:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedBinOp
                             (Var 5 f)
                             Add
                             (Var 5 t)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             (FunctionCall
                                 5 bin_add
                                 5 ~add
                                 [((Var 5 f))
                                 ((Var 5 t))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
@@ -273,20 +273,20 @@
                         ()
                         [(StringConstant
                             "F+F:"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (OverloadedBinOp
                             (Var 5 f)
                             Add
                             (Var 5 f)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             (FunctionCall
                                 5 bin_add
                                 5 ~add
                                 [((Var 5 f))
                                 ((Var 5 f))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
@@ -314,7 +314,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -330,7 +330,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -346,7 +346,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -356,9 +356,9 @@
                                         })
                                     bin_add
                                     (FunctionType
-                                        [(Logical 4 [])
-                                        (Logical 4 [])]
-                                        (Integer 4 [])
+                                        [(Logical 4)
+                                        (Logical 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -377,38 +377,38 @@
                                             (Var 4 log1)
                                             And
                                             (Var 4 log2)
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(=
                                             (Var 4 bin_add)
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ()
                                         )]
                                         [(If
                                             (LogicalBinOp
                                                 (LogicalNot
                                                     (Var 4 log1)
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
                                                 And
                                                 (LogicalNot
                                                     (Var 4 log2)
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
                                             [(=
                                                 (Var 4 bin_add)
-                                                (IntegerConstant 0 (Integer 4 []))
+                                                (IntegerConstant 0 (Integer 4))
                                                 ()
                                             )]
                                             [(=
                                                 (Var 4 bin_add)
-                                                (IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 1 (Integer 4))
                                                 ()
                                             )]
                                         )]
@@ -433,7 +433,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -449,7 +449,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -465,7 +465,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -475,9 +475,9 @@
                                         })
                                     logical_and
                                     (FunctionType
-                                        [(Logical 4 [])
-                                        (Logical 4 [])]
-                                        (Logical 4 [])
+                                        [(Logical 4)
+                                        (Logical 4)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -497,7 +497,7 @@
                                             (Var 3 log1)
                                             And
                                             (Var 3 log2)
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         ()

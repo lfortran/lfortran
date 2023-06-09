@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "B"
-                                        (Character 1 1 () [])
+                                        (Character 1 1 ())
                                     )
                                     (StringConstant
                                         "B"
-                                        (Character 1 1 () [])
+                                        (Character 1 1 ())
                                     )
                                     Save
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                     ()
                                     Source
                                     Public
@@ -37,13 +37,13 @@
                         [(CaseStmt
                             [(StringConstant
                                 "A"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )]
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Excellent!"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -52,20 +52,20 @@
                         (CaseStmt
                             [(StringConstant
                                 "B"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )]
                             []
                         )
                         (CaseStmt
                             [(StringConstant
                                 "C"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )]
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Well done"
-                                    (Character 1 9 () [])
+                                    (Character 1 9 ())
                                 )]
                                 ()
                                 ()
@@ -74,13 +74,13 @@
                         (CaseStmt
                             [(StringConstant
                                 "D"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )]
                             [(Print
                                 ()
                                 [(StringConstant
                                     "You passed"
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                 )]
                                 ()
                                 ()
@@ -89,13 +89,13 @@
                         (CaseStmt
                             [(StringConstant
                                 "F"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )]
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Better try again"
-                                    (Character 1 16 () [])
+                                    (Character 1 16 ())
                                 )]
                                 ()
                                 ()
@@ -105,7 +105,7 @@
                             ()
                             [(StringConstant
                                 "Invalid grade"
-                                (Character 1 13 () [])
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -115,7 +115,7 @@
                         ()
                         [(StringConstant
                             "Your grade is "
-                            (Character 1 14 () [])
+                            (Character 1 14 ())
                         )
                         (Var 2 grade)]
                         ()

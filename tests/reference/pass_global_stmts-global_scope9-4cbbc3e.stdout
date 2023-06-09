@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     BindC
                                     Public
@@ -27,7 +27,7 @@
                     f
                     (FunctionType
                         []
-                        (Integer 8 [])
+                        (Integer 8)
                         BindC
                         Implementation
                         ()
@@ -43,10 +43,10 @@
                     [(=
                         (Var 1 x)
                         (Cast
-                            (IntegerConstant 6 (Integer 4 []))
+                            (IntegerConstant 6 (Integer 4))
                             IntegerToInteger
-                            (Integer 8 [])
-                            (IntegerConstant 6 (Integer 8 []))
+                            (Integer 8)
+                            (IntegerConstant 6 (Integer 8))
                         )
                         ()
                     )
@@ -70,7 +70,7 @@
                     ()
                     ()
                     Default
-                    (Integer 8 [])
+                    (Integer 8)
                     ()
                     Source
                     Public

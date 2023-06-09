@@ -15,14 +15,14 @@
                                     Local
                                     (RealConstant
                                         100.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     (RealConstant
                                         100.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -37,14 +37,14 @@
                                     Local
                                     (RealConstant
                                         0.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     (RealConstant
                                         0.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -72,7 +72,7 @@
                         (Var 3 factor)
                         (RealConstant
                             100.000000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -80,7 +80,7 @@
                         (Var 3 zero)
                         (RealConstant
                             0.000000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -88,7 +88,7 @@
                         ()
                         [(StringConstant
                             "factor in a:"
-                            (Character 1 12 () [])
+                            (Character 1 12 ())
                         )
                         (Var 3 factor)]
                         ()
@@ -120,7 +120,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -130,7 +130,7 @@
                         })
                     b
                     (FunctionType
-                        [(Real 8 [])]
+                        [(Real 8)]
                         ()
                         Source
                         Implementation
@@ -148,7 +148,7 @@
                         ()
                         [(StringConstant
                             "factor: "
-                            (Character 1 8 () [])
+                            (Character 1 8 ())
                         )
                         (Var 4 factor)]
                         ()

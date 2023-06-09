@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -58,9 +58,9 @@
                         })
                     add
                     (FunctionType
-                        [(Real 4 [])
-                        (Real 4 [])
-                        (Real 4 [])]
+                        [(Real 4)
+                        (Real 4)
+                        (Real 4)]
                         ()
                         Source
                         Implementation
@@ -82,7 +82,7 @@
                             (Var 2 a)
                             Add
                             (Var 2 b)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()

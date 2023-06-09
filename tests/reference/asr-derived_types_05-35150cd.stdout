@@ -34,7 +34,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -51,7 +50,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -61,10 +60,9 @@
                                         })
                                     new_string
                                     (FunctionType
-                                        [(Character 1 -1 () [])]
+                                        [(Character 1 -1 ())]
                                         (Struct
                                             2 string_type
-                                            []
                                         )
                                         Source
                                         Interface
@@ -101,7 +99,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -118,7 +115,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -128,10 +125,9 @@
                                         })
                                     new_string_from_integer_int32
                                     (FunctionType
-                                        [(Integer 4 [])]
+                                        [(Integer 4)]
                                         (Struct
                                             2 string_type
-                                            []
                                         )
                                         Source
                                         Interface
@@ -168,7 +164,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -185,7 +180,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -195,10 +190,9 @@
                                         })
                                     new_string_from_integer_int64
                                     (FunctionType
-                                        [(Integer 8 [])]
+                                        [(Integer 8)]
                                         (Struct
                                             2 string_type
-                                            []
                                         )
                                         Source
                                         Interface
@@ -235,7 +229,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -252,7 +245,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -262,10 +255,9 @@
                                         })
                                     new_string_from_logical_lk
                                     (FunctionType
-                                        [(Logical 4 [])]
+                                        [(Logical 4)]
                                         (Struct
                                             2 string_type
-                                            []
                                         )
                                         Source
                                         Interface
@@ -299,8 +291,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -355,7 +349,6 @@
                                                     Default
                                                     (Struct
                                                         8 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -372,7 +365,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -382,10 +375,9 @@
                                         })
                                     new_string
                                     (FunctionType
-                                        [(Character 1 -1 () [])]
+                                        [(Character 1 -1 ())]
                                         (Struct
                                             8 string_type
-                                            []
                                         )
                                         Source
                                         Implementation
@@ -422,7 +414,6 @@
                                                     Default
                                                     (Struct
                                                         8 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -439,7 +430,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -449,10 +440,9 @@
                                         })
                                     new_string_from_integer_int32
                                     (FunctionType
-                                        [(Integer 4 [])]
+                                        [(Integer 4)]
                                         (Struct
                                             8 string_type
-                                            []
                                         )
                                         Source
                                         Implementation
@@ -489,7 +479,6 @@
                                                     Default
                                                     (Struct
                                                         8 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -506,7 +495,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -516,10 +505,9 @@
                                         })
                                     new_string_from_integer_int64
                                     (FunctionType
-                                        [(Integer 8 [])]
+                                        [(Integer 8)]
                                         (Struct
                                             8 string_type
-                                            []
                                         )
                                         Source
                                         Implementation
@@ -556,7 +544,6 @@
                                                     Default
                                                     (Struct
                                                         8 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -573,7 +560,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -583,10 +570,9 @@
                                         })
                                     new_string_from_logical_lk
                                     (FunctionType
-                                        [(Logical 4 [])]
+                                        [(Logical 4)]
                                         (Struct
                                             8 string_type
-                                            []
                                         )
                                         Source
                                         Implementation

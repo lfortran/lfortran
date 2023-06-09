@@ -1,5 +1,5 @@
 function main()
-    local x::Float64 = 0.0
+    local x::Float64
     x = (  2.00000000000000000e+00 * x +   1.00000000000000000e+00) / (x * (x + Float64(1)))
 end
 

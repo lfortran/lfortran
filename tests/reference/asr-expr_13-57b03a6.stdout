@@ -13,10 +13,10 @@
                                     a
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -29,10 +29,10 @@
                                     ap
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -45,10 +45,10 @@
                                     b
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -61,10 +61,10 @@
                                     bp
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -79,14 +79,14 @@
                                     Local
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -101,14 +101,14 @@
                                     Local
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -123,14 +123,14 @@
                                     Local
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -145,14 +145,14 @@
                                     Local
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -167,14 +167,14 @@
                                     Local
                                     (RealConstant
                                         0.000001
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         0.000001
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -210,7 +210,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -226,7 +226,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -238,14 +238,14 @@
                     []
                     [(=
                         (Var 2 number)
-                        (IntegerConstant 123 (Integer 4 []))
+                        (IntegerConstant 123 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 x)
                         (RealConstant
                             5.500000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -255,21 +255,21 @@
                                 2 modulo@imodulo
                                 2 modulo
                                 [((Var 2 number))
-                                ((IntegerConstant 2 (Integer 4 [])))]
-                                (Integer 4 [])
+                                ((IntegerConstant 2 (Integer 4)))]
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             Eq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(=
                             (Var 2 x)
                             (RealUnaryMinus
                                 (Var 2 x)
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -286,24 +286,24 @@
                                     (RealUnaryMinus
                                         (RealConstant
                                             5.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             -5.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -313,14 +313,14 @@
                     )
                     (=
                         (Var 2 number)
-                        (IntegerConstant 124 (Integer 4 []))
+                        (IntegerConstant 124 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 x)
                         (RealConstant
                             5.500000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -330,21 +330,21 @@
                                 2 modulo@imodulo
                                 2 modulo
                                 [((Var 2 number))
-                                ((IntegerConstant 2 (Integer 4 [])))]
-                                (Integer 4 [])
+                                ((IntegerConstant 2 (Integer 4)))]
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             Eq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(=
                             (Var 2 x)
                             (RealUnaryMinus
                                 (Var 2 x)
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -360,18 +360,18 @@
                                     Sub
                                     (RealConstant
                                         5.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -384,17 +384,17 @@
                             (Var 2 ap)
                             Eq
                             (Var 2 bp)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "ap == bp"
-                                (Character 1 8 () [])
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
@@ -403,7 +403,7 @@
                             ()
                             [(StringConstant
                                 "ap /= bp"
-                                (Character 1 8 () [])
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
@@ -414,17 +414,17 @@
                             (Var 2 cp)
                             Eq
                             (Var 2 dp)
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "cp == dp"
-                                (Character 1 8 () [])
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
@@ -433,7 +433,7 @@
                             ()
                             [(StringConstant
                                 "cp /= dp"
-                                (Character 1 8 () [])
+                                (Character 1 8 ())
                             )]
                             ()
                             ()
@@ -444,14 +444,14 @@
                             (Var 2 a)
                             Eq
                             (Var 2 b)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "a == b"
-                                (Character 1 6 () [])
+                                (Character 1 6 ())
                             )]
                             ()
                             ()
@@ -461,17 +461,17 @@
                                 (Var 2 ap)
                                 Eq
                                 (Var 2 bp)
-                                (Logical 4 [])
+                                (Logical 4)
                                 (LogicalConstant
                                     .false.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
                             )
                             [(Print
                                 ()
                                 [(StringConstant
                                     "ap == bp"
-                                    (Character 1 8 () [])
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
@@ -480,7 +480,7 @@
                                 ()
                                 [(StringConstant
                                     "ap /= bp"
-                                    (Character 1 8 () [])
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
@@ -491,25 +491,25 @@
                                 (Cast
                                     (Var 2 ap)
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
                                 Eq
                                 (Var 2 cp)
-                                (Logical 4 [])
+                                (Logical 4)
                                 (LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
                             )
                             [(Print
                                 ()
                                 [(StringConstant
                                     "ap == cp"
-                                    (Character 1 8 () [])
+                                    (Character 1 8 ())
                                 )]
                                 ()
                                 ()
@@ -519,17 +519,17 @@
                                     (Var 2 cp)
                                     Eq
                                     (Var 2 dp)
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                 )
                                 [(Print
                                     ()
                                     [(StringConstant
                                         "cp == dp"
-                                        (Character 1 8 () [])
+                                        (Character 1 8 ())
                                     )]
                                     ()
                                     ()
@@ -538,7 +538,7 @@
                                     ()
                                     [(StringConstant
                                         "cp /= dp"
-                                        (Character 1 8 () [])
+                                        (Character 1 8 ())
                                     )]
                                     ()
                                     ()
@@ -549,14 +549,14 @@
                                     (Var 2 c)
                                     Eq
                                     (Var 2 d)
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                 )
                                 [(Print
                                     ()
                                     [(StringConstant
                                         "c == d"
-                                        (Character 1 6 () [])
+                                        (Character 1 6 ())
                                     )]
                                     ()
                                     ()

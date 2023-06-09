@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 7 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 7 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -30,15 +33,18 @@
                     [(=
                         (Var 2 m)
                         (ArrayConstant
-                            [(IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))
-                            (IntegerConstant 5 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))]
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 7 (Integer 4 [])))])
+                            [(IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 7 (Integer 4)))]
+                            )
                             ColMajor
                         )
                         ()
@@ -50,15 +56,21 @@
                             (ArrayConstant
                                 [(RealConstant
                                     1.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )]
-                                (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 1 (Integer 4 [])))])
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                )
                                 ColMajor
                             )
                             ()
-                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 64 (Integer 4 [])))])
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 64 (Integer 4)))]
+                            )
                             ()
                         )]
                         ()

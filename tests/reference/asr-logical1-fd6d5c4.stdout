@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -46,7 +46,7 @@
                         (Var 2 a)
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -54,7 +54,7 @@
                         (Var 2 b)
                         (LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )

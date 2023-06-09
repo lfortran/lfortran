@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -51,9 +51,9 @@
                         (FunctionCall
                             7 sub1
                             ()
-                            [((IntegerConstant 3 (Integer 4 [])))
-                            ((IntegerConstant 3 (Integer 4 [])))]
-                            (Integer 4 [])
+                            [((IntegerConstant 3 (Integer 4)))
+                            ((IntegerConstant 3 (Integer 4)))]
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -63,7 +63,7 @@
                         ()
                         [(StringConstant
                             "r ="
-                            (Character 1 3 () [])
+                            (Character 1 3 ())
                         )
                         (Var 7 r)]
                         ()
@@ -94,7 +94,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -105,7 +105,7 @@
                                                     f
                                                     (FunctionType
                                                         []
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         Source
                                                         Interface
                                                         ()
@@ -134,7 +134,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -150,7 +150,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -166,7 +166,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -178,7 +178,7 @@
                                     (FunctionType
                                         [(FunctionType
                                             []
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             Source
                                             Interface
                                             ()
@@ -189,8 +189,8 @@
                                             .false.
                                             .false.
                                         )
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -211,7 +211,7 @@
                                             3 f
                                             ()
                                             []
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -221,7 +221,7 @@
                                         ()
                                         [(StringConstant
                                             "before:"
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (Var 3 f_val)]
                                         ()
@@ -232,15 +232,15 @@
                                         (FunctionCall
                                             2 sub1
                                             ()
-                                            [((IntegerConstant 2 (Integer 4 [])))
+                                            [((IntegerConstant 2 (Integer 4)))
                                             ((IntegerBinOp
                                                 (Var 3 iter)
                                                 Sub
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 ()
                                             ))]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -252,7 +252,7 @@
                                             3 f
                                             ()
                                             []
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -262,7 +262,7 @@
                                         ()
                                         [(StringConstant
                                             "after:"
-                                            (Character 1 6 () [])
+                                            (Character 1 6 ())
                                         )
                                         (Var 3 f_val)]
                                         ()
@@ -293,7 +293,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -304,7 +304,7 @@
                                                     getx
                                                     (FunctionType
                                                         []
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         Source
                                                         Implementation
                                                         ()
@@ -321,7 +321,7 @@
                                                         ()
                                                         [(StringConstant
                                                             "x in getx"
-                                                            (Character 1 9 () [])
+                                                            (Character 1 9 ())
                                                         )
                                                         (Var 5 x)]
                                                         ()
@@ -347,7 +347,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -363,7 +363,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -379,7 +379,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -395,7 +395,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -411,7 +411,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -421,9 +421,9 @@
                                         })
                                     sub1
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -447,7 +447,7 @@
                                         ()
                                         [(StringConstant
                                             "in sub1"
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )]
                                         ()
                                         ()
@@ -456,13 +456,13 @@
                                         (IntegerCompare
                                             (Var 5 iter)
                                             Eq
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Logical 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Logical 4)
                                             ()
                                         )
                                         [(=
                                             (Var 5 sub1)
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ()
                                         )
                                         (Return)]
@@ -474,7 +474,7 @@
                                             5 getx
                                             ()
                                             []
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -487,7 +487,7 @@
                                             ()
                                             [((Var 5 getx))
                                             ((Var 5 iter))]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )

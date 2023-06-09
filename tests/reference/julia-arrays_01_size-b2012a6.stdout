@@ -1,9 +1,9 @@
 function main()
-    local a = Array{Int32, 1}(undef, 3)
-    local b = Array{Int32, 1}(undef, 4)
-    local i::Int32 = 0
-    local size_a::Int32 = 0
-    local size_b::Int32 = 0
+    local a::Array{Int32, 1}
+    local b::Array{Int32, 1}
+    local i::Int32
+    local size_a::Int32
+    local size_b::Int32
     size_a = length(a)
     size_b = size(b)[1]
     if size_a ≠ 3

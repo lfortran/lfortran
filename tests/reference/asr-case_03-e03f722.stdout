@@ -13,10 +13,10 @@
                                     a
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -29,10 +29,10 @@
                                     b
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -60,25 +60,25 @@
                     []
                     [(=
                         (Var 2 marks)
-                        (IntegerConstant 94 (Integer 4 []))
+                        (IntegerConstant 94 (Integer 4))
                         ()
                     )
                     (Select
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerBinOp
-                                (IntegerConstant 40 (Integer 4 []))
+                                (IntegerConstant 40 (Integer 4))
                                 Add
                                 (Var 2 b)
-                                (Integer 4 [])
-                                (IntegerConstant 42 (Integer 4 []))
+                                (Integer 4)
+                                (IntegerConstant 42 (Integer 4))
                             )
                             ()
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Pass!"
-                                    (Character 1 5 () [])
+                                    (Character 1 5 ())
                                 )]
                                 ()
                                 ()
@@ -87,17 +87,17 @@
                         (CaseStmt_Range
                             ()
                             (IntegerBinOp
-                                (IntegerConstant 39 (Integer 4 []))
+                                (IntegerConstant 39 (Integer 4))
                                 Sub
                                 (Var 2 a)
-                                (Integer 4 [])
-                                (IntegerConstant 38 (Integer 4 []))
+                                (Integer 4)
+                                (IntegerConstant 38 (Integer 4))
                             )
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Failed!"
-                                    (Character 1 7 () [])
+                                    (Character 1 7 ())
                                 )]
                                 ()
                                 ()
@@ -107,7 +107,7 @@
                             ()
                             [(StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () [])
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -117,7 +117,7 @@
                         ()
                         [(StringConstant
                             "Your marks are "
-                            (Character 1 15 () [])
+                            (Character 1 15 ())
                         )
                         (Var 2 marks)]
                         ()
@@ -126,9 +126,9 @@
                     (=
                         (Var 2 marks)
                         (IntegerUnaryMinus
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant -1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant -1 (Integer 4))
                         )
                         ()
                     )
@@ -136,37 +136,37 @@
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerBinOp
-                                (IntegerConstant 40 (Integer 4 []))
+                                (IntegerConstant 40 (Integer 4))
                                 Add
                                 (Var 2 b)
-                                (Integer 4 [])
-                                (IntegerConstant 42 (Integer 4 []))
+                                (Integer 4)
+                                (IntegerConstant 42 (Integer 4))
                             )
                             ()
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Pass!"
-                                    (Character 1 5 () [])
+                                    (Character 1 5 ())
                                 )]
                                 ()
                                 ()
                             )]
                         )
                         (CaseStmt_Range
-                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4))
                             (IntegerBinOp
-                                (IntegerConstant 39 (Integer 4 []))
+                                (IntegerConstant 39 (Integer 4))
                                 Sub
                                 (Var 2 a)
-                                (Integer 4 [])
-                                (IntegerConstant 38 (Integer 4 []))
+                                (Integer 4)
+                                (IntegerConstant 38 (Integer 4))
                             )
                             [(Print
                                 ()
                                 [(StringConstant
                                     "Failed!"
-                                    (Character 1 7 () [])
+                                    (Character 1 7 ())
                                 )]
                                 ()
                                 ()
@@ -176,7 +176,7 @@
                             ()
                             [(StringConstant
                                 "Invalid marks"
-                                (Character 1 13 () [])
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -186,7 +186,7 @@
                         ()
                         [(StringConstant
                             "Your marks are "
-                            (Character 1 15 () [])
+                            (Character 1 15 ())
                         )
                         (Var 2 marks)]
                         ()

@@ -62,7 +62,7 @@
                                                     []
                                                     [(Print
                                                         ()
-                                                        [(IntegerConstant 5 (Integer 4 []))]
+                                                        [(IntegerConstant 5 (Integer 4))]
                                                         ()
                                                         ()
                                                     )
@@ -87,7 +87,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -114,12 +114,12 @@
                                     [(=
                                         (Var 3 x)
                                         (Cast
-                                            (IntegerConstant 6 (Integer 4 []))
+                                            (IntegerConstant 6 (Integer 4))
                                             IntegerToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 6.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
                                         ()
@@ -128,7 +128,7 @@
                                         ()
                                         [(StringConstant
                                             "b()"
-                                            (Character 1 3 () [])
+                                            (Character 1 3 ())
                                         )]
                                         ()
                                         ()

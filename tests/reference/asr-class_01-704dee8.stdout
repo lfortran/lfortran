@@ -38,7 +38,6 @@
                                     Default
                                     (Struct
                                         6 circle
-                                        []
                                     )
                                     ()
                                     Source
@@ -65,11 +64,10 @@
                             6 circle
                             [((RealConstant
                                 1.500000
-                                (Real 4 [])
+                                (Real 4)
                             ))]
                             (Struct
                                 6 circle
-                                []
                             )
                             ()
                         )
@@ -85,12 +83,12 @@
                         (StructInstanceMember
                             (Var 6 c)
                             6 1_circle_radius
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             2.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -140,7 +138,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -182,7 +180,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -200,7 +198,6 @@
                                                     Default
                                                     (Class
                                                         2 circle
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -213,9 +210,8 @@
                                     (FunctionType
                                         [(Class
                                             2 circle
-                                            []
                                         )]
-                                        (Real 4 [])
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -237,23 +233,23 @@
                                                 (StructInstanceMember
                                                     (Var 4 this)
                                                     4 1_circle_radius
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 Pow
                                                 (Cast
-                                                    (IntegerConstant 2 (Integer 4 []))
+                                                    (IntegerConstant 2 (Integer 4))
                                                     IntegerToReal
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     (RealConstant
                                                         2.000000
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                     )
                                                 )
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -298,7 +294,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -316,7 +312,6 @@
                                                     Default
                                                     (Class
                                                         2 circle
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -329,7 +324,6 @@
                                     (FunctionType
                                         [(Class
                                             2 circle
-                                            []
                                         )]
                                         ()
                                         Source
@@ -350,7 +344,7 @@
                                             5 1_area
                                             ()
                                             []
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             (Var 5 this)
                                         )
@@ -360,17 +354,17 @@
                                         ()
                                         [(StringConstant
                                             "Circle: r = "
-                                            (Character 1 12 () [])
+                                            (Character 1 12 ())
                                         )
                                         (StructInstanceMember
                                             (Var 5 this)
                                             5 1_circle_radius
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (StringConstant
                                             " area = "
-                                            (Character 1 8 () [])
+                                            (Character 1 8 ())
                                         )
                                         (Var 5 area)]
                                         ()
@@ -391,21 +385,21 @@
                                     (Cast
                                         (RealConstant
                                             3.141593
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                         RealToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             3.141593
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         3.141593
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Private

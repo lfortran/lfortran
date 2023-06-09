@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -80,7 +80,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 1 [])
+                                    (Integer 1)
                                     ()
                                     Source
                                     Public
@@ -96,7 +96,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 2 [])
+                                    (Integer 2)
                                     ()
                                     Source
                                     Public
@@ -132,7 +132,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -148,7 +148,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -255,13 +255,13 @@
                                         2 range@int8range
                                         2 range
                                         [((Var 2 i3))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 2 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -278,13 +278,13 @@
                                         2 range@int16range
                                         2 range
                                         [((Var 2 i4))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -301,16 +301,16 @@
                             2 range@i32range
                             2 range
                             [((Var 2 i1))]
-                            (Integer 4 [])
-                            (IntegerConstant 9 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 9 (Integer 4))
                             ()
                         )
                         (FunctionCall
                             2 range@i64range
                             2 range
                             [((Var 2 i2))]
-                            (Integer 4 [])
-                            (IntegerConstant 18 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 18 (Integer 4))
                             ()
                         )
                         (Var 2 ri3)
@@ -324,16 +324,16 @@
                             2 range@srange
                             2 range
                             [((Var 2 r1))]
-                            (Integer 4 [])
-                            (IntegerConstant 37 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 37 (Integer 4))
                             ()
                         )
                         (FunctionCall
                             2 range@drange
                             2 range
                             [((Var 2 r2))]
-                            (Integer 4 [])
-                            (IntegerConstant 307 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 307 (Integer 4))
                             ()
                         )]
                         ()
@@ -345,16 +345,16 @@
                             2 range@crange
                             2 range
                             [((Var 2 c1))]
-                            (Integer 4 [])
-                            (IntegerConstant 37 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 37 (Integer 4))
                             ()
                         )
                         (FunctionCall
                             2 range@zrange
                             2 range
                             [((Var 2 c2))]
-                            (Integer 4 [])
-                            (IntegerConstant 307 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 307 (Integer 4))
                             ()
                         )]
                         ()

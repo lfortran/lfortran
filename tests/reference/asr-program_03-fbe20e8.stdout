@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -47,8 +47,8 @@
                                         })
                                     add_z
                                     (FunctionType
-                                        [(Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -67,7 +67,7 @@
                                             (Var 5 x)
                                             Add
                                             (Var 2 z)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -97,7 +97,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -113,7 +113,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -123,8 +123,8 @@
                                                         })
                                                     fun
                                                     (FunctionType
-                                                        [(Integer 4 [])]
-                                                        (Integer 4 [])
+                                                        [(Integer 4)]
+                                                        (Integer 4)
                                                         Source
                                                         Interface
                                                         ()
@@ -153,7 +153,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -169,7 +169,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -180,8 +180,8 @@
                                     apply
                                     (FunctionType
                                         [(FunctionType
-                                            [(Integer 4 [])]
-                                            (Integer 4 [])
+                                            [(Integer 4)]
+                                            (Integer 4)
                                             Source
                                             Interface
                                             ()
@@ -192,8 +192,8 @@
                                             .false.
                                             .false.
                                         )
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -213,7 +213,7 @@
                                             3 fun
                                             ()
                                             [((Var 3 x))]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -234,7 +234,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -247,8 +247,8 @@
                     [(DoLoop
                         ()
                         ((Var 2 z)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 10 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 10 (Integer 4))
                         ())
                         [(Print
                             ()
@@ -256,8 +256,8 @@
                                 2 apply
                                 ()
                                 [((Var 2 add_z))
-                                ((IntegerConstant 1 (Integer 4 [])))]
-                                (Integer 4 [])
+                                ((IntegerConstant 1 (Integer 4)))]
+                                (Integer 4)
                                 ()
                                 ()
                             )]

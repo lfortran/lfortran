@@ -1,9 +1,9 @@
 function main()
-    local a::Int32 = 0
-    local b::Int32 = 0
-    local c::Int32 = 0
-    local l::Bool = false
-    local x::Int32 = 0
+    local a::Int32
+    local b::Int32
+    local c::Int32
+    local l::Bool
+    local x::Int32
     a = 3
     b = 4
     c = 5

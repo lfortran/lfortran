@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -46,7 +46,7 @@
                         (Var 2 a)
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -54,7 +54,7 @@
                         (Var 2 b)
                         (LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -63,14 +63,14 @@
                             (Var 2 a)
                             And
                             (Var 2 b)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line 1 - Condition is true"
-                                (Character 1 26 () [])
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -82,7 +82,7 @@
                             ()
                             [(StringConstant
                                 "Line 1 - Condition is false"
-                                (Character 1 27 () [])
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -93,14 +93,14 @@
                             (Var 2 a)
                             Or
                             (Var 2 b)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line 2 - Condition is true"
-                                (Character 1 26 () [])
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -109,7 +109,7 @@
                             ()
                             [(StringConstant
                                 "Line 2 - Condition is false"
-                                (Character 1 27 () [])
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -123,14 +123,14 @@
                             (Var 2 a)
                             Xor
                             (Var 2 b)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line xor - Condition is true"
-                                (Character 1 28 () [])
+                                (Character 1 28 ())
                             )]
                             ()
                             ()
@@ -139,7 +139,7 @@
                             ()
                             [(StringConstant
                                 "Line xor - Condition is false"
-                                (Character 1 29 () [])
+                                (Character 1 29 ())
                             )]
                             ()
                             ()
@@ -152,7 +152,7 @@
                         (Var 2 a)
                         (LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -160,7 +160,7 @@
                         (Var 2 b)
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -170,17 +170,17 @@
                                 (Var 2 a)
                                 And
                                 (Var 2 b)
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line 3 - Condition is true"
-                                (Character 1 26 () [])
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -189,7 +189,7 @@
                             ()
                             [(StringConstant
                                 "Line 3 - Condition is false"
-                                (Character 1 27 () [])
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -203,14 +203,14 @@
                             (Var 2 b)
                             NEqv
                             (Var 2 a)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line 4 - Condition is true"
-                                (Character 1 26 () [])
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -219,7 +219,7 @@
                             ()
                             [(StringConstant
                                 "Line 4 - Condition is false"
-                                (Character 1 27 () [])
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -233,14 +233,14 @@
                             (Var 2 b)
                             Eqv
                             (Var 2 a)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line 5 - Condition is true"
-                                (Character 1 26 () [])
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -252,7 +252,7 @@
                             ()
                             [(StringConstant
                                 "Line 5 - Condition is false"
-                                (Character 1 27 () [])
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -262,7 +262,7 @@
                         (Var 2 a)
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -270,7 +270,7 @@
                         (Var 2 b)
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -279,14 +279,14 @@
                             (Var 2 a)
                             And
                             (Var 2 b)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line 6 - Condition is true"
-                                (Character 1 26 () [])
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -295,7 +295,7 @@
                             ()
                             [(StringConstant
                                 "Line 6 - Condition is false"
-                                (Character 1 27 () [])
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -309,14 +309,14 @@
                             (Var 2 a)
                             Or
                             (Var 2 b)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line 7 - Condition is true"
-                                (Character 1 26 () [])
+                                (Character 1 26 ())
                             )]
                             ()
                             ()
@@ -325,7 +325,7 @@
                             ()
                             [(StringConstant
                                 "Line 7 - Condition is false"
-                                (Character 1 27 () [])
+                                (Character 1 27 ())
                             )]
                             ()
                             ()
@@ -339,14 +339,14 @@
                             (Var 2 a)
                             Xor
                             (Var 2 b)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "Line 8 xor - Condition is true"
-                                (Character 1 30 () [])
+                                (Character 1 30 ())
                             )]
                             ()
                             ()
@@ -358,7 +358,7 @@
                             ()
                             [(StringConstant
                                 "Line 8 xor - Condition is false"
-                                (Character 1 31 () [])
+                                (Character 1 31 ())
                             )]
                             ()
                             ()

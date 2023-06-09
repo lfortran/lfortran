@@ -15,9 +15,14 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Integer 4 [(()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,7 +38,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -49,7 +54,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -65,7 +70,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -77,8 +82,8 @@
                     []
                     [(Allocate
                         [((Var 2 array)
-                        [((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 35 (Integer 4 [])))])]
+                        [((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 35 (Integer 4)))])]
                         ()
                         ()
                         ()
@@ -86,8 +91,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 35 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 35 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -95,7 +100,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -106,8 +111,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 35 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 35 (Integer 4))
                         ())
                         [(Print
                             ()
@@ -116,7 +121,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]

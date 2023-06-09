@@ -71,7 +71,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "transform_optional_argument_functions",
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
-                        "pass_array_by_data", "init_expr", "where"] and
+                        "pass_array_by_data", "init_expr", "where",
+                        "nested_vars"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     log.debug(f"{color(style.bold)} START TEST: {color(style.reset)} {filename}")

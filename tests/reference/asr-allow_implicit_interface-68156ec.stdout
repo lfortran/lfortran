@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     BindC
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     BindC
                                                     Public
@@ -63,9 +63,9 @@
                                         })
                                     alnorm
                                     (FunctionType
-                                        [(Real 8 [])
-                                        (Logical 4 [])]
-                                        (Real 8 [])
+                                        [(Real 8)
+                                        (Logical 4)]
+                                        (Real 8)
                                         BindC
                                         Interface
                                         ()
@@ -95,7 +95,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -116,7 +116,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     BindC
                                                     Public
@@ -132,7 +132,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     BindC
                                                     Public
@@ -148,7 +148,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     BindC
                                                     Public
@@ -158,9 +158,9 @@
                                         })
                                     dgetrf
                                     (FunctionType
-                                        [(Real 8 [])
-                                        (Real 8 [])
-                                        (Real 8 [])]
+                                        [(Real 8)
+                                        (Real 8)
+                                        (Real 8)]
                                         ()
                                         BindC
                                         Interface
@@ -191,14 +191,14 @@
                                     Local
                                     (RealConstant
                                         1.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -214,7 +214,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -229,14 +229,14 @@
                                     Local
                                     (RealConstant
                                         6.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     (RealConstant
                                         6.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -251,14 +251,14 @@
                                     Local
                                     (RealConstant
                                         2.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     (RealConstant
                                         2.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -274,7 +274,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -290,7 +290,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -306,7 +306,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -321,14 +321,14 @@
                                     Local
                                     (RealConstant
                                         0.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     (RealConstant
                                         0.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -339,7 +339,7 @@
                     prho
                     (FunctionType
                         []
-                        (Real 8 [])
+                        (Real 8)
                         Source
                         Implementation
                         ()
@@ -357,7 +357,7 @@
                         (Var 2 zero)
                         (RealConstant
                             0.000000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -365,7 +365,7 @@
                         (Var 2 one)
                         (RealConstant
                             1.000000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -373,7 +373,7 @@
                         (Var 2 two)
                         (RealConstant
                             2.000000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -381,7 +381,7 @@
                         (Var 2 six)
                         (RealConstant
                             6.000000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -397,14 +397,14 @@
                                         (Var 2 y)
                                         Div
                                         (Var 2 two)
-                                        (Real 8 [])
+                                        (Real 8)
                                         ()
                                     )]
                                     0
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Add
@@ -414,13 +414,13 @@
                                 [((Var 2 x))
                                 ((LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 ))]
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                                 ()
                             )
-                            (Real 8 [])
+                            (Real 8)
                             ()
                         )
                         ()
@@ -438,7 +438,7 @@
                             (Var 2 prho)
                             Lt
                             (Var 2 zero)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(=
@@ -453,7 +453,7 @@
                             (Var 2 prho)
                             Gt
                             (Var 2 one)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(=

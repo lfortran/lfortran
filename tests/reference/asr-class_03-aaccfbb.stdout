@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 20 () [])
+                                                    (Character 1 20 ())
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -55,7 +55,6 @@
                                                     Default
                                                     (Struct
                                                         2 person
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -90,7 +89,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -106,7 +105,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 20 () [])
+                                                    (Character 1 20 ())
                                                     ()
                                                     Source
                                                     Public
@@ -122,7 +121,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 20 () [])
+                                                    (Character 1 20 ())
                                                     ()
                                                     Source
                                                     Public
@@ -138,7 +137,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -261,7 +260,6 @@
                                     Default
                                     (Struct
                                         5 person
-                                        []
                                     )
                                     ()
                                     Source
@@ -280,7 +278,6 @@
                                     Default
                                     (Struct
                                         5 employee
-                                        []
                                     )
                                     ()
                                     Source
@@ -307,20 +304,19 @@
                             5 person
                             [((StringConstant
                                 "Jack"
-                                (Character 1 4 () [])
+                                (Character 1 4 ())
                             ))
                             ((StringConstant
                                 "Smith"
-                                (Character 1 5 () [])
+                                (Character 1 5 ())
                             ))
-                            ((IntegerConstant 1984 (Integer 4 [])))
+                            ((IntegerConstant 1984 (Integer 4)))
                             ((StringConstant
                                 "M"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             ))]
                             (Struct
                                 5 person
-                                []
                             )
                             ()
                         )
@@ -334,31 +330,29 @@
                                 5 person
                                 [((StringConstant
                                     "Jill"
-                                    (Character 1 4 () [])
+                                    (Character 1 4 ())
                                 ))
                                 ((StringConstant
                                     "Smith"
-                                    (Character 1 5 () [])
+                                    (Character 1 5 ())
                                 ))
-                                ((IntegerConstant 1984 (Integer 4 [])))
+                                ((IntegerConstant 1984 (Integer 4)))
                                 ((StringConstant
                                     "F"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 ))]
                                 (Struct
                                     5 person
-                                    []
                                 )
                                 ()
                             ))
-                            ((IntegerConstant 2003 (Integer 4 [])))
+                            ((IntegerConstant 2003 (Integer 4)))
                             ((StringConstant
                                 "sales"
-                                (Character 1 5 () [])
+                                (Character 1 5 ())
                             ))]
                             (Struct
                                 5 employee
-                                []
                             )
                             ()
                         )
@@ -369,25 +363,25 @@
                         [(StructInstanceMember
                             (Var 5 jack)
                             5 1_person_first
-                            (Character 1 20 () [])
+                            (Character 1 20 ())
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jack)
                             5 1_person_last
-                            (Character 1 20 () [])
+                            (Character 1 20 ())
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jack)
                             5 1_person_birthyear
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jack)
                             5 1_person_sgender
-                            (Character 1 1 () [])
+                            (Character 1 1 ())
                             ()
                         )]
                         ()
@@ -401,12 +395,11 @@
                                 5 1_employee_person
                                 (Struct
                                     5 person
-                                    []
                                 )
                                 ()
                             )
                             5 1_person_first
-                            (Character 1 20 () [])
+                            (Character 1 20 ())
                             ()
                         )
                         (StructInstanceMember
@@ -415,12 +408,11 @@
                                 5 1_employee_person
                                 (Struct
                                     5 person
-                                    []
                                 )
                                 ()
                             )
                             5 1_person_last
-                            (Character 1 20 () [])
+                            (Character 1 20 ())
                             ()
                         )
                         (StructInstanceMember
@@ -429,12 +421,11 @@
                                 5 1_employee_person
                                 (Struct
                                     5 person
-                                    []
                                 )
                                 ()
                             )
                             5 1_person_birthyear
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
@@ -443,24 +434,23 @@
                                 5 1_employee_person
                                 (Struct
                                     5 person
-                                    []
                                 )
                                 ()
                             )
                             5 1_person_sgender
-                            (Character 1 1 () [])
+                            (Character 1 1 ())
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jill)
                             5 1_employee_department
-                            (Character 1 20 () [])
+                            (Character 1 20 ())
                             ()
                         )
                         (StructInstanceMember
                             (Var 5 jill)
                             5 1_employee_hire_date
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()

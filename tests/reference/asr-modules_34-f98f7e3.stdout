@@ -62,8 +62,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -81,7 +83,6 @@
                                                     Default
                                                     (Struct
                                                         15 version_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -182,7 +183,7 @@
                                                                     ()
                                                                     Default
                                                                     (Pointer
-                                                                        (Integer 4 [])
+                                                                        (Integer 4)
                                                                     )
                                                                     ()
                                                                     Source
@@ -211,7 +212,6 @@
                                                             6 1_package_config_t_version
                                                             (Struct
                                                                 6 fpm_versioning_modules_34_version_t
-                                                                []
                                                             )
                                                             ()
                                                         )
@@ -226,7 +226,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -244,7 +244,6 @@
                                                     Default
                                                     (Struct
                                                         4 package_config_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -260,8 +259,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -273,7 +274,6 @@
                                     (FunctionType
                                         [(Struct
                                             4 package_config_t
-                                            []
                                         )]
                                         ()
                                         Source
@@ -348,7 +348,6 @@
                                                     Default
                                                     (Class
                                                         10 version_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -364,8 +363,10 @@
                                                     ReturnVar
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -377,9 +378,10 @@
                                     (FunctionType
                                         [(Class
                                             10 version_t
-                                            []
                                         )]
-                                        (Character 1 -2 () [])
+                                        (Allocatable
+                                            (Character 1 -2 ())
+                                        )
                                         Source
                                         Implementation
                                         ()
@@ -427,7 +429,6 @@
                                                     Default
                                                     (Class
                                                         10 version_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -443,8 +444,10 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -456,9 +459,10 @@
                                     (FunctionType
                                         [(Class
                                             10 version_t
-                                            []
                                         )
-                                        (Character 1 -2 () [])]
+                                        (Allocatable
+                                            (Character 1 -2 ())
+                                        )]
                                         ()
                                         Source
                                         Implementation
@@ -493,9 +497,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -542,7 +551,7 @@
                         ()
                         [(StringConstant
                             "running modules_34 program"
-                            (Character 1 26 () [])
+                            (Character 1 26 ())
                         )]
                         ()
                         ()

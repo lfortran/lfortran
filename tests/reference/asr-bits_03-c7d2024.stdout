@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -78,7 +78,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -94,7 +94,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -106,40 +106,40 @@
                     []
                     [(=
                         (Var 2 from)
-                        (IntegerConstant 10 (Integer 4 []))
+                        (IntegerConstant 10 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 to)
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 from8)
-                        (IntegerConstant 10 (Integer 8 []))
+                        (IntegerConstant 10 (Integer 8))
                         ()
                     )
                     (=
                         (Var 2 to8)
-                        (IntegerConstant 4 (Integer 8 []))
+                        (IntegerConstant 4 (Integer 8))
                         ()
                     )
                     (SubroutineCall
                         2 mvbits@mvbits32
                         2 mvbits
                         [((Var 2 from))
-                        ((IntegerConstant 2 (Integer 4 [])))
-                        ((IntegerConstant 2 (Integer 4 [])))
+                        ((IntegerConstant 2 (Integer 4)))
+                        ((IntegerConstant 2 (Integer 4)))
                         ((Var 2 to))
-                        ((IntegerConstant 0 (Integer 4 [])))]
+                        ((IntegerConstant 0 (Integer 4)))]
                         ()
                     )
                     (If
                         (IntegerCompare
                             (Var 2 from)
                             NotEq
-                            (IntegerConstant 10 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 10 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -151,8 +151,8 @@
                         (IntegerCompare
                             (Var 2 to)
                             NotEq
-                            (IntegerConstant 6 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 6 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -164,10 +164,10 @@
                         2 mvbits@mvbits64
                         2 mvbits
                         [((Var 2 from8))
-                        ((IntegerConstant 2 (Integer 4 [])))
-                        ((IntegerConstant 2 (Integer 4 [])))
+                        ((IntegerConstant 2 (Integer 4)))
+                        ((IntegerConstant 2 (Integer 4)))
                         ((Var 2 to8))
-                        ((IntegerConstant 0 (Integer 4 [])))]
+                        ((IntegerConstant 0 (Integer 4)))]
                         ()
                     )
                     (If
@@ -175,12 +175,12 @@
                             (Var 2 from8)
                             NotEq
                             (Cast
-                                (IntegerConstant 10 (Integer 4 []))
+                                (IntegerConstant 10 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 10 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 10 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -192,8 +192,8 @@
                         (IntegerCompare
                             (Var 2 to8)
                             NotEq
-                            (IntegerConstant 6 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 6 (Integer 8))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -205,18 +205,18 @@
                         2 mvbits@mvbits32
                         2 mvbits
                         [((Var 2 from))
-                        ((IntegerConstant 0 (Integer 4 [])))
-                        ((IntegerConstant 2 (Integer 4 [])))
+                        ((IntegerConstant 0 (Integer 4)))
+                        ((IntegerConstant 2 (Integer 4)))
                         ((Var 2 to))
-                        ((IntegerConstant 2 (Integer 4 [])))]
+                        ((IntegerConstant 2 (Integer 4)))]
                         ()
                     )
                     (If
                         (IntegerCompare
                             (Var 2 from)
                             NotEq
-                            (IntegerConstant 10 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 10 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -228,8 +228,8 @@
                         (IntegerCompare
                             (Var 2 to)
                             NotEq
-                            (IntegerConstant 10 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 10 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -241,10 +241,10 @@
                         2 mvbits@mvbits64
                         2 mvbits
                         [((Var 2 from8))
-                        ((IntegerConstant 0 (Integer 4 [])))
-                        ((IntegerConstant 2 (Integer 4 [])))
+                        ((IntegerConstant 0 (Integer 4)))
+                        ((IntegerConstant 2 (Integer 4)))
                         ((Var 2 to8))
-                        ((IntegerConstant 2 (Integer 4 [])))]
+                        ((IntegerConstant 2 (Integer 4)))]
                         ()
                     )
                     (If
@@ -252,12 +252,12 @@
                             (Var 2 from8)
                             NotEq
                             (Cast
-                                (IntegerConstant 10 (Integer 4 []))
+                                (IntegerConstant 10 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 10 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 10 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -269,8 +269,8 @@
                         (IntegerCompare
                             (Var 2 to8)
                             NotEq
-                            (IntegerConstant 10 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 10 (Integer 8))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -281,39 +281,39 @@
                     (=
                         (Var 2 from)
                         (IntegerUnaryMinus
-                            (IntegerConstant 20 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant -20 (Integer 4 []))
+                            (IntegerConstant 20 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant -20 (Integer 4))
                         )
                         ()
                     )
                     (=
                         (Var 2 to)
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 from8)
                         (IntegerUnaryMinus
-                            (IntegerConstant 20 (Integer 8 []))
-                            (Integer 8 [])
-                            (IntegerConstant -20 (Integer 8 []))
+                            (IntegerConstant 20 (Integer 8))
+                            (Integer 8)
+                            (IntegerConstant -20 (Integer 8))
                         )
                         ()
                     )
                     (=
                         (Var 2 to8)
-                        (IntegerConstant 4 (Integer 8 []))
+                        (IntegerConstant 4 (Integer 8))
                         ()
                     )
                     (SubroutineCall
                         2 mvbits@mvbits32
                         2 mvbits
                         [((Var 2 from))
-                        ((IntegerConstant 29 (Integer 4 [])))
-                        ((IntegerConstant 2 (Integer 4 [])))
+                        ((IntegerConstant 29 (Integer 4)))
+                        ((IntegerConstant 2 (Integer 4)))
                         ((Var 2 to))
-                        ((IntegerConstant 2 (Integer 4 [])))]
+                        ((IntegerConstant 2 (Integer 4)))]
                         ()
                     )
                     (If
@@ -321,11 +321,11 @@
                             (Var 2 from)
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 20 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant -20 (Integer 4 []))
+                                (IntegerConstant 20 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -20 (Integer 4))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -337,8 +337,8 @@
                         (IntegerCompare
                             (Var 2 to)
                             NotEq
-                            (IntegerConstant 12 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 12 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -350,10 +350,10 @@
                         2 mvbits@mvbits64
                         2 mvbits
                         [((Var 2 from8))
-                        ((IntegerConstant 29 (Integer 4 [])))
-                        ((IntegerConstant 2 (Integer 4 [])))
+                        ((IntegerConstant 29 (Integer 4)))
+                        ((IntegerConstant 2 (Integer 4)))
                         ((Var 2 to8))
-                        ((IntegerConstant 2 (Integer 4 [])))]
+                        ((IntegerConstant 2 (Integer 4)))]
                         ()
                     )
                     (If
@@ -362,15 +362,15 @@
                             NotEq
                             (Cast
                                 (IntegerUnaryMinus
-                                    (IntegerConstant 20 (Integer 4 []))
-                                    (Integer 4 [])
-                                    (IntegerConstant -20 (Integer 4 []))
+                                    (IntegerConstant 20 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -20 (Integer 4))
                                 )
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant -20 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant -20 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -382,8 +382,8 @@
                         (IntegerCompare
                             (Var 2 to8)
                             NotEq
-                            (IntegerConstant 12 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 12 (Integer 8))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -395,10 +395,10 @@
                         2 mvbits@mvbits32
                         2 mvbits
                         [((Var 2 from))
-                        ((IntegerConstant 2 (Integer 4 [])))
-                        ((IntegerConstant 2 (Integer 4 [])))
+                        ((IntegerConstant 2 (Integer 4)))
+                        ((IntegerConstant 2 (Integer 4)))
                         ((Var 2 to))
-                        ((IntegerConstant 29 (Integer 4 [])))]
+                        ((IntegerConstant 29 (Integer 4)))]
                         ()
                     )
                     (If
@@ -406,11 +406,11 @@
                             (Var 2 from)
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 20 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant -20 (Integer 4 []))
+                                (IntegerConstant 20 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -20 (Integer 4))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -422,8 +422,8 @@
                         (IntegerCompare
                             (Var 2 to)
                             NotEq
-                            (IntegerConstant 1610612748 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1610612748 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -435,10 +435,10 @@
                         2 mvbits@mvbits64
                         2 mvbits
                         [((Var 2 from8))
-                        ((IntegerConstant 2 (Integer 4 [])))
-                        ((IntegerConstant 2 (Integer 4 [])))
+                        ((IntegerConstant 2 (Integer 4)))
+                        ((IntegerConstant 2 (Integer 4)))
                         ((Var 2 to8))
-                        ((IntegerConstant 29 (Integer 4 [])))]
+                        ((IntegerConstant 29 (Integer 4)))]
                         ()
                     )
                     (If
@@ -447,15 +447,15 @@
                             NotEq
                             (Cast
                                 (IntegerUnaryMinus
-                                    (IntegerConstant 20 (Integer 4 []))
-                                    (Integer 4 [])
-                                    (IntegerConstant -20 (Integer 4 []))
+                                    (IntegerConstant 20 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant -20 (Integer 4))
                                 )
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant -20 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant -20 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -467,8 +467,8 @@
                         (IntegerCompare
                             (Var 2 to8)
                             NotEq
-                            (IntegerConstant 1610612748 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1610612748 (Integer 8))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

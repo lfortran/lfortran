@@ -50,7 +50,7 @@
                         ()
                         [(StringConstant
                             "executing modules_39"
-                            (Character 1 20 () [])
+                            (Character 1 20 ())
                         )]
                         ()
                         ()
@@ -93,26 +93,31 @@
                                             ()
                                             [((StringConstant
                                                 "build"
-                                                (Character 1 5 () [])
+                                                (Character 1 5 ())
                                             ))
                                             ((StringConstant
                                                 ".gitignore"
-                                                (Character 1 10 () [])
+                                                (Character 1 10 ())
                                             ))
                                             (())
                                             (())
                                             (())]
-                                            (Character 1 -2 () [])
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                             ()
                                         ))
                                         ((ArrayConstant
                                             [(StringConstant
                                                 "*"
-                                                (Character 1 1 () [])
+                                                (Character 1 1 ())
                                             )]
-                                            (Character 1 1 () [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 1 (Integer 4 [])))])
+                                            (Array
+                                                (Character 1 1 ())
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                            )
                                             ColMajor
                                         ))]
                                         ()
@@ -168,8 +173,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [(()
-                                                    ())])
+                                                    (Array
+                                                        (Character 1 -1 ())
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -185,7 +193,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -195,9 +203,12 @@
                                         })
                                     filewrite
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Character 1 -1 () [(()
-                                        ())])]
+                                        [(Character 1 -1 ())
+                                        (Array
+                                            (Character 1 -1 ())
+                                            [(()
+                                            ())]
+                                        )]
                                         ()
                                         Source
                                         Implementation
@@ -233,7 +244,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -249,7 +260,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -265,7 +276,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -281,7 +292,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -297,7 +308,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -312,8 +323,10 @@
                                                     ReturnVar
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -323,12 +336,14 @@
                                         })
                                     join_path
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Character 1 -1 () [])
-                                        (Character 1 -1 () [])
-                                        (Character 1 -1 () [])
-                                        (Character 1 -1 () [])]
-                                        (Character 1 -2 () [])
+                                        [(Character 1 -1 ())
+                                        (Character 1 -1 ())
+                                        (Character 1 -1 ())
+                                        (Character 1 -1 ())
+                                        (Character 1 -1 ())]
+                                        (Allocatable
+                                            (Character 1 -2 ())
+                                        )
                                         Source
                                         Implementation
                                         ()

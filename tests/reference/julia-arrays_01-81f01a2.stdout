@@ -1,7 +1,7 @@
 function main()
-    local a = Array{Int32, 1}(undef, 3)
-    local b = Array{Int32, 1}(undef, 4)
-    local i::Int32 = 0
+    local a::Array{Int32, 1}
+    local b::Array{Int32, 1}
+    local i::Int32
     for i ∈ 1:3
         a[i] = i + 10
     end

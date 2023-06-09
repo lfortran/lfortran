@@ -73,7 +73,6 @@
                                                     Default
                                                     (Struct
                                                         4 dependency_tree_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -89,10 +88,11 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        4 error_t
-                                                        []
+                                                    Default
+                                                    (Allocatable
+                                                        (Struct
+                                                            4 error_t
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -119,7 +119,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -137,7 +137,6 @@
                                                     Default
                                                     (Struct
                                                         4 fpm_update_settings
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -150,7 +149,6 @@
                                     (FunctionType
                                         [(Struct
                                             4 fpm_update_settings
-                                            []
                                         )]
                                         ()
                                         Source
@@ -172,15 +170,17 @@
                                             (StructInstanceMember
                                                 (Var 7 deps)
                                                 7 1_dependency_tree_t_dep
-                                                (Struct
-                                                    7 fpm_dependency_modules_31_dependency_node_t
+                                                (Array
+                                                    (Struct
+                                                        7 fpm_dependency_modules_31_dependency_node_t
+                                                    )
                                                     [(()
                                                     ())]
                                                 )
                                                 ()
                                             )
                                             7 1_dependency_config_t_name
-                                            (Character 1 -2 () [])
+                                            (Character 1 -2 ())
                                             ()
                                         ))
                                         ((Var 7 error))]
@@ -228,14 +228,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -250,8 +250,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -284,7 +286,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -300,7 +302,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -315,9 +317,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 5 () [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 5 ())
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -361,8 +368,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -377,8 +386,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -410,14 +421,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -432,8 +443,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -448,8 +461,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -464,14 +479,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -505,8 +520,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -521,11 +538,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        9 dependency_node_t
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                9 dependency_node_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -541,8 +562,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -558,7 +581,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -574,7 +597,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -607,7 +630,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -616,7 +639,7 @@
                                                 )
                                         })
                                     dependency_tree_t
-                                    [dependency_node_t]
+                                    []
                                     [unit
                                     verbosity
                                     dep_dir
@@ -643,8 +666,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -675,10 +700,11 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        9 error_t
-                                                        []
+                                                    Default
+                                                    (Allocatable
+                                                        (Struct
+                                                            9 error_t
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -695,7 +721,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -713,7 +739,6 @@
                                                     Default
                                                     (Class
                                                         9 dependency_tree_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -726,12 +751,12 @@
                                     (FunctionType
                                         [(Class
                                             9 dependency_tree_t
-                                            []
                                         )
-                                        (Character 1 -1 () [])
-                                        (Struct
-                                            9 error_t
-                                            []
+                                        (Character 1 -1 ())
+                                        (Allocatable
+                                            (Struct
+                                                9 error_t
+                                            )
                                         )]
                                         ()
                                         Source
@@ -833,7 +858,7 @@
                         ()
                         [(StringConstant
                             "running modules_31 program"
-                            (Character 1 26 () [])
+                            (Character 1 26 ())
                         )]
                         ()
                         ()

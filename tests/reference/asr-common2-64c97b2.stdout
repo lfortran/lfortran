@@ -51,7 +51,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -67,7 +67,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -83,7 +83,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -114,7 +114,6 @@
                                     Default
                                     (Struct
                                         3 block_1
-                                        []
                                     )
                                     ()
                                     Source
@@ -147,7 +146,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -163,7 +162,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -193,7 +192,6 @@
                                     Default
                                     (Struct
                                         5 block_2
-                                        []
                                     )
                                     ()
                                     Source
@@ -226,7 +224,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -242,7 +240,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -272,7 +270,6 @@
                                     Default
                                     (Struct
                                         7 block_3
-                                        []
                                     )
                                     ()
                                     Source
@@ -305,7 +302,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -334,7 +331,6 @@
                                     Default
                                     (Struct
                                         9 block_4
-                                        []
                                     )
                                     ()
                                     Source
@@ -367,7 +363,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -383,7 +379,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -413,7 +409,6 @@
                                     Default
                                     (Struct
                                         11 block_5
-                                        []
                                     )
                                     ()
                                     Source

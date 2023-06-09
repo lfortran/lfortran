@@ -26,7 +26,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_repeati32
-                                                    102 len_repeati32
+                                                    101 len_repeati32
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_repeati32
@@ -36,7 +36,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_trim
-                                                    102 len_trim
+                                                    101 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -51,7 +51,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -67,7 +67,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -103,7 +103,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -124,7 +124,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     repeat
-                                                    102 repeat
+                                                    101 repeat
                                                     lfortran_intrinsic_string
                                                     []
                                                     repeat
@@ -134,7 +134,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     repeat@repeati32
-                                                    102 repeati32
+                                                    101 repeati32
                                                     lfortran_intrinsic_string
                                                     []
                                                     repeati32
@@ -165,22 +165,22 @@
                                                                     3 len_trim
                                                                     ()
                                                                     [((Var 3 line))]
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     ()
-                                                                ) [])
+                                                                ))
                                                                 ()
                                                                 ()
                                                             ))
                                                             (())]
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                             ()
                                                         ))]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
-                                                    ) [])
+                                                    ))
                                                     ()
                                                     Source
                                                     Public
@@ -191,7 +191,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     trim
-                                                    102 trim
+                                                    101 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -200,15 +200,15 @@
                                         })
                                     atleast
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Integer 4 [])
-                                        (Character 1 -1 () [])]
+                                        [(Character 1 -1 ())
+                                        (Integer 4)
+                                        (Character 1 -1 ())]
                                         (Character 1 -3 (FunctionCall
                                             3 max@imax
                                             3 max
                                             [((FunctionParam
                                                 1
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             ))
                                             ((FunctionCall
@@ -219,7 +219,7 @@
                                                     ()
                                                     [((FunctionParam
                                                         0
-                                                        (Character 1 -1 () [])
+                                                        (Character 1 -1 ())
                                                         ()
                                                     ))]
                                                     (Character 1 -3 (FunctionCall
@@ -227,25 +227,25 @@
                                                         ()
                                                         [((FunctionParam
                                                             0
-                                                            (Character 1 -1 () [])
+                                                            (Character 1 -1 ())
                                                             ()
                                                         ))]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
-                                                    ) [])
+                                                    ))
                                                     ()
                                                     ()
                                                 ))
                                                 (())]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                                 ()
                                             ))]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
-                                        ) [])
+                                        ))
                                         Source
                                         Implementation
                                         ()
@@ -271,7 +271,7 @@
                                             3 present
                                             ()
                                             [((Var 3 pattern))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -290,7 +290,7 @@
                                                                 ()
                                                                 [((Var 3 strout))
                                                                 (())]
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                                 ()
                                                             )
@@ -300,16 +300,16 @@
                                                                 ()
                                                                 [((Var 3 pattern))
                                                                 (())]
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                                 ()
                                                             )
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         )
                                                         Add
-                                                        (IntegerConstant 1 (Integer 4 []))
-                                                        (Integer 4 [])
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Integer 4)
                                                         ()
                                                     ))]
                                                     (Character 1 -3 (FunctionCall
@@ -322,7 +322,7 @@
                                                                     ()
                                                                     [((Var 3 strout))
                                                                     (())]
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     ()
                                                                 )
@@ -332,26 +332,26 @@
                                                                     ()
                                                                     [((Var 3 pattern))
                                                                     (())]
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     ()
                                                                 )
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             )
                                                             Add
-                                                            (IntegerConstant 1 (Integer 4 []))
-                                                            (Integer 4 [])
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
                                                             ()
                                                         ))]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
-                                                    ) [])
+                                                    ))
                                                     ()
                                                     ()
                                                 )
-                                                (Character 1 -4 () [])
+                                                (Character 1 -4 ())
                                                 ()
                                             )
                                             ()
@@ -382,7 +382,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -398,7 +398,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -424,8 +424,13 @@
                                                     ()
                                                     ()
                                                     Save
-                                                    (Character 1 -2 () [(()
-                                                    ())])
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 -2 ())
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -446,7 +451,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     len_trim
-                                                    102 len_trim
+                                                    101 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -481,8 +486,13 @@
                                                     ()
                                                     ()
                                                     Save
-                                                    (Logical 4 [(()
-                                                    ())])
+                                                    (Allocatable
+                                                        (Array
+                                                            (Logical 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -498,8 +508,13 @@
                                                     ()
                                                     ()
                                                     Save
-                                                    (Character 1 -2 () [(()
-                                                    ())])
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 -2 ())
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -515,7 +530,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -526,7 +541,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     trim
-                                                    102 trim
+                                                    101 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -541,8 +556,13 @@
                                                     ()
                                                     ()
                                                     Save
-                                                    (Character 1 -2 () [(()
-                                                    ())])
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 -2 ())
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -552,8 +572,8 @@
                                         })
                                     print_dictionary
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Logical 4 [])]
+                                        [(Character 1 -1 ())
+                                        (Logical 4)]
                                         ()
                                         Source
                                         Implementation
@@ -578,7 +598,7 @@
                                         ()
                                         (StringConstant
                                             "(a,1x,a,1x,a,1x,a)"
-                                            (Character 1 18 () [])
+                                            (Character 1 18 ())
                                         )
                                         ()
                                         ()
@@ -588,7 +608,7 @@
                                             ()
                                             [((StringConstant
                                                 "KEYWORD"
-                                                (Character 1 7 () [])
+                                                (Character 1 7 ())
                                             ))
                                             ((FunctionCall
                                                 4 max@imax
@@ -598,12 +618,12 @@
                                                     ()
                                                     [((Var 4 keywords))
                                                     (())]
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     ()
                                                 ))
-                                                ((IntegerConstant 8 (Integer 4 [])))]
-                                                (Integer 4 [])
+                                                ((IntegerConstant 8 (Integer 4)))]
+                                                (Integer 4)
                                                 ()
                                                 ()
                                             ))
@@ -619,12 +639,12 @@
                                                         ()
                                                         [((Var 4 keywords))
                                                         (())]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
                                                     ))
-                                                    ((IntegerConstant 8 (Integer 4 [])))]
-                                                    (Integer 4 [])
+                                                    ((IntegerConstant 8 (Integer 4)))]
+                                                    (Integer 4)
                                                     ()
                                                     ()
                                                 ))
@@ -636,45 +656,45 @@
                                                         ()
                                                         [((StringConstant
                                                             "KEYWORD"
-                                                            (Character 1 7 () [])
+                                                            (Character 1 7 ())
                                                         ))]
                                                         (Character 1 -3 (FunctionCall
                                                             4 len_trim
                                                             ()
                                                             [((StringConstant
                                                                 "KEYWORD"
-                                                                (Character 1 7 () [])
+                                                                (Character 1 7 ())
                                                             ))]
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                             ()
-                                                        ) [])
+                                                        ))
                                                         ()
                                                         ()
                                                     ))
                                                     (())]
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     ()
                                                 ))]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                                 ()
-                                            ) [])
+                                            ))
                                             ()
                                             ()
                                         )
                                         (StringConstant
                                             "SHORT"
-                                            (Character 1 5 () [])
+                                            (Character 1 5 ())
                                         )
                                         (StringConstant
                                             "PRESENT"
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (StringConstant
                                             "VALUE"
-                                            (Character 1 5 () [])
+                                            (Character 1 5 ())
                                         )]
                                         ()
                                         ()
@@ -684,7 +704,7 @@
                                         ()
                                         (StringConstant
                                             "(*(a,1x,a5,1x,l1,8x,\"[\",a,\"]\",/))"
-                                            (Character 1 33 () [])
+                                            (Character 1 33 ())
                                         )
                                         ()
                                         ()
@@ -698,7 +718,7 @@
                                                     [(()
                                                     (Var 4 i)
                                                     ())]
-                                                    (Character 1 -2 () [])
+                                                    (Character 1 -2 ())
                                                     ColMajor
                                                     ()
                                                 ))
@@ -710,12 +730,12 @@
                                                         ()
                                                         [((Var 4 keywords))
                                                         (())]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
                                                     ))
-                                                    ((IntegerConstant 8 (Integer 4 [])))]
-                                                    (Integer 4 [])
+                                                    ((IntegerConstant 8 (Integer 4)))]
+                                                    (Integer 4)
                                                     ()
                                                     ()
                                                 ))
@@ -731,12 +751,12 @@
                                                             ()
                                                             [((Var 4 keywords))
                                                             (())]
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                             ()
                                                         ))
-                                                        ((IntegerConstant 8 (Integer 4 [])))]
-                                                        (Integer 4 [])
+                                                        ((IntegerConstant 8 (Integer 4)))]
+                                                        (Integer 4)
                                                         ()
                                                         ()
                                                     ))
@@ -751,7 +771,7 @@
                                                                 [(()
                                                                 (Var 4 i)
                                                                 ())]
-                                                                (Character 1 -2 () [])
+                                                                (Character 1 -2 ())
                                                                 ColMajor
                                                                 ()
                                                             ))]
@@ -763,26 +783,26 @@
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (Character 1 -2 () [])
+                                                                    (Character 1 -2 ())
                                                                     ColMajor
                                                                     ()
                                                                 ))]
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                                 ()
-                                                            ) [])
+                                                            ))
                                                             ()
                                                             ()
                                                         ))
                                                         (())]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
                                                     ))]
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     ()
-                                                ) [])
+                                                ))
                                                 ()
                                                 ()
                                             )
@@ -791,7 +811,7 @@
                                                 [(()
                                                 (Var 4 i)
                                                 ())]
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ColMajor
                                                 ()
                                             )
@@ -800,7 +820,7 @@
                                                 [(()
                                                 (Var 4 i)
                                                 ())]
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ColMajor
                                                 ()
                                             )
@@ -809,16 +829,16 @@
                                                 [(()
                                                 (Var 4 i)
                                                 ())]
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ColMajor
                                                 ()
                                             )]
                                             (Var 4 i)
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             (ArraySize
                                                 (Var 4 keywords)
                                                 ()
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             ()
@@ -834,12 +854,12 @@
                                                             ()
                                                             [((Var 4 keywords))
                                                             (())]
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                             ()
                                                         ))
-                                                        ((IntegerConstant 8 (Integer 4 [])))]
-                                                        (Integer 4 [])
+                                                        ((IntegerConstant 8 (Integer 4)))]
+                                                        (Integer 4)
                                                         ()
                                                         ()
                                                     ))
@@ -854,7 +874,7 @@
                                                                 [(()
                                                                 (Var 4 i)
                                                                 ())]
-                                                                (Character 1 -2 () [])
+                                                                (Character 1 -2 ())
                                                                 ColMajor
                                                                 ()
                                                             ))]
@@ -866,34 +886,40 @@
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (Character 1 -2 () [])
+                                                                    (Character 1 -2 ())
                                                                     ColMajor
                                                                     ()
                                                                 ))]
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                                 ()
-                                                            ) [])
+                                                            ))
                                                             ()
                                                             ()
                                                         ))
                                                         (())]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
                                                     ))]
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     ()
-                                                ) [])
-                                                (Character 1 -2 () [])
-                                                (Logical 4 [])
-                                                (Character 1 -2 () [])]
+                                                ))
+                                                (Character 1 -2 ())
+                                                (Logical 4)
+                                                (Character 1 -2 ())]
                                             )
                                             ()
                                         )]
                                         ()
                                         ()
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 4 keywords)
+                                        (Var 4 present_in)
+                                        (Var 4 shorts)
+                                        (Var 4 values)]
                                     )]
                                     ()
                                     Public

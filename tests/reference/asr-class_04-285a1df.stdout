@@ -81,7 +81,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -113,7 +113,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -145,7 +145,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -174,7 +174,6 @@
                                     Default
                                     (Struct
                                         2 foo_c
-                                        []
                                     )
                                     ()
                                     Source
@@ -198,7 +197,6 @@
                                                     Default
                                                     (Struct
                                                         2 bar_a
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -233,7 +231,6 @@
                                                     Default
                                                     (Struct
                                                         2 bar_b
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -268,7 +265,6 @@
                                                     Default
                                                     (Struct
                                                         2 bar_c
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -297,18 +293,17 @@
                                 2 1_foo_a_m_bar_a
                                 (Struct
                                     2 bar_a
-                                    []
                                 )
                                 ()
                             )
                             2 1_bar_a_a
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (IntegerUnaryMinus
-                            (IntegerConstant 20 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant -20 (Integer 4 []))
+                            (IntegerConstant 20 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant -20 (Integer 4))
                         )
                         ()
                     )
@@ -319,15 +314,14 @@
                                 2 1_foo_b_m_bar_b
                                 (Struct
                                     2 bar_b
-                                    []
                                 )
                                 ()
                             )
                             2 1_bar_b_b
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
-                        (IntegerConstant 9 (Integer 4 []))
+                        (IntegerConstant 9 (Integer 4))
                         ()
                     )
                     (=
@@ -337,15 +331,14 @@
                                 2 1_foo_c_m_bar_c
                                 (Struct
                                     2 bar_c
-                                    []
                                 )
                                 ()
                             )
                             2 1_bar_c_c
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
-                        (IntegerConstant 11 (Integer 4 []))
+                        (IntegerConstant 11 (Integer 4))
                         ()
                     )
                     (Print
@@ -356,12 +349,11 @@
                                 2 1_foo_a_m_bar_a
                                 (Struct
                                     2 bar_a
-                                    []
                                 )
                                 ()
                             )
                             2 1_bar_a_a
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -375,12 +367,11 @@
                                 2 1_foo_b_m_bar_b
                                 (Struct
                                     2 bar_b
-                                    []
                                 )
                                 ()
                             )
                             2 1_bar_b_b
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -394,12 +385,11 @@
                                 2 1_foo_c_m_bar_c
                                 (Struct
                                     2 bar_c
-                                    []
                                 )
                                 ()
                             )
                             2 1_bar_c_c
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -415,12 +405,11 @@
                                             2 1_foo_a_m_bar_a
                                             (Struct
                                                 2 bar_a
-                                                []
                                             )
                                             ()
                                         )
                                         2 1_bar_a_a
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ()
                                     )
                                     Add
@@ -430,15 +419,14 @@
                                             2 1_foo_b_m_bar_b
                                             (Struct
                                                 2 bar_b
-                                                []
                                             )
                                             ()
                                         )
                                         2 1_bar_b_b
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ()
                                     )
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )
                                 Add
@@ -448,20 +436,19 @@
                                         2 1_foo_c_m_bar_c
                                         (Struct
                                             2 bar_c
-                                            []
                                         )
                                         ()
                                     )
                                     2 1_bar_c_c
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 0 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 0 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

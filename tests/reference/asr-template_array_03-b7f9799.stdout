@@ -153,7 +153,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -172,7 +171,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -191,7 +189,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -204,15 +201,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -249,11 +243,13 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        [((IntegerConstant 1 (Integer 4 []))
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [((IntegerConstant 1 (Integer 4))
                                                                         (Var 18 i))
-                                                                        ((IntegerConstant 1 (Integer 4 []))
+                                                                        ((IntegerConstant 1 (Integer 4))
                                                                         (Var 18 j))]
                                                                     )
                                                                     ()
@@ -272,11 +268,13 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        [((IntegerConstant 1 (Integer 4 []))
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [((IntegerConstant 1 (Integer 4))
                                                                         (Var 18 j))
-                                                                        ((IntegerConstant 1 (Integer 4 []))
+                                                                        ((IntegerConstant 1 (Integer 4))
                                                                         (Var 18 k))]
                                                                     )
                                                                     ()
@@ -296,7 +294,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -313,7 +310,7 @@
                                                                     ()
                                                                     ()
                                                                     Parameter
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -329,7 +326,7 @@
                                                                     ()
                                                                     ()
                                                                     Parameter
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -345,7 +342,7 @@
                                                                     ()
                                                                     ()
                                                                     Parameter
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -362,11 +359,13 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                        [((IntegerConstant 1 (Integer 4 []))
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [((IntegerConstant 1 (Integer 4))
                                                                         (Var 18 i))
-                                                                        ((IntegerConstant 1 (Integer 4 []))
+                                                                        ((IntegerConstant 1 (Integer 4))
                                                                         (Var 18 k))]
                                                                     )
                                                                     ()
@@ -384,7 +383,7 @@
                                                                     ()
                                                                     ()
                                                                     Parameter
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -400,7 +399,7 @@
                                                                     ()
                                                                     ()
                                                                     Parameter
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -416,7 +415,7 @@
                                                                     ()
                                                                     ()
                                                                     Parameter
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -426,51 +425,57 @@
                                                         })
                                                     mymatmul_t
                                                     (FunctionType
-                                                        [(Integer 4 [])
-                                                        (Integer 4 [])
-                                                        (Integer 4 [])
-                                                        (TypeParameter
-                                                            t
-                                                            [((IntegerConstant 1 (Integer 4 []))
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Array
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4))
                                                             (FunctionParam
                                                                 0
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((IntegerConstant 1 (Integer 4 []))
+                                                            ((IntegerConstant 1 (Integer 4))
                                                             (FunctionParam
                                                                 1
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             ))]
                                                         )
-                                                        (TypeParameter
-                                                            t
-                                                            [((IntegerConstant 1 (Integer 4 []))
+                                                        (Array
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4))
                                                             (FunctionParam
                                                                 1
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((IntegerConstant 1 (Integer 4 []))
+                                                            ((IntegerConstant 1 (Integer 4))
                                                             (FunctionParam
                                                                 2
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             ))]
                                                         )
-                                                        (TypeParameter
-                                                            t
-                                                            [((IntegerConstant 1 (Integer 4 []))
+                                                        (Array
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            [((IntegerConstant 1 (Integer 4))
                                                             (FunctionParam
                                                                 0
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             ))
-                                                            ((IntegerConstant 1 (Integer 4 []))
+                                                            ((IntegerConstant 1 (Integer 4))
                                                             (FunctionParam
                                                                 2
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             ))]
                                                         )]
@@ -497,13 +502,13 @@
                                                     [(DoLoop
                                                         ()
                                                         ((Var 18 x)
-                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        (IntegerConstant 1 (Integer 4))
                                                         (Var 18 i)
                                                         ())
                                                         [(DoLoop
                                                             ()
                                                             ((Var 18 z)
-                                                            (IntegerConstant 1 (Integer 4 []))
+                                                            (IntegerConstant 1 (Integer 4))
                                                             (Var 18 k)
                                                             ())
                                                             [(=
@@ -514,21 +519,19 @@
                                                                     [((ArrayItem
                                                                         (Var 18 a)
                                                                         [(()
-                                                                        (IntegerConstant 1 (Integer 4 []))
+                                                                        (IntegerConstant 1 (Integer 4))
                                                                         ())
                                                                         (()
-                                                                        (IntegerConstant 1 (Integer 4 []))
+                                                                        (IntegerConstant 1 (Integer 4))
                                                                         ())]
                                                                         (TypeParameter
                                                                             t
-                                                                            []
                                                                         )
                                                                         ColMajor
                                                                         ()
                                                                     ))]
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     ()
@@ -538,7 +541,7 @@
                                                             (DoLoop
                                                                 ()
                                                                 ((Var 18 y)
-                                                                (IntegerConstant 1 (Integer 4 []))
+                                                                (IntegerConstant 1 (Integer 4))
                                                                 (Var 18 j)
                                                                 ())
                                                                 [(=
@@ -560,7 +563,6 @@
                                                                                 ())]
                                                                                 (TypeParameter
                                                                                     t
-                                                                                    []
                                                                                 )
                                                                                 ColMajor
                                                                                 ()
@@ -575,21 +577,18 @@
                                                                                 ())]
                                                                                 (TypeParameter
                                                                                     t
-                                                                                    []
                                                                                 )
                                                                                 ColMajor
                                                                                 ()
                                                                             ))]
                                                                             (TypeParameter
                                                                                 t
-                                                                                []
                                                                             )
                                                                             ()
                                                                             ()
                                                                         ))]
                                                                         (TypeParameter
                                                                             t
-                                                                            []
                                                                         )
                                                                         ()
                                                                         ()
@@ -608,7 +607,6 @@
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ColMajor
                                                                     ()
@@ -640,7 +638,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -659,7 +656,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -678,7 +674,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -691,15 +686,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -732,7 +724,6 @@
                                                     Default
                                                     (TypeParameter
                                                         t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -756,7 +747,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -775,7 +765,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -788,11 +777,9 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -855,10 +842,13 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 21 i))
-                                                    ((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 21 j))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 21 i))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (Var 21 j))]
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -875,10 +865,13 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 21 j))
-                                                    ((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 21 k))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 21 j))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (Var 21 k))]
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -894,7 +887,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -910,7 +903,7 @@
                                                     ()
                                                     ()
                                                     Parameter
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -926,7 +919,7 @@
                                                     ()
                                                     ()
                                                     Parameter
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -942,7 +935,7 @@
                                                     ()
                                                     ()
                                                     Parameter
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -959,10 +952,13 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 21 i))
-                                                    ((IntegerConstant 1 (Integer 4 []))
-                                                    (Var 21 k))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 21 i))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (Var 21 k))]
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -978,7 +974,7 @@
                                                     ()
                                                     ()
                                                     Parameter
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -994,7 +990,7 @@
                                                     ()
                                                     ()
                                                     Parameter
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1010,7 +1006,7 @@
                                                     ()
                                                     ()
                                                     Parameter
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1020,45 +1016,54 @@
                                         })
                                     mymatmul_int
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])
-                                        (Integer 4 [])
-                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (FunctionParam
-                                            0
-                                            (Integer 4 [])
-                                            ()
-                                        ))
-                                        ((IntegerConstant 1 (Integer 4 []))
-                                        (FunctionParam
-                                            1
-                                            (Integer 4 [])
-                                            ()
-                                        ))])
-                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (FunctionParam
-                                            1
-                                            (Integer 4 [])
-                                            ()
-                                        ))
-                                        ((IntegerConstant 1 (Integer 4 []))
-                                        (FunctionParam
-                                            2
-                                            (Integer 4 [])
-                                            ()
-                                        ))])
-                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (FunctionParam
-                                            0
-                                            (Integer 4 [])
-                                            ()
-                                        ))
-                                        ((IntegerConstant 1 (Integer 4 []))
-                                        (FunctionParam
-                                            2
-                                            (Integer 4 [])
-                                            ()
-                                        ))])]
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (FunctionParam
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            ))
+                                            ((IntegerConstant 1 (Integer 4))
+                                            (FunctionParam
+                                                1
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                        )
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (FunctionParam
+                                                1
+                                                (Integer 4)
+                                                ()
+                                            ))
+                                            ((IntegerConstant 1 (Integer 4))
+                                            (FunctionParam
+                                                2
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                        )
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (FunctionParam
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            ))
+                                            ((IntegerConstant 1 (Integer 4))
+                                            (FunctionParam
+                                                2
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                        )]
                                         ()
                                         Source
                                         Implementation
@@ -1082,13 +1087,13 @@
                                     [(DoLoop
                                         ()
                                         ((Var 21 x)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         (Var 21 i)
                                         ())
                                         [(DoLoop
                                             ()
                                             ((Var 21 z)
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             (Var 21 k)
                                             ())
                                             [(=
@@ -1099,16 +1104,16 @@
                                                     [((ArrayItem
                                                         (Var 21 a)
                                                         [(()
-                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        (IntegerConstant 1 (Integer 4))
                                                         ())
                                                         (()
-                                                        (IntegerConstant 1 (Integer 4 []))
+                                                        (IntegerConstant 1 (Integer 4))
                                                         ())]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ColMajor
                                                         ()
                                                     ))]
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     ()
                                                 )
@@ -1117,7 +1122,7 @@
                                             (DoLoop
                                                 ()
                                                 ((Var 21 y)
-                                                (IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 1 (Integer 4))
                                                 (Var 21 j)
                                                 ())
                                                 [(=
@@ -1137,7 +1142,7 @@
                                                                 (()
                                                                 (Var 21 y)
                                                                 ())]
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ColMajor
                                                                 ()
                                                             ))
@@ -1149,15 +1154,15 @@
                                                                 (()
                                                                 (Var 21 z)
                                                                 ())]
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ColMajor
                                                                 ()
                                                             ))]
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                             ()
                                                         ))]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
                                                     )
@@ -1173,7 +1178,7 @@
                                                     (()
                                                     (Var 21 z)
                                                     ())]
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ColMajor
                                                     ()
                                                 )
@@ -1209,7 +1214,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1228,7 +1232,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1247,7 +1250,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1260,15 +1262,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -1306,7 +1305,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1325,7 +1323,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1344,7 +1341,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1357,15 +1353,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -1398,7 +1391,6 @@
                                                     Default
                                                     (TypeParameter
                                                         t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -1422,7 +1414,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1441,7 +1432,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1454,11 +1444,9 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -1500,10 +1488,13 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 2 (Integer 4 [])))
-                                                    ((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 2 (Integer 4 [])))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -1519,10 +1510,13 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 2 (Integer 4 [])))
-                                                    ((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 2 (Integer 4 [])))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -1550,72 +1544,72 @@
                                         (ArrayItem
                                             (Var 19 arr)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (ArrayItem
                                             (Var 19 arr)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (ArrayItem
                                             (Var 19 arr)
                                             [(()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (ArrayItem
                                             (Var 19 arr)
                                             [(()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (SubroutineCall
                                         9 mymatmul_int
                                         ()
-                                        [((IntegerConstant 2 (Integer 4 [])))
-                                        ((IntegerConstant 2 (Integer 4 [])))
-                                        ((IntegerConstant 2 (Integer 4 [])))
+                                        [((IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 2 (Integer 4)))
                                         ((Var 19 arr))
                                         ((Var 19 arr))
                                         ((Var 19 r))]
@@ -1626,12 +1620,12 @@
                                         [(ArrayItem
                                             (Var 19 r)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -1643,12 +1637,12 @@
                                         [(ArrayItem
                                             (Var 19 r)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -1660,12 +1654,12 @@
                                         [(ArrayItem
                                             (Var 19 r)
                                             [(()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -1677,12 +1671,12 @@
                                         [(ArrayItem
                                             (Var 19 r)
                                             [(()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -1741,7 +1735,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1757,7 +1751,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1773,7 +1767,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1783,9 +1777,9 @@
                                         })
                                     add_integer
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -1805,7 +1799,7 @@
                                             (Var 3 x)
                                             Add
                                             (Var 3 y)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -1830,7 +1824,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1846,7 +1840,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1862,7 +1856,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1872,9 +1866,9 @@
                                         })
                                     add_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -1894,7 +1888,7 @@
                                             (Var 6 x)
                                             Add
                                             (Var 6 y)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -1919,7 +1913,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1935,7 +1929,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1951,7 +1945,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1961,9 +1955,9 @@
                                         })
                                     mult_integer
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -1983,7 +1977,7 @@
                                             (Var 5 x)
                                             Mul
                                             (Var 5 y)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -2008,7 +2002,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2024,7 +2018,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2040,7 +2034,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2050,9 +2044,9 @@
                                         })
                                     mult_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -2072,7 +2066,7 @@
                                             (Var 8 x)
                                             Mul
                                             (Var 8 y)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -2097,7 +2091,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2113,7 +2107,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2123,8 +2117,8 @@
                                         })
                                     zero_integer
                                     (FunctionType
-                                        [(Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -2139,7 +2133,7 @@
                                     [(Var 4 x)]
                                     [(=
                                         (Var 4 r)
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ()
                                     )]
                                     (Var 4 r)
@@ -2162,7 +2156,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2178,7 +2172,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2188,8 +2182,8 @@
                                         })
                                     zero_real
                                     (FunctionType
-                                        [(Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -2205,12 +2199,12 @@
                                     [(=
                                         (Var 7 r)
                                         (Cast
-                                            (IntegerConstant 0 (Integer 4 []))
+                                            (IntegerConstant 0 (Integer 4))
                                             IntegerToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 0.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
                                         ()

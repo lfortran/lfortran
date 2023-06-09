@@ -1,8 +1,8 @@
 function main()
-    local a::Int32 = 0
-    local b::Int32 = 0
-    local i::Int32 = 0
-    local j::Int32 = 0
+    local a::Int32
+    local b::Int32
+    local i::Int32
+    local j::Int32
     j = 0
     a = 1
     b = 10

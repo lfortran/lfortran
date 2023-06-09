@@ -29,7 +29,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -45,7 +45,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -80,7 +80,6 @@
                                                     Default
                                                     (Struct
                                                         5 point
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -99,7 +98,6 @@
                                                     Default
                                                     (Struct
                                                         5 point
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -116,7 +114,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -128,13 +126,11 @@
                                     (FunctionType
                                         [(Struct
                                             5 point
-                                            []
                                         )
                                         (Struct
                                             5 point
-                                            []
                                         )]
-                                        (Real 4 [])
+                                        (Real 4)
                                         Source
                                         Interface
                                         ()
@@ -171,7 +167,6 @@
                                                     Default
                                                     (Struct
                                                         5 point
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -190,7 +185,6 @@
                                                     Default
                                                     (Struct
                                                         5 point
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -207,7 +201,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -219,13 +213,11 @@
                                     (FunctionType
                                         [(Struct
                                             5 point
-                                            []
                                         )
                                         (Struct
                                             5 point
-                                            []
                                         )
-                                        (Real 4 [])]
+                                        (Real 4)]
                                         ()
                                         Source
                                         Interface
@@ -315,7 +307,6 @@
                                                     Default
                                                     (Struct
                                                         9 point
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -334,7 +325,6 @@
                                                     Default
                                                     (Struct
                                                         9 point
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -351,7 +341,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -383,13 +373,11 @@
                                     (FunctionType
                                         [(Struct
                                             9 point
-                                            []
                                         )
                                         (Struct
                                             9 point
-                                            []
                                         )]
-                                        (Real 4 [])
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -414,30 +402,30 @@
                                                         (StructInstanceMember
                                                             (Var 10 a)
                                                             10 1_point_x
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 10 b)
                                                             10 1_point_x
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
                                                     Pow
                                                     (Cast
-                                                        (IntegerConstant 2 (Integer 4 []))
+                                                        (IntegerConstant 2 (Integer 4))
                                                         IntegerToReal
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         (RealConstant
                                                             2.000000
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                         )
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 Add
@@ -446,36 +434,36 @@
                                                         (StructInstanceMember
                                                             (Var 10 a)
                                                             10 1_point_y
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 10 b)
                                                             10 1_point_y
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
                                                     Pow
                                                     (Cast
-                                                        (IntegerConstant 2 (Integer 4 []))
+                                                        (IntegerConstant 2 (Integer 4))
                                                         IntegerToReal
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         (RealConstant
                                                             2.000000
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                         )
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             ))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -523,7 +511,6 @@
                                                     Default
                                                     (Struct
                                                         9 point
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -542,7 +529,6 @@
                                                     Default
                                                     (Struct
                                                         9 point
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -559,7 +545,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -591,13 +577,11 @@
                                     (FunctionType
                                         [(Struct
                                             9 point
-                                            []
                                         )
                                         (Struct
                                             9 point
-                                            []
                                         )
-                                        (Real 4 [])]
+                                        (Real 4)]
                                         ()
                                         Source
                                         Implementation
@@ -624,30 +608,30 @@
                                                         (StructInstanceMember
                                                             (Var 11 a)
                                                             11 1_point_x
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 11 b)
                                                             11 1_point_x
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
                                                     Pow
                                                     (Cast
-                                                        (IntegerConstant 2 (Integer 4 []))
+                                                        (IntegerConstant 2 (Integer 4))
                                                         IntegerToReal
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         (RealConstant
                                                             2.000000
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                         )
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 Add
@@ -656,36 +640,36 @@
                                                         (StructInstanceMember
                                                             (Var 11 a)
                                                             11 1_point_y
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 11 b)
                                                             11 1_point_y
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
                                                     Pow
                                                     (Cast
-                                                        (IntegerConstant 2 (Integer 4 []))
+                                                        (IntegerConstant 2 (Integer 4))
                                                         IntegerToReal
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         (RealConstant
                                                             2.000000
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                         )
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             ))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )

@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 10 () [])
+                                                    (Character 1 10 ())
                                                     ()
                                                     Source
                                                     Public
@@ -47,8 +47,8 @@
                                         })
                                     test_case
                                     (FunctionType
-                                        [(Character 1 1 () [])]
-                                        (Character 1 10 () [])
+                                        [(Character 1 1 ())]
+                                        (Character 1 10 ())
                                         Source
                                         Implementation
                                         ()
@@ -66,11 +66,11 @@
                                             (StringCompare
                                                 (StringConstant
                                                     "a"
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                 )
                                                 LtE
                                                 (Var 3 c)
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
                                             And
@@ -79,19 +79,19 @@
                                                 LtE
                                                 (StringConstant
                                                     "j"
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(=
                                             (Var 3 res)
                                             (StringConstant
                                                 "a:j"
-                                                (Character 1 3 () [])
+                                                (Character 1 3 ())
                                             )
                                             ()
                                         )
@@ -99,7 +99,7 @@
                                             ()
                                             [(StringConstant
                                                 "one of the first ten letters"
-                                                (Character 1 28 () [])
+                                                (Character 1 28 ())
                                             )]
                                             ()
                                             ()
@@ -109,11 +109,11 @@
                                                 (StringCompare
                                                     (StringConstant
                                                         "l"
-                                                        (Character 1 1 () [])
+                                                        (Character 1 1 ())
                                                     )
                                                     LtE
                                                     (Var 3 c)
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
                                                 And
@@ -122,19 +122,19 @@
                                                     LtE
                                                     (StringConstant
                                                         "p"
-                                                        (Character 1 1 () [])
+                                                        (Character 1 1 ())
                                                     )
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
                                             [(=
                                                 (Var 3 res)
                                                 (StringConstant
                                                     "l:p"
-                                                    (Character 1 3 () [])
+                                                    (Character 1 3 ())
                                                 )
                                                 ()
                                             )
@@ -142,7 +142,7 @@
                                                 ()
                                                 [(StringConstant
                                                     "one of l, m, n, o, p"
-                                                    (Character 1 20 () [])
+                                                    (Character 1 20 ())
                                                 )]
                                                 ()
                                                 ()
@@ -153,16 +153,16 @@
                                                     Eq
                                                     (StringConstant
                                                         "z"
-                                                        (Character 1 1 () [])
+                                                        (Character 1 1 ())
                                                     )
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
                                                 [(=
                                                     (Var 3 res)
                                                     (StringConstant
                                                         "z"
-                                                        (Character 1 1 () [])
+                                                        (Character 1 1 ())
                                                     )
                                                     ()
                                                 )
@@ -170,7 +170,7 @@
                                                     ()
                                                     [(StringConstant
                                                         "one of z"
-                                                        (Character 1 8 () [])
+                                                        (Character 1 8 ())
                                                     )]
                                                     ()
                                                     ()
@@ -179,7 +179,7 @@
                                                     (Var 3 res)
                                                     (StringConstant
                                                         "not found"
-                                                        (Character 1 9 () [])
+                                                        (Character 1 9 ())
                                                     )
                                                     ()
                                                 )
@@ -187,7 +187,7 @@
                                                     ()
                                                     [(StringConstant
                                                         "other characters, which may not be letters"
-                                                        (Character 1 42 () [])
+                                                        (Character 1 42 ())
                                                     )]
                                                     ()
                                                     ()
@@ -211,18 +211,18 @@
                                 ()
                                 [((StringConstant
                                     "a"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 ))]
-                                (Character 1 10 () [])
+                                (Character 1 10 ())
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "a:j"
-                                (Character 1 3 () [])
+                                (Character 1 3 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -237,18 +237,18 @@
                                 ()
                                 [((StringConstant
                                     "d"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 ))]
-                                (Character 1 10 () [])
+                                (Character 1 10 ())
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "a:j"
-                                (Character 1 3 () [])
+                                (Character 1 3 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -263,18 +263,18 @@
                                 ()
                                 [((StringConstant
                                     "l"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 ))]
-                                (Character 1 10 () [])
+                                (Character 1 10 ())
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "l:p"
-                                (Character 1 3 () [])
+                                (Character 1 3 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -289,18 +289,18 @@
                                 ()
                                 [((StringConstant
                                     "p"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 ))]
-                                (Character 1 10 () [])
+                                (Character 1 10 ())
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "l:p"
-                                (Character 1 3 () [])
+                                (Character 1 3 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -315,18 +315,18 @@
                                 ()
                                 [((StringConstant
                                     "z"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 ))]
-                                (Character 1 10 () [])
+                                (Character 1 10 ())
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "z"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -341,18 +341,18 @@
                                 ()
                                 [((StringConstant
                                     "k"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 ))]
-                                (Character 1 10 () [])
+                                (Character 1 10 ())
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "not found"
-                                (Character 1 9 () [])
+                                (Character 1 9 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -367,18 +367,18 @@
                                 ()
                                 [((StringConstant
                                     "r"
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                 ))]
-                                (Character 1 10 () [])
+                                (Character 1 10 ())
                                 ()
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "not found"
-                                (Character 1 9 () [])
+                                (Character 1 9 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

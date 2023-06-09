@@ -46,7 +46,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                     ()
                                     Source
                                     Public
@@ -62,7 +62,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                     ()
                                     Source
                                     Public
@@ -76,7 +76,7 @@
                         (Var 4 x)
                         (StringConstant
                             "A"
-                            (Character 1 1 () [])
+                            (Character 1 1 ())
                         )
                         ()
                     )
@@ -120,7 +120,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -136,7 +136,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -146,8 +146,8 @@
                                         })
                                     identity
                                     (FunctionType
-                                        [(Character 1 1 () [])
-                                        (Character 1 -1 () [])]
+                                        [(Character 1 1 ())
+                                        (Character 1 -1 ())]
                                         ()
                                         Source
                                         Implementation

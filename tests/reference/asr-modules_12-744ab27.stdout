@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -52,13 +55,13 @@
                         (ArrayItem
                             (Var 3 a)
                             [(()
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 5 (Integer 4 []))
+                        (IntegerConstant 5 (Integer 4))
                         ()
                     )
                     (If
@@ -66,15 +69,15 @@
                             (ArrayItem
                                 (Var 3 a)
                                 [(()
-                                (IntegerConstant 5 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 5 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 5 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

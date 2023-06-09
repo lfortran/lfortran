@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -37,8 +37,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Complex 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     BindC
                                                     Public
@@ -54,7 +57,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -70,8 +73,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Complex 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     BindC
                                                     Public
@@ -87,7 +93,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [])
+                                                    (Complex 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -103,7 +109,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [])
+                                                    (Complex 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -119,7 +125,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [])
+                                                    (Complex 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -135,7 +141,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [])
+                                                    (Complex 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -145,15 +151,21 @@
                                         })
                                     matveca
                                     (FunctionType
-                                        [(Complex 4 [(()
-                                        ())])
-                                        (Integer 4 [])
-                                        (Complex 4 [(()
-                                        ())])
-                                        (Complex 4 [])
-                                        (Complex 4 [])
-                                        (Complex 4 [])
-                                        (Complex 4 [])]
+                                        [(Array
+                                            (Complex 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Integer 4)
+                                        (Array
+                                            (Complex 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Complex 4)
+                                        (Complex 4)
+                                        (Complex 4)
+                                        (Complex 4)]
                                         ()
                                         BindC
                                         Interface
@@ -189,7 +201,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -205,7 +217,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -221,7 +233,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -237,7 +249,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -253,7 +265,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -269,8 +281,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 2 m))])
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 m))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -286,8 +301,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 2 n))])
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 n))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -297,8 +315,8 @@
                         })
                     variable01
                     (FunctionType
-                        [(Integer 4 [])
-                        (Integer 4 [])]
+                        [(Integer 4)
+                        (Integer 4)]
                         ()
                         Source
                         Implementation

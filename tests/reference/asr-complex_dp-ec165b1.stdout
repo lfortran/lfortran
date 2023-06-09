@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -63,14 +63,14 @@
                         (Cast
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             RealToComplex
-                            (Complex 4 [])
+                            (Complex 4)
                             (ComplexConstant
                                 0.000000
                                 0.000000
-                                (Complex 4 [])
+                                (Complex 4)
                             )
                         )
                         ()
@@ -81,21 +81,21 @@
                             (ComplexConstructor
                                 (RealConstant
                                     1.050000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 (RealConstant
                                     1.050000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Complex 4 [])
+                                (Complex 4)
                                 (ComplexConstant
                                     1.050000
                                     1.050000
-                                    (Complex 4 [])
+                                    (Complex 4)
                                 )
                             )
                             ComplexToComplex
-                            (Complex 8 [])
+                            (Complex 8)
                             ()
                         )
                         ()
@@ -106,21 +106,21 @@
                             (ComplexConstructor
                                 (RealConstant
                                     1.050000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 (RealConstant
                                     1.050000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
-                                (Complex 8 [])
+                                (Complex 8)
                                 (ComplexConstant
                                     1.050000
                                     1.050000
-                                    (Complex 8 [])
+                                    (Complex 8)
                                 )
                             )
                             ComplexToComplex
-                            (Complex 4 [])
+                            (Complex 4)
                             ()
                         )
                         ()

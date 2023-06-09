@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -37,10 +37,13 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 2 (Integer 4 [])))
-                                                    ((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 3 (Integer 4 [])))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 3 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -56,10 +59,13 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 2 (Integer 4 [])))
-                                                    ((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 3 (Integer 4 [])))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))
+                                                        ((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 3 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -85,28 +91,28 @@
                                     []
                                     [(=
                                         (Var 3 a)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (Var 3 b)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (ArrayItem
                                             (Var 3 b)
                                             [(()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())
                                             (()
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4))
                                         ()
                                     )
                                     (Print
@@ -117,16 +123,22 @@
                                                 (Var 3 a)
                                                 Eq
                                                 (Var 3 b)
-                                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                (IntegerConstant 2 (Integer 4 [])))
-                                                ((IntegerConstant 1 (Integer 4 []))
-                                                (IntegerConstant 3 (Integer 4 [])))])
+                                                (Array
+                                                    (Logical 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4)))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                )
                                                 ()
                                             )
-                                            (IntegerConstant 1 (Integer 4 []))]
+                                            (IntegerConstant 1 (Integer 4))]
                                             1
-                                            (Logical 4 [(()
-                                            ())])
+                                            (Array
+                                                (Logical 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )]
                                         ()
@@ -140,16 +152,22 @@
                                                 (Var 3 a)
                                                 Eq
                                                 (Var 3 b)
-                                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                (IntegerConstant 2 (Integer 4 [])))
-                                                ((IntegerConstant 1 (Integer 4 []))
-                                                (IntegerConstant 3 (Integer 4 [])))])
+                                                (Array
+                                                    (Logical 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4)))
+                                                    ((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                )
                                                 ()
                                             )
-                                            (IntegerConstant 2 (Integer 4 []))]
+                                            (IntegerConstant 2 (Integer 4))]
                                             1
-                                            (Logical 4 [(()
-                                            ())])
+                                            (Array
+                                                (Logical 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )]
                                         ()
@@ -171,22 +189,25 @@
                             [(ArrayConstant
                                 [(LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
                                 (LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
                                 (LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )]
-                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 3 (Integer 4 [])))])
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                )
                                 ColMajor
                             )]
                             0
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         ()

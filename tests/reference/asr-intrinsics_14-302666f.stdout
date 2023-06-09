@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,14 +32,14 @@
                                     (FunctionCall
                                         2 selected_int_kind
                                         ()
-                                        [((IntegerConstant 5 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        [((IntegerConstant 5 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -57,15 +57,15 @@
                                         ()
                                         [((StringConstant
                                             "default"
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         ))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -81,14 +81,14 @@
                                     (FunctionCall
                                         2 selected_real_kind
                                         ()
-                                        [((IntegerConstant 5 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        [((IntegerConstant 5 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -104,14 +104,14 @@
                                     (FunctionCall
                                         2 selected_real_kind
                                         ()
-                                        [((IntegerConstant 10 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        [((IntegerConstant 10 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -127,14 +127,14 @@
                                     (FunctionCall
                                         2 selected_int_kind
                                         ()
-                                        [((IntegerConstant 5 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        [((IntegerConstant 5 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -150,14 +150,14 @@
                                     (FunctionCall
                                         2 selected_int_kind
                                         ()
-                                        [((IntegerConstant 5 (Integer 8 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        [((IntegerConstant 5 (Integer 8)))]
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -173,14 +173,14 @@
                                     (FunctionCall
                                         2 selected_int_kind
                                         ()
-                                        [((IntegerConstant 8 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        [((IntegerConstant 8 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -196,14 +196,14 @@
                                     (FunctionCall
                                         2 selected_int_kind
                                         ()
-                                        [((IntegerConstant 10 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        [((IntegerConstant 10 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -219,14 +219,14 @@
                                     (FunctionCall
                                         2 selected_real_kind
                                         ()
-                                        [((IntegerConstant 5 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        [((IntegerConstant 5 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -242,14 +242,14 @@
                                     (FunctionCall
                                         2 selected_real_kind
                                         ()
-                                        [((IntegerConstant 5 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        [((IntegerConstant 5 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -265,14 +265,14 @@
                                     (FunctionCall
                                         2 selected_real_kind
                                         ()
-                                        [((IntegerConstant 5 (Integer 8 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        [((IntegerConstant 5 (Integer 8)))]
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -288,14 +288,14 @@
                                     (FunctionCall
                                         2 selected_real_kind
                                         ()
-                                        [((IntegerConstant 8 (Integer 4 [])))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        [((IntegerConstant 8 (Integer 4)))]
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -311,7 +311,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 7 () [])
+                                    (Character 1 7 ())
                                     ()
                                     Source
                                     Public
@@ -355,13 +355,13 @@
                         (Var 2 s1)
                         (StringConstant
                             "default"
-                            (Character 1 7 () [])
+                            (Character 1 7 ())
                         )
                         ()
                     )
                     (=
                         (Var 2 i1)
-                        (IntegerConstant 5 (Integer 4 []))
+                        (IntegerConstant 5 (Integer 4))
                         ()
                     )
                     (Print
@@ -369,9 +369,9 @@
                         [(FunctionCall
                             2 selected_int_kind
                             ()
-                            [((IntegerConstant 5 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )
                         (Var 2 k1)]
@@ -383,9 +383,9 @@
                         [(FunctionCall
                             2 selected_int_kind
                             ()
-                            [((IntegerConstant 5 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )
                         (Var 2 k2)]
@@ -397,9 +397,9 @@
                         [(FunctionCall
                             2 selected_int_kind
                             ()
-                            [((IntegerConstant 5 (Integer 8 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 8)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )
                         (Var 2 k3)]
@@ -411,9 +411,9 @@
                         [(FunctionCall
                             2 selected_int_kind
                             ()
-                            [((IntegerConstant 8 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 8 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )
                         (Var 2 k4)]
@@ -425,9 +425,9 @@
                         [(FunctionCall
                             2 selected_int_kind
                             ()
-                            [((IntegerConstant 10 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
+                            [((IntegerConstant 10 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
                             ()
                         )
                         (Var 2 k5)]
@@ -439,9 +439,9 @@
                         [(FunctionCall
                             2 selected_real_kind
                             ()
-                            [((IntegerConstant 5 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )
                         (Var 2 k6)]
@@ -453,9 +453,9 @@
                         [(FunctionCall
                             2 selected_real_kind
                             ()
-                            [((IntegerConstant 5 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )
                         (Var 2 k7)]
@@ -467,9 +467,9 @@
                         [(FunctionCall
                             2 selected_real_kind
                             ()
-                            [((IntegerConstant 5 (Integer 8 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 8)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )
                         (Var 2 k8)]
@@ -481,9 +481,9 @@
                         [(FunctionCall
                             2 selected_real_kind
                             ()
-                            [((IntegerConstant 8 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
+                            [((IntegerConstant 8 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
                             ()
                         )
                         (Var 2 k9)]
@@ -497,10 +497,10 @@
                             ()
                             [((StringConstant
                                 "default"
-                                (Character 1 7 () [])
+                                (Character 1 7 ())
                             ))]
-                            (Integer 4 [])
-                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 1 (Integer 4))
                             ()
                         )
                         (Var 2 k10)]
@@ -513,7 +513,7 @@
                             2 selected_int_kind
                             ()
                             [((Var 2 i1))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]
@@ -526,7 +526,7 @@
                             2 selected_real_kind
                             ()
                             [((Var 2 i1))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]
@@ -539,7 +539,7 @@
                             2 selected_char_kind
                             ()
                             [((Var 2 s1))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]
@@ -551,9 +551,9 @@
                         [(FunctionCall
                             2 selected_real_kind
                             ()
-                            [((IntegerConstant 5 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )
                         (Var 2 k11)]
@@ -565,9 +565,9 @@
                         [(FunctionCall
                             2 selected_real_kind
                             ()
-                            [((IntegerConstant 10 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
+                            [((IntegerConstant 10 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
                             ()
                         )
                         (Var 2 k12)]

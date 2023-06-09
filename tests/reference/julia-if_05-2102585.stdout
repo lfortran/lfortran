@@ -1,6 +1,6 @@
 function main()
-    local x::Bool = false
-    local y::Bool = false
+    local x::Bool
+    local y::Bool
     x = true
     y = false
     if x

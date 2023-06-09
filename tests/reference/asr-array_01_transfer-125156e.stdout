@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -30,10 +33,10 @@
                                     size
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -46,14 +49,17 @@
                     [(=
                         (Var 2 m)
                         (ArrayConstant
-                            [(IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))
-                            (IntegerConstant 5 (Integer 4 []))
-                            (IntegerConstant 0 (Integer 4 []))]
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 6 (Integer 4 [])))])
+                            [(IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))
+                            (IntegerConstant 5 (Integer 4))
+                            (IntegerConstant 0 (Integer 4))]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 6 (Integer 4)))]
+                            )
                             ColMajor
                         )
                         ()
@@ -64,11 +70,14 @@
                             (Var 2 m)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (Var 2 size)
-                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                            (Var 2 size))])
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (Var 2 size))]
+                            )
                             ()
                         )]
                         ()

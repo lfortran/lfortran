@@ -25,14 +25,14 @@
                                     Local
                                     (RealConstant
                                         3.300000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         3.300000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -45,10 +45,10 @@
                                     y
                                     []
                                     Local
-                                    (IntegerConstant 7 (Integer 4 []))
-                                    (IntegerConstant 7 (Integer 4 []))
+                                    (IntegerConstant 7 (Integer 4))
+                                    (IntegerConstant 7 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -63,8 +63,8 @@
                         [(Cast
                             (Var 2 x)
                             RealToInteger
-                            (Integer 4 [])
-                            (IntegerConstant 3 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 3 (Integer 4))
                         )
                         (Var 2 y)]
                         ()

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -27,7 +27,7 @@
                                 (ExternalSymbol
                                     2
                                     dabs
-                                    229 dabs
+                                    230 dabs
                                     lfortran_intrinsic_math2
                                     []
                                     dabs
@@ -62,7 +62,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -78,7 +78,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -94,7 +94,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -108,7 +108,7 @@
                         (Var 2 a)
                         (RealConstant
                             4.200000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -118,13 +118,13 @@
                             Cos
                             [(RealConstant
                                 9.500000
-                                (Real 4 [])
+                                (Real 4)
                             )]
                             0
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 -0.997172
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -138,21 +138,21 @@
                                     Add
                                     (RealConstant
                                         0.997172
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -169,43 +169,43 @@
                                         Cos
                                         [(Var 2 a)]
                                         0
-                                        (Real 8 [])
+                                        (Real 8)
                                         ()
                                     )
                                     Add
                                     (Cast
                                         (RealConstant
                                             0.490261
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             0.490261
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (Cast
                                 (RealConstant
                                     0.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 RealToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     0.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -225,13 +225,13 @@
                                                 Cos
                                                 [(RealConstant
                                                     1.500000
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                 )]
                                                 0
-                                                (Real 4 [])
+                                                (Real 4)
                                                 (RealConstant
                                                     0.070737
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                 )
                                             )
                                             Add
@@ -245,45 +245,45 @@
                                                             Cos
                                                             [(Var 2 a)]
                                                             0
-                                                            (Real 8 [])
+                                                            (Real 8)
                                                             ()
                                                         )
-                                                        (Real 8 [])
+                                                        (Real 8)
                                                         ()
                                                     )]
                                                     0
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                 )
                                                 RealToReal
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )]
                                         0
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         0.716404
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -297,7 +297,7 @@
                             2 dcos
                             ()
                             [((Var 2 a))]
-                            (Real 8 [])
+                            (Real 8)
                             ()
                             ()
                         )
@@ -308,12 +308,12 @@
                         (RealUnaryMinus
                             (RealConstant
                                 0.490261
-                                (Real 8 [])
+                                (Real 8)
                             )
-                            (Real 8 [])
+                            (Real 8)
                             (RealConstant
                                 -0.490261
-                                (Real 8 [])
+                                (Real 8)
                             )
                         )
                         ()
@@ -327,19 +327,19 @@
                                     (Var 2 r1)
                                     Sub
                                     (Var 2 r2)
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 ))]
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

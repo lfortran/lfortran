@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 2 n))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 n))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,8 +36,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 2 n))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 n))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -55,8 +61,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     BindC
                                                     Public
@@ -72,8 +81,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     BindC
                                                     Public
@@ -83,10 +95,16 @@
                                         })
                                     driver
                                     (FunctionType
-                                        [(Integer 4 [(()
-                                        ())])
-                                        (Integer 4 [(()
-                                        ())])]
+                                        [(Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )]
                                         ()
                                         BindC
                                         Interface
@@ -117,7 +135,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -127,19 +145,25 @@
                         })
                     implicit_interface5
                     (FunctionType
-                        [(Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                        (FunctionParam
-                            2
-                            (Integer 4 [])
-                            ()
-                        ))])
-                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                        (FunctionParam
-                            2
-                            (Integer 4 [])
-                            ()
-                        ))])
-                        (Integer 4 [])]
+                        [(Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4))
+                            (FunctionParam
+                                2
+                                (Integer 4)
+                                ()
+                            ))]
+                        )
+                        (Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4))
+                            (FunctionParam
+                                2
+                                (Integer 4)
+                                ()
+                            ))]
+                        )
+                        (Integer 4)]
                         ()
                         Source
                         Implementation

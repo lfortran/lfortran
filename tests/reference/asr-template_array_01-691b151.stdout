@@ -73,7 +73,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -90,8 +89,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (TypeParameter
-                                                                        t
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
                                                                         [(()
                                                                         ())]
                                                                     )
@@ -112,7 +113,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -123,18 +123,18 @@
                                                         })
                                                     insert_t
                                                     (FunctionType
-                                                        [(TypeParameter
-                                                            t
+                                                        [(Array
+                                                            (TypeParameter
+                                                                t
+                                                            )
                                                             [(()
                                                             ())]
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -153,11 +153,10 @@
                                                         (ArrayItem
                                                             (Var 5 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4 []))
+                                                            (IntegerConstant 1 (Integer 4))
                                                             ())]
                                                             (TypeParameter
                                                                 t
-                                                                []
                                                             )
                                                             ColMajor
                                                             ()
@@ -170,11 +169,10 @@
                                                         (ArrayItem
                                                             (Var 5 lst)
                                                             [(()
-                                                            (IntegerConstant 1 (Integer 4 []))
+                                                            (IntegerConstant 1 (Integer 4))
                                                             ())]
                                                             (TypeParameter
                                                                 t
-                                                                []
                                                             )
                                                             ColMajor
                                                             ()
@@ -198,7 +196,6 @@
                                                     Default
                                                     (TypeParameter
                                                         t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -224,7 +221,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -240,8 +237,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -257,7 +257,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -267,10 +267,13 @@
                                         })
                                     insert_int
                                     (FunctionType
-                                        [(Integer 4 [(()
-                                        ())])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -288,9 +291,9 @@
                                         (ArrayItem
                                             (Var 8 lst)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
@@ -302,9 +305,9 @@
                                         (ArrayItem
                                             (Var 8 lst)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
@@ -332,7 +335,6 @@
                                                     Default
                                                     (TypeParameter
                                                         t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -358,8 +360,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 1 (Integer 4 [])))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 1 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -375,7 +380,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -391,7 +396,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -419,18 +424,18 @@
                                         (ArrayItem
                                             (Var 6 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (Var 6 i)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (Print
@@ -438,9 +443,9 @@
                                         [(ArrayItem
                                             (Var 6 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]
@@ -454,7 +459,7 @@
                                             ()
                                             [((Var 6 a))
                                             ((Var 6 i))]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -465,9 +470,9 @@
                                         [(ArrayItem
                                             (Var 6 a)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ColMajor
                                             ()
                                         )]

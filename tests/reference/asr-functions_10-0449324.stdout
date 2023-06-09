@@ -30,8 +30,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -47,8 +50,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -64,8 +70,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -81,7 +90,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -91,13 +100,22 @@
                                         })
                                     mergei32
                                     (FunctionType
-                                        [(Integer 4 [(()
-                                        ())])
-                                        (Integer 4 [(()
-                                        ())])
-                                        (Integer 4 [(()
-                                        ())])]
-                                        (Integer 4 [])
+                                        [(Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -133,8 +151,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -150,8 +171,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -167,8 +191,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -184,7 +211,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -194,13 +221,22 @@
                                         })
                                     merger32
                                     (FunctionType
-                                        [(Real 4 [(()
-                                        ())])
-                                        (Real 4 [(()
-                                        ())])
-                                        (Real 4 [(()
-                                        ())])]
-                                        (Real 4 [])
+                                        [(Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                        )]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -236,8 +272,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Real 8)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -253,8 +292,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Real 8)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -270,8 +312,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Real 8)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -287,7 +332,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     Source
                                                     Public
@@ -297,13 +342,22 @@
                                         })
                                     merger64
                                     (FunctionType
-                                        [(Real 8 [(()
-                                        ())])
-                                        (Real 8 [(()
-                                        ())])
-                                        (Real 8 [(()
-                                        ())])]
-                                        (Real 8 [])
+                                        [(Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                        )]
+                                        (Real 8)
                                         Source
                                         Implementation
                                         ()
@@ -345,8 +399,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -362,8 +419,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -379,8 +439,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -396,8 +459,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -413,8 +479,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -430,8 +499,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -509,7 +581,7 @@
                             [((Var 6 a1))
                             ((Var 6 b1))
                             (())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]
@@ -524,7 +596,7 @@
                             [((Var 6 a1))
                             ((Var 6 b1))
                             ((Var 6 m1))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]
@@ -539,7 +611,7 @@
                             [((Var 6 a1))
                             ((Var 6 b1))
                             ((Var 6 m1))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]
@@ -554,7 +626,7 @@
                             [((Var 6 a2))
                             ((Var 6 b2))
                             (())]
-                            (Real 4 [])
+                            (Real 4)
                             ()
                             ()
                         )]
@@ -569,7 +641,7 @@
                             [((Var 6 a2))
                             ((Var 6 b2))
                             ((Var 6 m2))]
-                            (Real 4 [])
+                            (Real 4)
                             ()
                             ()
                         )]
@@ -584,7 +656,7 @@
                             [((Var 6 a2))
                             ((Var 6 b2))
                             ((Var 6 m2))]
-                            (Real 4 [])
+                            (Real 4)
                             ()
                             ()
                         )]

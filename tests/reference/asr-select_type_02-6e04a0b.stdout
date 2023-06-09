@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -121,7 +121,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -150,7 +150,6 @@
                                     Default
                                     (Struct
                                         4 color_point
-                                        []
                                     )
                                     ()
                                     Source
@@ -169,7 +168,6 @@
                                     Default
                                     (Struct
                                         4 point
-                                        []
                                     )
                                     ()
                                     Source
@@ -188,7 +186,6 @@
                                     Default
                                     (Struct
                                         4 point_3d
-                                        []
                                     )
                                     ()
                                     Source
@@ -208,7 +205,6 @@
                                     (Pointer
                                         (Class
                                             4 point
-                                            []
                                         )
                                     )
                                     ()
@@ -241,7 +237,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -296,7 +292,6 @@
                                                     (Pointer
                                                         (Class
                                                             4 point
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -315,18 +310,18 @@
                                         ()
                                         [(StringConstant
                                             "point: "
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (StructInstanceMember
                                             (Var 7 an)
                                             7 1_point_x
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 7 an)
                                             7 1_point_y
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )]
                                         ()
@@ -380,7 +375,6 @@
                                                     (Pointer
                                                         (Class
                                                             4 point
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -399,24 +393,24 @@
                                         ()
                                         [(StringConstant
                                             "color_point: "
-                                            (Character 1 13 () [])
+                                            (Character 1 13 ())
                                         )
                                         (StructInstanceMember
                                             (Var 8 an)
                                             8 1_point_x
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 8 an)
                                             8 1_point_y
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 8 an)
                                             8 1_color_point_color
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )]
                                         ()
@@ -460,7 +454,6 @@
                                                     (Pointer
                                                         (Class
                                                             4 point
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -479,18 +472,18 @@
                                         ()
                                         [(StringConstant
                                             "point: "
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (StructInstanceMember
                                             (Var 9 an)
                                             9 1_point_x
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 9 an)
                                             9 1_point_y
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )]
                                         ()
@@ -544,7 +537,6 @@
                                                     (Pointer
                                                         (Class
                                                             4 point
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -563,24 +555,24 @@
                                         ()
                                         [(StringConstant
                                             "point3d: "
-                                            (Character 1 9 () [])
+                                            (Character 1 9 ())
                                         )
                                         (StructInstanceMember
                                             (Var 10 an)
                                             10 1_point_x
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 10 an)
                                             10 1_point_y
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (StructInstanceMember
                                             (Var 10 an)
                                             10 1_point_3d_z
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )]
                                         ()
@@ -594,12 +586,12 @@
                         (StructInstanceMember
                             (Var 4 p)
                             4 1_point_x
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             1.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -607,12 +599,12 @@
                         (StructInstanceMember
                             (Var 4 p)
                             4 1_point_y
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             2.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -620,12 +612,12 @@
                         (StructInstanceMember
                             (Var 4 p3d)
                             4 1_point_x
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             3.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -633,12 +625,12 @@
                         (StructInstanceMember
                             (Var 4 p3d)
                             4 1_point_y
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             4.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -646,12 +638,12 @@
                         (StructInstanceMember
                             (Var 4 p3d)
                             4 1_point_3d_z
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             5.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -659,12 +651,12 @@
                         (StructInstanceMember
                             (Var 4 cp)
                             4 1_point_x
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             6.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -672,12 +664,12 @@
                         (StructInstanceMember
                             (Var 4 cp)
                             4 1_point_y
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             7.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -685,10 +677,10 @@
                         (StructInstanceMember
                             (Var 4 cp)
                             4 1_color_point_color
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
-                        (IntegerConstant 8 (Integer 4 []))
+                        (IntegerConstant 8 (Integer 4))
                         ()
                     )
                     (=>

@@ -29,7 +29,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -45,7 +45,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -61,7 +61,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -71,9 +71,9 @@
                                         })
                                     add_integer
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -93,7 +93,7 @@
                                             (Var 3 x)
                                             Add
                                             (Var 3 y)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -138,7 +138,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -154,7 +154,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -170,7 +170,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -180,9 +180,9 @@
                                         })
                                     max_integer
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -203,7 +203,7 @@
                                             5 max
                                             [((Var 5 x))
                                             ((Var 5 y))]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -249,7 +249,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -265,7 +265,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -281,7 +281,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -291,9 +291,9 @@
                                         })
                                     min_integer
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -314,7 +314,7 @@
                                             6 min
                                             [((Var 6 x))
                                             ((Var 6 y))]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -340,7 +340,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -356,7 +356,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -372,7 +372,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -382,9 +382,9 @@
                                         })
                                     minus_integer
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -404,7 +404,7 @@
                                             (Var 4 x)
                                             Sub
                                             (Var 4 y)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -429,7 +429,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -440,7 +440,7 @@
                                     one_integer
                                     (FunctionType
                                         []
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -455,7 +455,7 @@
                                     []
                                     [(=
                                         (Var 8 result)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )]
                                     (Var 8 result)
@@ -478,7 +478,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -489,7 +489,7 @@
                                     zero_integer
                                     (FunctionType
                                         []
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -504,7 +504,7 @@
                                     []
                                     [(=
                                         (Var 7 result)
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ()
                                     )]
                                     (Var 7 result)
@@ -538,7 +538,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -554,7 +554,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -570,7 +570,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -580,9 +580,9 @@
                                         })
                                     add_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -602,7 +602,7 @@
                                             (Var 10 x)
                                             Add
                                             (Var 10 y)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -647,7 +647,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -663,7 +663,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -679,7 +679,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -689,9 +689,9 @@
                                         })
                                     max_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -712,7 +712,7 @@
                                             13 max
                                             [((Var 13 x))
                                             ((Var 13 y))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -758,7 +758,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -774,7 +774,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -790,7 +790,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -800,9 +800,9 @@
                                         })
                                     min_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -823,7 +823,7 @@
                                             14 min
                                             [((Var 14 x))
                                             ((Var 14 y))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -849,7 +849,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -865,7 +865,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -881,7 +881,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -891,9 +891,9 @@
                                         })
                                     minus_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -913,7 +913,7 @@
                                             (Var 11 x)
                                             Sub
                                             (Var 11 y)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -938,7 +938,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -949,7 +949,7 @@
                                     one_real
                                     (FunctionType
                                         []
-                                        (Real 4 [])
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -966,7 +966,7 @@
                                         (Var 16 result)
                                         (RealConstant
                                             1.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )]
@@ -990,7 +990,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1006,7 +1006,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1022,7 +1022,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1032,9 +1032,9 @@
                                         })
                                     slash_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -1054,7 +1054,7 @@
                                             (Var 12 x)
                                             Div
                                             (Var 12 y)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -1079,7 +1079,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -1090,7 +1090,7 @@
                                     zero_real
                                     (FunctionType
                                         []
-                                        (Real 4 [])
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -1107,7 +1107,7 @@
                                         (Var 15 result)
                                         (RealConstant
                                             0.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )]
@@ -1356,7 +1356,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1375,7 +1374,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1394,7 +1392,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1407,15 +1404,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -1448,7 +1442,6 @@
                                                     Default
                                                     (TypeParameter
                                                         t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -1482,7 +1475,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1501,7 +1493,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1520,7 +1511,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1533,15 +1523,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -1574,7 +1561,6 @@
                                                     Default
                                                     (TypeParameter
                                                         t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -1598,7 +1584,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1617,7 +1602,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1630,11 +1614,9 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -1660,7 +1642,6 @@
                                                                 ((Var 22 t))]
                                                                 (TypeParameter
                                                                     t
-                                                                    []
                                                                 )
                                                                 ()
                                                                 ()
@@ -1668,7 +1649,6 @@
                                                             ((Var 22 t))]
                                                             (TypeParameter
                                                                 t
-                                                                []
                                                             )
                                                             ()
                                                             ()
@@ -1697,7 +1677,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1716,7 +1695,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -1729,11 +1707,9 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -1760,14 +1736,12 @@
                                                                 ((Var 23 t))]
                                                                 (TypeParameter
                                                                     t
-                                                                    []
                                                                 )
                                                                 ()
                                                                 ()
                                                             ))]
                                                             (TypeParameter
                                                                 t
-                                                                []
                                                             )
                                                             ()
                                                             ()
@@ -1930,7 +1904,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -1946,7 +1920,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -1976,8 +1950,8 @@
                                         (FunctionCall
                                             24 triple_add_l
                                             ()
-                                            [((IntegerConstant 7 (Integer 4 [])))]
-                                            (Integer 4 [])
+                                            [((IntegerConstant 7 (Integer 4)))]
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -1988,8 +1962,8 @@
                                         (FunctionCall
                                             24 triple_add_r
                                             ()
-                                            [((IntegerConstant 7 (Integer 4 [])))]
-                                            (Integer 4 [])
+                                            [((IntegerConstant 7 (Integer 4)))]
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -1999,12 +1973,12 @@
                                         ()
                                         [(StringConstant
                                             "tal = "
-                                            (Character 1 6 () [])
+                                            (Character 1 6 ())
                                         )
                                         (Var 25 tal)
                                         (StringConstant
                                             " tar = "
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (Var 25 tar)]
                                         ()
@@ -2030,7 +2004,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -2046,7 +2020,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -2078,9 +2052,9 @@
                                             ()
                                             [((RealConstant
                                                 7.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             ))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -2093,9 +2067,9 @@
                                             ()
                                             [((RealConstant
                                                 7.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             ))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -2105,12 +2079,12 @@
                                         ()
                                         [(StringConstant
                                             "tmaxl ="
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (Var 27 tmaxl)
                                         (StringConstant
                                             " tmaxr ="
-                                            (Character 1 8 () [])
+                                            (Character 1 8 ())
                                         )
                                         (Var 27 tmaxr)]
                                         ()
@@ -2136,7 +2110,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -2152,7 +2126,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -2184,9 +2158,9 @@
                                             ()
                                             [((RealConstant
                                                 7.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             ))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -2199,9 +2173,9 @@
                                             ()
                                             [((RealConstant
                                                 7.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             ))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -2211,12 +2185,12 @@
                                         ()
                                         [(StringConstant
                                             "tml = "
-                                            (Character 1 6 () [])
+                                            (Character 1 6 ())
                                         )
                                         (Var 26 tml)
                                         (StringConstant
                                             " tmr = "
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (Var 26 tmr)]
                                         ()
@@ -2231,6 +2205,87 @@
                             triple_add_l:
                                 (Function
                                     (SymbolTable
+                                        124
+                                        {
+                                            result:
+                                                (Variable
+                                                    124
+                                                    result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            t:
+                                                (Variable
+                                                    124
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    triple_add_l
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    [add_integer]
+                                    [(Var 124 t)]
+                                    [(=
+                                        (Var 124 result)
+                                        (FunctionCall
+                                            24 add_integer
+                                            ()
+                                            [((FunctionCall
+                                                24 add_integer
+                                                ()
+                                                [((Var 124 t))
+                                                ((Var 124 t))]
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            ))
+                                            ((Var 124 t))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 124 result)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            triple_add_r:
+                                (Function
+                                    (SymbolTable
                                         125
                                         {
                                             result:
@@ -2242,7 +2297,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2258,7 +2313,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2266,10 +2321,10 @@
                                                     .false.
                                                 )
                                         })
-                                    triple_add_l
+                                    triple_add_r
                                     (FunctionType
-                                        [(Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -2287,17 +2342,17 @@
                                         (FunctionCall
                                             24 add_integer
                                             ()
-                                            [((FunctionCall
+                                            [((Var 125 t))
+                                            ((FunctionCall
                                                 24 add_integer
                                                 ()
                                                 [((Var 125 t))
                                                 ((Var 125 t))]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                                 ()
-                                            ))
-                                            ((Var 125 t))]
-                                            (Integer 4 [])
+                                            ))]
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -2309,21 +2364,21 @@
                                     .false.
                                     ()
                                 ),
-                            triple_add_r:
+                            triple_max_l:
                                 (Function
                                     (SymbolTable
-                                        126
+                                        128
                                         {
                                             result:
                                                 (Variable
-                                                    126
+                                                    128
                                                     result
                                                     []
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2332,14 +2387,14 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    126
+                                                    128
                                                     t
                                                     []
                                                     In
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2347,10 +2402,10 @@
                                                     .false.
                                                 )
                                         })
-                                    triple_add_r
+                                    triple_max_l
                                     (FunctionType
-                                        [(Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -2361,36 +2416,36 @@
                                         .false.
                                         .false.
                                     )
-                                    [add_integer]
-                                    [(Var 126 t)]
+                                    [max_real]
+                                    [(Var 128 t)]
                                     [(=
-                                        (Var 126 result)
+                                        (Var 128 result)
                                         (FunctionCall
-                                            24 add_integer
+                                            24 max_real
                                             ()
-                                            [((Var 126 t))
-                                            ((FunctionCall
-                                                24 add_integer
+                                            [((FunctionCall
+                                                24 max_real
                                                 ()
-                                                [((Var 126 t))
-                                                ((Var 126 t))]
-                                                (Integer 4 [])
+                                                [((Var 128 t))
+                                                ((Var 128 t))]
+                                                (Real 4)
                                                 ()
                                                 ()
-                                            ))]
-                                            (Integer 4 [])
+                                            ))
+                                            ((Var 128 t))]
+                                            (Real 4)
                                             ()
                                             ()
                                         )
                                         ()
                                     )]
-                                    (Var 126 result)
+                                    (Var 128 result)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
-                            triple_max_l:
+                            triple_max_r:
                                 (Function
                                     (SymbolTable
                                         129
@@ -2404,7 +2459,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2420,7 +2475,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2428,10 +2483,10 @@
                                                     .false.
                                                 )
                                         })
-                                    triple_max_l
+                                    triple_max_r
                                     (FunctionType
-                                        [(Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -2449,17 +2504,17 @@
                                         (FunctionCall
                                             24 max_real
                                             ()
-                                            [((FunctionCall
+                                            [((Var 129 t))
+                                            ((FunctionCall
                                                 24 max_real
                                                 ()
                                                 [((Var 129 t))
                                                 ((Var 129 t))]
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                                 ()
-                                            ))
-                                            ((Var 129 t))]
-                                            (Real 4 [])
+                                            ))]
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -2471,21 +2526,21 @@
                                     .false.
                                     ()
                                 ),
-                            triple_max_r:
+                            triple_minus_l:
                                 (Function
                                     (SymbolTable
-                                        130
+                                        126
                                         {
                                             result:
                                                 (Variable
-                                                    130
+                                                    126
                                                     result
                                                     []
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2494,14 +2549,14 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    130
+                                                    126
                                                     t
                                                     []
                                                     In
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2509,10 +2564,10 @@
                                                     .false.
                                                 )
                                         })
-                                    triple_max_r
+                                    triple_minus_l
                                     (FunctionType
-                                        [(Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -2523,36 +2578,36 @@
                                         .false.
                                         .false.
                                     )
-                                    [max_real]
-                                    [(Var 130 t)]
+                                    [minus_real]
+                                    [(Var 126 t)]
                                     [(=
-                                        (Var 130 result)
+                                        (Var 126 result)
                                         (FunctionCall
-                                            24 max_real
+                                            24 minus_real
                                             ()
-                                            [((Var 130 t))
-                                            ((FunctionCall
-                                                24 max_real
+                                            [((FunctionCall
+                                                24 minus_real
                                                 ()
-                                                [((Var 130 t))
-                                                ((Var 130 t))]
-                                                (Real 4 [])
+                                                [((Var 126 t))
+                                                ((Var 126 t))]
+                                                (Real 4)
                                                 ()
                                                 ()
-                                            ))]
-                                            (Real 4 [])
+                                            ))
+                                            ((Var 126 t))]
+                                            (Real 4)
                                             ()
                                             ()
                                         )
                                         ()
                                     )]
-                                    (Var 130 result)
+                                    (Var 126 result)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
-                            triple_minus_l:
+                            triple_minus_r:
                                 (Function
                                     (SymbolTable
                                         127
@@ -2566,7 +2621,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2582,7 +2637,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -2590,10 +2645,10 @@
                                                     .false.
                                                 )
                                         })
-                                    triple_minus_l
+                                    triple_minus_r
                                     (FunctionType
-                                        [(Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -2611,104 +2666,23 @@
                                         (FunctionCall
                                             24 minus_real
                                             ()
-                                            [((FunctionCall
+                                            [((Var 127 t))
+                                            ((FunctionCall
                                                 24 minus_real
                                                 ()
                                                 [((Var 127 t))
                                                 ((Var 127 t))]
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                                 ()
-                                            ))
-                                            ((Var 127 t))]
-                                            (Real 4 [])
+                                            ))]
+                                            (Real 4)
                                             ()
                                             ()
                                         )
                                         ()
                                     )]
                                     (Var 127 result)
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            triple_minus_r:
-                                (Function
-                                    (SymbolTable
-                                        128
-                                        {
-                                            result:
-                                                (Variable
-                                                    128
-                                                    result
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4 [])
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            t:
-                                                (Variable
-                                                    128
-                                                    t
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4 [])
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    triple_minus_r
-                                    (FunctionType
-                                        [(Real 4 [])]
-                                        (Real 4 [])
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    [minus_real]
-                                    [(Var 128 t)]
-                                    [(=
-                                        (Var 128 result)
-                                        (FunctionCall
-                                            24 minus_real
-                                            ()
-                                            [((Var 128 t))
-                                            ((FunctionCall
-                                                24 minus_real
-                                                ()
-                                                [((Var 128 t))
-                                                ((Var 128 t))]
-                                                (Real 4 [])
-                                                ()
-                                                ()
-                                            ))]
-                                            (Real 4 [])
-                                            ()
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 128 result)
                                     Public
                                     .false.
                                     .false.

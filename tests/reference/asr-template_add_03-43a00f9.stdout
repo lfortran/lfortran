@@ -66,7 +66,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -82,7 +82,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -98,7 +98,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -108,9 +108,9 @@
                                         })
                                     add_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -131,7 +131,7 @@
                                             ()
                                             [((Var 11 x))
                                             ((Var 11 y))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )
@@ -164,7 +164,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -183,7 +182,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -202,7 +200,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -215,15 +212,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -247,7 +241,6 @@
                                                             ((Var 7 y))]
                                                             (TypeParameter
                                                                 t
-                                                                []
                                                             )
                                                             ()
                                                             ()
@@ -276,7 +269,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -295,7 +287,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -314,7 +305,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -327,15 +317,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -368,7 +355,6 @@
                                                     Default
                                                     (TypeParameter
                                                         t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -402,7 +388,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -421,7 +406,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -440,7 +424,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -459,7 +442,6 @@
                                                                     Default
                                                                     (TypeParameter
                                                                         t
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -472,15 +454,12 @@
                                                     (FunctionType
                                                         [(TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )]
                                                         (TypeParameter
                                                             t
-                                                            []
                                                         )
                                                         Source
                                                         Implementation
@@ -513,7 +492,6 @@
                                                     Default
                                                     (TypeParameter
                                                         t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -540,7 +518,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -556,7 +534,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -584,7 +562,7 @@
                                         (Var 8 x)
                                         (RealConstant
                                             5.100000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )
@@ -592,7 +570,7 @@
                                         (Var 8 y)
                                         (RealConstant
                                             7.200000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )
@@ -600,14 +578,14 @@
                                         ()
                                         [(StringConstant
                                             "The result is "
-                                            (Character 1 14 () [])
+                                            (Character 1 14 ())
                                         )
                                         (FunctionCall
                                             2 add_real
                                             ()
                                             [((Var 8 x))
                                             ((Var 8 y))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )]
@@ -624,28 +602,28 @@
                                                         ()
                                                         [((Var 8 x))
                                                         ((Var 8 y))]
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                         ()
                                                     )
                                                     Sub
                                                     (RealConstant
                                                         12.300000
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )]
                                                 0
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
                                             Gt
                                             (RealConstant
                                                 0.000010
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(ErrorStop
@@ -673,7 +651,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -689,7 +667,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -705,7 +683,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -715,9 +693,9 @@
                                         })
                                     ~add_intrinsic_real
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -737,7 +715,7 @@
                                             (Var 10 arg0)
                                             Add
                                             (Var 10 arg1)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()

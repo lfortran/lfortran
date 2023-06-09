@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -47,8 +47,8 @@
                                         })
                                     fcn
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
+                                        [(Integer 4)
+                                        (Integer 4)]
                                         ()
                                         BindC
                                         Interface
@@ -79,7 +79,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -95,7 +95,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -111,7 +111,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -121,10 +121,10 @@
                         })
                     fdjac1
                     (FunctionType
-                        [(Real 4 [])
-                        (Integer 4 [])
-                        (Integer 4 [])
-                        (Integer 4 [])]
+                        [(Real 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)]
                         ()
                         Source
                         Implementation

@@ -44,7 +44,7 @@
                         ()
                         [(StringConstant
                             "j = "
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         (Var 4 j)]
                         ()
@@ -89,7 +89,7 @@
                                         ()
                                         [(StringConstant
                                             "i = "
-                                            (Character 1 4 () [])
+                                            (Character 1 4 ())
                                         )
                                         (Var 2 i)]
                                         ()
@@ -107,10 +107,10 @@
                                     i
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -123,10 +123,10 @@
                                     j
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public

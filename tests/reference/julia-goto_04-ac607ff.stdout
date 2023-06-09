@@ -1,6 +1,6 @@
 function main()
-    local a::Int32 = 0
-    local n::Int32 = 0
+    local a::Int32
+    local n::Int32
     n = 2
     a = 10
     if n - 1 == 1

@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -35,15 +38,15 @@
                                         ()
                                         [((RealConstant
                                             0.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         ))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -59,7 +62,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -75,7 +78,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -101,7 +104,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -117,7 +120,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -131,29 +134,29 @@
                         (ArrayItem
                             (Var 2 ans)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Integer 8 [])
+                            (Integer 8)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 8524933037632333570 (Integer 8 []))
+                        (IntegerConstant 8524933037632333570 (Integer 8))
                         ()
                     )
                     (=
                         (ArrayItem
                             (Var 2 ans)
                             [(()
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ())]
-                            (Integer 8 [])
+                            (Integer 8)
                             ColMajor
                             ()
                         )
                         (IntegerUnaryMinus
-                            (IntegerConstant 1069250973542918798 (Integer 8 []))
-                            (Integer 8 [])
-                            (IntegerConstant -1069250973542918798 (Integer 8 []))
+                            (IntegerConstant 1069250973542918798 (Integer 8))
+                            (Integer 8)
+                            (IntegerConstant -1069250973542918798 (Integer 8))
                         )
                         ()
                     )
@@ -161,16 +164,16 @@
                         (ArrayItem
                             (Var 2 ans)
                             [(()
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                             ())]
-                            (Integer 8 [])
+                            (Integer 8)
                             ColMajor
                             ()
                         )
                         (IntegerUnaryMinus
-                            (IntegerConstant 5123867065024149335 (Integer 8 []))
-                            (Integer 8 [])
-                            (IntegerConstant -5123867065024149335 (Integer 8 []))
+                            (IntegerConstant 5123867065024149335 (Integer 8))
+                            (Integer 8)
+                            (IntegerConstant -5123867065024149335 (Integer 8))
                         )
                         ()
                     )
@@ -178,26 +181,26 @@
                         (ArrayItem
                             (Var 2 ans)
                             [(()
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                             ())]
-                            (Integer 8 [])
+                            (Integer 8)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 7303655603304982073 (Integer 8 []))
+                        (IntegerConstant 7303655603304982073 (Integer 8))
                         ()
                     )
                     (=
                         (ArrayItem
                             (Var 2 ans)
                             [(()
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             ())]
-                            (Integer 8 [])
+                            (Integer 8)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 5108441843522503546 (Integer 8 []))
+                        (IntegerConstant 5108441843522503546 (Integer 8))
                         ()
                     )
                     (Print
@@ -211,17 +214,17 @@
                         (ComplexConstructor
                             (RealConstant
                                 7.700000
-                                (Real 8 [])
+                                (Real 8)
                             )
                             (RealConstant
                                 5.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
-                            (Complex 8 [])
+                            (Complex 8)
                             (ComplexConstant
                                 7.700000
                                 5.000000
-                                (Complex 8 [])
+                                (Complex 8)
                             )
                         )
                         ()
@@ -231,7 +234,7 @@
                         (Cast
                             (Var 2 w8)
                             ComplexToInteger
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -241,7 +244,7 @@
                         (Cast
                             (Var 2 w8)
                             ComplexToInteger
-                            (Integer 8 [])
+                            (Integer 8)
                             ()
                         )
                         ()
@@ -257,8 +260,8 @@
                         (IntegerCompare
                             (Var 2 i4)
                             NotEq
-                            (IntegerConstant 7 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 7 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -271,12 +274,12 @@
                             (Var 2 i8)
                             NotEq
                             (Cast
-                                (IntegerConstant 7 (Integer 4 []))
+                                (IntegerConstant 7 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 7 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 7 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -289,17 +292,17 @@
                         (ComplexConstructor
                             (RealConstant
                                 7.700000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 5.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Complex 4 [])
+                            (Complex 4)
                             (ComplexConstant
                                 7.700000
                                 5.000000
-                                (Complex 4 [])
+                                (Complex 4)
                             )
                         )
                         ()
@@ -309,7 +312,7 @@
                         (Cast
                             (Var 2 w4)
                             ComplexToInteger
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -319,7 +322,7 @@
                         (Cast
                             (Var 2 w4)
                             ComplexToInteger
-                            (Integer 8 [])
+                            (Integer 8)
                             ()
                         )
                         ()
@@ -335,8 +338,8 @@
                         (IntegerCompare
                             (Var 2 i4)
                             NotEq
-                            (IntegerConstant 7 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 7 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -349,12 +352,12 @@
                             (Var 2 i8)
                             NotEq
                             (Cast
-                                (IntegerConstant 7 (Integer 4 []))
+                                (IntegerConstant 7 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 7 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 7 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

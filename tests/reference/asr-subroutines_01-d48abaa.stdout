@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -47,8 +47,8 @@
                                         })
                                     f
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
+                                        [(Integer 4)
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -68,8 +68,8 @@
                                         (IntegerBinOp
                                             (Var 3 a)
                                             Add
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -89,7 +89,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -105,7 +105,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -117,20 +117,20 @@
                     []
                     [(=
                         (Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 j)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (If
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -156,8 +156,8 @@
                         (IntegerCompare
                             (Var 2 i)
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -169,8 +169,8 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -180,15 +180,15 @@
                     )
                     (=
                         (Var 2 j)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (If
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -199,7 +199,7 @@
                     (SubroutineCall
                         2 f
                         ()
-                        [((IntegerConstant 3 (Integer 4 [])))
+                        [((IntegerConstant 3 (Integer 4)))
                         ((Var 2 j))]
                         ()
                     )
@@ -213,8 +213,8 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -224,15 +224,15 @@
                     )
                     (=
                         (Var 2 j)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (If
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -244,11 +244,11 @@
                         2 f
                         ()
                         [((IntegerBinOp
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             Add
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 3 (Integer 4))
                         ))
                         ((Var 2 j))]
                         ()
@@ -263,8 +263,8 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -274,15 +274,15 @@
                     )
                     (=
                         (Var 2 j)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (If
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -296,8 +296,8 @@
                         [((IntegerBinOp
                             (Var 2 i)
                             Add
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
                             ()
                         ))
                         ((Var 2 j))]
@@ -313,8 +313,8 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

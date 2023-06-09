@@ -1,6 +1,6 @@
 function main()
-    local marks::Int32 = 0
-    local out::Int32 = 0
+    local marks::Int32
+    local out::Int32
     marks = 81
     if 91 ≤ marks ≤ 100
         out = 0

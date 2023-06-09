@@ -16,26 +16,26 @@
                                     (StringSection
                                         (Var 2 hex_digits)
                                         (IntegerBinOp
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             Sub
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 10 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Character 1 22 () [])
+                                        (IntegerConstant 10 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Character 1 22 ())
                                         (StringConstant
                                             "0123456789"
-                                            (Character 1 22 () [])
+                                            (Character 1 22 ())
                                         )
                                     )
                                     (StringConstant
                                         "0123456789"
-                                        (Character 1 22 () [])
+                                        (Character 1 22 ())
                                     )
                                     Parameter
-                                    (Character 1 22 () [])
+                                    (Character 1 22 ())
                                     ()
                                     Source
                                     Public
@@ -50,14 +50,14 @@
                                     Local
                                     (StringConstant
                                         "0123456789ABCDEFabcdef"
-                                        (Character 1 22 () [])
+                                        (Character 1 22 ())
                                     )
                                     (StringConstant
                                         "0123456789ABCDEFabcdef"
-                                        (Character 1 22 () [])
+                                        (Character 1 22 ())
                                     )
                                     Parameter
-                                    (Character 1 22 () [])
+                                    (Character 1 22 ())
                                     ()
                                     Source
                                     Public
@@ -73,26 +73,26 @@
                                     (StringSection
                                         (Var 2 fullhex_digits)
                                         (IntegerBinOp
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             Sub
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 16 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Character 1 22 () [])
+                                        (IntegerConstant 16 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Character 1 22 ())
                                         (StringConstant
                                             "0123456789ABCDEF"
-                                            (Character 1 22 () [])
+                                            (Character 1 22 ())
                                         )
                                     )
                                     (StringConstant
                                         "0123456789ABCDEF"
-                                        (Character 1 22 () [])
+                                        (Character 1 22 ())
                                     )
                                     Parameter
-                                    (Character 1 22 () [])
+                                    (Character 1 22 ())
                                     ()
                                     Source
                                     Public
@@ -107,14 +107,14 @@
                                     Local
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 () [])
+                                        (Character 1 52 ())
                                     )
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 () [])
+                                        (Character 1 52 ())
                                     )
                                     Parameter
-                                    (Character 1 52 () [])
+                                    (Character 1 52 ())
                                     ()
                                     Source
                                     Public
@@ -130,26 +130,26 @@
                                     (StringSection
                                         (Var 2 letters)
                                         (IntegerBinOp
-                                            (IntegerConstant 27 (Integer 4 []))
+                                            (IntegerConstant 27 (Integer 4))
                                             Sub
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Character 1 52 () [])
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Character 1 52 ())
                                         (StringConstant
                                             "abcdefghijklmnopqrstuvwxyz"
-                                            (Character 1 52 () [])
+                                            (Character 1 52 ())
                                         )
                                     )
                                     (StringConstant
                                         "abcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 () [])
+                                        (Character 1 52 ())
                                     )
                                     Parameter
-                                    (Character 1 52 () [])
+                                    (Character 1 52 ())
                                     ()
                                     Source
                                     Public
@@ -164,14 +164,14 @@
                                     Local
                                     (StringConstant
                                         "0123456789abcdef"
-                                        (Character 1 16 () [])
+                                        (Character 1 16 ())
                                     )
                                     (StringConstant
                                         "0123456789abcdef"
-                                        (Character 1 16 () [])
+                                        (Character 1 16 ())
                                     )
                                     Parameter
-                                    (Character 1 16 () [])
+                                    (Character 1 16 ())
                                     ()
                                     Source
                                     Public
@@ -187,26 +187,26 @@
                                     (StringSection
                                         (Var 2 digits)
                                         (IntegerBinOp
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             Sub
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 8 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Character 1 22 () [])
+                                        (IntegerConstant 8 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Character 1 22 ())
                                         (StringConstant
                                             "01234567"
-                                            (Character 1 22 () [])
+                                            (Character 1 22 ())
                                         )
                                     )
                                     (StringConstant
                                         "01234567"
-                                        (Character 1 22 () [])
+                                        (Character 1 22 ())
                                     )
                                     Parameter
-                                    (Character 1 22 () [])
+                                    (Character 1 22 ())
                                     ()
                                     Source
                                     Public
@@ -222,26 +222,26 @@
                                     (StringSection
                                         (Var 2 letters)
                                         (IntegerBinOp
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             Sub
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 26 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Character 1 52 () [])
+                                        (IntegerConstant 26 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Character 1 52 ())
                                         (StringConstant
                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                            (Character 1 52 () [])
+                                            (Character 1 52 ())
                                         )
                                     )
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                        (Character 1 52 () [])
+                                        (Character 1 52 ())
                                     )
                                     Parameter
-                                    (Character 1 52 () [])
+                                    (Character 1 52 ())
                                     ()
                                     Source
                                     Public

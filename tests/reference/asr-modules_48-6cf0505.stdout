@@ -82,7 +82,7 @@
                         ()
                         [(StringConstant
                             "running modules_48"
-                            (Character 1 18 () [])
+                            (Character 1 18 ())
                         )]
                         ()
                         ()
@@ -112,10 +112,10 @@
                                                     fnv_offset_32
                                                     []
                                                     Local
-                                                    (IntegerConstant 2166136261 (Integer 8 []))
-                                                    (IntegerConstant 2166136261 (Integer 8 []))
+                                                    (IntegerConstant 2166136261 (Integer 8))
+                                                    (IntegerConstant 2166136261 (Integer 8))
                                                     Parameter
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -128,10 +128,10 @@
                                                     fnv_prime_32
                                                     []
                                                     Local
-                                                    (IntegerConstant 16777619 (Integer 8 []))
-                                                    (IntegerConstant 16777619 (Integer 8 []))
+                                                    (IntegerConstant 16777619 (Integer 8))
+                                                    (IntegerConstant 16777619 (Integer 8))
                                                     Parameter
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -147,7 +147,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -163,7 +163,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -174,7 +174,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     ieor
-                                                    37 ieor
+                                                    36 ieor
                                                     lfortran_intrinsic_bit
                                                     []
                                                     ieor
@@ -184,7 +184,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     ieor@ieor64
-                                                    37 ieor64
+                                                    36 ieor64
                                                     lfortran_intrinsic_bit
                                                     []
                                                     ieor64
@@ -199,7 +199,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -235,7 +235,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -245,9 +245,9 @@
                                         })
                                     fnv_1a_char
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Integer 8 [])]
-                                        (Integer 8 [])
+                                        [(Character 1 -1 ())
+                                        (Integer 8)]
+                                        (Integer 8)
                                         Source
                                         Implementation
                                         ()
@@ -268,7 +268,7 @@
                                             4 present
                                             ()
                                             [((Var 4 seed))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -286,13 +286,13 @@
                                     (DoLoop
                                         ()
                                         ((Var 4 i)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         (FunctionCall
                                             4 len
                                             ()
                                             [((Var 4 input))
                                             (())]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -308,19 +308,19 @@
                                                         (StringItem
                                                             (Var 4 input)
                                                             (Var 4 i)
-                                                            (Character 1 -1 () [])
+                                                            (Character 1 -1 ())
                                                             ()
                                                         )
-                                                        (Integer 8 [])
+                                                        (Integer 8)
                                                         ()
                                                     ))]
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     ()
                                                 )
                                                 Mul
                                                 (Var 4 fnv_prime_32)
-                                                (Integer 8 [])
+                                                (Integer 8)
                                                 ()
                                             )
                                             ()
@@ -356,7 +356,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -372,7 +372,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -388,8 +388,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
-                                                        2 string_t
+                                                    (Array
+                                                        (Struct
+                                                            2 string_t
+                                                        )
                                                         [(()
                                                         ())]
                                                     )
@@ -408,7 +410,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -418,13 +420,15 @@
                                         })
                                     fnv_1a_string_t
                                     (FunctionType
-                                        [(Struct
-                                            2 string_t
+                                        [(Array
+                                            (Struct
+                                                2 string_t
+                                            )
                                             [(()
                                             ())]
                                         )
-                                        (Integer 8 [])]
-                                        (Integer 8 [])
+                                        (Integer 8)]
+                                        (Integer 8)
                                         Source
                                         Implementation
                                         ()
@@ -447,22 +451,20 @@
                                                 (ArrayItem
                                                     (Var 5 input)
                                                     [(()
-                                                    (IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerConstant 1 (Integer 4))
                                                     ())]
                                                     (Struct
                                                         2 string_t
-                                                        [(()
-                                                        ())]
                                                     )
                                                     ColMajor
                                                     ()
                                                 )
                                                 5 1_string_t_s
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             ))
                                             ((Var 5 seed))]
-                                            (Integer 8 [])
+                                            (Integer 8)
                                             ()
                                             ()
                                         )
@@ -471,11 +473,11 @@
                                     (DoLoop
                                         ()
                                         ((Var 5 i)
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4))
                                         (ArraySize
                                             (Var 5 input)
                                             ()
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ())
@@ -492,18 +494,16 @@
                                                         ())]
                                                         (Struct
                                                             2 string_t
-                                                            [(()
-                                                            ())]
                                                         )
                                                         ColMajor
                                                         ()
                                                     )
                                                     5 1_string_t_s
-                                                    (Character 1 -2 () [])
+                                                    (Character 1 -2 ())
                                                     ()
                                                 ))
                                                 ((Var 5 hash))]
-                                                (Integer 8 [])
+                                                (Integer 8)
                                                 ()
                                                 ()
                                             )
@@ -534,35 +534,35 @@
                                                             (StringConcat
                                                                 (Var 6 upper)
                                                                 (Var 6 lower)
-                                                                (Character 1 52 () [])
+                                                                (Character 1 52 ())
                                                                 (StringConstant
                                                                     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                                                    (Character 1 52 () [])
+                                                                    (Character 1 52 ())
                                                                 )
                                                             )
                                                             (Var 6 int)
-                                                            (Character 1 62 () [])
+                                                            (Character 1 62 ())
                                                             (StringConstant
                                                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-                                                                (Character 1 62 () [])
+                                                                (Character 1 62 ())
                                                             )
                                                         )
                                                         (StringConstant
                                                             "_"
-                                                            (Character 1 1 () [])
+                                                            (Character 1 1 ())
                                                         )
-                                                        (Character 1 63 () [])
+                                                        (Character 1 63 ())
                                                         (StringConstant
                                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-                                                            (Character 1 63 () [])
+                                                            (Character 1 63 ())
                                                         )
                                                     )
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-                                                        (Character 1 63 () [])
+                                                        (Character 1 63 ())
                                                     )
                                                     Parameter
-                                                    (Character 1 63 () [])
+                                                    (Character 1 63 ())
                                                     ()
                                                     Source
                                                     Public
@@ -577,14 +577,14 @@
                                                     Local
                                                     (StringConstant
                                                         "0123456789"
-                                                        (Character 1 10 () [])
+                                                        (Character 1 10 ())
                                                     )
                                                     (StringConstant
                                                         "0123456789"
-                                                        (Character 1 10 () [])
+                                                        (Character 1 10 ())
                                                     )
                                                     Parameter
-                                                    (Character 1 10 () [])
+                                                    (Character 1 10 ())
                                                     ()
                                                     Source
                                                     Public
@@ -605,7 +605,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     len_trim
-                                                    104 len_trim
+                                                    103 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -620,7 +620,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -636,7 +636,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -651,14 +651,14 @@
                                                     Local
                                                     (StringConstant
                                                         "abcdefghijklmnopqrstuvwxyz"
-                                                        (Character 1 26 () [])
+                                                        (Character 1 26 ())
                                                     )
                                                     (StringConstant
                                                         "abcdefghijklmnopqrstuvwxyz"
-                                                        (Character 1 26 () [])
+                                                        (Character 1 26 ())
                                                     )
                                                     Parameter
-                                                    (Character 1 26 () [])
+                                                    (Character 1 26 ())
                                                     ()
                                                     Source
                                                     Public
@@ -673,8 +673,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -685,7 +687,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     trim
-                                                    104 trim
+                                                    103 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -699,14 +701,14 @@
                                                     Local
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                        (Character 1 26 () [])
+                                                        (Character 1 26 ())
                                                     )
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                        (Character 1 26 () [])
+                                                        (Character 1 26 ())
                                                     )
                                                     Parameter
-                                                    (Character 1 26 () [])
+                                                    (Character 1 26 ())
                                                     ()
                                                     Source
                                                     Public
@@ -717,7 +719,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     verify_kind4
-                                                    104 verify_kind4
+                                                    103 verify_kind4
                                                     lfortran_intrinsic_string
                                                     []
                                                     verify_kind4
@@ -726,8 +728,8 @@
                                         })
                                     is_fortran_name
                                     (FunctionType
-                                        [(Character 1 -1 () [])]
-                                        (Logical 4 [])
+                                        [(Character 1 -1 ())]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -753,10 +755,10 @@
                                                 6 len_trim
                                                 ()
                                                 [((Var 6 line))]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                                 ()
-                                            ) [])
+                                            ))
                                             ()
                                             ()
                                         )
@@ -769,13 +771,13 @@
                                                 ()
                                                 [((Var 6 name))
                                                 (())]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 0 (Integer 4 []))
-                                            (Logical 4 [])
+                                            (IntegerConstant 0 (Integer 4))
+                                            (Logical 4)
                                             ()
                                         )
                                         [(=
@@ -785,7 +787,7 @@
                                                     (LogicalBinOp
                                                         (LogicalConstant
                                                             .true.
-                                                            (Logical 4 [])
+                                                            (Logical 4)
                                                         )
                                                         And
                                                         (IntegerCompare
@@ -795,37 +797,37 @@
                                                                 [((StringSection
                                                                     (Var 6 name)
                                                                     (IntegerBinOp
-                                                                        (IntegerConstant 1 (Integer 4 []))
+                                                                        (IntegerConstant 1 (Integer 4))
                                                                         Sub
-                                                                        (IntegerConstant 1 (Integer 4 []))
-                                                                        (Integer 4 [])
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (Integer 4)
                                                                         ()
                                                                     )
-                                                                    (IntegerConstant 1 (Integer 4 []))
-                                                                    (IntegerConstant 1 (Integer 4 []))
-                                                                    (Character 1 -1 () [])
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Character 1 -1 ())
                                                                     ()
                                                                 ))
                                                                 ((StringConcat
                                                                     (Var 6 lower)
                                                                     (Var 6 upper)
-                                                                    (Character 1 52 () [])
+                                                                    (Character 1 52 ())
                                                                     (StringConstant
                                                                         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                                        (Character 1 52 () [])
+                                                                        (Character 1 52 ())
                                                                     )
                                                                 ))
                                                                 (())]
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                                 ()
                                                             )
                                                             Eq
-                                                            (IntegerConstant 0 (Integer 4 []))
-                                                            (Logical 4 [])
+                                                            (IntegerConstant 0 (Integer 4))
+                                                            (Logical 4)
                                                             ()
                                                         )
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                         ()
                                                     )
                                                     And
@@ -836,16 +838,16 @@
                                                             [((Var 6 name))
                                                             ((Var 6 allowed))
                                                             (())]
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                             ()
                                                         )
                                                         Eq
-                                                        (IntegerConstant 0 (Integer 4 []))
-                                                        (Logical 4 [])
+                                                        (IntegerConstant 0 (Integer 4))
+                                                        (Logical 4)
                                                         ()
                                                     )
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
                                                 And
@@ -855,16 +857,16 @@
                                                         ()
                                                         [((Var 6 name))
                                                         (())]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                         ()
                                                     )
                                                     LtE
-                                                    (IntegerConstant 63 (Integer 4 []))
-                                                    (Logical 4 [])
+                                                    (IntegerConstant 63 (Integer 4))
+                                                    (Logical 4)
                                                     ()
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
                                             ()
@@ -873,7 +875,7 @@
                                             (Var 6 lout)
                                             (LogicalConstant
                                                 .false.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
                                             ()
                                         )]
@@ -910,8 +912,10 @@
                                                     ReturnVar
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -927,7 +931,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -942,8 +946,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -959,7 +965,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -985,8 +991,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
-                                                        2 string_t
+                                                    (Array
+                                                        (Struct
+                                                            2 string_t
+                                                        )
                                                         [(()
                                                         ())]
                                                     )
@@ -999,13 +1007,17 @@
                                         })
                                     string_cat
                                     (FunctionType
-                                        [(Struct
-                                            2 string_t
+                                        [(Array
+                                            (Struct
+                                                2 string_t
+                                            )
                                             [(()
                                             ())]
                                         )
-                                        (Character 1 -1 () [])]
-                                        (Character 1 -2 () [])
+                                        (Character 1 -1 ())]
+                                        (Allocatable
+                                            (Character 1 -2 ())
+                                        )
                                         Source
                                         Implementation
                                         ()
@@ -1024,19 +1036,19 @@
                                             (ArraySize
                                                 (Var 7 strings)
                                                 ()
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Lt
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Logical 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Logical 4)
                                             ()
                                         )
                                         [(=
                                             (Var 7 cat)
                                             (StringConstant
                                                 ""
-                                                (Character 1 0 () [])
+                                                (Character 1 0 ())
                                             )
                                             ()
                                         )
@@ -1048,7 +1060,7 @@
                                             7 present
                                             ()
                                             [((Var 7 delim))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1061,7 +1073,7 @@
                                             (Var 7 delim_str)
                                             (StringConstant
                                                 ""
-                                                (Character 1 0 () [])
+                                                (Character 1 0 ())
                                             )
                                             ()
                                         )]
@@ -1072,18 +1084,16 @@
                                             (ArrayItem
                                                 (Var 7 strings)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 1 (Integer 4))
                                                 ())]
                                                 (Struct
                                                     2 string_t
-                                                    [(()
-                                                    ())]
                                                 )
                                                 ColMajor
                                                 ()
                                             )
                                             7 1_string_t_s
-                                            (Character 1 -2 () [])
+                                            (Character 1 -2 ())
                                             ()
                                         )
                                         ()
@@ -1091,11 +1101,11 @@
                                     (DoLoop
                                         ()
                                         ((Var 7 i)
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4))
                                         (ArraySize
                                             (Var 7 strings)
                                             ()
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ())
@@ -1105,7 +1115,7 @@
                                                 (StringConcat
                                                     (Var 7 cat)
                                                     (Var 7 delim_str)
-                                                    (Character 1 -4 () [])
+                                                    (Character 1 -4 ())
                                                     ()
                                                 )
                                                 (StructInstanceMember
@@ -1116,17 +1126,15 @@
                                                         ())]
                                                         (Struct
                                                             2 string_t
-                                                            [(()
-                                                            ())]
                                                         )
                                                         ColMajor
                                                         ()
                                                     )
                                                     7 1_string_t_s
-                                                    (Character 1 -2 () [])
+                                                    (Character 1 -2 ())
                                                     ()
                                                 )
-                                                (Character 1 -6 () [])
+                                                (Character 1 -6 ())
                                                 ()
                                             )
                                             ()
@@ -1154,8 +1162,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public

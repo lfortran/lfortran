@@ -32,7 +32,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -50,7 +50,6 @@
                                                     Default
                                                     (Class
                                                         2 bitset_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -63,9 +62,8 @@
                                     (FunctionType
                                         [(Class
                                             2 bitset_type
-                                            []
                                         )]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         Source
                                         Interface
                                         ()
@@ -109,7 +107,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Private

@@ -41,7 +41,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -59,7 +59,6 @@
                                                     Default
                                                     (Struct
                                                         11 git_target_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -76,7 +75,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -86,11 +85,10 @@
                                         })
                                     git_target_branch
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Character 1 -1 () [])]
+                                        [(Character 1 -1 ())
+                                        (Character 1 -1 ())]
                                         (Struct
                                             11 git_target_t
-                                            []
                                         )
                                         Source
                                         Implementation
@@ -109,7 +107,7 @@
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_git_target_t_url
-                                            (Character 1 -2 () [])
+                                            (Character 1 -2 ())
                                             ()
                                         )
                                         (Var 13 url)
@@ -119,7 +117,7 @@
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_git_target_t_object
-                                            (Character 1 -2 () [])
+                                            (Character 1 -2 ())
                                             ()
                                         )
                                         (Var 13 branch)
@@ -144,8 +142,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -160,8 +160,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -204,10 +206,11 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        4 git_target_t
-                                                        []
+                                                    Default
+                                                    (Allocatable
+                                                        (Struct
+                                                            4 git_target_t
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -223,8 +226,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -239,8 +244,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -249,7 +256,7 @@
                                                 )
                                         })
                                     dependency_config_t
-                                    [git_target_t]
+                                    []
                                     [name
                                     path
                                     git]
@@ -273,8 +280,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -325,11 +334,15 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        4 dependency_config_t
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                4 dependency_config_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -345,10 +358,11 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        4 error_t
-                                                        []
+                                                    Default
+                                                    (Allocatable
+                                                        (Struct
+                                                            4 error_t
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -365,7 +379,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -383,7 +397,6 @@
                                                     Default
                                                     (Struct
                                                         4 toml_table
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -394,19 +407,23 @@
                                         })
                                     new_dependencies
                                     (FunctionType
-                                        [(Struct
-                                            4 dependency_config_t
-                                            [(()
-                                            ())]
+                                        [(Allocatable
+                                            (Array
+                                                (Struct
+                                                    4 dependency_config_t
+                                                )
+                                                [(()
+                                                ())]
+                                            )
                                         )
                                         (Struct
                                             4 toml_table
-                                            []
                                         )
-                                        (Character 1 -1 () [])
-                                        (Struct
-                                            4 error_t
-                                            []
+                                        (Character 1 -1 ())
+                                        (Allocatable
+                                            (Struct
+                                                4 error_t
+                                            )
                                         )]
                                         ()
                                         Source
@@ -454,8 +471,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -473,7 +492,6 @@
                                                     Default
                                                     (Struct
                                                         4 dependency_config_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -489,8 +507,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -502,7 +522,6 @@
                                     (FunctionType
                                         [(Struct
                                             4 dependency_config_t
-                                            []
                                         )]
                                         ()
                                         Source
@@ -523,7 +542,6 @@
                                             9 1_dependency_config_t_git
                                             (Struct
                                                 4 git_target_t
-                                                []
                                             )
                                             ()
                                         )
@@ -534,7 +552,6 @@
                                             ((Var 9 obj))]
                                             (Struct
                                                 4 git_target_t
-                                                []
                                             )
                                             ()
                                             ()
@@ -564,14 +581,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -677,7 +694,7 @@
                         ()
                         [(StringConstant
                             "running modules_28 program"
-                            (Character 1 26 () [])
+                            (Character 1 26 ())
                         )]
                         ()
                         ()

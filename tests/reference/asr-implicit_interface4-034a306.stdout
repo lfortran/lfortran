@@ -17,9 +17,9 @@
                                     driver2
                                     (FunctionType
                                         [(FunctionType
-                                            [(Integer 4 [])
-                                            (Real 4 [])
-                                            (Real 8 [])]
+                                            [(Integer 4)
+                                            (Real 4)
+                                            (Real 8)]
                                             ()
                                             BindC
                                             Interface
@@ -65,7 +65,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -81,7 +81,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -97,7 +97,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     BindC
                                                     Public
@@ -107,9 +107,9 @@
                                         })
                                     f
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Real 4 [])
-                                        (Real 8 [])]
+                                        [(Integer 4)
+                                        (Real 4)
+                                        (Real 8)]
                                         ()
                                         BindC
                                         Interface
@@ -141,7 +141,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -157,7 +157,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -173,7 +173,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -183,8 +183,8 @@
                         })
                     driver
                     (FunctionType
-                        [(Real 4 [])
-                        (Integer 4 [])]
+                        [(Real 4)
+                        (Integer 4)]
                         ()
                         Source
                         Implementation

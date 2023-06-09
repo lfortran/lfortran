@@ -46,7 +46,6 @@
                                                     Default
                                                     (Class
                                                         10 toml_structure
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -69,7 +68,6 @@
                                     (FunctionType
                                         [(Class
                                             10 toml_structure
-                                            []
                                         )]
                                         ()
                                         Source
@@ -211,7 +209,6 @@
                                                     Default
                                                     (Class
                                                         2 toml_array
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -224,7 +221,6 @@
                                     (FunctionType
                                         [(Class
                                             2 toml_array
-                                            []
                                         )]
                                         ()
                                         Source
@@ -247,10 +243,10 @@
                                             [((StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_value_key
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             ))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -258,7 +254,7 @@
                                             [(StructInstanceMember
                                                 (Var 15 self)
                                                 15 1_toml_value_key
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             )]
                                         )]
@@ -273,11 +269,10 @@
                                                 15 1_toml_array_list
                                                 (Class
                                                     2 toml_ordered
-                                                    []
                                                 )
                                                 ()
                                             ))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -290,7 +285,6 @@
                                                 15 1_toml_array_list
                                                 (Class
                                                     2 toml_ordered
-                                                    []
                                                 )
                                                 ()
                                             )
@@ -301,7 +295,6 @@
                                                 15 1_toml_array_list
                                                 (Class
                                                     2 toml_ordered
-                                                    []
                                                 )
                                                 ()
                                             )]
@@ -337,7 +330,6 @@
                                                     Default
                                                     (Struct
                                                         2 toml_array
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -350,7 +342,6 @@
                                     (FunctionType
                                         [(Struct
                                             2 toml_array
-                                            []
                                         )]
                                         ()
                                         Source
@@ -395,10 +386,11 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Class
-                                                        2 toml_ordered
-                                                        []
+                                                    Default
+                                                    (Allocatable
+                                                        (Class
+                                                            2 toml_ordered
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -408,7 +400,7 @@
                                                 )
                                         })
                                     toml_array
-                                    [toml_ordered]
+                                    []
                                     [list]
                                     Source
                                     Public
@@ -467,7 +459,6 @@
                                                     Default
                                                     (Class
                                                         4 toml_value
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -480,7 +471,6 @@
                                     (FunctionType
                                         [(Class
                                             4 toml_value
-                                            []
                                         )]
                                         ()
                                         Source
@@ -525,8 +515,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Private

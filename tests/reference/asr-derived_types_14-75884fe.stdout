@@ -18,10 +18,10 @@
                                                     boolean
                                                     []
                                                     Local
-                                                    (IntegerConstant 102 (Integer 4 []))
-                                                    (IntegerConstant 102 (Integer 4 []))
+                                                    (IntegerConstant 102 (Integer 4))
+                                                    (IntegerConstant 102 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -34,10 +34,10 @@
                                                     datetime
                                                     []
                                                     Local
-                                                    (IntegerConstant 105 (Integer 4 []))
-                                                    (IntegerConstant 105 (Integer 4 []))
+                                                    (IntegerConstant 105 (Integer 4))
+                                                    (IntegerConstant 105 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -50,10 +50,10 @@
                                                     float
                                                     []
                                                     Local
-                                                    (IntegerConstant 104 (Integer 4 []))
-                                                    (IntegerConstant 104 (Integer 4 []))
+                                                    (IntegerConstant 104 (Integer 4))
+                                                    (IntegerConstant 104 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -66,10 +66,10 @@
                                                     int
                                                     []
                                                     Local
-                                                    (IntegerConstant 103 (Integer 4 []))
-                                                    (IntegerConstant 103 (Integer 4 []))
+                                                    (IntegerConstant 103 (Integer 4))
+                                                    (IntegerConstant 103 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -82,10 +82,10 @@
                                                     invalid
                                                     []
                                                     Local
-                                                    (IntegerConstant 100 (Integer 4 []))
-                                                    (IntegerConstant 100 (Integer 4 []))
+                                                    (IntegerConstant 100 (Integer 4))
+                                                    (IntegerConstant 100 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -98,10 +98,10 @@
                                                     string
                                                     []
                                                     Local
-                                                    (IntegerConstant 101 (Integer 4 []))
-                                                    (IntegerConstant 101 (Integer 4 []))
+                                                    (IntegerConstant 101 (Integer 4))
+                                                    (IntegerConstant 101 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -140,7 +140,6 @@
                                         (())]
                                         (Struct
                                             4 enum_type
-                                            []
                                         )
                                         ()
                                     )
@@ -148,7 +147,6 @@
                                     Parameter
                                     (Struct
                                         4 enum_type
-                                        []
                                     )
                                     ()
                                     Source
@@ -181,7 +179,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -197,7 +195,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -207,8 +205,8 @@
                                         })
                                     check
                                     (FunctionType
-                                        [(Character 1 -1 () [])]
-                                        (Logical 4 [])
+                                        [(Character 1 -1 ())]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -225,7 +223,7 @@
                                         (Var 7 res)
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         ()
                                     )]
@@ -319,7 +317,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -335,7 +333,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -345,8 +343,8 @@
                                         })
                                     toml_get_value_type
                                     (FunctionType
-                                        [(Character 1 -1 () [])]
-                                        (Integer 4 [])
+                                        [(Character 1 -1 ())]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -364,7 +362,7 @@
                                             2 check
                                             ()
                                             [((Var 6 raw))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -373,8 +371,8 @@
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_string
-                                                (Integer 4 [])
-                                                (IntegerConstant 101 (Integer 4 []))
+                                                (Integer 4)
+                                                (IntegerConstant 101 (Integer 4))
                                             )
                                             ()
                                         )
@@ -386,7 +384,7 @@
                                             2 check
                                             ()
                                             [((Var 6 raw))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -395,8 +393,8 @@
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_boolean
-                                                (Integer 4 [])
-                                                (IntegerConstant 102 (Integer 4 []))
+                                                (Integer 4)
+                                                (IntegerConstant 102 (Integer 4))
                                             )
                                             ()
                                         )
@@ -408,7 +406,7 @@
                                             2 check
                                             ()
                                             [((Var 6 raw))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -417,8 +415,8 @@
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_int
-                                                (Integer 4 [])
-                                                (IntegerConstant 103 (Integer 4 []))
+                                                (Integer 4)
+                                                (IntegerConstant 103 (Integer 4))
                                             )
                                             ()
                                         )
@@ -430,7 +428,7 @@
                                             2 check
                                             ()
                                             [((Var 6 raw))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -439,8 +437,8 @@
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_float
-                                                (Integer 4 [])
-                                                (IntegerConstant 104 (Integer 4 []))
+                                                (Integer 4)
+                                                (IntegerConstant 104 (Integer 4))
                                             )
                                             ()
                                         )
@@ -452,7 +450,7 @@
                                             2 check
                                             ()
                                             [((Var 6 raw))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -461,8 +459,8 @@
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 6 1_enum_type_datetime
-                                                (Integer 4 [])
-                                                (IntegerConstant 105 (Integer 4 []))
+                                                (Integer 4)
+                                                (IntegerConstant 105 (Integer 4))
                                             )
                                             ()
                                         )
@@ -474,8 +472,8 @@
                                         (StructInstanceMember
                                             (Var 2 toml_type)
                                             6 1_enum_type_invalid
-                                            (Integer 4 [])
-                                            (IntegerConstant 100 (Integer 4 []))
+                                            (Integer 4)
+                                            (IntegerConstant 100 (Integer 4))
                                         )
                                         ()
                                     )]
@@ -515,7 +513,7 @@
                         ()
                         [(StringConstant
                             "running derived_types_14 main program"
-                            (Character 1 37 () [])
+                            (Character 1 37 ())
                         )]
                         ()
                         ()

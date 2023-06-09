@@ -12,9 +12,19 @@
                                     2
                                     tiny
                                     4 tiny
-                                    lfortran_intrinsic_builtin
+                                    lfortran_intrinsic_math
                                     []
                                     tiny
+                                    Private
+                                ),
+                            tiny@stiny:
+                                (ExternalSymbol
+                                    2
+                                    tiny@stiny
+                                    4 stiny
+                                    lfortran_intrinsic_math
+                                    []
+                                    stiny
                                     Private
                                 ),
                             z:
@@ -25,14 +35,14 @@
                                     Local
                                     (RealConstant
                                         0.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         0.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -47,20 +57,20 @@
                             (Var 2 z)
                             Lt
                             (FunctionCall
+                                2 tiny@stiny
                                 2 tiny
-                                ()
                                 [((RealConstant
                                     1.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 ))]
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     0.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(Print
@@ -72,8 +82,14 @@
                         []
                     )]
                 ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math)
         })
     []
 )

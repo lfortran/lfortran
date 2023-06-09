@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -37,10 +40,13 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
+                                                    Default
                                                     (Pointer
-                                                        (Real 4 [(()
-                                                        ())])
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -57,8 +63,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 10 (Integer 4 [])))])
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -76,18 +85,19 @@
                                                         (Var 2 x)
                                                         Mul
                                                         (Cast
-                                                            (IntegerConstant 2 (Integer 4 []))
+                                                            (IntegerConstant 2 (Integer 4))
                                                             IntegerToReal
-                                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                            (IntegerConstant 10 (Integer 4 [])))])
+                                                            (Real 4)
                                                             (RealConstant
                                                                 2.000000
-                                                                (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                                (IntegerConstant 10 (Integer 4 [])))])
+                                                                (Real 4)
                                                             )
                                                         )
-                                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                        (IntegerConstant 10 (Integer 4 [])))])
+                                                        (Array
+                                                            (Real 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 10 (Integer 4)))]
+                                                        )
                                                         ()
                                                     )
                                                     Add
@@ -95,32 +105,42 @@
                                                         (Var 2 y)
                                                         Mul
                                                         (Cast
-                                                            (IntegerConstant 2 (Integer 4 []))
+                                                            (IntegerConstant 2 (Integer 4))
                                                             IntegerToReal
-                                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                            (IntegerConstant 10 (Integer 4 [])))])
+                                                            (Real 4)
                                                             (RealConstant
                                                                 2.000000
-                                                                (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                                (IntegerConstant 10 (Integer 4 [])))])
+                                                                (Real 4)
                                                             )
                                                         )
-                                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                        (IntegerConstant 10 (Integer 4 [])))])
+                                                        (Array
+                                                            (Real 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 10 (Integer 4)))]
+                                                        )
                                                         ()
                                                     )
-                                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 10 (Integer 4 [])))])
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                    )
                                                     ()
                                                 )
-                                                (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                                (IntegerConstant 10 (Integer 4 [])))])
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 10 (Integer 4)))]
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (Var 2 theta)
-                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 10 (Integer 4 [])))])
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4)))]
+                                            )
                                             ()
                                         )
                                         ()
@@ -135,8 +155,11 @@
                                             (Var 2 a)
                                             Add
                                             (Var 3 z)
-                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 10 (Integer 4 [])))])
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4)))]
+                                            )
                                             ()
                                         )
                                         ()
@@ -145,9 +168,9 @@
                                         (ArrayItem
                                             (Var 3 v)
                                             [(()
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             ())]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ColMajor
                                             ()
                                         )
@@ -155,18 +178,18 @@
                                             (ArrayItem
                                                 (Var 3 v)
                                                 [(()
-                                                (IntegerConstant 1 (Integer 4 []))
+                                                (IntegerConstant 1 (Integer 4))
                                                 ())]
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ColMajor
                                                 ()
                                             )
                                             Mul
                                             (RealConstant
                                                 4.600000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -174,35 +197,47 @@
                                     (=
                                         (ArraySection
                                             (Var 3 v)
-                                            [((IntegerConstant 2 (Integer 4 []))
-                                            (IntegerConstant 5 (Integer 4 []))
-                                            (IntegerConstant 1 (Integer 4 [])))]
-                                            (Real 4 [(()
-                                            ())])
+                                            [((IntegerConstant 2 (Integer 4))
+                                            (IntegerConstant 5 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4)))]
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )
                                         (RealBinOp
                                             (ArraySection
                                                 (Var 3 v)
-                                                [((IntegerConstant 2 (Integer 4 []))
-                                                (IntegerConstant 5 (Integer 4 []))
-                                                (IntegerConstant 1 (Integer 4 [])))]
-                                                (Real 4 [(()
-                                                ())])
+                                                [((IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 5 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                                (Array
+                                                    (Real 4)
+                                                    [(()
+                                                    ())]
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (ArraySection
                                                 (Var 3 v)
-                                                [((IntegerConstant 2 (Integer 4 []))
-                                                (IntegerConstant 5 (Integer 4 []))
-                                                (IntegerConstant 1 (Integer 4 [])))]
-                                                (Real 4 [(()
-                                                ())])
+                                                [((IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 5 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                                (Array
+                                                    (Real 4)
+                                                    [(()
+                                                    ())]
+                                                )
                                                 ()
                                             )
-                                            (Real 4 [(()
-                                            ())])
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )
                                         ()
@@ -210,30 +245,39 @@
                                     (=
                                         (ArraySection
                                             (Var 3 v)
-                                            [((IntegerConstant 6 (Integer 4 []))
-                                            (IntegerConstant 10 (Integer 4 []))
-                                            (IntegerConstant 1 (Integer 4 [])))]
-                                            (Real 4 [(()
-                                            ())])
+                                            [((IntegerConstant 6 (Integer 4))
+                                            (IntegerConstant 10 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4)))]
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )
                                         (RealBinOp
                                             (ArraySection
                                                 (Var 3 v)
-                                                [((IntegerConstant 6 (Integer 4 []))
-                                                (IntegerConstant 10 (Integer 4 []))
-                                                (IntegerConstant 1 (Integer 4 [])))]
-                                                (Real 4 [(()
-                                                ())])
+                                                [((IntegerConstant 6 (Integer 4))
+                                                (IntegerConstant 10 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                                (Array
+                                                    (Real 4)
+                                                    [(()
+                                                    ())]
+                                                )
                                                 ()
                                             )
                                             Mul
                                             (RealConstant
                                                 2.600000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [(()
-                                            ())])
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )
                                         ()
@@ -247,9 +291,14 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Real 4 [(()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -265,8 +314,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -282,8 +334,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -299,8 +354,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 10 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -312,8 +370,8 @@
                     []
                     [(Allocate
                         [((Var 2 myreal)
-                        [((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 10 (Integer 4 [])))])]
+                        [((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 10 (Integer 4)))])]
                         ()
                         ()
                         ()
@@ -322,7 +380,7 @@
                         (Var 2 x)
                         (RealConstant
                             0.420000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -330,7 +388,7 @@
                         (Var 2 y)
                         (RealConstant
                             0.350000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -338,7 +396,7 @@
                         (Var 2 myreal)
                         (RealConstant
                             9.100000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -346,7 +404,7 @@
                         (Var 2 theta)
                         (RealConstant
                             1.500000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -354,7 +412,7 @@
                         (Var 2 a)
                         (RealConstant
                             0.400000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )

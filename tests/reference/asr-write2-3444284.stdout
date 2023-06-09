@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -31,14 +31,14 @@
                         ()
                         (StringConstant
                             "(a)"
-                            (Character 1 3 () [])
+                            (Character 1 3 ())
                         )
                         ()
                         ()
                         ()
                         [(StringConstant
                             "Some text: "
-                            (Character 1 11 () [])
+                            (Character 1 11 ())
                         )]
                         ()
                         ()
@@ -56,7 +56,7 @@
                         ()
                         [(StringConstant
                             "Got: "
-                            (Character 1 5 () [])
+                            (Character 1 5 ())
                         )
                         (Var 2 i)]
                         ()

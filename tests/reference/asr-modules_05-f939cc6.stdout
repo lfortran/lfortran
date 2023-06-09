@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -63,9 +63,9 @@
                                         })
                                     print_vars
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
-                                        (Integer 4 [])
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -83,7 +83,7 @@
                                         ()
                                         [(StringConstant
                                             "priv = "
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (Var 3 a)]
                                         ()
@@ -93,7 +93,7 @@
                                         ()
                                         [(StringConstant
                                             "publ = "
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (Var 3 b)]
                                         ()
@@ -101,7 +101,7 @@
                                     )
                                     (=
                                         (Var 3 print_vars)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )]
                                     (Var 3 print_vars)
@@ -118,14 +118,14 @@
                                     Local
                                     (RealConstant
                                         1.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Private
@@ -140,14 +140,14 @@
                                     Local
                                     (RealConstant
                                         2.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         2.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public

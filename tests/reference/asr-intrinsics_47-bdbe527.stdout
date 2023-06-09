@@ -16,40 +16,49 @@
                                     (ArrayConstant
                                         [(LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )]
-                                        (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 3 (Integer 4 [])))])
+                                        (Array
+                                            (Logical 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                        )
                                         ColMajor
                                     )
                                     (ArrayConstant
                                         [(LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )]
-                                        (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 3 (Integer 4 [])))])
+                                        (Array
+                                            (Logical 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                        )
                                         ColMajor
                                     )
                                     Save
-                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -66,29 +75,32 @@
                                         (ArrayConstant
                                             [(LogicalConstant
                                                 .true.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
                                             (LogicalConstant
                                                 .true.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )]
-                                            (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 2 (Integer 4 [])))])
+                                            (Array
+                                                (Logical 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4)))]
+                                            )
                                             ColMajor
                                         )
                                         ()
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                     )
                                     (LogicalConstant
                                         .true.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     Save
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -104,21 +116,24 @@
                             (ArrayConstant
                                 [(LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
                                 (LogicalConstant
                                     .false.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )]
-                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 2 (Integer 4 [])))])
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                )
                                 ColMajor
                             )
                             ()
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         ()
@@ -129,17 +144,20 @@
                             (ArrayConstant
                                 [(LogicalConstant
                                     .false.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )]
-                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 1 (Integer 4 [])))])
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                )
                                 ColMajor
                             )
                             ()
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         ()
@@ -150,17 +168,20 @@
                             (ArrayConstant
                                 [(LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )]
-                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 1 (Integer 4 [])))])
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                )
                                 ColMajor
                             )
                             ()
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         ()
@@ -170,7 +191,7 @@
                         (ArrayAll
                             (Var 2 a)
                             ()
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         ()
@@ -180,34 +201,37 @@
                         (ArrayAll
                             (ArrayConstant
                                 [(IntegerCompare
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     Eq
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (Logical 4 [])
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Logical 4)
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                 )
                                 (IntegerCompare
-                                    (IntegerConstant 0 (Integer 4 []))
+                                    (IntegerConstant 0 (Integer 4))
                                     Eq
-                                    (IntegerConstant 0 (Integer 4 []))
-                                    (Logical 4 [])
+                                    (IntegerConstant 0 (Integer 4))
+                                    (Logical 4)
                                     (LogicalConstant
                                         .true.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                 )]
-                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 2 (Integer 4 [])))])
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                )
                                 ColMajor
                             )
                             ()
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         ()

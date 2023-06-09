@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -31,14 +31,14 @@
                                     Local
                                     (StringConstant
                                         "b"
-                                        (Character 1 1 () [])
+                                        (Character 1 1 ())
                                     )
                                     (StringConstant
                                         "b"
-                                        (Character 1 1 () [])
+                                        (Character 1 1 ())
                                     )
                                     Save
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                     ()
                                     Source
                                     Public
@@ -54,7 +54,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -70,7 +70,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -86,7 +86,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -102,7 +102,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -118,7 +118,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -134,7 +134,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -149,10 +149,10 @@
                         (Ichar
                             (StringConstant
                                 " "
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Integer 4 [])
-                            (IntegerConstant 32 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 32 (Integer 4))
                         )
                         ()
                     )
@@ -161,10 +161,10 @@
                         (Iachar
                             (StringConstant
                                 " "
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Integer 4 [])
-                            (IntegerConstant 32 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 32 (Integer 4))
                         )
                         ()
                     )
@@ -173,10 +173,10 @@
                         (Ichar
                             (StringConstant
                                 "A"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Integer 8 [])
-                            (IntegerConstant 65 (Integer 8 []))
+                            (Integer 8)
+                            (IntegerConstant 65 (Integer 8))
                         )
                         ()
                     )
@@ -185,10 +185,10 @@
                         (Iachar
                             (StringConstant
                                 "a"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Integer 8 [])
-                            (IntegerConstant 97 (Integer 8 []))
+                            (Integer 8)
+                            (IntegerConstant 97 (Integer 8))
                         )
                         ()
                     )
@@ -197,10 +197,10 @@
                         (Ichar
                             (StringConstant
                                 "Z"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Integer 8 [])
-                            (IntegerConstant 90 (Integer 8 []))
+                            (Integer 8)
+                            (IntegerConstant 90 (Integer 8))
                         )
                         ()
                     )
@@ -209,21 +209,21 @@
                         (Iachar
                             (StringConstant
                                 "z"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Integer 8 [])
-                            (IntegerConstant 122 (Integer 8 []))
+                            (Integer 8)
+                            (IntegerConstant 122 (Integer 8))
                         )
                         ()
                     )
                     (=
                         (Var 2 c_1)
                         (StringChr
-                            (IntegerConstant 100 (Integer 4 []))
-                            (Character 1 1 () [])
+                            (IntegerConstant 100 (Integer 4))
+                            (Character 1 1 ())
                             (StringConstant
                                 "d"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
                         )
                         ()
@@ -232,8 +232,8 @@
                         (IntegerCompare
                             (Var 2 i)
                             NotEq
-                            (IntegerConstant 32 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 32 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -245,8 +245,8 @@
                         (IntegerCompare
                             (Var 2 j)
                             NotEq
-                            (IntegerConstant 32 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 32 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -259,12 +259,12 @@
                             (Var 2 li_1)
                             NotEq
                             (Cast
-                                (IntegerConstant 65 (Integer 4 []))
+                                (IntegerConstant 65 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 65 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 65 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -277,12 +277,12 @@
                             (Var 2 lj_1)
                             NotEq
                             (Cast
-                                (IntegerConstant 97 (Integer 4 []))
+                                (IntegerConstant 97 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 97 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 97 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -295,12 +295,12 @@
                             (Var 2 li_2)
                             NotEq
                             (Cast
-                                (IntegerConstant 90 (Integer 4 []))
+                                (IntegerConstant 90 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 90 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 90 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -313,12 +313,12 @@
                             (Var 2 lj_2)
                             NotEq
                             (Cast
-                                (IntegerConstant 122 (Integer 4 []))
+                                (IntegerConstant 122 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 122 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 122 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -330,7 +330,7 @@
                         (Var 2 c)
                         (Ichar
                             (Var 2 c_1)
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -339,8 +339,8 @@
                         (IntegerCompare
                             (Var 2 c)
                             NotEq
-                            (IntegerConstant 100 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 100 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -352,15 +352,15 @@
                         (StringCompare
                             (StringChr
                                 (Var 2 c)
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "d"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

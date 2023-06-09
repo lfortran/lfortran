@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [(()
-                                    ())])
+                                    (Array
+                                        (Real 4)
+                                        [(()
+                                        ())]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,8 +36,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [(()
-                                    ())])
+                                    (Array
+                                        (Real 4)
+                                        [(()
+                                        ())]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -50,8 +56,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [(()
-                                    ())])
+                                    (Array
+                                        (Real 4)
+                                        [(()
+                                        ())]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -67,7 +76,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -83,7 +92,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -99,7 +108,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -109,13 +118,22 @@
                         })
                     triad
                     (FunctionType
-                        [(Real 4 [(()
-                        ())])
-                        (Real 4 [(()
-                        ())])
-                        (Real 4 [])
-                        (Real 4 [(()
-                        ())])]
+                        [(Array
+                            (Real 4)
+                            [(()
+                            ())]
+                        )
+                        (Array
+                            (Real 4)
+                            [(()
+                            ())]
+                        )
+                        (Real 4)
+                        (Array
+                            (Real 4)
+                            [(()
+                            ())]
+                        )]
                         ()
                         Source
                         Implementation
@@ -137,14 +155,14 @@
                         (ArraySize
                             (Var 2 a)
                             ()
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         ()
                     )
                     (DoConcurrentLoop
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         (Var 2 n)
                         ())
                         [(=
@@ -153,7 +171,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Real 4 [])
+                                (Real 4)
                                 ColMajor
                                 ()
                             )
@@ -163,7 +181,7 @@
                                     [(()
                                     (Var 2 i)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )
@@ -176,14 +194,14 @@
                                         [(()
                                         (Var 2 i)
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()

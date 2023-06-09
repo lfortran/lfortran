@@ -27,11 +27,15 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Struct
-                                        5 srcfile_t
-                                        [(()
-                                        ())]
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Struct
+                                                5 srcfile_t
+                                            )
+                                            [(()
+                                            ())]
+                                        )
                                     )
                                     ()
                                     Source
@@ -54,8 +58,8 @@
                     [modules_43_fpm_sources]
                     [(Allocate
                         [((Var 5 sources)
-                        [((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 1 (Integer 4 [])))])]
+                        [((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 1 (Integer 4)))])]
                         ()
                         ()
                         ()
@@ -89,7 +93,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -105,8 +109,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 10 (Integer 4 [])))])
+                                                    (Array
+                                                        (Logical 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -131,11 +138,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 srcfile_t
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 srcfile_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -152,8 +163,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 10 (Integer 4 [])))])
+                                                    (Array
+                                                        (Logical 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 10 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -168,11 +182,15 @@
                                                     InOut
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 srcfile_t
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 srcfile_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -183,10 +201,14 @@
                                         })
                                     add_sources_from_dir
                                     (FunctionType
-                                        [(Struct
-                                            2 srcfile_t
-                                            [(()
-                                            ())]
+                                        [(Allocatable
+                                            (Array
+                                                (Struct
+                                                    2 srcfile_t
+                                                )
+                                                [(()
+                                                ())]
+                                            )
                                         )]
                                         ()
                                         Source
@@ -203,8 +225,8 @@
                                     [(Var 4 sources)]
                                     [(Allocate
                                         [((Var 4 dir_sources)
-                                        [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 [])))])]
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))])]
                                         ()
                                         ()
                                         ()
@@ -215,11 +237,11 @@
                                                 4 allocated
                                                 ()
                                                 [((Var 4 sources))]
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(DoLoop
@@ -227,15 +249,15 @@
                                             ((Var 4 __1_t)
                                             (ArrayBound
                                                 (Var 4 sources)
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 LBound
                                                 ()
                                             )
                                             (ArrayBound
                                                 (Var 4 sources)
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 UBound
                                                 ()
                                             )
@@ -248,7 +270,6 @@
                                                     ())]
                                                     (Struct
                                                         2 srcfile_t
-                                                        []
                                                     )
                                                     RowMajor
                                                     ()
@@ -259,12 +280,11 @@
                                                         [(()
                                                         (Var 4 __1_t)
                                                         ())]
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                         RowMajor
                                                         ()
                                                     )
-                                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 10 (Integer 4 [])))])
+                                                    (Logical 4)
                                                     ()
                                                 )
                                                 ()
@@ -275,15 +295,15 @@
                                             ((Var 4 __1_t)
                                             (ArrayBound
                                                 (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 LBound
                                                 ()
                                             )
                                             (ArrayBound
                                                 (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 UBound
                                                 ()
                                             )
@@ -294,7 +314,7 @@
                                                     [(()
                                                     (Var 4 __1_t)
                                                     ())]
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     RowMajor
                                                     ()
                                                 )
@@ -304,12 +324,11 @@
                                                         [(()
                                                         (Var 4 __1_t)
                                                         ())]
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                         RowMajor
                                                         ()
                                                     )
-                                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 10 (Integer 4 [])))])
+                                                    (Logical 4)
                                                     ()
                                                 )
                                                 ()
@@ -321,15 +340,19 @@
                                                 (Var 4 dir_sources)
                                                 (Var 4 sources)
                                                 ()
-                                                (Struct
-                                                    2 srcfile_t
-                                                    [((IntegerConstant 1 (Integer 4 []))
-                                                    (ArraySize
-                                                        (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
-                                                        ()
-                                                        (Integer 4 [])
-                                                        ()
-                                                    ))]
+                                                (Allocatable
+                                                    (Array
+                                                        (Struct
+                                                            2 srcfile_t
+                                                        )
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (ArraySize
+                                                            (Var 4 __libasr__created__var__0__logicalnot_unary_op_res)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                    )
                                                 )
                                                 ()
                                             )
@@ -337,8 +360,8 @@
                                         )]
                                         [(Allocate
                                             [((Var 4 sources)
-                                            [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 2 (Integer 4 [])))])]
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4)))])]
                                             ()
                                             ()
                                             ()
@@ -351,32 +374,46 @@
                                                     (Var 4 dir_sources)
                                                     (LogicalNot
                                                         (Var 4 exclude_source)
-                                                        (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                        (IntegerConstant 10 (Integer 4 [])))])
+                                                        (Array
+                                                            (Logical 4)
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (IntegerConstant 10 (Integer 4)))]
+                                                        )
                                                         ()
                                                     )
                                                     ()
-                                                    (Struct
-                                                        2 srcfile_t
-                                                        [((IntegerConstant 1 (Integer 4 []))
-                                                        (ArraySize
-                                                            (LogicalNot
-                                                                (Var 4 exclude_source)
-                                                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                                                (IntegerConstant 10 (Integer 4 [])))])
-                                                                ()
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 srcfile_t
                                                             )
-                                                            ()
-                                                            (Integer 4 [])
-                                                            ()
-                                                        ))]
+                                                            [((IntegerConstant 1 (Integer 4))
+                                                            (ArraySize
+                                                                (LogicalNot
+                                                                    (Var 4 exclude_source)
+                                                                    (Array
+                                                                        (Logical 4)
+                                                                        [((IntegerConstant 1 (Integer 4))
+                                                                        (IntegerConstant 10 (Integer 4)))]
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                ()
+                                                                (Integer 4)
+                                                                ()
+                                                            ))]
+                                                        )
                                                     )
                                                     ()
                                                 )]
-                                                (Struct
-                                                    2 srcfile_t
-                                                    [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 2 (Integer 4 [])))]
+                                                (Allocatable
+                                                    (Array
+                                                        (Struct
+                                                            2 srcfile_t
+                                                        )
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))]
+                                                    )
                                                 )
                                                 ColMajor
                                             )
@@ -406,7 +443,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 8 [])
+                                                    (Integer 8)
                                                     ()
                                                     Source
                                                     Public
@@ -421,8 +458,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -437,8 +476,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public

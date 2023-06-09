@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -47,7 +47,7 @@
                                         })
                                     fcn
                                     (FunctionType
-                                        [(Integer 4 [])]
+                                        [(Integer 4)]
                                         ()
                                         Source
                                         Interface
@@ -82,7 +82,7 @@
                                             Abs
                                             [(Var 2 ratio)]
                                             0
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -97,7 +97,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public

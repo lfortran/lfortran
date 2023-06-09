@@ -56,7 +56,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -72,7 +72,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -88,8 +88,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -122,10 +125,13 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (Integer 2 [(()
-                                        ())
-                                        (()
-                                        ())])
+                                        (Array
+                                            (Integer 2)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
                                     )
                                     ()
                                     Source
@@ -142,10 +148,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 2 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 2)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -162,10 +171,13 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (Integer 2 [(()
-                                        ())
-                                        (()
-                                        ())])
+                                        (Array
+                                            (Integer 2)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
                                     )
                                     ()
                                     Source
@@ -182,10 +194,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 2 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 2)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -199,26 +214,26 @@
                         (ArrayItem
                             (Var 2 newshape)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
                         ()
                     )
                     (=
                         (ArrayItem
                             (Var 2 newshape)
                             [(()
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4))
                         ()
                     )
                     (=>
@@ -234,15 +249,15 @@
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             UBound
                             ()
                         )
@@ -252,15 +267,15 @@
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 LBound
                                 ()
                             )
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 UBound
                                 ()
                             )
@@ -279,12 +294,12 @@
                                             (()
                                             (Var 2 j)
                                             ())]
-                                            (Integer 2 [])
+                                            (Integer 2)
                                             ColMajor
                                             ()
                                         )
                                         (Pointer
-                                            (Integer 2 [])
+                                            (Integer 2)
                                         )
                                         ()
                                     )
@@ -318,15 +333,15 @@
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             UBound
                             ()
                         )
@@ -336,15 +351,15 @@
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 LBound
                                 ()
                             )
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 UBound
                                 ()
                             )
@@ -363,12 +378,12 @@
                                             (()
                                             (Var 2 j)
                                             ())]
-                                            (Integer 2 [])
+                                            (Integer 2)
                                             ColMajor
                                             ()
                                         )
                                         (Pointer
-                                            (Integer 2 [])
+                                            (Integer 2)
                                         )
                                         ()
                                     )
@@ -384,10 +399,13 @@
                         (Var 2 queries)
                         (Var 2 x)
                         (ArrayConstant
-                            [(IntegerConstant 3 (Integer 4 []))
-                            (IntegerConstant 4 (Integer 4 []))]
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 2 (Integer 4 [])))])
+                            [(IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 4 (Integer 4))]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4)))]
+                            )
                             ColMajor
                         )
                         ()
@@ -408,15 +426,15 @@
                         ((Var 2 i)
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 x)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             UBound
                             ()
                         )
@@ -426,15 +444,15 @@
                             ((Var 2 j)
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 LBound
                                 ()
                             )
                             (ArrayBound
                                 (Var 2 x)
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
                                 UBound
                                 ()
                             )
@@ -453,12 +471,12 @@
                                             (()
                                             (Var 2 j)
                                             ())]
-                                            (Integer 2 [])
+                                            (Integer 2)
                                             ColMajor
                                             ()
                                         )
                                         (Pointer
-                                            (Integer 2 [])
+                                            (Integer 2)
                                         )
                                         ()
                                     )
@@ -478,24 +496,24 @@
                                     (ArrayItem
                                         (Var 2 x)
                                         [(()
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ())
                                         (()
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ())]
-                                        (Integer 2 [])
+                                        (Integer 2)
                                         ColMajor
                                         ()
                                     )
                                     (Pointer
-                                        (Integer 2 [])
+                                        (Integer 2)
                                     )
                                     ()
                                 )
                                 (CPtr)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -512,10 +530,10 @@
                                     (CPtr)
                                     ()
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -531,7 +549,7 @@
                                 (CPtr)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

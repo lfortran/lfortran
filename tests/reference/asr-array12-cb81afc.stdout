@@ -58,10 +58,10 @@
                                                     buffersize
                                                     []
                                                     Local
-                                                    (IntegerConstant 1000 (Integer 4 []))
-                                                    (IntegerConstant 1000 (Integer 4 []))
+                                                    (IntegerConstant 1000 (Integer 4))
+                                                    (IntegerConstant 1000 (Integer 4))
                                                     Parameter
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -76,9 +76,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 1 () [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Character 1 1 ())
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -93,8 +98,10 @@
                                                     Out
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -120,7 +127,9 @@
                                         })
                                     get_current_directory
                                     (FunctionType
-                                        [(Character 1 -2 () [])]
+                                        [(Allocatable
+                                            (Character 1 -2 ())
+                                        )]
                                         ()
                                         Source
                                         Implementation
@@ -136,8 +145,8 @@
                                     [(Var 10 path)]
                                     [(Allocate
                                         [((Var 10 cpath)
-                                        [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 1000 (Integer 4 [])))])]
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1000 (Integer 4)))])]
                                         ()
                                         ()
                                         ()
@@ -159,14 +168,14 @@
                                         (PointerAssociated
                                             (Var 10 tmp)
                                             ()
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(Print
                                             ()
                                             [(StringConstant
                                                 "PWD: "
-                                                (Character 1 5 () [])
+                                                (Character 1 5 ())
                                             )
                                             (Var 10 tmp)]
                                             ()
@@ -197,7 +206,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                     ()
                                                     BindC
                                                     Public
@@ -213,7 +222,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -239,8 +248,8 @@
                                         })
                                     getcwd
                                     (FunctionType
-                                        [(Character 1 1 () [])
-                                        (Integer 4 [])]
+                                        [(Character 1 1 ())
+                                        (Integer 4)]
                                         (CPtr)
                                         BindC
                                         Interface

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -51,8 +51,8 @@
                                         (IntegerBinOp
                                             (Var 2 a)
                                             Add
-                                            (IntegerConstant 5 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 5 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -61,8 +61,8 @@
                                         (IntegerCompare
                                             (Var 2 a)
                                             Eq
-                                            (IntegerConstant 15 (Integer 4 []))
-                                            (Logical 4 [])
+                                            (IntegerConstant 15 (Integer 4))
+                                            (Logical 4)
                                             ()
                                         )
                                         [(GoTo
@@ -76,8 +76,8 @@
                                         (IntegerBinOp
                                             (Var 2 a)
                                             Div
-                                            (IntegerConstant 2 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -94,7 +94,7 @@
                     []
                     [(=
                         (Var 2 a)
-                        (IntegerConstant 10 (Integer 4 []))
+                        (IntegerConstant 10 (Integer 4))
                         ()
                     )
                     (GoToTarget
@@ -120,7 +120,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -136,7 +136,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -146,7 +146,7 @@
                         })
                     square
                     (FunctionType
-                        [(Integer 4 [])]
+                        [(Integer 4)]
                         ()
                         Source
                         Implementation
@@ -166,7 +166,7 @@
                             (Var 3 b)
                             Mul
                             (Var 3 b)
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -175,8 +175,8 @@
                         (IntegerCompare
                             (Var 3 result)
                             NotEq
-                            (IntegerConstant 100 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 100 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

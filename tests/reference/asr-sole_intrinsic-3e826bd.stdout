@@ -44,7 +44,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -60,33 +60,33 @@
                                     (ComplexConstructor
                                         (RealConstant
                                             1.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealUnaryMinus
                                             (RealConstant
                                                 3.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 -3.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
-                                        (Complex 4 [])
+                                        (Complex 4)
                                         (ComplexConstant
                                             1.000000
                                             -3.000000
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
                                     )
                                     (ComplexConstant
                                         1.000000
                                         -3.000000
-                                        (Complex 4 [])
+                                        (Complex 4)
                                     )
                                     Save
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -102,7 +102,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -116,28 +116,28 @@
                         (Var 2 f)
                         (ComplexConstructor
                             (Cast
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     3.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
                             (Cast
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     1.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
-                            (Complex 4 [])
+                            (Complex 4)
                             (ComplexConstant
                                 3.000000
                                 1.000000
-                                (Complex 4 [])
+                                (Complex 4)
                             )
                         )
                         ()
@@ -148,7 +148,7 @@
                             2 aimag@caimag
                             2 aimag
                             [((Var 2 x))]
-                            (Real 4 [])
+                            (Real 4)
                             ()
                             ()
                         )

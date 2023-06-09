@@ -18,6 +18,7 @@ contains
     real, parameter :: eps = 1e-5
     real :: a(m), b(m)
     a = [1, 2, 3]
+    print *, lbound(a, 1), ubound(a, 1)
     call fcn(a, b, m)
     print *, a
     print *, b

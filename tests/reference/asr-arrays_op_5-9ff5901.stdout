@@ -16,12 +16,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -37,12 +40,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -58,12 +64,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 [])))])
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -84,12 +93,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Complex 4 [(()
-                                                    ())
-                                                    (()
-                                                    ())
-                                                    (()
-                                                    ())])
+                                                    (Array
+                                                        (Complex 4)
+                                                        [(()
+                                                        ())
+                                                        (()
+                                                        ())
+                                                        (()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -105,7 +117,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -121,7 +133,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -137,7 +149,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -153,7 +165,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -169,7 +181,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -185,7 +197,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -195,13 +207,16 @@
                                         })
                                     check
                                     (FunctionType
-                                        [(Complex 4 [(()
-                                        ())
-                                        (()
-                                        ())
-                                        (()
-                                        ())])
-                                        (Integer 4 [])]
+                                        [(Array
+                                            (Complex 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -221,15 +236,15 @@
                                         ((Var 3 i)
                                         (ArrayBound
                                             (Var 3 c)
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             LBound
                                             ()
                                         )
                                         (ArrayBound
                                             (Var 3 c)
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             UBound
                                             ()
                                         )
@@ -239,15 +254,15 @@
                                             ((Var 3 j)
                                             (ArrayBound
                                                 (Var 3 c)
-                                                (IntegerConstant 2 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 2 (Integer 4))
+                                                (Integer 4)
                                                 LBound
                                                 ()
                                             )
                                             (ArrayBound
                                                 (Var 3 c)
-                                                (IntegerConstant 2 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 2 (Integer 4))
+                                                (Integer 4)
                                                 UBound
                                                 ()
                                             )
@@ -257,15 +272,15 @@
                                                 ((Var 3 k)
                                                 (ArrayBound
                                                     (Var 3 c)
-                                                    (IntegerConstant 3 (Integer 4 []))
-                                                    (Integer 4 [])
+                                                    (IntegerConstant 3 (Integer 4))
+                                                    (Integer 4)
                                                     LBound
                                                     ()
                                                 )
                                                 (ArrayBound
                                                     (Var 3 c)
-                                                    (IntegerConstant 3 (Integer 4 []))
-                                                    (Integer 4 [])
+                                                    (IntegerConstant 3 (Integer 4))
+                                                    (Integer 4)
                                                     UBound
                                                     ()
                                                 )
@@ -273,7 +288,7 @@
                                                 [(Select
                                                     (Var 3 op_code)
                                                     [(CaseStmt
-                                                        [(IntegerConstant 0 (Integer 4 []))]
+                                                        [(IntegerConstant 0 (Integer 4))]
                                                         [(=
                                                             (Var 3 left)
                                                             (Cast
@@ -282,16 +297,16 @@
                                                                         (Var 3 i)
                                                                         Add
                                                                         (Var 3 j)
-                                                                        (Integer 4 [])
+                                                                        (Integer 4)
                                                                         ()
                                                                     )
                                                                     Add
                                                                     (Var 3 k)
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                 )
                                                                 IntegerToReal
-                                                                (Real 4 [])
+                                                                (Real 4)
                                                                 ()
                                                             )
                                                             ()
@@ -304,16 +319,16 @@
                                                                         (Var 3 i)
                                                                         Mul
                                                                         (Var 3 j)
-                                                                        (Integer 4 [])
+                                                                        (Integer 4)
                                                                         ()
                                                                     )
                                                                     Mul
                                                                     (Var 3 k)
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                 )
                                                                 IntegerToReal
-                                                                (Real 4 [])
+                                                                (Real 4)
                                                                 ()
                                                             )
                                                             ()
@@ -331,7 +346,7 @@
                                                                     (()
                                                                     (Var 3 k)
                                                                     ())]
-                                                                    (Complex 4 [])
+                                                                    (Complex 4)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -340,7 +355,7 @@
                                                                     (Cast
                                                                         (Var 3 left)
                                                                         RealToComplex
-                                                                        (Complex 4 [])
+                                                                        (Complex 4)
                                                                         ()
                                                                     )
                                                                     Add
@@ -348,33 +363,33 @@
                                                                         (Cast
                                                                             (Var 3 right)
                                                                             RealToComplex
-                                                                            (Complex 4 [])
+                                                                            (Complex 4)
                                                                             ()
                                                                         )
                                                                         Mul
                                                                         (ComplexConstructor
                                                                             (RealConstant
                                                                                 0.000000
-                                                                                (Real 4 [])
+                                                                                (Real 4)
                                                                             )
                                                                             (RealConstant
                                                                                 1.000000
-                                                                                (Real 4 [])
+                                                                                (Real 4)
                                                                             )
-                                                                            (Complex 4 [])
+                                                                            (Complex 4)
                                                                             (ComplexConstant
                                                                                 0.000000
                                                                                 1.000000
-                                                                                (Complex 4 [])
+                                                                                (Complex 4)
                                                                             )
                                                                         )
-                                                                        (Complex 4 [])
+                                                                        (Complex 4)
                                                                         ()
                                                                     )
-                                                                    (Complex 4 [])
+                                                                    (Complex 4)
                                                                     ()
                                                                 )
-                                                                (Logical 4 [])
+                                                                (Logical 4)
                                                                 ()
                                                             )
                                                             [(ErrorStop
@@ -384,7 +399,7 @@
                                                         )]
                                                     )
                                                     (CaseStmt
-                                                        [(IntegerConstant 1 (Integer 4 []))]
+                                                        [(IntegerConstant 1 (Integer 4))]
                                                         [(=
                                                             (Var 3 left)
                                                             (Cast
@@ -393,16 +408,16 @@
                                                                         (Var 3 i)
                                                                         Add
                                                                         (Var 3 j)
-                                                                        (Integer 4 [])
+                                                                        (Integer 4)
                                                                         ()
                                                                     )
                                                                     Add
                                                                     (Var 3 k)
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                 )
                                                                 IntegerToReal
-                                                                (Real 4 [])
+                                                                (Real 4)
                                                                 ()
                                                             )
                                                             ()
@@ -415,16 +430,16 @@
                                                                         (Var 3 i)
                                                                         Mul
                                                                         (Var 3 j)
-                                                                        (Integer 4 [])
+                                                                        (Integer 4)
                                                                         ()
                                                                     )
                                                                     Mul
                                                                     (Var 3 k)
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                 )
                                                                 IntegerToReal
-                                                                (Real 4 [])
+                                                                (Real 4)
                                                                 ()
                                                             )
                                                             ()
@@ -442,7 +457,7 @@
                                                                     (()
                                                                     (Var 3 k)
                                                                     ())]
-                                                                    (Complex 4 [])
+                                                                    (Complex 4)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -451,11 +466,11 @@
                                                                     (Cast
                                                                         (RealUnaryMinus
                                                                             (Var 3 left)
-                                                                            (Real 4 [])
+                                                                            (Real 4)
                                                                             ()
                                                                         )
                                                                         RealToComplex
-                                                                        (Complex 4 [])
+                                                                        (Complex 4)
                                                                         ()
                                                                     )
                                                                     Sub
@@ -463,33 +478,33 @@
                                                                         (Cast
                                                                             (Var 3 right)
                                                                             RealToComplex
-                                                                            (Complex 4 [])
+                                                                            (Complex 4)
                                                                             ()
                                                                         )
                                                                         Mul
                                                                         (ComplexConstructor
                                                                             (RealConstant
                                                                                 0.000000
-                                                                                (Real 4 [])
+                                                                                (Real 4)
                                                                             )
                                                                             (RealConstant
                                                                                 1.000000
-                                                                                (Real 4 [])
+                                                                                (Real 4)
                                                                             )
-                                                                            (Complex 4 [])
+                                                                            (Complex 4)
                                                                             (ComplexConstant
                                                                                 0.000000
                                                                                 1.000000
-                                                                                (Complex 4 [])
+                                                                                (Complex 4)
                                                                             )
                                                                         )
-                                                                        (Complex 4 [])
+                                                                        (Complex 4)
                                                                         ()
                                                                     )
-                                                                    (Complex 4 [])
+                                                                    (Complex 4)
                                                                     ()
                                                                 )
-                                                                (Logical 4 [])
+                                                                (Logical 4)
                                                                 ()
                                                             )
                                                             [(ErrorStop
@@ -518,7 +533,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -534,7 +549,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -550,7 +565,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -563,20 +578,20 @@
                     [(DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 2 (Integer 4))
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
                             ())
                             [(DoLoop
                                 ()
                                 ((Var 2 k)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4))
                                 ())
                                 [(=
                                     (ArrayItem
@@ -590,7 +605,7 @@
                                         (()
                                         (Var 2 k)
                                         ())]
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ColMajor
                                         ()
                                     )
@@ -599,12 +614,12 @@
                                             (Var 2 i)
                                             Add
                                             (Var 2 j)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         Add
                                         (Var 2 k)
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ()
                                     )
                                     ()
@@ -621,7 +636,7 @@
                                         (()
                                         (Var 2 k)
                                         ())]
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ColMajor
                                         ()
                                     )
@@ -630,12 +645,12 @@
                                             (Var 2 i)
                                             Mul
                                             (Var 2 j)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         Mul
                                         (Var 2 k)
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ()
                                     )
                                     ()
@@ -649,7 +664,15 @@
                             (Cast
                                 (Var 2 a)
                                 IntegerToComplex
-                                (Complex 4 [])
+                                (Array
+                                    (Complex 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                )
                                 ()
                             )
                             Add
@@ -657,30 +680,38 @@
                                 (ComplexConstructor
                                     (RealConstant
                                         0.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     (ComplexConstant
                                         0.000000
                                         1.000000
-                                        (Complex 4 [])
+                                        (Complex 4)
                                     )
                                 )
                                 Mul
                                 (Cast
                                     (Var 2 b)
                                     IntegerToComplex
-                                    (Complex 4 [])
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                    )
                                     ()
                                 )
-                                (Complex 4 [])
+                                (Complex 4)
                                 ()
                             )
-                            (Complex 4 [])
+                            (Complex 4)
                             ()
                         )
                         ()
@@ -689,7 +720,7 @@
                         2 check
                         ()
                         [((Var 2 c))
-                        ((IntegerConstant 0 (Integer 4 [])))]
+                        ((IntegerConstant 0 (Integer 4)))]
                         ()
                     )
                     (=
@@ -698,16 +729,27 @@
                             (Cast
                                 (IntegerUnaryMinus
                                     (Var 2 a)
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                    )
                                     ()
                                 )
                                 IntegerToComplex
-                                (Complex 4 [])
+                                (Array
+                                    (Complex 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))
+                                    ((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4)))]
+                                )
                                 ()
                             )
                             Add
@@ -715,39 +757,50 @@
                                 (ComplexConstructor
                                     (RealConstant
                                         0.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     (ComplexConstant
                                         0.000000
                                         1.000000
-                                        (Complex 4 [])
+                                        (Complex 4)
                                     )
                                 )
                                 Mul
                                 (Cast
                                     (IntegerUnaryMinus
                                         (Var 2 b)
-                                        (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 2 (Integer 4 [])))
-                                        ((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 2 (Integer 4 [])))
-                                        ((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 1 (Integer 4 [])))])
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4)))
+                                            ((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 2 (Integer 4)))
+                                            ((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4)))]
+                                        )
                                         ()
                                     )
                                     IntegerToComplex
-                                    (Complex 4 [])
+                                    (Array
+                                        (Complex 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                    )
                                     ()
                                 )
-                                (Complex 4 [])
+                                (Complex 4)
                                 ()
                             )
-                            (Complex 4 [])
+                            (Complex 4)
                             ()
                         )
                         ()
@@ -756,7 +809,7 @@
                         2 check
                         ()
                         [((Var 2 c))
-                        ((IntegerConstant 1 (Integer 4 [])))]
+                        ((IntegerConstant 1 (Integer 4)))]
                         ()
                     )]
                 )

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -80,7 +80,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -96,7 +96,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -112,12 +112,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -133,12 +136,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -154,10 +160,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -173,8 +182,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -190,7 +202,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -217,13 +229,13 @@
                     [(DoLoop
                         ()
                         ((Var 2 l1)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         (Var 2 nq)
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             (Var 2 m)
                             ())
                             [(=
@@ -232,7 +244,7 @@
                                     [(()
                                     (Var 2 j)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )
@@ -247,7 +259,7 @@
                                     (()
                                     (Var 2 l1)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )
@@ -261,7 +273,7 @@
                         (DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             (Var 2 m)
                             ())
                             [(=
@@ -276,7 +288,7 @@
                                     (()
                                     (Var 2 j)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )
@@ -285,7 +297,7 @@
                                     [(()
                                     (Var 2 j)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )
@@ -303,7 +315,7 @@
                     )
                     (=
                         (Var 2 indx)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (=
@@ -311,13 +323,13 @@
                         (Cast
                             (RealConstant
                                 0.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
                             RealToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -325,13 +337,13 @@
                     (DoLoop
                         ()
                         ((Var 2 l1)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         (Var 2 nq)
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 l2)
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             (Var 2 l1)
                             ())
                             [(=
@@ -343,7 +355,7 @@
                                     (()
                                     (Var 2 l2)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )
@@ -353,7 +365,7 @@
                             (DoLoop
                                 ()
                                 ((Var 2 j)
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 (Var 2 m)
                                 ())
                                 [(=
@@ -365,7 +377,7 @@
                                         (()
                                         (Var 2 l2)
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
@@ -378,7 +390,7 @@
                                             (()
                                             (Var 2 l2)
                                             ())]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ColMajor
                                             ()
                                         )
@@ -395,7 +407,7 @@
                                                 (()
                                                 (Var 2 j)
                                                 ())]
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ColMajor
                                                 ()
                                             )
@@ -411,14 +423,14 @@
                                                 (()
                                                 (Var 2 j)
                                                 ())]
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ColMajor
                                                 ()
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     ()
@@ -437,7 +449,7 @@
                                     (()
                                     (Var 2 l1)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )
@@ -449,7 +461,7 @@
                                     (()
                                     (Var 2 l2)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )

@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -74,7 +74,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Real 4 [])
+                                                                    (Real 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -90,7 +90,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Real 4 [])
+                                                                    (Real 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -100,8 +100,8 @@
                                                         })
                                                     f
                                                     (FunctionType
-                                                        [(Real 4 [])]
-                                                        (Real 4 [])
+                                                        [(Real 4)]
+                                                        (Real 4)
                                                         Source
                                                         Interface
                                                         ()
@@ -125,8 +125,8 @@
                                     cb
                                     (FunctionType
                                         [(FunctionType
-                                            [(Real 4 [])]
-                                            (Real 4 [])
+                                            [(Real 4)]
+                                            (Real 4)
                                             Source
                                             Interface
                                             ()
@@ -137,9 +137,9 @@
                                             .false.
                                             .false.
                                         )
-                                        (Real 4 [])
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        (Real 4)
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -162,7 +162,7 @@
                                                     (Var 3 b)
                                                     Sub
                                                     (Var 3 a)
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 Add
@@ -170,11 +170,11 @@
                                                     3 f
                                                     ()
                                                     [((Var 3 a))]
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     ()
                                                 )
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
                                             Add
@@ -182,11 +182,11 @@
                                                 3 f
                                                 ()
                                                 [((Var 3 b))]
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                                 ()
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -211,7 +211,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -227,7 +227,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -248,7 +248,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Real 4 [])
+                                                                    (Real 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -264,7 +264,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Real 4 [])
+                                                                    (Real 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -274,8 +274,8 @@
                                                         })
                                                     f
                                                     (FunctionType
-                                                        [(Real 4 [])]
-                                                        (Real 4 [])
+                                                        [(Real 4)]
+                                                        (Real 4)
                                                         Source
                                                         Implementation
                                                         ()
@@ -292,17 +292,17 @@
                                                         (Var 6 f)
                                                         (RealBinOp
                                                             (Cast
-                                                                (IntegerConstant 2 (Integer 4 []))
+                                                                (IntegerConstant 2 (Integer 4))
                                                                 IntegerToReal
-                                                                (Real 4 [])
+                                                                (Real 4)
                                                                 (RealConstant
                                                                     2.000000
-                                                                    (Real 4 [])
+                                                                    (Real 4)
                                                                 )
                                                             )
                                                             Mul
                                                             (Var 6 x)
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             ()
                                                         )
                                                         ()
@@ -316,8 +316,8 @@
                                         })
                                     foo
                                     (FunctionType
-                                        [(Real 4 [])
-                                        (Real 4 [])]
+                                        [(Real 4)
+                                        (Real 4)]
                                         ()
                                         Source
                                         Implementation
@@ -340,7 +340,7 @@
                                             [((Var 5 f))
                                             ((Var 5 c))
                                             ((Var 5 d))]
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                             ()
                                         )]
@@ -392,11 +392,11 @@
                         ()
                         [((RealConstant
                             1.500000
-                            (Real 4 [])
+                            (Real 4)
                         ))
                         ((RealConstant
                             2.000000
-                            (Real 4 [])
+                            (Real 4)
                         ))]
                         ()
                     )]

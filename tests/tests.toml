@@ -2706,6 +2706,11 @@ filename = "../integration_tests/modules_48.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/modules_50.f90"
+asr = true
+pass = "nested_vars,implied_do_loops"
+
+[[test]]
 filename = "implicit_typing1.f90"
 asr_implicit_typing = true
 

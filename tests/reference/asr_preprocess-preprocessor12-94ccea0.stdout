@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -47,8 +47,8 @@
                                         })
                                     f90_assert
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Integer 4 [])]
+                                        [(Character 1 -1 ())
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -69,17 +69,17 @@
                                             (StringConcat
                                                 (StringConstant
                                                     "Assertion failed at "
-                                                    (Character 1 20 () [])
+                                                    (Character 1 20 ())
                                                 )
                                                 (Var 4 file)
-                                                (Character 1 19 () [])
+                                                (Character 1 19 ())
                                                 ()
                                             )
                                             (StringConstant
                                                 ":"
-                                                (Character 1 1 () [])
+                                                (Character 1 1 ())
                                             )
-                                            (Character 1 20 () [])
+                                            (Character 1 20 ())
                                             ()
                                         )
                                         (Var 4 line)]
@@ -109,7 +109,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -125,7 +125,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -141,7 +141,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -151,9 +151,9 @@
                                         })
                                     fn
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Logical 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -173,7 +173,7 @@
                                             (Var 3 a)
                                             Lt
                                             (Var 3 b)
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         ()
@@ -191,12 +191,12 @@
                         (LogicalNot
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(SubroutineCall
@@ -204,9 +204,9 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () [])
+                                (Character 1 24 ())
                             ))
-                            ((IntegerConstant 7 (Integer 4 [])))]
+                            ((IntegerConstant 7 (Integer 4)))]
                             ()
                         )]
                         []
@@ -214,19 +214,19 @@
                     (If
                         (LogicalNot
                             (IntegerCompare
-                                (IntegerConstant 5 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
                                 Gt
-                                (IntegerConstant 3 (Integer 4 []))
-                                (Logical 4 [])
+                                (IntegerConstant 3 (Integer 4))
+                                (Logical 4)
                                 (LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(SubroutineCall
@@ -234,9 +234,9 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () [])
+                                (Character 1 24 ())
                             ))
-                            ((IntegerConstant 8 (Integer 4 [])))]
+                            ((IntegerConstant 8 (Integer 4)))]
                             ()
                         )]
                         []
@@ -245,30 +245,30 @@
                         (LogicalNot
                             (IntegerCompare
                                 (IntegerBinOp
-                                    (IntegerConstant 5 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4))
                                     Add
                                     (IntegerBinOp
-                                        (IntegerConstant 3 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4))
                                         Mul
-                                        (IntegerConstant 8 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant 24 (Integer 4 []))
+                                        (IntegerConstant 8 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant 24 (Integer 4))
                                     )
-                                    (Integer 4 [])
-                                    (IntegerConstant 29 (Integer 4 []))
+                                    (Integer 4)
+                                    (IntegerConstant 29 (Integer 4))
                                 )
                                 Gt
-                                (IntegerConstant 3 (Integer 4 []))
-                                (Logical 4 [])
+                                (IntegerConstant 3 (Integer 4))
+                                (Logical 4)
                                 (LogicalConstant
                                     .true.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(SubroutineCall
@@ -276,9 +276,9 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () [])
+                                (Character 1 24 ())
                             ))
-                            ((IntegerConstant 9 (Integer 4 [])))]
+                            ((IntegerConstant 9 (Integer 4)))]
                             ()
                         )]
                         []
@@ -288,13 +288,13 @@
                             (FunctionCall
                                 2 fn
                                 ()
-                                [((IntegerConstant 3 (Integer 4 [])))
-                                ((IntegerConstant 5 (Integer 4 [])))]
-                                (Logical 4 [])
+                                [((IntegerConstant 3 (Integer 4)))
+                                ((IntegerConstant 5 (Integer 4)))]
+                                (Logical 4)
                                 ()
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(SubroutineCall
@@ -302,9 +302,9 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () [])
+                                (Character 1 24 ())
                             ))
-                            ((IntegerConstant 11 (Integer 4 [])))]
+                            ((IntegerConstant 11 (Integer 4)))]
                             ()
                         )]
                         []
@@ -312,19 +312,19 @@
                     (If
                         (LogicalNot
                             (IntegerCompare
-                                (IntegerConstant 5 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
                                 Lt
-                                (IntegerConstant 3 (Integer 4 []))
-                                (Logical 4 [])
+                                (IntegerConstant 3 (Integer 4))
+                                (Logical 4)
                                 (LogicalConstant
                                     .false.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(SubroutineCall
@@ -332,9 +332,9 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 () [])
+                                (Character 1 24 ())
                             ))
-                            ((IntegerConstant 13 (Integer 4 [])))]
+                            ((IntegerConstant 13 (Integer 4)))]
                             ()
                         )]
                         []

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -62,13 +62,13 @@
                         (Var 2 r)
                         (RealConstant
                             1.500000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
                     (=
                         (Var 2 i)
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
                         ()
                     )
                     (=
@@ -78,11 +78,11 @@
                                 (Var 2 i)
                                 Mul
                                 (Var 2 i)
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -93,7 +93,7 @@
                             (Var 2 r)
                             Mul
                             (Var 2 r)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -104,12 +104,12 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Mul
                             (Var 2 r)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -122,10 +122,10 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -137,11 +137,11 @@
                                 (Var 2 i)
                                 Add
                                 (Var 2 i)
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -152,7 +152,7 @@
                             (Var 2 r)
                             Add
                             (Var 2 r)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -165,10 +165,10 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -179,12 +179,12 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Add
                             (Var 2 r)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -196,11 +196,11 @@
                                 (Var 2 i)
                                 Sub
                                 (Var 2 i)
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -211,7 +211,7 @@
                             (Var 2 r)
                             Sub
                             (Var 2 r)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -224,10 +224,10 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -238,12 +238,12 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Sub
                             (Var 2 r)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -255,11 +255,11 @@
                                 (Var 2 i)
                                 Div
                                 (Var 2 i)
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -270,7 +270,7 @@
                             (Var 2 r)
                             Div
                             (Var 2 r)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -281,12 +281,12 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Div
                             (Var 2 r)
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -299,10 +299,10 @@
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()

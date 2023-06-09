@@ -36,7 +36,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                     [interface_04_mod2]
                     [(=
                         (Var 5 i)
-                        (IntegerConstant 5 (Integer 4 []))
+                        (IntegerConstant 5 (Integer 4))
                         ()
                     )
                     (SubroutineCall
@@ -61,8 +61,8 @@
                         (IntegerCompare
                             (Var 5 i)
                             NotEq
-                            (IntegerConstant 6 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 6 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -97,7 +97,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -107,7 +107,7 @@
                                         })
                                     a1
                                     (FunctionType
-                                        [(Integer 4 [])]
+                                        [(Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -126,8 +126,8 @@
                                         (IntegerBinOp
                                             (Var 3 a)
                                             Add
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         ()

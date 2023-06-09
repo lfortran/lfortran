@@ -15,8 +15,10 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Character 1 -2 () [])
+                                    Default
+                                    (Allocatable
+                                        (Character 1 -2 ())
+                                    )
                                     ()
                                     Source
                                     Public
@@ -62,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -78,7 +80,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -103,8 +105,10 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Character 1 -2 () [])
+                                    Default
+                                    (Allocatable
+                                        (Character 1 -2 ())
+                                    )
                                     ()
                                     Source
                                     Public
@@ -119,11 +123,15 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Struct
-                                        7 profile_config_t
-                                        [(()
-                                        ())]
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Struct
+                                                7 profile_config_t
+                                            )
+                                            [(()
+                                            ())]
+                                        )
                                     )
                                     ()
                                     Source
@@ -140,7 +148,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -166,8 +174,8 @@
                     )
                     (Allocate
                         [((Var 7 profiles)
-                        [((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 5 (Integer 4 [])))])]
+                        [((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 5 (Integer 4)))])]
                         ()
                         ()
                         ()
@@ -224,8 +232,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -240,8 +250,10 @@
                                                     In
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -256,8 +268,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -272,8 +286,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -288,8 +304,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -304,8 +322,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -320,11 +340,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 file_scope_flag
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 file_scope_flag
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -340,8 +364,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -357,7 +383,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -373,7 +399,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -389,7 +415,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -404,8 +430,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -420,8 +448,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -437,7 +467,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -453,7 +483,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -468,8 +498,10 @@
                                                     In
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -484,11 +516,15 @@
                                                     InOut
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 profile_config_t
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 profile_config_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -505,7 +541,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -521,7 +557,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -531,16 +567,24 @@
                                         })
                                     get_flags
                                     (FunctionType
-                                        [(Character 1 -2 () [])
-                                        (Character 1 -2 () [])
-                                        (Integer 4 [])
-                                        (Struct
-                                            2 profile_config_t
-                                            [(()
-                                            ())]
+                                        [(Allocatable
+                                            (Character 1 -2 ())
                                         )
-                                        (Integer 4 [])
-                                        (Logical 4 [])]
+                                        (Allocatable
+                                            (Character 1 -2 ())
+                                        )
+                                        (Integer 4)
+                                        (Allocatable
+                                            (Array
+                                                (Struct
+                                                    2 profile_config_t
+                                                )
+                                                [(()
+                                                ())]
+                                            )
+                                        )
+                                        (Integer 4)
+                                        (Logical 4)]
                                         ()
                                         Source
                                         Implementation
@@ -567,7 +611,6 @@
                                             ())]
                                             (Struct
                                                 2 profile_config_t
-                                                []
                                             )
                                             ColMajor
                                             ()
@@ -586,7 +629,6 @@
                                             (())]
                                             (Struct
                                                 2 profile_config_t
-                                                []
                                             )
                                             ()
                                             ()
@@ -598,8 +640,8 @@
                                         (IntegerBinOp
                                             (Var 6 profindex)
                                             Add
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -635,7 +677,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -651,7 +693,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -667,7 +709,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -683,8 +725,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
-                                                        2 file_scope_flag
+                                                    (Array
+                                                        (Struct
+                                                            2 file_scope_flag
+                                                        )
                                                         [(()
                                                         ())]
                                                     )
@@ -703,7 +747,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -719,7 +763,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -735,7 +779,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -751,7 +795,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -769,7 +813,6 @@
                                                     Default
                                                     (Struct
                                                         2 profile_config_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -786,7 +829,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -796,22 +839,23 @@
                                         })
                                     new_profile
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Character 1 -1 () [])
-                                        (Integer 4 [])
-                                        (Character 1 -1 () [])
-                                        (Character 1 -1 () [])
-                                        (Character 1 -1 () [])
-                                        (Character 1 -1 () [])
-                                        (Struct
-                                            2 file_scope_flag
+                                        [(Character 1 -1 ())
+                                        (Character 1 -1 ())
+                                        (Integer 4)
+                                        (Character 1 -1 ())
+                                        (Character 1 -1 ())
+                                        (Character 1 -1 ())
+                                        (Character 1 -1 ())
+                                        (Array
+                                            (Struct
+                                                2 file_scope_flag
+                                            )
                                             [(()
                                             ())]
                                         )
-                                        (Logical 4 [])]
+                                        (Logical 4)]
                                         (Struct
                                             2 profile_config_t
-                                            []
                                         )
                                         Source
                                         Implementation
@@ -853,8 +897,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -869,8 +915,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -885,8 +933,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -901,11 +951,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 file_scope_flag
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 file_scope_flag
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -921,8 +975,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -938,7 +994,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -953,8 +1009,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -970,7 +1028,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -985,8 +1043,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -995,7 +1055,7 @@
                                                 )
                                         })
                                     profile_config_t
-                                    [file_scope_flag]
+                                    []
                                     [profile_name
                                     compiler
                                     os_type

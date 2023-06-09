@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -31,17 +31,17 @@
                         (ComplexConstructor
                             (RealConstant
                                 3.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 4.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Complex 4 [])
+                            (Complex 4)
                             (ComplexConstant
                                 3.000000
                                 4.000000
-                                (Complex 4 [])
+                                (Complex 4)
                             )
                         )
                         ()

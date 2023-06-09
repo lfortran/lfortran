@@ -23,7 +23,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -53,7 +52,6 @@
                                     (FunctionType
                                         [(Class
                                             3 ~abstract_type
-                                            []
                                         )]
                                         ()
                                         Source

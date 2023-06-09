@@ -15,7 +15,7 @@
                         ()
                         [(StringConstant
                             "executing modules_37"
-                            (Character 1 20 () [])
+                            (Character 1 20 ())
                         )]
                         ()
                         ()
@@ -78,7 +78,6 @@
                                                                     (Pointer
                                                                         (Struct
                                                                             2 build_target_t
-                                                                            []
                                                                         )
                                                                     )
                                                                     ()
@@ -99,8 +98,6 @@
                                                                 ())]
                                                                 (Struct
                                                                     2 build_target_ptr
-                                                                    [(()
-                                                                    ())]
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -109,7 +106,6 @@
                                                             (Pointer
                                                                 (Struct
                                                                     2 build_target_t
-                                                                    []
                                                                 )
                                                             )
                                                             ()
@@ -120,21 +116,21 @@
                                                         (StructInstanceMember
                                                             (Var 9 temp)
                                                             12 1_string_t_s
-                                                            (Character 1 -2 () [])
+                                                            (Character 1 -2 ())
                                                             ()
                                                         )
                                                         (StructInstanceMember
                                                             (Var 12 target)
                                                             12 1_build_target_t_output_dir
-                                                            (Character 1 -2 () [])
+                                                            (Character 1 -2 ())
                                                             ()
                                                         )
                                                         ()
                                                     )
                                                     (Allocate
                                                         [((Var 9 build_dirs)
-                                                        [((IntegerConstant 1 (Integer 4 []))
-                                                        (IntegerConstant 2 (Integer 4 [])))])]
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))])]
                                                         ()
                                                         ()
                                                         ()
@@ -144,10 +140,14 @@
                                                         (ArrayConstant
                                                             [(Var 9 build_dirs)
                                                             (Var 9 temp)]
-                                                            (Struct
-                                                                2 string_t
-                                                                [((IntegerConstant 1 (Integer 4 []))
-                                                                (IntegerConstant 2 (Integer 4 [])))]
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Struct
+                                                                        2 string_t
+                                                                    )
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 2 (Integer 4)))]
+                                                                )
                                                             )
                                                             ColMajor
                                                         )
@@ -162,11 +162,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 string_t
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 string_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -183,7 +187,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -199,7 +203,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -217,7 +221,6 @@
                                                     Default
                                                     (Struct
                                                         2 fpm_model_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -234,8 +237,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
-                                                        2 build_target_ptr
+                                                    (Array
+                                                        (Struct
+                                                            2 build_target_ptr
+                                                        )
                                                         [(()
                                                         ())]
                                                     )
@@ -256,7 +261,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -273,7 +277,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -283,16 +287,17 @@
                                         })
                                     build_package
                                     (FunctionType
-                                        [(Struct
-                                            2 build_target_ptr
+                                        [(Array
+                                            (Struct
+                                                2 build_target_ptr
+                                            )
                                             [(()
                                             ())]
                                         )
                                         (Struct
                                             2 fpm_model_t
-                                            []
                                         )
-                                        (Logical 4 [])]
+                                        (Logical 4)]
                                         ()
                                         Source
                                         Implementation
@@ -310,8 +315,8 @@
                                     (Var 9 verbose)]
                                     [(Allocate
                                         [((Var 9 build_dirs)
-                                        [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 0 (Integer 4 [])))])]
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4)))])]
                                         ()
                                         ()
                                         ()
@@ -319,11 +324,11 @@
                                     (DoLoop
                                         ()
                                         ((Var 9 i)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         (ArraySize
                                             (Var 9 targets)
                                             ()
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ())
@@ -355,7 +360,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 2 build_target_t
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -363,7 +367,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 2 build_target_t
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -371,7 +374,6 @@
                                                     (Pointer
                                                         (Struct
                                                             2 build_target_t
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -404,8 +406,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -449,7 +453,6 @@
                                                     Default
                                                     (Struct
                                                         2 fpm_model_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -468,7 +471,6 @@
                                                     Default
                                                     (Struct
                                                         2 fpm_build_settings
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -484,11 +486,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 build_target_ptr
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 build_target_ptr
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -501,7 +507,6 @@
                                     (FunctionType
                                         [(Struct
                                             2 fpm_build_settings
-                                            []
                                         )]
                                         ()
                                         Source
@@ -524,7 +529,7 @@
                                         ((StructInstanceMember
                                             (Var 10 settings)
                                             10 1_fpm_cmd_settings_verbose
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         ))]
                                         ()
@@ -568,14 +573,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -623,8 +628,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public

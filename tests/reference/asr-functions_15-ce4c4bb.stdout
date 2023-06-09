@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -79,7 +79,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -89,8 +89,8 @@
                                         })
                                     f
                                     (FunctionType
-                                        [(Integer 4 [])]
-                                        (Logical 4 [])
+                                        [(Integer 4)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -109,7 +109,7 @@
                                             5 present
                                             ()
                                             [((Var 5 x))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -136,18 +136,18 @@
                     [functions_15_module_1]
                     [(=
                         (Var 4 a)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (=
                         (Var 4 b)
                         (Cast
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 2.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -159,16 +159,16 @@
                         ((Var 4 b))
                         ((LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         ))
                         ((RealConstant
                             12.000000
-                            (Real 4 [])
+                            (Real 4)
                         ))
-                        ((IntegerConstant 5 (Integer 4 [])))
+                        ((IntegerConstant 5 (Integer 4)))
                         ((RealConstant
                             6.000000
-                            (Real 4 [])
+                            (Real 4)
                         ))]
                         ()
                     )
@@ -179,13 +179,13 @@
                         ((Var 4 b))
                         ((LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         ))
                         (())
                         (())
                         ((RealConstant
                             6.000000
-                            (Real 4 [])
+                            (Real 4)
                         ))]
                         ()
                     )
@@ -196,13 +196,13 @@
                         ((Var 4 b))
                         ((LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         ))
                         (())
-                        ((IntegerConstant 78 (Integer 4 [])))
+                        ((IntegerConstant 78 (Integer 4)))
                         ((RealConstant
                             117.000000
-                            (Real 4 [])
+                            (Real 4)
                         ))]
                         ()
                     )
@@ -213,16 +213,16 @@
                         ((Var 4 b))
                         ((LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         ))
                         ((RealConstant
                             58.000000
-                            (Real 4 [])
+                            (Real 4)
                         ))
                         (())
                         ((RealConstant
                             123.000000
-                            (Real 4 [])
+                            (Real 4)
                         ))]
                         ()
                     )
@@ -237,8 +237,8 @@
                         (IntegerCompare
                             (Var 4 a)
                             NotEq
-                            (IntegerConstant 144288208 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 144288208 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -252,9 +252,9 @@
                             NotEq
                             (RealConstant
                                 1477476.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -268,15 +268,15 @@
                             4 f
                             ()
                             [(())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                             ()
                         )
                         (FunctionCall
                             4 f
                             ()
-                            [((IntegerConstant 42 (Integer 4 [])))]
-                            (Logical 4 [])
+                            [((IntegerConstant 42 (Integer 4)))]
+                            (Logical 4)
                             ()
                             ()
                         )]
@@ -303,7 +303,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -319,7 +319,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -335,7 +335,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -351,7 +351,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -367,7 +367,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -383,7 +383,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -403,12 +403,12 @@
                                         })
                                     sub_1
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Real 4 [])
-                                        (Logical 4 [])
-                                        (Real 4 [])
-                                        (Integer 4 [])
-                                        (Real 4 [])]
+                                        [(Integer 4)
+                                        (Real 4)
+                                        (Logical 4)
+                                        (Real 4)
+                                        (Integer 4)
+                                        (Real 4)]
                                         ()
                                         Source
                                         Implementation
@@ -432,7 +432,7 @@
                                             3 present
                                             ()
                                             [((Var 3 d))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -444,24 +444,24 @@
                                                         (Var 3 b)
                                                         Pow
                                                         (Cast
-                                                            (IntegerConstant 2 (Integer 4 []))
+                                                            (IntegerConstant 2 (Integer 4))
                                                             IntegerToReal
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             (RealConstant
                                                                 2.000000
-                                                                (Real 4 [])
+                                                                (Real 4)
                                                             )
                                                         )
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
                                                     Add
                                                     (Var 3 d)
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 RealToInteger
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             ()
@@ -471,7 +471,7 @@
                                                 3 present
                                                 ()
                                                 [((Var 3 e))]
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )
@@ -482,17 +482,17 @@
                                                         (Var 3 b)
                                                         Mul
                                                         (Var 3 f)
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
                                                     Add
                                                     (Cast
                                                         (Var 3 e)
                                                         IntegerToReal
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 ()
@@ -503,7 +503,7 @@
                                                     (Var 3 b)
                                                     Mul
                                                     (Var 3 f)
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 ()
@@ -516,19 +516,19 @@
                                                     (Var 3 b)
                                                     Pow
                                                     (Cast
-                                                        (IntegerConstant 2 (Integer 4 []))
+                                                        (IntegerConstant 2 (Integer 4))
                                                         IntegerToReal
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         (RealConstant
                                                             2.000000
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                         )
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 RealToInteger
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             ()
@@ -538,7 +538,7 @@
                                                 3 present
                                                 ()
                                                 [((Var 3 e))]
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )
@@ -549,17 +549,17 @@
                                                         (Var 3 b)
                                                         Mul
                                                         (Var 3 f)
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
                                                     Add
                                                     (Cast
                                                         (Var 3 e)
                                                         IntegerToReal
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 ()
@@ -570,7 +570,7 @@
                                                     (Var 3 b)
                                                     Mul
                                                     (Var 3 f)
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 ()
