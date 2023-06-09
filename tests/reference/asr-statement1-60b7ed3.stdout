@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -69,7 +69,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -85,7 +85,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     Source
                                                     Public
@@ -95,8 +95,8 @@
                                         })
                                     q
                                     (FunctionType
-                                        [(Real 8 [])]
-                                        (Logical 4 [])
+                                        [(Real 8)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -117,7 +117,7 @@
                                                     (Var 2 a)
                                                     Eq
                                                     (Var 2 b)
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
                                                 And
@@ -127,22 +127,22 @@
                                                     (Cast
                                                         (RealConstant
                                                             0.000000
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                         )
                                                         RealToReal
-                                                        (Real 8 [])
+                                                        (Real 8)
                                                         (RealConstant
                                                             0.000000
-                                                            (Real 8 [])
+                                                            (Real 8)
                                                         )
                                                     )
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         ()
@@ -162,7 +162,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public

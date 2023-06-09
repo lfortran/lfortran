@@ -257,15 +257,15 @@ public:
 
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
         }
 
         for (char ch='o'; ch<='z'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4));
         }
 
         for (char ch='a'; ch<='h'; ch++) {
-            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4, nullptr, 0));
+            implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Real_t(al, a_loc, 4));
         }
     }
 
@@ -314,27 +314,27 @@ public:
                 }
                 switch (ast_type) {
                     case (AST::decl_typeType::TypeInteger) : {
-                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind));
                         break;
                     }
                     case (AST::decl_typeType::TypeReal) : {
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind));
                         break;
                     }
                     case (AST::decl_typeType::TypeDoublePrecision) : {
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
                         break;
                     }
                     case (AST::decl_typeType::TypeComplex) : {
-                        type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind));
                         break;
                     }
                     case (AST::decl_typeType::TypeLogical) : {
-                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
                         break;
                     }
                     case (AST::decl_typeType::TypeCharacter) : {
-                        type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr));
                         break;
                     }
                     default :
@@ -828,31 +828,31 @@ public:
             }
             switch (return_type->m_type) {
                 case (AST::decl_typeType::TypeInteger) : {
-                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeReal) : {
-                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, a_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeDoublePrecision) : {
-                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
                     break;
                 }
                 case (AST::decl_typeType::TypeComplex) : {
-                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, a_kind));
                     break;
                 }
                 case (AST::decl_typeType::TypeDoubleComplex) : {
-                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 8, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 8));
                     break;
                 }
                 case (AST::decl_typeType::TypeLogical) : {
-                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
                     break;
                 }
                 case (AST::decl_typeType::TypeCharacter) : {
-                    type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr, nullptr, 0));
+                    type = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, a_len, nullptr));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
@@ -869,14 +869,25 @@ public:
                     bool type_param = false;
                     if (is_requirement) {
                         for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
-                            ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(current_requirement_type_parameters[i]);
+                            ASR::ttype_t *param_ttype = ASRUtils::TYPE(
+                                current_requirement_type_parameters[i]);
+                            ASR::dimension_t* param_m_dims = nullptr;
+                            int param_n_dims = ASRUtils::extract_dimensions_from_ttype(param_ttype, param_m_dims);
+                            if( ASR::is_a<ASR::Array_t>(*param_ttype) ) {
+                                param_ttype = ASR::down_cast<ASR::Array_t>(param_ttype)->m_type;
+                            }
+                            ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(
+                                current_requirement_type_parameters[i]);
                             std::string name = std::string(param->m_param);
                             if (name.compare(derived_type_name) == 0) {
                                 type_param = true;
                                 // TODO: if current_requirement_type_parameters can be replaced with
                                 // std::vector<ASR::ttype_t*> then use duplicate instead
-                                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param,
-                                                                                param->m_dims, param->n_dims));
+                                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param));
+                                if( param_n_dims > 0 ) {
+                                    type = ASRUtils::make_Array_t_util(al, x.base.base.loc, type,
+                                                param_m_dims, param_n_dims);
+                                }
                             }
                         }
                     } else if (is_template) {
@@ -895,7 +906,7 @@ public:
                         */
                     }
                     if (!type_param) {
-                        type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v, nullptr, 0));
+                        type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
                     }
                     break;
                 }
@@ -1036,12 +1047,12 @@ public:
     void visit_DerivedType(const AST::DerivedType_t &x) {
         if (is_requirement) {
             ASR::asr_t *tp = ASR::make_TypeParameter_t(
-                al, x.base.base.loc, s2c(al, to_lower(x.m_name)), nullptr, 0);
+                al, x.base.base.loc, s2c(al, to_lower(x.m_name)));
             current_requirement_type_parameters.push_back(tp);
             tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
                 s2c(al, to_lower(x.m_name)), nullptr, 0, ASRUtils::intent_in,
-                nullptr, nullptr, ASR::storage_typeType::Default, 
-                ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source, 
+                nullptr, nullptr, ASR::storage_typeType::Default,
+                ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source,
                 dflt_access, ASR::presenceType::Required, false);
             current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
             is_derived_type = false;
@@ -2126,7 +2137,7 @@ public:
             std::string arg = to_lower(x.m_namelist[i]);
             args.push_back(al, s2c(al, arg));
         }
-    
+
         ASR::asr_t *req = ASR::make_Requirement_t(al, x.base.base.loc,
             current_scope, s2c(al, to_lower(x.m_name)), args.p, args.size());
 
@@ -2157,7 +2168,7 @@ public:
             if (std::find(current_template_args.begin(),
                           current_template_args.end(),
                           temp_arg) == current_template_args.end()) {
-                throw SemanticError("Parameter '" + std::string(x.m_namelist[i]) 
+                throw SemanticError("Parameter '" + std::string(x.m_namelist[i])
                     + "' was not declared", x.base.base.loc);
             }
             std::string req_arg = req->m_args[i];
@@ -2216,11 +2227,18 @@ public:
             case ASR::symbolType::Variable: {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
                 ASR::ttype_t* t = ASRUtils::duplicate_type(al, v->m_type);
+                ASR::dimension_t* tp_m_dims = nullptr;
+                int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims);
+                t = ASRUtils::type_get_past_array(t);
                 if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
                     ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
                     current_template_map[tp->m_param] = name;
-                    t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, 
-                        tp->base.base.loc, s2c(al, name), tp->m_dims, tp->n_dims));
+                    t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
+                        tp->base.base.loc, s2c(al, name)));
+                    if( tp_n_dims > 0 ) {
+                        t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
+                            t, tp_m_dims, tp_n_dims);
+                    }
                 }
                 ASR::asr_t* new_v = ASR::make_Variable_t(al, v->base.base.loc,
                     current_scope, s2c(al, name), v->m_dependencies,
@@ -2242,12 +2260,18 @@ public:
                     ASR::Variable_t* param_var = ASR::down_cast<ASR::Variable_t>(
                         (ASR::down_cast<ASR::Var_t>(f->m_args[i]))->m_v);
                     ASR::ttype_t* param_type = ASRUtils::expr_type(f->m_args[i]);
+                    ASR::dimension_t* tp_m_dims = nullptr;
+                    int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(param_type, tp_m_dims);
+                    param_type = ASRUtils::type_get_past_array(param_type);
                     if (ASR::is_a<ASR::TypeParameter_t>(*param_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(param_type);
                         if (current_template_map.find(tp->m_param) != current_template_map.end()) {
                             param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param]),
-                                tp->m_dims, tp->n_dims));
+                                al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param])));
+                            if( tp_n_dims > 0 ) {
+                                param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
+                                    param_type, tp_m_dims, tp_n_dims);
+                            }
                         }
                     }
 
@@ -2267,14 +2291,14 @@ public:
                     variable_dependencies_vec.reserve(al, 1);
                     ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, param_type);
                     ASR::asr_t *v = ASR::make_Variable_t(al, loc, new_scope,
-                        s2c(al, var_name), variable_dependencies_vec.p, 
+                        s2c(al, var_name), variable_dependencies_vec.p,
                         variable_dependencies_vec.size(),
                         s_intent, init_expr, value, storage_type, param_type,
-                        type_decl, abi_type, s_access, s_presence, value_attr);     
+                        type_decl, abi_type, s_access, s_presence, value_attr);
 
-                    new_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));    
+                    new_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
                     ASR::symbol_t* var = new_scope->get_symbol(var_name);
-                    args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, f->base.base.loc, var)));       
+                    args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, f->base.base.loc, var)));
                 }
 
                 ASR::expr_t *new_return_var_ref = nullptr;
@@ -2283,12 +2307,18 @@ public:
                         (ASR::down_cast<ASR::Var_t>(f->m_return_var))->m_v);
                     std::string return_var_name = return_var->m_name;
                     ASR::ttype_t *return_type = ASRUtils::expr_type(f->m_return_var);
+                    ASR::dimension_t* tp_m_dims = nullptr;
+                    int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(return_type, tp_m_dims);
+                    return_type = ASRUtils::type_get_past_array(return_type);
                     if (ASR::is_a<ASR::TypeParameter_t>(*return_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(return_type);
                         if (current_template_map.find(tp->m_param) != current_template_map.end()) {
                             return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param]),
-                                tp->m_dims, tp->n_dims));
+                                al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param])));
+                            if( tp_n_dims > 0 ) {
+                                return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
+                                    return_type, tp_m_dims, tp_n_dims);
+                            }
                         }
                     }
                     SetChar variable_dependencies_vec;
@@ -2301,7 +2331,7 @@ public:
                         return_var->m_intent, nullptr, nullptr,
                         return_var->m_storage, return_type,
                         return_var->m_type_declaration, return_var->m_abi,
-                        return_var->m_access, return_var->m_presence, 
+                        return_var->m_access, return_var->m_presence,
                         return_var->m_value_attr);
                     new_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(new_return_var));
                     new_return_var_ref = ASRUtils::EXPR(ASR::make_Var_t(al, f->base.base.loc,
@@ -2309,9 +2339,9 @@ public:
                 }
 
                 ASR::asr_t* new_f = ASRUtils::make_Function_t_util(al, f->base.base.loc,
-                    new_scope, s2c(al, name), f->m_dependencies, f->n_dependencies, args.p, 
-                    args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi, f->m_access, 
-                    ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental, ftype->m_pure, 
+                    new_scope, s2c(al, name), f->m_dependencies, f->n_dependencies, args.p,
+                    args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi, f->m_access,
+                    ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental, ftype->m_pure,
                     ftype->m_module, ftype->m_inline, ftype->m_static,
                     ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free);
                 return ASR::down_cast<ASR::symbol_t>(new_f);
@@ -2335,7 +2365,7 @@ public:
         Vec<char *> m_members;
         m_members.reserve(al, 4);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
-            x.base.base.loc, 4, nullptr, 0));
+            x.base.base.loc, 4));
 
         ASR::abiType abi_type = ASR::abiType::BindC;
         if ( x.n_attr == 1 ) {

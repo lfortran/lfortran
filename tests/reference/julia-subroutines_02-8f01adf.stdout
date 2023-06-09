@@ -11,8 +11,8 @@ function h(a::Int32, b::Base.RefValue{Int32})
 end
 
 function main()
-    local i::Int32 = 0
-    local j::Int32 = 0
+    local i::Int32
+    local j::Int32
     i = 1
     j = 1
     __j_ref__= Ref(j)

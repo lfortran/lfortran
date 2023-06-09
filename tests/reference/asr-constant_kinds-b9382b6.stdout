@@ -13,10 +13,10 @@
                                     i1
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -29,10 +29,10 @@
                                     i2
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -46,14 +46,14 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 1 (Integer 8 []))
+                                        (IntegerConstant 1 (Integer 8))
                                         IntegerToInteger
-                                        (Integer 4 [])
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 1 (Integer 4))
                                     )
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -68,14 +68,14 @@
                                     Local
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -91,21 +91,21 @@
                                     (Cast
                                         (RealConstant
                                             1.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                         RealToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             1.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -120,14 +120,14 @@
                                     Local
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -143,21 +143,21 @@
                                     (Cast
                                         (RealConstant
                                             1.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                         RealToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             1.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -173,7 +173,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -189,7 +189,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -203,7 +203,7 @@
                         (Var 2 y)
                         (RealConstant
                             1.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -212,13 +212,13 @@
                         (Cast
                             (RealConstant
                                 1.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
                             RealToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -227,7 +227,7 @@
                         (Var 2 y)
                         (RealConstant
                             1.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -236,34 +236,34 @@
                         (Cast
                             (RealConstant
                                 1.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
                             RealToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
                     )
                     (=
                         (Var 2 x)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 x)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 x)
                         (Cast
-                            (IntegerConstant 1 (Integer 8 []))
+                            (IntegerConstant 1 (Integer 8))
                             IntegerToInteger
-                            (Integer 4 [])
-                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 1 (Integer 4))
                         )
                         ()
                     )]

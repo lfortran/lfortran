@@ -32,7 +32,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -48,7 +48,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 256 () [])
+                                                    (Character 1 256 ())
                                                     ()
                                                     Source
                                                     Private
@@ -66,7 +66,6 @@
                                                     Default
                                                     (Struct
                                                         2 logger_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -83,7 +82,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -95,7 +94,6 @@
                                     (FunctionType
                                         [(Struct
                                             2 logger_type
-                                            []
                                         )]
                                         ()
                                         Source
@@ -130,14 +128,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -152,9 +150,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -167,10 +170,10 @@
                                                     max_width
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4 []))
-                                                    (IntegerConstant 0 (Integer 4 []))
+                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private

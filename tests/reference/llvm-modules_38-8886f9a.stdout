@@ -32,7 +32,6 @@ define i8* @__module_fpm_compiler_enumerate_libraries(%compiler_t_polymorphic* %
   %1 = getelementptr %__vtab_compiler_t, %__vtab_compiler_t* %0, i32 0, i32 0
   store i64 0, i64* %1, align 4
   %r = alloca i8*, align 8
-  store i8* null, i8** %r, align 8
   %2 = getelementptr %compiler_t_polymorphic, %compiler_t_polymorphic* %self, i32 0, i32 1
   %3 = load %compiler_t*, %compiler_t** %2, align 8
   %4 = getelementptr %compiler_t, %compiler_t* %3, i32 0, i32 0

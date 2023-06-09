@@ -22,7 +22,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 2 build_target_t
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -30,7 +29,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 2 build_target_t
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -38,7 +36,6 @@
                                                     (Pointer
                                                         (Struct
                                                             2 build_target_t
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -71,8 +68,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -87,8 +86,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -124,7 +125,6 @@
                                                     (Pointer
                                                         (Struct
                                                             2 build_target_t
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -140,7 +140,6 @@
                                         (Pointer
                                             (Struct
                                                 2 build_target_t
-                                                []
                                             )
                                         )
                                         Source
@@ -161,7 +160,6 @@
                                             (Pointer
                                                 (Struct
                                                     2 build_target_t
-                                                    []
                                                 )
                                             )
                                         )
@@ -191,7 +189,7 @@
                         ()
                         [(StringConstant
                             "running modules_32 program"
-                            (Character 1 26 () [])
+                            (Character 1 26 ())
                         )]
                         ()
                         ()

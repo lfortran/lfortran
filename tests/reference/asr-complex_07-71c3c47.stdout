@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -31,14 +31,14 @@
                                     Local
                                     (RealConstant
                                         3.140000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         3.140000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -51,10 +51,10 @@
                                     real_part
                                     []
                                     Local
-                                    (IntegerConstant 42 (Integer 4 []))
-                                    (IntegerConstant 42 (Integer 4 []))
+                                    (IntegerConstant 42 (Integer 4))
+                                    (IntegerConstant 42 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -71,30 +71,30 @@
                                         (Cast
                                             (Var 2 real_part)
                                             IntegerToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 42.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
                                         (RealConstant
                                             0.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Complex 4 [])
+                                        (Complex 4)
                                         (ComplexConstant
                                             42.000000
                                             0.000000
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
                                     )
                                     (ComplexConstant
                                         42.000000
                                         0.000000
-                                        (Complex 4 [])
+                                        (Complex 4)
                                     )
                                     Save
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -110,7 +110,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -127,22 +127,22 @@
                                         (Var 2 img_part)
                                         (RealConstant
                                             0.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Complex 4 [])
+                                        (Complex 4)
                                         (ComplexConstant
                                             3.140000
                                             0.000000
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
                                     )
                                     (ComplexConstant
                                         3.140000
                                         0.000000
-                                        (Complex 4 [])
+                                        (Complex 4)
                                     )
                                     Save
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -158,7 +158,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -176,27 +176,27 @@
                                         (Cast
                                             (Var 2 real_part)
                                             IntegerToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 42.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
                                         (Var 2 img_part)
-                                        (Complex 4 [])
+                                        (Complex 4)
                                         (ComplexConstant
                                             42.000000
                                             3.140000
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
                                     )
                                     (ComplexConstant
                                         42.000000
                                         3.140000
-                                        (Complex 4 [])
+                                        (Complex 4)
                                     )
                                     Save
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -212,7 +212,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -226,17 +226,17 @@
                         (Var 2 c1)
                         (Cast
                             (ComplexConstructor
-                                (IntegerConstant 12 (Integer 4 []))
-                                (IntegerConstant 24 (Integer 4 []))
-                                (Complex 4 [])
+                                (IntegerConstant 12 (Integer 4))
+                                (IntegerConstant 24 (Integer 4))
+                                (Complex 4)
                                 (ComplexConstant
                                     12.000000
                                     24.000000
-                                    (Complex 4 [])
+                                    (Complex 4)
                                 )
                             )
                             ComplexToComplex
-                            (Complex 8 [])
+                            (Complex 8)
                             ()
                         )
                         ()
@@ -253,13 +253,13 @@
                             (Var 2 real_part)
                             (RealConstant
                                 0.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
-                            (Complex 8 [])
+                            (Complex 8)
                             (ComplexConstant
                                 42.000000
                                 0.000000
-                                (Complex 8 [])
+                                (Complex 8)
                             )
                         )
                         ()
@@ -270,13 +270,13 @@
                             (Var 2 img_part)
                             (RealConstant
                                 0.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
-                            (Complex 8 [])
+                            (Complex 8)
                             (ComplexConstant
                                 3.140000
                                 0.000000
-                                (Complex 8 [])
+                                (Complex 8)
                             )
                         )
                         ()
@@ -286,11 +286,11 @@
                         (ComplexConstructor
                             (Var 2 real_part)
                             (Var 2 img_part)
-                            (Complex 8 [])
+                            (Complex 8)
                             (ComplexConstant
                                 42.000000
                                 3.140000
-                                (Complex 8 [])
+                                (Complex 8)
                             )
                         )
                         ()
@@ -304,27 +304,27 @@
                                     Sub
                                     (ComplexConstructor
                                         (Var 2 real_part)
-                                        (IntegerConstant 0 (Integer 4 []))
-                                        (Complex 4 [])
+                                        (IntegerConstant 0 (Integer 4))
+                                        (Complex 4)
                                         (ComplexConstant
                                             42.000000
                                             0.000000
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
                                     )
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000010
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -341,27 +341,27 @@
                                     Sub
                                     (ComplexConstructor
                                         (Var 2 img_part)
-                                        (IntegerConstant 0 (Integer 4 []))
-                                        (Complex 4 [])
+                                        (IntegerConstant 0 (Integer 4))
+                                        (Complex 4)
                                         (ComplexConstant
                                             3.140000
                                             0.000000
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
                                     )
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000010
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -379,26 +379,26 @@
                                     (ComplexConstructor
                                         (Var 2 real_part)
                                         (Var 2 img_part)
-                                        (Complex 4 [])
+                                        (Complex 4)
                                         (ComplexConstant
                                             42.000000
                                             3.140000
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
                                     )
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000010
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -416,39 +416,39 @@
                                     (Cast
                                         (ComplexConstructor
                                             (Var 2 real_part)
-                                            (IntegerConstant 0 (Integer 4 []))
-                                            (Complex 4 [])
+                                            (IntegerConstant 0 (Integer 4))
+                                            (Complex 4)
                                             (ComplexConstant
                                                 42.000000
                                                 0.000000
-                                                (Complex 4 [])
+                                                (Complex 4)
                                             )
                                         )
                                         ComplexToComplex
-                                        (Complex 8 [])
+                                        (Complex 8)
                                         ()
                                     )
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (Cast
                                 (RealConstant
                                     0.000010
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 RealToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     0.000010
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -466,39 +466,39 @@
                                     (Cast
                                         (ComplexConstructor
                                             (Var 2 img_part)
-                                            (IntegerConstant 0 (Integer 4 []))
-                                            (Complex 4 [])
+                                            (IntegerConstant 0 (Integer 4))
+                                            (Complex 4)
                                             (ComplexConstant
                                                 3.140000
                                                 0.000000
-                                                (Complex 4 [])
+                                                (Complex 4)
                                             )
                                         )
                                         ComplexToComplex
-                                        (Complex 8 [])
+                                        (Complex 8)
                                         ()
                                     )
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (Cast
                                 (RealConstant
                                     0.000010
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 RealToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     0.000010
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -517,38 +517,38 @@
                                         (ComplexConstructor
                                             (Var 2 real_part)
                                             (Var 2 img_part)
-                                            (Complex 4 [])
+                                            (Complex 4)
                                             (ComplexConstant
                                                 42.000000
                                                 3.140000
-                                                (Complex 4 [])
+                                                (Complex 4)
                                             )
                                         )
                                         ComplexToComplex
-                                        (Complex 8 [])
+                                        (Complex 8)
                                         ()
                                     )
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (Cast
                                 (RealConstant
                                     0.000010
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 RealToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     0.000010
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

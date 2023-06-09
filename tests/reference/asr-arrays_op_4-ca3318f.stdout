@@ -15,13 +15,18 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Logical 4 [(()
-                                    ())
-                                    (()
-                                    ())
-                                    (()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Logical 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -36,13 +41,18 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Logical 4 [(()
-                                    ())
-                                    (()
-                                    ())
-                                    (()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Logical 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -57,13 +67,18 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Logical 4 [(()
-                                    ())
-                                    (()
-                                    ())
-                                    (()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Logical 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -76,10 +91,10 @@
                                     dim1
                                     []
                                     Local
-                                    (IntegerConstant 10 (Integer 4 []))
-                                    (IntegerConstant 10 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -92,10 +107,10 @@
                                     dim2
                                     []
                                     Local
-                                    (IntegerConstant 100 (Integer 4 []))
-                                    (IntegerConstant 100 (Integer 4 []))
+                                    (IntegerConstant 100 (Integer 4))
+                                    (IntegerConstant 100 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -108,10 +123,10 @@
                                     dim3
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -127,7 +142,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -143,7 +158,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -159,7 +174,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -180,7 +195,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -196,7 +211,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -206,8 +221,8 @@
                                         })
                                     modulo2
                                     (FunctionType
-                                        [(Integer 4 [])]
-                                        (Logical 4 [])
+                                        [(Integer 4)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -227,24 +242,24 @@
                                                 (Var 3 x)
                                                 Sub
                                                 (IntegerBinOp
-                                                    (IntegerConstant 2 (Integer 4 []))
+                                                    (IntegerConstant 2 (Integer 4))
                                                     Mul
                                                     (IntegerBinOp
                                                         (Var 3 x)
                                                         Div
-                                                        (IntegerConstant 2 (Integer 4 []))
-                                                        (Integer 4 [])
+                                                        (IntegerConstant 2 (Integer 4))
+                                                        (Integer 4)
                                                         ()
                                                     )
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                 )
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Eq
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Logical 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Logical 4)
                                             ()
                                         )
                                         ()
@@ -268,13 +283,18 @@
                                                     In
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Logical 4 [(()
-                                                    ())
-                                                    (()
-                                                    ())
-                                                    (()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Logical 4)
+                                                            [(()
+                                                            ())
+                                                            (()
+                                                            ())
+                                                            (()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -290,7 +310,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -306,7 +326,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -322,7 +342,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -338,7 +358,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -354,7 +374,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -370,7 +390,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -380,13 +400,18 @@
                                         })
                                     verify
                                     (FunctionType
-                                        [(Logical 4 [(()
-                                        ())
-                                        (()
-                                        ())
-                                        (()
-                                        ())])
-                                        (Integer 4 [])]
+                                        [(Allocatable
+                                            (Array
+                                                (Logical 4)
+                                                [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
+                                                ())]
+                                            )
+                                        )
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -406,15 +431,15 @@
                                         ((Var 4 i)
                                         (ArrayBound
                                             (Var 4 c)
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             LBound
                                             ()
                                         )
                                         (ArrayBound
                                             (Var 4 c)
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             UBound
                                             ()
                                         )
@@ -424,15 +449,15 @@
                                             ((Var 4 j)
                                             (ArrayBound
                                                 (Var 4 c)
-                                                (IntegerConstant 2 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 2 (Integer 4))
+                                                (Integer 4)
                                                 LBound
                                                 ()
                                             )
                                             (ArrayBound
                                                 (Var 4 c)
-                                                (IntegerConstant 2 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 2 (Integer 4))
+                                                (Integer 4)
                                                 UBound
                                                 ()
                                             )
@@ -442,15 +467,15 @@
                                                 ((Var 4 k)
                                                 (ArrayBound
                                                     (Var 4 c)
-                                                    (IntegerConstant 3 (Integer 4 []))
-                                                    (Integer 4 [])
+                                                    (IntegerConstant 3 (Integer 4))
+                                                    (Integer 4)
                                                     LBound
                                                     ()
                                                 )
                                                 (ArrayBound
                                                     (Var 4 c)
-                                                    (IntegerConstant 3 (Integer 4 []))
-                                                    (Integer 4 [])
+                                                    (IntegerConstant 3 (Integer 4))
+                                                    (Integer 4)
                                                     UBound
                                                     ()
                                                 )
@@ -465,15 +490,15 @@
                                                                 (Var 4 i)
                                                                 Add
                                                                 (Var 4 j)
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             )
                                                             Add
                                                             (Var 4 k)
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         ))]
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                         ()
                                                         ()
                                                     )
@@ -490,7 +515,7 @@
                                                                     (Var 4 i)
                                                                     Mul
                                                                     (Var 4 j)
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                 )
                                                                 Add
@@ -498,10 +523,10 @@
                                                                     (Var 4 j)
                                                                     Mul
                                                                     (Var 4 k)
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                 )
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             )
                                                             Add
@@ -509,13 +534,13 @@
                                                                 (Var 4 k)
                                                                 Mul
                                                                 (Var 4 j)
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             )
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         ))]
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                         ()
                                                         ()
                                                     )
@@ -524,7 +549,7 @@
                                                 (Select
                                                     (Var 4 op_code)
                                                     [(CaseStmt
-                                                        [(IntegerConstant 0 (Integer 4 []))]
+                                                        [(IntegerConstant 0 (Integer 4))]
                                                         [(If
                                                             (LogicalBinOp
                                                                 (ArrayItem
@@ -538,7 +563,7 @@
                                                                     (()
                                                                     (Var 4 k)
                                                                     ())]
-                                                                    (Logical 4 [])
+                                                                    (Logical 4)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -547,10 +572,10 @@
                                                                     (Var 4 x)
                                                                     And
                                                                     (Var 4 y)
-                                                                    (Logical 4 [])
+                                                                    (Logical 4)
                                                                     ()
                                                                 )
-                                                                (Logical 4 [])
+                                                                (Logical 4)
                                                                 ()
                                                             )
                                                             [(ErrorStop
@@ -560,7 +585,7 @@
                                                         )]
                                                     )
                                                     (CaseStmt
-                                                        [(IntegerConstant 1 (Integer 4 []))]
+                                                        [(IntegerConstant 1 (Integer 4))]
                                                         [(If
                                                             (LogicalBinOp
                                                                 (ArrayItem
@@ -574,7 +599,7 @@
                                                                     (()
                                                                     (Var 4 k)
                                                                     ())]
-                                                                    (Logical 4 [])
+                                                                    (Logical 4)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -583,10 +608,10 @@
                                                                     (Var 4 x)
                                                                     Or
                                                                     (Var 4 y)
-                                                                    (Logical 4 [])
+                                                                    (Logical 4)
                                                                     ()
                                                                 )
-                                                                (Logical 4 [])
+                                                                (Logical 4)
                                                                 ()
                                                             )
                                                             [(ErrorStop
@@ -596,7 +621,7 @@
                                                         )]
                                                     )
                                                     (CaseStmt
-                                                        [(IntegerConstant 2 (Integer 4 []))]
+                                                        [(IntegerConstant 2 (Integer 4))]
                                                         [(If
                                                             (LogicalBinOp
                                                                 (ArrayItem
@@ -610,7 +635,7 @@
                                                                     (()
                                                                     (Var 4 k)
                                                                     ())]
-                                                                    (Logical 4 [])
+                                                                    (Logical 4)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -619,10 +644,10 @@
                                                                     (Var 4 x)
                                                                     Eqv
                                                                     (Var 4 y)
-                                                                    (Logical 4 [])
+                                                                    (Logical 4)
                                                                     ()
                                                                 )
-                                                                (Logical 4 [])
+                                                                (Logical 4)
                                                                 ()
                                                             )
                                                             [(ErrorStop
@@ -632,7 +657,7 @@
                                                         )]
                                                     )
                                                     (CaseStmt
-                                                        [(IntegerConstant 3 (Integer 4 []))]
+                                                        [(IntegerConstant 3 (Integer 4))]
                                                         [(If
                                                             (LogicalBinOp
                                                                 (ArrayItem
@@ -646,7 +671,7 @@
                                                                     (()
                                                                     (Var 4 k)
                                                                     ())]
-                                                                    (Logical 4 [])
+                                                                    (Logical 4)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -655,10 +680,10 @@
                                                                     (Var 4 x)
                                                                     NEqv
                                                                     (Var 4 y)
-                                                                    (Logical 4 [])
+                                                                    (Logical 4)
                                                                     ()
                                                                 )
-                                                                (Logical 4 [])
+                                                                (Logical 4)
                                                                 ()
                                                             )
                                                             [(ErrorStop
@@ -683,25 +708,25 @@
                     []
                     [(Allocate
                         [((Var 2 a)
-                        [((IntegerConstant 1 (Integer 4 []))
+                        [((IntegerConstant 1 (Integer 4))
                         (Var 2 dim1))
-                        ((IntegerConstant 1 (Integer 4 []))
+                        ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim2))
-                        ((IntegerConstant 1 (Integer 4 []))
+                        ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim3))])
                         ((Var 2 b)
-                        [((IntegerConstant 1 (Integer 4 []))
+                        [((IntegerConstant 1 (Integer 4))
                         (Var 2 dim1))
-                        ((IntegerConstant 1 (Integer 4 []))
+                        ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim2))
-                        ((IntegerConstant 1 (Integer 4 []))
+                        ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim3))])
                         ((Var 2 c)
-                        [((IntegerConstant 1 (Integer 4 []))
+                        [((IntegerConstant 1 (Integer 4))
                         (Var 2 dim1))
-                        ((IntegerConstant 1 (Integer 4 []))
+                        ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim2))
-                        ((IntegerConstant 1 (Integer 4 []))
+                        ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim3))])]
                         ()
                         ()
@@ -710,19 +735,19 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         (Var 2 dim1)
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             (Var 2 dim2)
                             ())
                             [(DoLoop
                                 ()
                                 ((Var 2 k)
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 (Var 2 dim3)
                                 ())
                                 [(=
@@ -737,7 +762,7 @@
                                         (()
                                         (Var 2 k)
                                         ())]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         ColMajor
                                         ()
                                     )
@@ -749,15 +774,15 @@
                                                 (Var 2 i)
                                                 Add
                                                 (Var 2 j)
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Add
                                             (Var 2 k)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         ))]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         ()
                                         ()
                                     )
@@ -775,7 +800,7 @@
                                         (()
                                         (Var 2 k)
                                         ())]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         ColMajor
                                         ()
                                     )
@@ -788,7 +813,7 @@
                                                     (Var 2 i)
                                                     Mul
                                                     (Var 2 j)
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                 )
                                                 Add
@@ -796,10 +821,10 @@
                                                     (Var 2 j)
                                                     Mul
                                                     (Var 2 k)
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                 )
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Add
@@ -807,13 +832,13 @@
                                                 (Var 2 k)
                                                 Mul
                                                 (Var 2 j)
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         ))]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         ()
                                         ()
                                     )
@@ -828,12 +853,15 @@
                             (Var 2 a)
                             And
                             (Var 2 b)
-                            (Logical 4 [(()
-                            ())
-                            (()
-                            ())
-                            (()
-                            ())])
+                            (Array
+                                (Logical 4)
+                                [(()
+                                ())
+                                (()
+                                ())
+                                (()
+                                ())]
+                            )
                             ()
                         )
                         ()
@@ -842,7 +870,7 @@
                         2 verify
                         ()
                         [((Var 2 c))
-                        ((IntegerConstant 0 (Integer 4 [])))]
+                        ((IntegerConstant 0 (Integer 4)))]
                         ()
                     )
                     (=
@@ -851,12 +879,15 @@
                             (Var 2 a)
                             Or
                             (Var 2 b)
-                            (Logical 4 [(()
-                            ())
-                            (()
-                            ())
-                            (()
-                            ())])
+                            (Array
+                                (Logical 4)
+                                [(()
+                                ())
+                                (()
+                                ())
+                                (()
+                                ())]
+                            )
                             ()
                         )
                         ()
@@ -865,7 +896,7 @@
                         2 verify
                         ()
                         [((Var 2 c))
-                        ((IntegerConstant 1 (Integer 4 [])))]
+                        ((IntegerConstant 1 (Integer 4)))]
                         ()
                     )
                     (=
@@ -874,12 +905,15 @@
                             (Var 2 a)
                             Eqv
                             (Var 2 b)
-                            (Logical 4 [(()
-                            ())
-                            (()
-                            ())
-                            (()
-                            ())])
+                            (Array
+                                (Logical 4)
+                                [(()
+                                ())
+                                (()
+                                ())
+                                (()
+                                ())]
+                            )
                             ()
                         )
                         ()
@@ -888,7 +922,7 @@
                         2 verify
                         ()
                         [((Var 2 c))
-                        ((IntegerConstant 2 (Integer 4 [])))]
+                        ((IntegerConstant 2 (Integer 4)))]
                         ()
                     )
                     (=
@@ -897,12 +931,15 @@
                             (Var 2 b)
                             NEqv
                             (Var 2 a)
-                            (Logical 4 [(()
-                            ())
-                            (()
-                            ())
-                            (()
-                            ())])
+                            (Array
+                                (Logical 4)
+                                [(()
+                                ())
+                                (()
+                                ())
+                                (()
+                                ())]
+                            )
                             ()
                         )
                         ()
@@ -911,7 +948,7 @@
                         2 verify
                         ()
                         [((Var 2 c))
-                        ((IntegerConstant 3 (Integer 4 [])))]
+                        ((IntegerConstant 3 (Integer 4)))]
                         ()
                     )
                     (ImplicitDeallocate

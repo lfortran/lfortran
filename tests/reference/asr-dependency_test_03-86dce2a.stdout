@@ -38,7 +38,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -65,7 +65,7 @@
                                                     [(SubroutineCall
                                                         6 get_command_argument
                                                         ()
-                                                        [((IntegerConstant 0 (Integer 4 [])))
+                                                        [((IntegerConstant 0 (Integer 4)))
                                                         (())
                                                         ((Var 6 ilength))
                                                         (())]

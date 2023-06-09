@@ -23,7 +23,6 @@
                                                     Default
                                                     (Class
                                                         6 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -42,7 +41,6 @@
                                                     Default
                                                     (Class
                                                         6 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -61,7 +59,6 @@
                                                     Default
                                                     (Class
                                                         6 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -80,7 +77,6 @@
                                                     Default
                                                     (Class
                                                         6 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -99,7 +95,6 @@
                                                     Default
                                                     (Class
                                                         6 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -118,7 +113,6 @@
                                                     Default
                                                     (Class
                                                         6 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -137,7 +131,6 @@
                                                     Default
                                                     (Class
                                                         6 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -156,7 +149,6 @@
                                                     Default
                                                     (Class
                                                         6 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -173,7 +165,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -189,7 +181,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -216,40 +208,32 @@
                                         })
                                     journal
                                     (FunctionType
-                                        [(Character 1 -1 () [])
+                                        [(Character 1 -1 ())
                                         (Class
                                             6 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             6 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             6 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             6 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             6 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             6 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             6 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             6 ~abstract_type
-                                            []
                                         )
-                                        (Character 1 -1 () [])]
+                                        (Character 1 -1 ())]
                                         ()
                                         Source
                                         Implementation
@@ -277,7 +261,7 @@
                                         ()
                                         (StringConstant
                                             "(a)"
-                                            (Character 1 3 () [])
+                                            (Character 1 3 ())
                                         )
                                         ()
                                         ()
@@ -294,7 +278,9 @@
                                             ((Var 6 gc))
                                             ((Var 6 gd))
                                             ((Var 6 sep))]
-                                            (Character 1 -2 () [])
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                             ()
                                         )]
@@ -323,7 +309,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -342,7 +327,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -361,7 +345,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -380,7 +363,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -399,7 +381,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -418,7 +399,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -437,7 +417,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -456,7 +435,6 @@
                                                     Default
                                                     (Class
                                                         3 ~abstract_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -473,7 +451,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -489,7 +467,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -510,7 +488,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_trim
-                                                    36 len_trim
+                                                    35 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -525,7 +503,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 4096 () [])
+                                                    (Character 1 4096 ())
                                                     ()
                                                     Source
                                                     Public
@@ -540,8 +518,10 @@
                                                     ReturnVar
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -574,7 +554,6 @@
                                                                     Default
                                                                     (Class
                                                                         3 ~abstract_type
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -586,7 +565,7 @@
                                                                 (ExternalSymbol
                                                                     5
                                                                     len_trim
-                                                                    36 len_trim
+                                                                    35 len_trim
                                                                     lfortran_intrinsic_string
                                                                     []
                                                                     len_trim
@@ -595,7 +574,7 @@
                                                             ~select_type_block_:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        59
+                                                                        58
                                                                         {
                                                                             
                                                                         })
@@ -607,18 +586,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(i0)"
-                                                                            (Character 1 4 () [])
+                                                                            (Character 1 4 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -631,7 +610,7 @@
                                                             ~select_type_block_1:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        60
+                                                                        59
                                                                         {
                                                                             
                                                                         })
@@ -643,18 +622,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(i0)"
-                                                                            (Character 1 4 () [])
+                                                                            (Character 1 4 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -667,7 +646,7 @@
                                                             ~select_type_block_2:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        61
+                                                                        60
                                                                         {
                                                                             
                                                                         })
@@ -679,18 +658,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(i0)"
-                                                                            (Character 1 4 () [])
+                                                                            (Character 1 4 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -703,7 +682,7 @@
                                                             ~select_type_block_3:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        62
+                                                                        61
                                                                         {
                                                                             
                                                                         })
@@ -715,18 +694,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(i0)"
-                                                                            (Character 1 4 () [])
+                                                                            (Character 1 4 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -739,7 +718,7 @@
                                                             ~select_type_block_4:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        63
+                                                                        62
                                                                         {
                                                                             
                                                                         })
@@ -751,18 +730,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(1pg0)"
-                                                                            (Character 1 6 () [])
+                                                                            (Character 1 6 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -775,7 +754,7 @@
                                                             ~select_type_block_5:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        64
+                                                                        63
                                                                         {
                                                                             
                                                                         })
@@ -787,18 +766,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(1pg0)"
-                                                                            (Character 1 6 () [])
+                                                                            (Character 1 6 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -811,7 +790,7 @@
                                                             ~select_type_block_6:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        65
+                                                                        64
                                                                         {
                                                                             
                                                                         })
@@ -823,18 +802,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(l1)"
-                                                                            (Character 1 4 () [])
+                                                                            (Character 1 4 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -847,13 +826,13 @@
                                                             ~select_type_block_7:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        66
+                                                                        65
                                                                         {
                                                                             len_trim:
                                                                                 (ExternalSymbol
-                                                                                    66
+                                                                                    65
                                                                                     len_trim
-                                                                                    36 len_trim
+                                                                                    35 len_trim
                                                                                     lfortran_intrinsic_string
                                                                                     []
                                                                                     len_trim
@@ -868,18 +847,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(a)"
-                                                                            (Character 1 3 () [])
+                                                                            (Character 1 3 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -889,13 +868,13 @@
                                                                             ()
                                                                             [((Var 5 generic))]
                                                                             (Character 1 -3 (FunctionCall
-                                                                                66 len_trim
+                                                                                65 len_trim
                                                                                 ()
                                                                                 [((Var 5 generic))]
-                                                                                (Integer 4 [])
+                                                                                (Integer 4)
                                                                                 ()
                                                                                 ()
-                                                                            ) [])
+                                                                            ))
                                                                             ()
                                                                             ()
                                                                         )]
@@ -906,7 +885,7 @@
                                                             ~select_type_block_8:
                                                                 (Block
                                                                     (SymbolTable
-                                                                        67
+                                                                        66
                                                                         {
                                                                             
                                                                         })
@@ -918,18 +897,18 @@
                                                                             (IntegerBinOp
                                                                                 (Var 3 istart)
                                                                                 Sub
-                                                                                (IntegerConstant 1 (Integer 4 []))
-                                                                                (Integer 4 [])
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
                                                                                 ()
                                                                             )
                                                                             ()
-                                                                            (IntegerConstant 1 (Integer 4 []))
-                                                                            (Character 1 -1 () [])
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
                                                                             ()
                                                                         )
                                                                         (StringConstant
                                                                             "(\"(\",1pg0,\",\",1pg0,\")\")"
-                                                                            (Character 1 23 () [])
+                                                                            (Character 1 23 ())
                                                                         )
                                                                         ()
                                                                         ()
@@ -944,7 +923,6 @@
                                                     (FunctionType
                                                         [(Class
                                                             3 ~abstract_type
-                                                            []
                                                         )]
                                                         ()
                                                         Source
@@ -963,63 +941,63 @@
                                                     [(SelectType
                                                         (Var 5 generic)
                                                         [(TypeStmtType
-                                                            (Integer 1 [])
+                                                            (Integer 1)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Integer 2 [])
+                                                            (Integer 2)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_1
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_2
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Integer 8 [])
+                                                            (Integer 8)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_3
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_4
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Real 8 [])
+                                                            (Real 8)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_5
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Logical 4 [])
+                                                            (Logical 4)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_6
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Character 1 -1 () [])
+                                                            (Character 1 -1 ())
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_7
                                                             )]
                                                         )
                                                         (TypeStmtType
-                                                            (Complex 4 [])
+                                                            (Complex 4)
                                                             [(BlockCall
                                                                 -1
                                                                 5 ~select_type_block_8
@@ -1034,13 +1012,13 @@
                                                                 3 len_trim
                                                                 ()
                                                                 [((Var 3 line))]
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                                 ()
                                                             )
                                                             Add
                                                             (Var 3 increment)
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         )
                                                         ()
@@ -1056,15 +1034,15 @@
                                                                     5 len_trim
                                                                     ()
                                                                     [((Var 3 line))]
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     ()
-                                                                ) [])
+                                                                ))
                                                                 ()
                                                                 ()
                                                             )
                                                             (Var 3 sep_local)
-                                                            (Character 1 -5 () [])
+                                                            (Character 1 -5 ())
                                                             ()
                                                         )
                                                         ()
@@ -1084,7 +1062,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -1099,8 +1077,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -1111,7 +1091,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     trim
-                                                    36 trim
+                                                    35 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -1139,38 +1119,32 @@
                                     (FunctionType
                                         [(Class
                                             3 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             3 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             3 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             3 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             3 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             3 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             3 ~abstract_type
-                                            []
                                         )
                                         (Class
                                             3 ~abstract_type
-                                            []
                                         )
-                                        (Character 1 -1 () [])]
-                                        (Character 1 -2 () [])
+                                        (Character 1 -1 ())]
+                                        (Allocatable
+                                            (Character 1 -2 ())
+                                        )
                                         Source
                                         Implementation
                                         ()
@@ -1200,7 +1174,7 @@
                                             3 present
                                             ()
                                             [((Var 3 sep))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1217,13 +1191,13 @@
                                                     ()
                                                     [((Var 3 sep_local))
                                                     (())]
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     ()
                                                 )
                                                 Add
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 ()
                                             )
                                             ()
@@ -1232,26 +1206,26 @@
                                             (Var 3 sep_local)
                                             (StringConstant
                                                 " "
-                                                (Character 1 1 () [])
+                                                (Character 1 1 ())
                                             )
                                             ()
                                         )
                                         (=
                                             (Var 3 increment)
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             ()
                                         )]
                                     )
                                     (=
                                         (Var 3 istart)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (Var 3 line)
                                         (StringConstant
                                             ""
-                                            (Character 1 0 () [])
+                                            (Character 1 0 ())
                                         )
                                         ()
                                     )
@@ -1260,7 +1234,7 @@
                                             3 present
                                             ()
                                             [((Var 3 generic0))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1277,7 +1251,7 @@
                                             3 present
                                             ()
                                             [((Var 3 generic1))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1294,7 +1268,7 @@
                                             3 present
                                             ()
                                             [((Var 3 generic2))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1311,7 +1285,7 @@
                                             3 present
                                             ()
                                             [((Var 3 generic3))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1328,7 +1302,7 @@
                                             3 present
                                             ()
                                             [((Var 3 generica))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1345,7 +1319,7 @@
                                             3 present
                                             ()
                                             [((Var 3 genericb))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1362,7 +1336,7 @@
                                             3 present
                                             ()
                                             [((Var 3 genericc))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1379,7 +1353,7 @@
                                             3 present
                                             ()
                                             [((Var 3 genericd))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1401,10 +1375,10 @@
                                                 3 len_trim
                                                 ()
                                                 [((Var 3 line))]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                                 ()
-                                            ) [])
+                                            ))
                                             ()
                                             ()
                                         )

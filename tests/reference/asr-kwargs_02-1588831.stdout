@@ -42,7 +42,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -60,7 +60,6 @@
                                                     Default
                                                     (Class
                                                         2 logger_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -77,7 +76,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -89,10 +88,9 @@
                                     (FunctionType
                                         [(Class
                                             2 logger_type
-                                            []
                                         )
-                                        (Character 1 -1 () [])
-                                        (Integer 4 [])]
+                                        (Character 1 -1 ())
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -111,7 +109,7 @@
                                     [(SubroutineCall
                                         4 1_log_io_error
                                         ()
-                                        [((IntegerConstant 1 (Integer 4 [])))
+                                        [((IntegerConstant 1 (Integer 4)))
                                         ((Var 4 filename))
                                         ((Var 4 unit))]
                                         (Var 4 self)
@@ -136,7 +134,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -152,7 +150,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -170,7 +168,6 @@
                                                     Default
                                                     (Class
                                                         2 logger_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -187,7 +184,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -199,11 +196,10 @@
                                     (FunctionType
                                         [(Class
                                             2 logger_type
-                                            []
                                         )
-                                        (Integer 4 [])
-                                        (Character 1 -1 () [])
-                                        (Integer 4 [])]
+                                        (Integer 4)
+                                        (Character 1 -1 ())
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation

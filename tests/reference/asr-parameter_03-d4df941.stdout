@@ -30,15 +30,15 @@
                                         ()
                                         [((LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         ))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 4 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public

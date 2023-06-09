@@ -1,6 +1,6 @@
 function main()
-    local i::Int32 = 0
-    local out::Int32 = 0
+    local i::Int32
+    local out::Int32
     i = 4
     if i == 1
         out = 10

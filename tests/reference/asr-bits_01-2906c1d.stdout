@@ -125,18 +125,18 @@
                             (FunctionCall
                                 2 ibclr@ibclr32
                                 2 ibclr
-                                [((IntegerConstant 3 (Integer 4 [])))
-                                ((IntegerConstant 0 (Integer 4 [])))]
-                                (Integer 4 [])
-                                (IntegerConstant 2 (Integer 4 []))
+                                [((IntegerConstant 3 (Integer 4)))
+                                ((IntegerConstant 0 (Integer 4)))]
+                                (Integer 4)
+                                (IntegerConstant 2 (Integer 4))
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -149,18 +149,18 @@
                             (FunctionCall
                                 2 ibclr@ibclr64
                                 2 ibclr
-                                [((IntegerConstant 4 (Integer 8 [])))
-                                ((IntegerConstant 1 (Integer 4 [])))]
-                                (Integer 8 [])
-                                (IntegerConstant 4 (Integer 8 []))
+                                [((IntegerConstant 4 (Integer 8)))
+                                ((IntegerConstant 1 (Integer 4)))]
+                                (Integer 8)
+                                (IntegerConstant 4 (Integer 8))
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 8))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -173,18 +173,18 @@
                             (FunctionCall
                                 2 ibset@ibset32
                                 2 ibset
-                                [((IntegerConstant 1 (Integer 4 [])))
-                                ((IntegerConstant 2 (Integer 4 [])))]
-                                (Integer 4 [])
-                                (IntegerConstant 5 (Integer 4 []))
+                                [((IntegerConstant 1 (Integer 4)))
+                                ((IntegerConstant 2 (Integer 4)))]
+                                (Integer 4)
+                                (IntegerConstant 5 (Integer 4))
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 5 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 5 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -197,18 +197,18 @@
                             (FunctionCall
                                 2 ibset@ibset64
                                 2 ibset
-                                [((IntegerConstant 2 (Integer 8 [])))
-                                ((IntegerConstant 3 (Integer 4 [])))]
-                                (Integer 8 [])
-                                (IntegerConstant 10 (Integer 8 []))
+                                [((IntegerConstant 2 (Integer 8)))
+                                ((IntegerConstant 3 (Integer 4)))]
+                                (Integer 8)
+                                (IntegerConstant 10 (Integer 8))
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 10 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 10 (Integer 8))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -221,18 +221,18 @@
                             (FunctionCall
                                 2 ieor@ieor32
                                 2 ieor
-                                [((IntegerConstant 16 (Integer 4 [])))
-                                ((IntegerConstant 2 (Integer 4 [])))]
-                                (Integer 4 [])
-                                (IntegerConstant 18 (Integer 4 []))
+                                [((IntegerConstant 16 (Integer 4)))
+                                ((IntegerConstant 2 (Integer 4)))]
+                                (Integer 4)
+                                (IntegerConstant 18 (Integer 4))
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 18 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 18 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -245,18 +245,18 @@
                             (FunctionCall
                                 2 ieor@ieor64
                                 2 ieor
-                                [((IntegerConstant 31 (Integer 8 [])))
-                                ((IntegerConstant 3 (Integer 8 [])))]
-                                (Integer 8 [])
-                                (IntegerConstant 28 (Integer 8 []))
+                                [((IntegerConstant 31 (Integer 8)))
+                                ((IntegerConstant 3 (Integer 8)))]
+                                (Integer 8)
+                                (IntegerConstant 28 (Integer 8))
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 28 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 28 (Integer 8))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop

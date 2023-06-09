@@ -33,7 +33,6 @@
                                                     Default
                                                     (Struct
                                                         2 dependency_config_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -50,7 +49,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -68,7 +67,6 @@
                                                     Default
                                                     (Class
                                                         2 dependency_tree_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -81,11 +79,9 @@
                                     (FunctionType
                                         [(Class
                                             2 dependency_tree_t
-                                            []
                                         )
                                         (Struct
                                             2 dependency_config_t
-                                            []
                                         )]
                                         ()
                                         Source
@@ -108,7 +104,7 @@
                                             5 find
                                             [((Var 6 self))
                                             ((Var 6 dependency))]
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                             ()
                                         )
@@ -133,8 +129,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -149,8 +147,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -182,14 +182,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -204,8 +204,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -220,8 +222,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -236,14 +240,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -294,8 +298,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -310,11 +316,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 dependency_node_t
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 dependency_node_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -330,8 +340,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Private
@@ -361,10 +373,10 @@
                                                     ndep
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4 []))
-                                                    (IntegerConstant 0 (Integer 4 []))
+                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -380,7 +392,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -393,10 +405,10 @@
                                                     verbosity
                                                     []
                                                     Local
-                                                    (IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 1 (Integer 4 []))
+                                                    (IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -405,7 +417,7 @@
                                                 )
                                         })
                                     dependency_tree_t
-                                    [dependency_node_t]
+                                    []
                                     [unit
                                     verbosity
                                     dep_dir
@@ -435,7 +447,6 @@
                                                     Default
                                                     (Class
                                                         2 dependency_config_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -452,7 +463,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -470,7 +481,6 @@
                                                     Default
                                                     (Class
                                                         2 dependency_tree_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -483,13 +493,11 @@
                                     (FunctionType
                                         [(Class
                                             2 dependency_tree_t
-                                            []
                                         )
                                         (Class
                                             2 dependency_config_t
-                                            []
                                         )]
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()

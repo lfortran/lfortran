@@ -34,7 +34,7 @@
                                         ()
                                         [(StringConstant
                                             "priv = "
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (Var 2 priv)]
                                         ()
@@ -44,7 +44,7 @@
                                         ()
                                         [(StringConstant
                                             "publ = "
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         )
                                         (Var 2 publ)]
                                         ()
@@ -64,14 +64,14 @@
                                     Local
                                     (RealConstant
                                         1.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Private
@@ -86,14 +86,14 @@
                                     Local
                                     (RealConstant
                                         2.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         2.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public

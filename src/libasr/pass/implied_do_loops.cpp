@@ -83,8 +83,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return size;
     }
 
-    ASR::expr_t* get_ArrayConstant_size(ASR::ArrayConstant_t* x, ASR::storage_typeType& storage_type) {
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4, nullptr, 0));
+    ASR::expr_t* get_ArrayConstant_size(ASR::ArrayConstant_t* x, bool& is_allocatable) {
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
         ASR::expr_t* array_size = nullptr;
         size_t constant_size = 0;
         const Location& loc = x->base.base.loc;
@@ -97,7 +97,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         ASR::down_cast<ASR::ArrayConstant_t>(element));
                 } else {
                     ASR::expr_t* element_array_size = get_ArrayConstant_size(
-                                    ASR::down_cast<ASR::ArrayConstant_t>(element), storage_type);
+                                    ASR::down_cast<ASR::ArrayConstant_t>(element), is_allocatable);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -106,7 +106,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     }
                 }
             } else if( ASR::is_a<ASR::Var_t>(*element) ) {
-                ASR::ttype_t* element_type = ASRUtils::expr_type(element);
+                ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::expr_type(element));
                 if( ASRUtils::is_array(element_type) ) {
                     if( ASRUtils::is_fixed_size_array(element_type) ) {
                         ASR::dimension_t* m_dims = nullptr;
@@ -171,7 +172,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if( constant_size_asr ) {
             array_size = builder.ElementalAdd(array_size, constant_size_asr, x->base.base.loc);
         }
-        storage_type = ASR::storage_typeType::Allocatable;
+        is_allocatable = true;
         return array_size;
     }
 
@@ -183,25 +184,29 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
               resultvar2value[result_var] == &(x->base))) {
             remove_original_statement = false;
             ASR::ttype_t* result_type_ = nullptr;
-            ASR::storage_typeType storage_type = ASR::storage_typeType::Default;
-            ASR::expr_t* array_constant_size = get_ArrayConstant_size(x, storage_type);
+            bool is_allocatable = false;
+            ASR::expr_t* array_constant_size = get_ArrayConstant_size(x, is_allocatable);
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 1);
             ASR::dimension_t dim;
             dim.loc = loc;
             dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                            1, ASRUtils::expr_type(array_constant_size)));
+                            1, ASRUtils::type_get_past_allocatable(
+                                ASRUtils::expr_type(array_constant_size))));
             dim.m_length = array_constant_size;
             dims.push_back(al, dim);
-            if( storage_type == ASR::storage_typeType::Allocatable ) {
-                result_type_ = ASRUtils::duplicate_type_with_empty_dims(al, x->m_type);
+            if( is_allocatable ) {
+                result_type_ = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->m_type->base.loc,
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::duplicate_type_with_empty_dims(al, x->m_type))));
             } else {
-                result_type_ = ASRUtils::duplicate_type(al, x->m_type, &dims);
+                result_type_ = ASRUtils::duplicate_type(al,
+                    ASRUtils::type_get_past_allocatable(x->m_type), &dims);
             }
             result_var = PassUtils::create_var(result_counter, "_array_constant_",
-                            loc, result_type_, al, current_scope, storage_type);
+                            loc, result_type_, al, current_scope);
             result_counter += 1;
-            if( storage_type == ASR::storage_typeType::Allocatable ) {
+            if( is_allocatable ) {
                 Vec<ASR::alloc_arg_t> alloc_args;
                 alloc_args.reserve(al, 1);
                 ASR::alloc_arg_t arg;

@@ -15,7 +15,7 @@
                         ()
                         [(StringConstant
                             "running functions_16 program"
-                            (Character 1 28 () [])
+                            (Character 1 28 ())
                         )]
                         ()
                         ()
@@ -52,7 +52,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -70,7 +70,6 @@
                                                     Default
                                                     (Struct
                                                         2 toml_key
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -89,7 +88,6 @@
                                                     Default
                                                     (Struct
                                                         2 toml_key
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -102,13 +100,11 @@
                                     (FunctionType
                                         [(Struct
                                             2 toml_key
-                                            []
                                         )
                                         (Struct
                                             2 toml_key
-                                            []
                                         )]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -128,17 +124,17 @@
                                             (StructInstanceMember
                                                 (Var 8 lhs)
                                                 8 1_toml_key_key
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             )
                                             Lt
                                             (StructInstanceMember
                                                 (Var 8 rhs)
                                                 8 1_toml_key_key
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             )
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         ()
@@ -163,7 +159,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -181,7 +177,6 @@
                                                     Default
                                                     (Struct
                                                         2 toml_key
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -200,7 +195,6 @@
                                                     Default
                                                     (Struct
                                                         2 toml_key
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -213,13 +207,11 @@
                                     (FunctionType
                                         [(Struct
                                             2 toml_key
-                                            []
                                         )
                                         (Struct
                                             2 toml_key
-                                            []
                                         )]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         Source
                                         Interface
                                         ()
@@ -254,7 +246,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -270,7 +262,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -286,8 +278,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -303,7 +298,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -322,13 +317,11 @@
                                                     (FunctionType
                                                         [(Struct
                                                             2 toml_key
-                                                            []
                                                         )
                                                         (Struct
                                                             2 toml_key
-                                                            []
                                                         )]
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                         Source
                                                         Interface
                                                         ()
@@ -354,8 +347,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
-                                                        2 toml_key
+                                                    (Array
+                                                        (Struct
+                                                            2 toml_key
+                                                        )
                                                         [(()
                                                         ())]
                                                     )
@@ -374,7 +369,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -390,7 +385,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -400,25 +395,28 @@
                                         })
                                     quicksort
                                     (FunctionType
-                                        [(Struct
-                                            2 toml_key
+                                        [(Array
+                                            (Struct
+                                                2 toml_key
+                                            )
                                             [(()
                                             ())]
                                         )
-                                        (Integer 4 [(()
-                                        ())])
-                                        (Integer 4 [])
-                                        (Integer 4 [])
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                        (Integer 4)
+                                        (Integer 4)
                                         (FunctionType
                                             [(Struct
                                                 2 toml_key
-                                                []
                                             )
                                             (Struct
                                                 2 toml_key
-                                                []
                                             )]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             Source
                                             Interface
                                             ()
@@ -453,7 +451,7 @@
                                             (Var 6 low)
                                             Lt
                                             (Var 6 high)
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(SubroutineCall
@@ -464,7 +462,7 @@
                                                 [(()
                                                 (Var 6 low)
                                                 ())]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ColMajor
                                                 ()
                                             ))
@@ -476,16 +474,16 @@
                                                         (Var 6 low)
                                                         Add
                                                         (Var 6 high)
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ()
                                                     )
                                                     Div
-                                                    (IntegerConstant 2 (Integer 4 []))
-                                                    (Integer 4 [])
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    (Integer 4)
                                                     ()
                                                 )
                                                 ())]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ColMajor
                                                 ()
                                             ))]
@@ -502,8 +500,8 @@
                                             (IntegerBinOp
                                                 (Var 6 low)
                                                 Add
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 ()
                                             )
                                             (Var 6 high)
@@ -520,14 +518,13 @@
                                                             [(()
                                                             (Var 6 i)
                                                             ())]
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ColMajor
                                                             ()
                                                         )
                                                         ())]
                                                         (Struct
                                                             2 toml_key
-                                                            []
                                                         )
                                                         ColMajor
                                                         ()
@@ -540,19 +537,18 @@
                                                             [(()
                                                             (Var 6 low)
                                                             ())]
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ColMajor
                                                             ()
                                                         )
                                                         ())]
                                                         (Struct
                                                             2 toml_key
-                                                            []
                                                         )
                                                         ColMajor
                                                         ()
                                                     ))]
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     ()
                                                 )
@@ -561,8 +557,8 @@
                                                     (IntegerBinOp
                                                         (Var 6 last)
                                                         Add
-                                                        (IntegerConstant 1 (Integer 4 []))
-                                                        (Integer 4 [])
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Integer 4)
                                                         ()
                                                     )
                                                     ()
@@ -575,7 +571,7 @@
                                                         [(()
                                                         (Var 6 last)
                                                         ())]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ColMajor
                                                         ()
                                                     ))
@@ -584,7 +580,7 @@
                                                         [(()
                                                         (Var 6 i)
                                                         ())]
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                         ColMajor
                                                         ()
                                                     ))]
@@ -601,7 +597,7 @@
                                                 [(()
                                                 (Var 6 low)
                                                 ())]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ColMajor
                                                 ()
                                             ))
@@ -610,7 +606,7 @@
                                                 [(()
                                                 (Var 6 last)
                                                 ())]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ColMajor
                                                 ()
                                             ))]
@@ -630,8 +626,8 @@
                                             ((IntegerBinOp
                                                 (Var 6 pivot)
                                                 Sub
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 ()
                                             ))
                                             ((Var 6 less))]
@@ -645,8 +641,8 @@
                                             ((IntegerBinOp
                                                 (Var 6 pivot)
                                                 Add
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 1 (Integer 4))
+                                                (Integer 4)
                                                 ()
                                             ))
                                             ((Var 6 high))
@@ -685,13 +681,11 @@
                                                     (FunctionType
                                                         [(Struct
                                                             2 toml_key
-                                                            []
                                                         )
                                                         (Struct
                                                             2 toml_key
-                                                            []
                                                         )]
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                         Source
                                                         Interface
                                                         ()
@@ -717,7 +711,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -733,7 +727,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -749,8 +743,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -765,9 +762,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -783,8 +785,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
-                                                        2 toml_key
+                                                    (Array
+                                                        (Struct
+                                                            2 toml_key
+                                                        )
                                                         [(()
                                                         ())]
                                                     )
@@ -803,7 +807,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -828,11 +832,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 toml_key
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 toml_key
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -843,23 +851,26 @@
                                         })
                                     sort_keys
                                     (FunctionType
-                                        [(Struct
-                                            2 toml_key
+                                        [(Array
+                                            (Struct
+                                                2 toml_key
+                                            )
                                             [(()
                                             ())]
                                         )
-                                        (Integer 4 [(()
-                                        ())])
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
                                         (FunctionType
                                             [(Struct
                                                 2 toml_key
-                                                []
                                             )
                                             (Struct
                                                 2 toml_key
-                                                []
                                             )]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             Source
                                             Interface
                                             ()
@@ -888,7 +899,7 @@
                                     (Var 5 compare)]
                                     [(=
                                         (Var 5 low)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (=
@@ -896,7 +907,7 @@
                                         (ArraySize
                                             (Var 5 list)
                                             ()
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -908,7 +919,7 @@
                                     )
                                     (Allocate
                                         [((Var 5 indexarray)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        [((IntegerConstant 1 (Integer 4))
                                         (Var 5 high))])]
                                         ()
                                         ()
@@ -919,11 +930,14 @@
                                                 (Var 5 low)
                                                 (Var 5 high)
                                                 ()
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )]
-                                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 1 (Integer 4 [])))])
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                            )
                                             ColMajor
                                         )
                                     )
@@ -932,7 +946,7 @@
                                             5 present
                                             ()
                                             [((Var 5 compare))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -971,7 +985,6 @@
                                                 ())]
                                                 (Struct
                                                     2 toml_key
-                                                    []
                                                 )
                                                 ColMajor
                                                 ()
@@ -984,14 +997,13 @@
                                                     [(()
                                                     (Var 5 i)
                                                     ())]
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ColMajor
                                                     ()
                                                 )
                                                 ())]
                                                 (Struct
                                                     2 toml_key
-                                                    []
                                                 )
                                                 ColMajor
                                                 ()
@@ -1004,7 +1016,7 @@
                                             5 present
                                             ()
                                             [((Var 5 idx))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -1039,7 +1051,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -1055,7 +1067,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -1071,7 +1083,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -1081,8 +1093,8 @@
                                         })
                                     swap
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
+                                        [(Integer 4)
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -1131,8 +1143,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public

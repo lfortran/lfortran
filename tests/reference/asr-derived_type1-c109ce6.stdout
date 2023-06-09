@@ -41,21 +41,21 @@
                                                     (FunctionCall
                                                         12 achar
                                                         ()
-                                                        [((IntegerConstant 10 (Integer 4 [])))
+                                                        [((IntegerConstant 10 (Integer 4)))
                                                         ((Var 2 tfc))]
-                                                        (Character 1 1 () [])
+                                                        (Character 1 1 ())
                                                         (StringConstant
                                                             "\n"
-                                                            (Character 1 1 () [])
+                                                            (Character 1 1 ())
                                                         )
                                                         ()
                                                     )
                                                     (StringConstant
                                                         "\n"
-                                                        (Character 1 1 () [])
+                                                        (Character 1 1 ())
                                                     )
                                                     Save
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -82,29 +82,29 @@
                                     (StringConcat
                                         (StringConstant
                                             " "
-                                            (Character 1 1 () [])
+                                            (Character 1 1 ())
                                         )
                                         (StructInstanceMember
                                             (Var 2 toml_escape)
                                             2 1_enum_escape_newline
-                                            (Character 1 1 () [])
+                                            (Character 1 1 ())
                                             (StringConstant
                                                 "\n"
-                                                (Character 1 1 () [])
+                                                (Character 1 1 ())
                                             )
                                         )
-                                        (Character 1 2 () [])
+                                        (Character 1 2 ())
                                         (StringConstant
                                             " \n"
-                                            (Character 1 2 () [])
+                                            (Character 1 2 ())
                                         )
                                     )
                                     (StringConstant
                                         " \n"
-                                        (Character 1 2 () [])
+                                        (Character 1 2 ())
                                     )
                                     Parameter
-                                    (Character 1 2 () [])
+                                    (Character 1 2 ())
                                     ()
                                     Source
                                     Public
@@ -132,15 +132,15 @@
                                         ()
                                         [((StringConstant
                                             "DEFAULT"
-                                            (Character 1 7 () [])
+                                            (Character 1 7 ())
                                         ))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -158,7 +158,6 @@
                                         [(())]
                                         (Struct
                                             2 enum_escape
-                                            []
                                         )
                                         ()
                                     )
@@ -166,7 +165,6 @@
                                     Parameter
                                     (Struct
                                         2 enum_escape
-                                        []
                                     )
                                     ()
                                     Source

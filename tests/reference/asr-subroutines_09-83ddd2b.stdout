@@ -13,10 +13,10 @@
                                     a
                                     []
                                     Local
-                                    (IntegerConstant 10 (Integer 4 []))
-                                    (IntegerConstant 10 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -31,14 +31,14 @@
                                     Local
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     Save
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -84,7 +84,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -101,7 +101,7 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (Integer 4 [])
+                                        (Integer 4)
                                     )
                                     ()
                                     Source
@@ -151,7 +151,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -167,7 +167,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -184,7 +184,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                     )
                                                     ()
                                                     Source
@@ -201,7 +201,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -211,12 +211,12 @@
                                         })
                                     get_elem_table
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)
                                         (Pointer
-                                            (Integer 4 [])
+                                            (Integer 4)
                                         )
-                                        (Logical 4 [])]
+                                        (Logical 4)]
                                         ()
                                         Source
                                         Implementation
@@ -240,7 +240,7 @@
                                         (Var 3 stat)
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         ()
                                     )]
@@ -264,7 +264,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -280,7 +280,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -296,7 +296,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -313,7 +313,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Integer 4 [])
+                                                        (Integer 4)
                                                     )
                                                     ()
                                                     Source
@@ -330,7 +330,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -340,13 +340,13 @@
                                         })
                                     get_elem_value_string
                                     (FunctionType
-                                        [(Logical 4 [])
-                                        (Integer 4 [])
+                                        [(Logical 4)
+                                        (Integer 4)
                                         (Pointer
-                                            (Integer 4 [])
+                                            (Integer 4)
                                         )
-                                        (Integer 4 [])
-                                        (Logical 4 [])]
+                                        (Integer 4)
+                                        (Logical 4)]
                                         ()
                                         Source
                                         Implementation
@@ -371,7 +371,7 @@
                                         (Var 4 stat)
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         ()
                                     )]

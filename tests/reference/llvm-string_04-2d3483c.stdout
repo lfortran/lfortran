@@ -48,7 +48,6 @@ define i32 @main(i32 %0, i8** %1) {
   %7 = getelementptr %array, %array* %greetings, i32 0, i32 3
   store i1 false, i1* %7, align 1
   %str = alloca i8*, align 8
-  store i8* null, i8** %str, align 8
   %user_data = alloca %array, align 8
   %8 = getelementptr %array, %array* %user_data, i32 0, i32 2
   %9 = alloca i32, align 4

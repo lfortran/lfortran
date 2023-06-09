@@ -15,9 +15,14 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Integer 4 [(()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -32,9 +37,14 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Integer 4 [(()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -49,9 +59,14 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Integer 4 [(()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -67,7 +82,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -83,7 +98,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -99,7 +114,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -119,9 +134,14 @@
                                                     Unspecified
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -136,9 +156,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -153,9 +178,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -170,9 +200,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -187,9 +222,14 @@
                                                     Unspecified
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -204,9 +244,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -221,9 +266,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -238,9 +288,14 @@
                                                     Unspecified
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -255,9 +310,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -272,9 +332,14 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Integer 4 [(()
-                                                    ())])
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -290,7 +355,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -306,7 +371,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -316,13 +381,28 @@
                                         })
                                     whole_square
                                     (FunctionType
-                                        [(Integer 4 [(()
-                                        ())])
-                                        (Integer 4 [(()
-                                        ())])
-                                        (Integer 4 [(()
-                                        ())])]
-                                        (Integer 4 [])
+                                        [(Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                            )
+                                        )
+                                        (Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                            )
+                                        )
+                                        (Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                            )
+                                        )]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -342,20 +422,20 @@
                                         (ArraySize
                                             (Var 3 a)
                                             ()
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
                                     )
                                     (Allocate
                                         [((Var 3 a_2)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))])
                                         ((Var 3 b_2)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))])
                                         ((Var 3 c_2)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))])]
                                         ()
                                         ()
@@ -363,16 +443,16 @@
                                     )
                                     (Allocate
                                         [((Var 3 ab)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))])
                                         ((Var 3 bc)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))])
                                         ((Var 3 ca)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))])
                                         ((Var 3 abc)
-                                        [((IntegerConstant 1 (Integer 4 []))
+                                        [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))])]
                                         ()
                                         ()
@@ -380,7 +460,7 @@
                                     )
                                     (=
                                         (Var 3 status)
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
                                     (=
@@ -389,8 +469,11 @@
                                             (Var 3 a)
                                             Mul
                                             (Var 3 a)
-                                            (Integer 4 [(()
-                                            ())])
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )
                                         ()
@@ -401,8 +484,11 @@
                                             (Var 3 b)
                                             Mul
                                             (Var 3 b)
-                                            (Integer 4 [(()
-                                            ())])
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )
                                         ()
@@ -413,8 +499,11 @@
                                             (Var 3 c)
                                             Mul
                                             (Var 3 c)
-                                            (Integer 4 [(()
-                                            ())])
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                            )
                                             ()
                                         )
                                         ()
@@ -423,15 +512,15 @@
                                         (Var 3 ab)
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (IntegerConstant 2 (Integer 4 []))
+                                                (IntegerConstant 2 (Integer 4))
                                                 Mul
                                                 (Var 3 a)
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Mul
                                             (Var 3 b)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -440,15 +529,15 @@
                                         (Var 3 bc)
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (IntegerConstant 2 (Integer 4 []))
+                                                (IntegerConstant 2 (Integer 4))
                                                 Mul
                                                 (Var 3 b)
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Mul
                                             (Var 3 c)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -457,15 +546,15 @@
                                         (Var 3 ca)
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (IntegerConstant 2 (Integer 4 []))
+                                                (IntegerConstant 2 (Integer 4))
                                                 Mul
                                                 (Var 3 c)
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Mul
                                             (Var 3 a)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -475,27 +564,27 @@
                                         (IntegerBinOp
                                             (IntegerBinOp
                                                 (IntegerBinOp
-                                                    (IntegerConstant 2 (Integer 4 []))
+                                                    (IntegerConstant 2 (Integer 4))
                                                     Mul
                                                     (Var 3 a)
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                 )
                                                 Mul
                                                 (Var 3 b)
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Mul
                                             (Var 3 c)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
                                     )
                                     (=
                                         (Var 3 status)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
                                     (ImplicitDeallocate
@@ -518,18 +607,18 @@
                     []
                     [(=
                         (Var 2 n)
-                        (IntegerConstant 10 (Integer 4 []))
+                        (IntegerConstant 10 (Integer 4))
                         ()
                     )
                     (Allocate
                         [((Var 2 a)
-                        [((IntegerConstant 1 (Integer 4 []))
+                        [((IntegerConstant 1 (Integer 4))
                         (Var 2 n))])
                         ((Var 2 b)
-                        [((IntegerConstant 1 (Integer 4 []))
+                        [((IntegerConstant 1 (Integer 4))
                         (Var 2 n))])
                         ((Var 2 c)
-                        [((IntegerConstant 1 (Integer 4 []))
+                        [((IntegerConstant 1 (Integer 4))
                         (Var 2 n))])]
                         (Var 2 ierr)
                         ()
@@ -537,17 +626,17 @@
                     )
                     (=
                         (Var 2 a)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 b)
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 c)
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 3 (Integer 4))
                         ()
                     )
                     (Print
@@ -558,7 +647,7 @@
                             [((Var 2 a))
                             ((Var 2 b))
                             ((Var 2 c))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]

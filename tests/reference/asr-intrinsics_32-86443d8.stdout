@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,7 +36,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -49,8 +52,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -86,8 +92,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -103,8 +112,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 6 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 6 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -117,8 +129,8 @@
                     [(DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 6 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 6 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -126,7 +138,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Real 4 [])
+                                (Real 4)
                                 ColMajor
                                 ()
                             )
@@ -134,12 +146,12 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Mul
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (Integer 4 [])
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
                                     ()
                                 )
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -150,7 +162,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Real 4 [])
+                                (Real 4)
                                 ColMajor
                                 ()
                             )
@@ -158,16 +170,16 @@
                                 (IntegerBinOp
                                     (IntegerUnaryMinus
                                         (Var 2 i)
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ()
                                     )
                                     Mul
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (Integer 4 [])
+                                    (IntegerConstant 2 (Integer 4))
+                                    (Integer 4)
                                     ()
                                 )
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -177,15 +189,15 @@
                         (ArrayItem
                             (Var 2 mask)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -193,15 +205,15 @@
                         (ArrayItem
                             (Var 2 mask)
                             [(()
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -209,15 +221,15 @@
                         (ArrayItem
                             (Var 2 mask)
                             [(()
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -225,15 +237,15 @@
                         (ArrayItem
                             (Var 2 mask)
                             [(()
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -241,15 +253,15 @@
                         (ArrayItem
                             (Var 2 mask)
                             [(()
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -257,15 +269,15 @@
                         (ArrayItem
                             (Var 2 mask)
                             [(()
-                            (IntegerConstant 6 (Integer 4 []))
+                            (IntegerConstant 6 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
@@ -277,7 +289,7 @@
                             [((Var 2 tsource))
                             ((Var 2 fsource))
                             ((Var 2 mask))]
-                            (Real 4 [])
+                            (Real 4)
                             ()
                             ()
                         )

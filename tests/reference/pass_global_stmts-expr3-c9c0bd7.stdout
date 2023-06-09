@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     BindC
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     BindC
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     BindC
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     BindC
                                     Public
@@ -80,7 +80,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     BindC
                                     Public
@@ -96,7 +96,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     BindC
                                     Public
@@ -112,7 +112,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     BindC
                                     Public
@@ -128,7 +128,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     BindC
                                     Public
@@ -139,7 +139,7 @@
                     f
                     (FunctionType
                         []
-                        (Integer 4 [])
+                        (Integer 4)
                         BindC
                         Implementation
                         ()
@@ -154,17 +154,17 @@
                     []
                     [(=
                         (Var 2 f1)
-                        (IntegerConstant 5 (Integer 4 []))
+                        (IntegerConstant 5 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 f2)
                         (IntegerBinOp
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             Add
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
                         )
                         ()
                     )
@@ -172,77 +172,77 @@
                         (Var 2 f3)
                         (IntegerBinOp
                             (IntegerBinOp
-                                (IntegerConstant 5 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
                                 Add
-                                (IntegerConstant 3 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant 8 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4))
                             )
                             Mul
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 16 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 16 (Integer 4))
                         )
                         ()
                     )
                     (=
                         (Var 2 f4)
                         (IntegerBinOp
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             Add
                             (IntegerBinOp
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 Mul
-                                (IntegerConstant 2 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant 6 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant 6 (Integer 4))
                             )
-                            (Integer 4 [])
-                            (IntegerConstant 11 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 11 (Integer 4))
                         )
                         ()
                     )
                     (=
                         (Var 2 f5)
                         (IntegerBinOp
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             Sub
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 2 (Integer 4))
                         )
                         ()
                     )
                     (=
                         (Var 2 f6)
                         (IntegerBinOp
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                             Pow
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 64 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 64 (Integer 4))
                         )
                         ()
                     )
                     (=
                         (Var 2 f7)
                         (IntegerBinOp
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             Add
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
                         )
                         ()
                     )
                     (=
                         (Var 2 f8)
                         (IntegerBinOp
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             Add
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
                         )
                         ()
                     )]

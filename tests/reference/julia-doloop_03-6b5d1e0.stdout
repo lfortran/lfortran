@@ -1,6 +1,6 @@
 function main()
-    local i::Int32 = 0
-    local j::Int32 = 0
+    local i::Int32
+    local j::Int32
     j = 0
     for i ∈ 1:10
         j = j + i

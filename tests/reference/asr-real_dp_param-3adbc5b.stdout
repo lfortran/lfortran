@@ -13,10 +13,10 @@
                                     prec1
                                     []
                                     Local
-                                    (IntegerConstant 4 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -29,10 +29,10 @@
                                     prec2
                                     []
                                     Local
-                                    (IntegerConstant 8 (Integer 4 []))
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -47,14 +47,14 @@
                                     Local
                                     (RealConstant
                                         1.050000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.050000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -70,21 +70,21 @@
                                     (Cast
                                         (RealConstant
                                             1.050000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             1.050000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
                                     (RealConstant
                                         1.050000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Save
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -100,21 +100,21 @@
                                     (Cast
                                         (RealConstant
                                             0.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             0.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
                                     (RealConstant
                                         0.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Save
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public

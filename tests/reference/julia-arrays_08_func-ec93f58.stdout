@@ -1,13 +1,13 @@
 function copy_from_to(a::Array{Int32, 1}, b::Array{Int32, 1})
-    local i::Int32 = 0
+    local i::Int32
     for i ∈ 1:length(a)
         b[i] = a[i]
     end
 end
 
 function verify(a::Array{Int32, 1}, b::Array{Int32, 1})::Bool
-    local i::Int32 = 0
-    local r::Bool = false
+    local i::Int32
+    local r::Bool
     r = true
     for i ∈ 1:length(a)
         r = r && a[i] == b[i]
@@ -16,10 +16,10 @@ function verify(a::Array{Int32, 1}, b::Array{Int32, 1})::Bool
 end
 
 function main()
-    local i::Int32 = 0
-    local r::Bool = false
-    local x = Array{Int32, 1}(undef, 10)
-    local y = Array{Int32, 1}(undef, 10)
+    local i::Int32
+    local r::Bool
+    local x::Array{Int32, 1}
+    local y::Array{Int32, 1}
     for i ∈ 1:length(x)
         x[i] = i
     end

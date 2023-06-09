@@ -28,7 +28,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -44,13 +44,13 @@
                             Sin
                             [(RealConstant
                                 1.500000
-                                (Real 8 [])
+                                (Real 8)
                             )]
                             0
-                            (Real 8 [])
+                            (Real 8)
                             (RealConstant
                                 0.997495
-                                (Real 8 [])
+                                (Real 8)
                             )
                         )
                         ()

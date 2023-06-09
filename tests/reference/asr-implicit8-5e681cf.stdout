@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -64,8 +64,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 2 n))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 n))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -81,8 +84,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (Var 2 m))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 m))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -92,9 +98,9 @@
                         })
                     a
                     (FunctionType
-                        [(Integer 4 [])
-                        (Integer 4 [])]
-                        (Integer 4 [])
+                        [(Integer 4)
+                        (Integer 4)]
+                        (Integer 4)
                         Source
                         Implementation
                         ()
@@ -110,24 +116,27 @@
                     (Var 2 m)]
                     [(=
                         (Var 2 n)
-                        (IntegerConstant 5 (Integer 4 []))
+                        (IntegerConstant 5 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 m)
-                        (IntegerConstant 8 (Integer 4 []))
+                        (IntegerConstant 8 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 x)
                         (ArrayConstant
-                            [(IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 2 (Integer 4 []))
-                            (IntegerConstant 3 (Integer 4 []))
-                            (IntegerConstant 4 (Integer 4 []))
-                            (IntegerConstant 5 (Integer 4 []))]
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 5 (Integer 4 [])))])
+                            [(IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
+                            (IntegerConstant 4 (Integer 4))
+                            (IntegerConstant 5 (Integer 4))]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))]
+                            )
                             ColMajor
                         )
                         ()

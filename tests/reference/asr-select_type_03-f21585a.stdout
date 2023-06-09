@@ -19,13 +19,13 @@
                                                     []
                                                     Local
                                                     (IntegerUnaryMinus
-                                                        (IntegerConstant 1 (Integer 4 []))
-                                                        (Integer 4 [])
-                                                        (IntegerConstant -1 (Integer 4 []))
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Integer 4)
+                                                        (IntegerConstant -1 (Integer 4))
                                                     )
-                                                    (IntegerConstant -1 (Integer 4 []))
+                                                    (IntegerConstant -1 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -38,10 +38,10 @@
                                                     success
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4 []))
-                                                    (IntegerConstant 0 (Integer 4 []))
+                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -72,7 +72,6 @@
                                         (())]
                                         (Struct
                                             4 enum_stat
-                                            []
                                         )
                                         ()
                                     )
@@ -80,7 +79,6 @@
                                     Parameter
                                     (Struct
                                         4 enum_stat
-                                        []
                                     )
                                     ()
                                     Source
@@ -125,7 +123,6 @@
                                                     Default
                                                     (Class
                                                         2 toml_table
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -138,7 +135,6 @@
                                     (FunctionType
                                         [(Class
                                             2 toml_table
-                                            []
                                         )]
                                         ()
                                         Source
@@ -157,7 +153,7 @@
                                         ()
                                         [(StringConstant
                                             "inside check_table"
-                                            (Character 1 18 () [])
+                                            (Character 1 18 ())
                                         )]
                                         ()
                                         ()
@@ -205,7 +201,6 @@
                                                     (Pointer
                                                         (Struct
                                                             2 toml_table
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -223,7 +218,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -241,7 +236,6 @@
                                                     Default
                                                     (Class
                                                         2 toml_table
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -261,7 +255,6 @@
                                                     (Pointer
                                                         (Class
                                                             2 toml_value
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -306,7 +299,7 @@
                                                             10 present
                                                             ()
                                                             [((Var 8 stat))]
-                                                            (Logical 4 [])
+                                                            (Logical 4)
                                                             ()
                                                             ()
                                                         )
@@ -315,8 +308,8 @@
                                                             (StructInstanceMember
                                                                 (Var 2 toml_stat)
                                                                 10 1_enum_stat_success
-                                                                (Integer 4 [])
-                                                                (IntegerConstant 0 (Integer 4 []))
+                                                                (Integer 4)
+                                                                (IntegerConstant 0 (Integer 4))
                                                             )
                                                             ()
                                                         )]
@@ -328,15 +321,13 @@
                                     (FunctionType
                                         [(Class
                                             2 toml_table
-                                            []
                                         )
                                         (Pointer
                                             (Struct
                                                 2 toml_table
-                                                []
                                             )
                                         )
-                                        (Integer 4 [])]
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -360,7 +351,7 @@
                                         (PointerAssociated
                                             (Var 8 tmp)
                                             ()
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(SelectType
@@ -377,7 +368,7 @@
                                                     8 present
                                                     ()
                                                     [((Var 8 stat))]
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     ()
                                                 )
@@ -386,8 +377,8 @@
                                                     (StructInstanceMember
                                                         (Var 2 toml_stat)
                                                         8 1_enum_stat_fatal
-                                                        (Integer 4 [])
-                                                        (IntegerConstant -1 (Integer 4 []))
+                                                        (Integer 4)
+                                                        (IntegerConstant -1 (Integer 4))
                                                     )
                                                     ()
                                                 )]
@@ -430,14 +421,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -452,14 +443,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -492,7 +483,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -508,7 +499,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public

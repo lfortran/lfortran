@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -53,8 +53,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 5 (Integer 4 [])))])
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 5 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -85,7 +88,6 @@
                                     Default
                                     (Struct
                                         3 block_1
-                                        []
                                     )
                                     ()
                                     Source
@@ -153,7 +155,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -177,20 +179,20 @@
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_a
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
                         ()
                     )
                     (=
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (=
@@ -198,7 +200,7 @@
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -207,11 +209,14 @@
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_c
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 5 (Integer 4 [])))])
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))]
+                            )
                             ()
                         )
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4))
                         ()
                     )
                     (=
@@ -219,39 +224,45 @@
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_c
-                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 5 (Integer 4 [])))])
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
                         ()
                     )
                     (=
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_c
-                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 5 (Integer 4 [])))])
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
@@ -262,12 +273,12 @@
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_a
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -280,12 +291,12 @@
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_b
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -299,20 +310,23 @@
                                 (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                 )
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -326,20 +340,23 @@
                                 (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                 )
                                 [(()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -353,20 +370,23 @@
                                 (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                 )
                                 [(()
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -380,20 +400,23 @@
                                 (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                 )
                                 [(()
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -407,20 +430,23 @@
                                 (StructInstanceMember
                                     (Var 2 struct_instance_block_1)
                                     2 1_block_1_c
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                 )
                                 [(()
-                                (IntegerConstant 5 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -432,8 +458,8 @@
                         (IntegerCompare
                             (Var 2 d)
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -446,34 +472,40 @@
                         [(StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_a
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_b
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_c
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 5 (Integer 4 [])))])
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))]
+                            )
                             ()
                         )
                         (ArrayItem
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_c
-                                (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 5 (Integer 4 [])))])
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                )
                                 ()
                             )
                             [(()
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )

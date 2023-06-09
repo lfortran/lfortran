@@ -46,7 +46,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -62,7 +62,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -76,7 +76,7 @@
                         (Var 2 x)
                         (RealConstant
                             1.500000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -86,7 +86,7 @@
                             Tan
                             [(Var 2 x)]
                             0
-                            (Real 8 [])
+                            (Real 8)
                             ()
                         )
                         ()
@@ -106,21 +106,21 @@
                                     Sub
                                     (RealConstant
                                         14.101420
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -137,42 +137,42 @@
                                         Tan
                                         [(RealConstant
                                             1.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )]
                                         0
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             14.101420
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     Sub
                                     (RealConstant
                                         14.101420
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         -0.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     0.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
                             Gt
                             (RealConstant
                                 0.000001
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -192,13 +192,13 @@
                                                 Tan
                                                 [(RealConstant
                                                     1.500000
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                 )]
                                                 0
-                                                (Real 4 [])
+                                                (Real 4)
                                                 (RealConstant
                                                     14.101420
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                 )
                                             )
                                             Add
@@ -212,45 +212,45 @@
                                                             Tan
                                                             [(Var 2 x)]
                                                             0
-                                                            (Real 8 [])
+                                                            (Real 8)
                                                             ()
                                                         )
-                                                        (Real 8 [])
+                                                        (Real 8)
                                                         ()
                                                     )]
                                                     0
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                 )
                                                 RealToReal
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )]
                                         0
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         2.254825
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000010
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -263,17 +263,17 @@
                         (ComplexConstructor
                             (RealConstant
                                 1.500000
-                                (Real 8 [])
+                                (Real 8)
                             )
                             (RealConstant
                                 3.500000
-                                (Real 8 [])
+                                (Real 8)
                             )
-                            (Complex 8 [])
+                            (Complex 8)
                             (ComplexConstant
                                 1.500000
                                 3.500000
-                                (Complex 8 [])
+                                (Complex 8)
                             )
                         )
                         ()
@@ -284,7 +284,7 @@
                             Tan
                             [(Var 2 z)]
                             0
-                            (Complex 8 [])
+                            (Complex 8)
                             ()
                         )
                         ()
@@ -303,27 +303,27 @@
                                     (Cast
                                         (Var 2 z)
                                         ComplexToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         0.000258
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -342,69 +342,69 @@
                                             [(ComplexConstructor
                                                 (RealConstant
                                                     1.500000
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                 )
                                                 (RealConstant
                                                     3.500000
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                 )
-                                                (Complex 4 [])
+                                                (Complex 4)
                                                 (ComplexConstant
                                                     1.500000
                                                     3.500000
-                                                    (Complex 4 [])
+                                                    (Complex 4)
                                                 )
                                             )]
                                             0
-                                            (Complex 4 [])
+                                            (Complex 4)
                                             (ComplexConstant
                                                 0.000258
                                                 1.001807
-                                                (Complex 4 [])
+                                                (Complex 4)
                                             )
                                         )
                                         ComplexToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             0.000258
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     Sub
                                     (RealConstant
                                         0.000258
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         0.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     0.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
                             Gt
                             (Cast
                                 (RealConstant
                                     0.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                                 RealToReal
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     0.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop

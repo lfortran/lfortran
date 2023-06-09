@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                     ()
                                     Source
                                     Public
@@ -80,7 +80,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -96,7 +96,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -108,16 +108,16 @@
                     []
                     [(FileRewind
                         0
-                        (IntegerConstant 9 (Integer 4 []))
+                        (IntegerConstant 9 (Integer 4))
                         (Var 2 ios)
-                        (IntegerConstant 10 (Integer 4 []))
+                        (IntegerConstant 10 (Integer 4))
                     )
                     (FileInquire
                         0
                         ()
                         (StringConstant
                             "file_b"
-                            (Character 1 6 () [])
+                            (Character 1 6 ())
                         )
                         ()
                         ()
@@ -150,10 +150,10 @@
                     )
                     (FileInquire
                         0
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4))
                         ()
                         (Var 2 ios)
-                        (IntegerConstant 20 (Integer 4 []))
+                        (IntegerConstant 20 (Integer 4))
                         ()
                         ()
                         ()
@@ -222,7 +222,7 @@
                         ()
                         [(StringConstant
                             "err rewind"
-                            (Character 1 10 () [])
+                            (Character 1 10 ())
                         )]
                         ()
                         ()
@@ -235,7 +235,7 @@
                         ()
                         [(StringConstant
                             "err inquire"
-                            (Character 1 11 () [])
+                            (Character 1 11 ())
                         )]
                         ()
                         ()

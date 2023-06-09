@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -42,8 +42,8 @@
                         })
                     f
                     (FunctionType
-                        [(Integer 4 [])
-                        (Integer 4 [])]
+                        [(Integer 4)
+                        (Integer 4)]
                         ()
                         Source
                         Implementation
@@ -63,8 +63,8 @@
                         (IntegerBinOp
                             (Var 2 b)
                             Add
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -74,8 +74,8 @@
                         (IntegerBinOp
                             (Var 2 a)
                             Add
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()

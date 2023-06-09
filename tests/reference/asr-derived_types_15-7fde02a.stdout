@@ -31,7 +31,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -47,7 +47,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -65,7 +65,6 @@
                                                     Default
                                                     (Class
                                                         2 t_1
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -78,10 +77,9 @@
                                     (FunctionType
                                         [(Class
                                             2 t_1
-                                            []
                                         )
-                                        (Real 4 [])]
-                                        (Real 4 [])
+                                        (Real 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -101,12 +99,12 @@
                                             (StructInstanceMember
                                                 (Var 4 self)
                                                 4 1_t_1_i
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
                                             Mul
                                             (Var 4 j)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -141,7 +139,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -157,7 +155,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -175,7 +173,6 @@
                                                     Default
                                                     (Class
                                                         2 t_1
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -188,10 +185,9 @@
                                     (FunctionType
                                         [(Class
                                             2 t_1
-                                            []
                                         )
-                                        (Integer 4 [])]
-                                        (Real 4 [])
+                                        (Integer 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -211,7 +207,7 @@
                                             (StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_t_1_i
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
                                             Sub
@@ -219,18 +215,18 @@
                                                 (Cast
                                                     (Var 5 j)
                                                     IntegerToReal
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
                                                 Pow
                                                 (RealConstant
                                                     0.500000
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                 )
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -263,7 +259,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -383,7 +379,6 @@
                                     Default
                                     (Struct
                                         6 t_1
-                                        []
                                     )
                                     ()
                                     Source
@@ -398,12 +393,12 @@
                         (StructInstanceMember
                             (Var 6 type_1)
                             6 1_t_1_i
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         (RealConstant
                             100.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -415,23 +410,23 @@
                                 [((Var 6 type_1))
                                 ((RealConstant
                                     5.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 ))]
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 500 (Integer 4 []))
+                                (IntegerConstant 500 (Integer 4))
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     500.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -445,22 +440,22 @@
                                 6 1_sqrt_subtract
                                 3 compute
                                 [((Var 6 type_1))
-                                ((IntegerConstant 2500 (Integer 4 [])))]
-                                (Real 4 [])
+                                ((IntegerConstant 2500 (Integer 4)))]
+                                (Real 4)
                                 ()
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 50 (Integer 4 []))
+                                (IntegerConstant 50 (Integer 4))
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     50.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

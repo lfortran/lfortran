@@ -171,8 +171,7 @@
                                                 "type": {
                                                     "node": "Integer",
                                                     "fields": {
-                                                        "kind": 4,
-                                                        "dims": []
+                                                        "kind": 4
                                                     },
                                                     "loc": {
                                                         "first": 50,
@@ -204,8 +203,7 @@
                                                 "type": {
                                                     "node": "Integer",
                                                     "fields": {
-                                                        "kind": 4,
-                                                        "dims": []
+                                                        "kind": 4
                                                     },
                                                     "loc": {
                                                         "first": 50,
@@ -234,8 +232,7 @@
                                         "type": {
                                             "node": "Integer",
                                             "fields": {
-                                                "kind": 4,
-                                                "dims": []
+                                                "kind": 4
                                             },
                                             "loc": {
                                                 "first": 27,

@@ -41,12 +41,10 @@ namespace LCompilers {
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al);
 
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
-                                ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope,
-                                ASR::storage_typeType storage_=ASR::storage_typeType::Default);
+                                ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope);
 
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
-                                ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope,
-                                ASR::storage_typeType storage_=ASR::storage_typeType::Default);
+                                ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope);
 
         void create_vars(Vec<ASR::expr_t*>& vars, int n_vars, const Location& loc,
                          Allocator& al, SymbolTable*& current_scope, std::string suffix="_k",
@@ -483,8 +481,8 @@ namespace LCompilers {
                 array_ref_type = ASRUtils::duplicate_type(al, array_ref_type, &empty_dims);
                 ASR::expr_t* array_ref = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, arr_var->base.loc,
                                             arr_var, args.p, args.size(),
-                                            array_ref_type, ASR::arraystorageType::RowMajor,
-                                            nullptr));
+                                            ASRUtils::type_get_past_allocatable(array_ref_type),
+                                            ASR::arraystorageType::RowMajor, nullptr));
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
                     create_do_loop(al, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
                                    arr_var, &doloop_body, arr_idx);
@@ -652,8 +650,8 @@ namespace LCompilers {
                                                         target_section->base.base.loc,
                                                         target_section->m_v,
                                                         args.p, args.size(),
-                                                        array_ref_type, ASR::arraystorageType::RowMajor,
-                                                        nullptr));
+                                                        ASRUtils::type_get_past_allocatable(array_ref_type),
+                                                        ASR::arraystorageType::RowMajor, nullptr));
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc,
                                                         array_ref, x->m_args[k], nullptr));
                         result_vec->push_back(replacer->al, assign_stmt);

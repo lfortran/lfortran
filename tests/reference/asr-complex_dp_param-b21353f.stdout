@@ -13,10 +13,10 @@
                                     prec1
                                     []
                                     Local
-                                    (IntegerConstant 4 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -29,10 +29,10 @@
                                     prec2
                                     []
                                     Local
-                                    (IntegerConstant 8 (Integer 4 []))
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -48,26 +48,26 @@
                                     (ComplexConstructor
                                         (RealConstant
                                             1.050000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             1.050000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Complex 4 [])
+                                        (Complex 4)
                                         (ComplexConstant
                                             1.050000
                                             1.050000
-                                            (Complex 4 [])
+                                            (Complex 4)
                                         )
                                     )
                                     (ComplexConstant
                                         1.050000
                                         1.050000
-                                        (Complex 4 [])
+                                        (Complex 4)
                                     )
                                     Save
-                                    (Complex 4 [])
+                                    (Complex 4)
                                     ()
                                     Source
                                     Public
@@ -83,26 +83,26 @@
                                     (ComplexConstructor
                                         (RealConstant
                                             1.050000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             1.050000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
-                                        (Complex 8 [])
+                                        (Complex 8)
                                         (ComplexConstant
                                             1.050000
                                             1.050000
-                                            (Complex 8 [])
+                                            (Complex 8)
                                         )
                                     )
                                     (ComplexConstant
                                         1.050000
                                         1.050000
-                                        (Complex 8 [])
+                                        (Complex 8)
                                     )
                                     Save
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public
@@ -118,23 +118,23 @@
                                     (Cast
                                         (RealConstant
                                             0.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToComplex
-                                        (Complex 8 [])
+                                        (Complex 8)
                                         (ComplexConstant
                                             0.000000
                                             0.000000
-                                            (Complex 8 [])
+                                            (Complex 8)
                                         )
                                     )
                                     (ComplexConstant
                                         0.000000
                                         0.000000
-                                        (Complex 8 [])
+                                        (Complex 8)
                                     )
                                     Save
-                                    (Complex 8 [])
+                                    (Complex 8)
                                     ()
                                     Source
                                     Public

@@ -13,10 +13,10 @@
                                     dp
                                     []
                                     Local
-                                    (IntegerConstant 8 (Integer 4 []))
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -31,14 +31,14 @@
                                     Local
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -53,14 +53,14 @@
                                     Local
                                     (RealConstant
                                         1.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     (RealConstant
                                         1.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Parameter
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -76,7 +76,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -89,10 +89,10 @@
                                     sp
                                     []
                                     Local
-                                    (IntegerConstant 4 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -106,7 +106,7 @@
                         (Var 2 r3)
                         (RealConstant
                             1.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -115,13 +115,13 @@
                         (Cast
                             (RealConstant
                                 1.000000
-                                (Real 8 [])
+                                (Real 8)
                             )
                             RealToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()

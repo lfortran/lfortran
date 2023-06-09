@@ -88,15 +88,15 @@
                                         ()
                                         [((RealConstant
                                             0.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         ))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -122,7 +122,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -138,13 +138,13 @@
                             Asin
                             [(RealConstant
                                 0.841471
-                                (Real 4 [])
+                                (Real 4)
                             )]
                             0
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -161,13 +161,13 @@
                             Acos
                             [(RealConstant
                                 0.540302
-                                (Real 4 [])
+                                (Real 4)
                             )]
                             0
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -184,13 +184,13 @@
                             Atan
                             [(RealConstant
                                 1.557408
-                                (Real 4 [])
+                                (Real 4)
                             )]
                             0
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -209,20 +209,20 @@
                                 ()
                                 [((RealConstant
                                     1.557408
-                                    (Real 8 [])
+                                    (Real 8)
                                 ))]
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     1.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                                 ()
                             )
                             RealToReal
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                         )
                         ()
@@ -240,12 +240,12 @@
                             2 asinh
                             [((RealConstant
                                 1.175201
-                                (Real 4 [])
+                                (Real 4)
                             ))]
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             ()
                         )
@@ -264,12 +264,12 @@
                             2 acosh
                             [((RealConstant
                                 1.543081
-                                (Real 4 [])
+                                (Real 4)
                             ))]
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             ()
                         )
@@ -288,12 +288,12 @@
                             2 atanh
                             [((RealConstant
                                 0.761594
-                                (Real 4 [])
+                                (Real 4)
                             ))]
-                            (Real 4 [])
+                            (Real 4)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             ()
                         )

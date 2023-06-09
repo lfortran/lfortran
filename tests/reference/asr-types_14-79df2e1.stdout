@@ -28,7 +28,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -44,8 +44,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -59,7 +62,7 @@
                         (Var 2 r)
                         (RealConstant
                             1.000000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )]

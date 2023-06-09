@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,7 +36,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -49,7 +52,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -65,7 +68,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -86,7 +89,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -96,7 +99,7 @@
                                         })
                                     print_subrout
                                     (FunctionType
-                                        [(Integer 4 [])]
+                                        [(Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -131,7 +134,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -144,8 +147,8 @@
                     [(DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 4 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -153,7 +156,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -163,12 +166,12 @@
                     )
                     (=
                         (Var 2 first)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 last)
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 4 (Integer 4))
                         ()
                     )
                     (DoLoop
@@ -183,7 +186,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -193,13 +196,13 @@
                                     [(()
                                     (Var 2 i)
                                     ())]
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ColMajor
                                     ()
                                 )
                                 Add
                                 (Var 2 i)
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -208,8 +211,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 4 (Integer 4))
                         ())
                         [(=
                             (Var 2 x)
@@ -218,7 +221,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -234,8 +237,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 4 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 4 (Integer 4))
                         ())
                         [(=
                             (Var 2 x)
@@ -244,7 +247,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -255,13 +258,13 @@
                                 (Var 2 x)
                                 NotEq
                                 (IntegerBinOp
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
                                     Mul
                                     (Var 2 i)
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             [(ErrorStop

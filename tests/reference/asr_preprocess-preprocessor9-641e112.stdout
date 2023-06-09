@@ -18,31 +18,31 @@
                                 (IntegerBinOp
                                     (IntegerBinOp
                                         (IntegerBinOp
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             Add
-                                            (IntegerConstant 2 (Integer 4 []))
-                                            (Integer 4 [])
-                                            (IntegerConstant 3 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Integer 4)
+                                            (IntegerConstant 3 (Integer 4))
                                         )
                                         Add
-                                        (IntegerConstant 3 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant 6 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant 6 (Integer 4))
                                     )
                                     Add
-                                    (IntegerConstant 4 (Integer 4 []))
-                                    (Integer 4 [])
-                                    (IntegerConstant 10 (Integer 4 []))
+                                    (IntegerConstant 4 (Integer 4))
+                                    (Integer 4)
+                                    (IntegerConstant 10 (Integer 4))
                                 )
                                 Add
-                                (IntegerConstant 5 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant 15 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant 15 (Integer 4))
                             )
                             Add
-                            (IntegerConstant 6 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 21 (Integer 4 []))
+                            (IntegerConstant 6 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 21 (Integer 4))
                         )]
                         ()
                         ()
@@ -54,43 +54,43 @@
                                 (IntegerBinOp
                                     (IntegerBinOp
                                         (IntegerBinOp
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             Add
-                                            (IntegerConstant 2 (Integer 4 []))
-                                            (Integer 4 [])
-                                            (IntegerConstant 3 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Integer 4)
+                                            (IntegerConstant 3 (Integer 4))
                                         )
                                         Add
-                                        (IntegerConstant 3 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant 6 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant 6 (Integer 4))
                                     )
                                     Add
                                     (IntegerBinOp
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4))
                                         Mul
                                         (IntegerBinOp
-                                            (IntegerConstant 1 (Integer 4 []))
+                                            (IntegerConstant 1 (Integer 4))
                                             Add
-                                            (IntegerConstant 2 (Integer 4 []))
-                                            (Integer 4 [])
-                                            (IntegerConstant 3 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Integer 4)
+                                            (IntegerConstant 3 (Integer 4))
                                         )
-                                        (Integer 4 [])
-                                        (IntegerConstant 12 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 12 (Integer 4))
                                     )
-                                    (Integer 4 [])
-                                    (IntegerConstant 18 (Integer 4 []))
+                                    (Integer 4)
+                                    (IntegerConstant 18 (Integer 4))
                                 )
                                 Add
-                                (IntegerConstant 5 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant 23 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant 23 (Integer 4))
                             )
                             Add
-                            (IntegerConstant 6 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 29 (Integer 4 []))
+                            (IntegerConstant 6 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant 29 (Integer 4))
                         )]
                         ()
                         ()

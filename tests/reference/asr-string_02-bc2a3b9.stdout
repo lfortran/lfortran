@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 15 () [])
+                                    (Character 1 15 ())
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 25 () [])
+                                    (Character 1 25 ())
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 15 () [])
+                                    (Character 1 15 ())
                                     ()
                                     Source
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 6 () [])
+                                    (Character 1 6 ())
                                     ()
                                     Source
                                     Public
@@ -78,7 +78,7 @@
                         (Var 2 title)
                         (StringConstant
                             "Mr. "
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         ()
                     )
@@ -86,7 +86,7 @@
                         (Var 2 firstname)
                         (StringConstant
                             "Rowan "
-                            (Character 1 6 () [])
+                            (Character 1 6 ())
                         )
                         ()
                     )
@@ -94,7 +94,7 @@
                         (Var 2 surname)
                         (StringConstant
                             "Atkinson"
-                            (Character 1 8 () [])
+                            (Character 1 8 ())
                         )
                         ()
                     )
@@ -102,7 +102,7 @@
                         (Var 2 greetings)
                         (StringConstant
                             "A big hello from Mr. Bean"
-                            (Character 1 25 () [])
+                            (Character 1 25 ())
                         )
                         ()
                     )
@@ -110,7 +110,7 @@
                         ()
                         [(StringConstant
                             "Here is "
-                            (Character 1 8 () [])
+                            (Character 1 8 ())
                         )
                         (Var 2 title)
                         (Var 2 firstname)

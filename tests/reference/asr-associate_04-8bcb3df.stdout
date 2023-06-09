@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -38,7 +38,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                     )
                                                     ()
                                                     Source
@@ -55,7 +55,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Private
@@ -73,15 +73,15 @@
                                                         (Var 2 x)
                                                         Mul
                                                         (Cast
-                                                            (IntegerConstant 2 (Integer 4 []))
+                                                            (IntegerConstant 2 (Integer 4))
                                                             IntegerToReal
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             (RealConstant
                                                                 2.000000
-                                                                (Real 4 [])
+                                                                (Real 4)
                                                             )
                                                         )
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
                                                     Add
@@ -89,21 +89,21 @@
                                                         (Var 2 y)
                                                         Mul
                                                         (Cast
-                                                            (IntegerConstant 2 (Integer 4 []))
+                                                            (IntegerConstant 2 (Integer 4))
                                                             IntegerToReal
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                             (RealConstant
                                                                 2.000000
-                                                                (Real 4 [])
+                                                                (Real 4)
                                                             )
                                                         )
-                                                        (Real 4 [])
+                                                        (Real 4)
                                                         ()
                                                     )
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 )
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
                                             Mul
@@ -111,10 +111,10 @@
                                                 Cos
                                                 [(Var 2 theta)]
                                                 0
-                                                (Real 4 [])
+                                                (Real 4)
                                                 ()
                                             )
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -129,14 +129,14 @@
                                             (Var 2 a)
                                             Add
                                             (Var 3 z)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (RealBinOp
                                             (Var 2 a)
                                             Sub
                                             (Var 3 z)
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         (Var 3 v)]
@@ -150,10 +150,10 @@
                                             Mul
                                             (RealConstant
                                                 4.600000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                             (Pointer
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                             ()
                                         )
@@ -169,7 +169,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -185,7 +185,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -201,7 +201,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -217,7 +217,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -231,7 +231,7 @@
                         (Var 2 x)
                         (RealConstant
                             0.420000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -239,7 +239,7 @@
                         (Var 2 y)
                         (RealConstant
                             0.350000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -247,7 +247,7 @@
                         (Var 2 myreal)
                         (RealConstant
                             9.100000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -255,7 +255,7 @@
                         (Var 2 theta)
                         (RealConstant
                             1.500000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -263,7 +263,7 @@
                         (Var 2 a)
                         (RealConstant
                             0.400000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -284,17 +284,17 @@
                                     Sub
                                     (RealConstant
                                         41.860000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )
                                 Gt
                                 (RealConstant
                                     0.000010
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             Or
@@ -304,27 +304,27 @@
                                     Sub
                                     (RealConstant
                                         41.860000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )
                                 Lt
                                 (RealUnaryMinus
                                     (RealConstant
                                         0.000010
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         -0.000010
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

@@ -28,8 +28,7 @@
                                                     "fields": {
                                                         "kind": 1,
                                                         "len": 13,
-                                                        "len_expr": [],
-                                                        "dims": []
+                                                        "len_expr": []
                                                     },
                                                     "loc": {
                                                         "first": 59,

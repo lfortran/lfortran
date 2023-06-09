@@ -15,13 +15,18 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Integer 4 [(()
-                                    ())
-                                    (()
-                                    ())
-                                    (()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())
+                                            (()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -46,8 +51,10 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Character 1 -2 () [])
+                                    Default
+                                    (Allocatable
+                                        (Character 1 -2 ())
+                                    )
                                     ()
                                     Source
                                     Public
@@ -63,7 +70,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 20 () [])
+                                    (Character 1 20 ())
                                     ()
                                     Source
                                     Public
@@ -78,8 +85,10 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Character 1 -2 () [])
+                                    Default
+                                    (Allocatable
+                                        (Character 1 -2 ())
+                                    )
                                     ()
                                     Source
                                     Public
@@ -115,12 +124,12 @@
                     )
                     (Allocate
                         [((Var 2 c)
-                        [((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 [])))
-                        ((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 [])))
-                        ((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 [])))])]
+                        [((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4)))
+                        ((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4)))
+                        ((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4)))])]
                         ()
                         ()
                         ()
@@ -129,7 +138,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran"
-                            (Character 1 8 () [])
+                            (Character 1 8 ())
                         )
                         ()
                     )
@@ -143,10 +152,10 @@
                                 2 len_trim
                                 ()
                                 [((Var 2 num))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
-                            ) [])
+                            ))
                             ()
                             ()
                         )
@@ -158,9 +167,9 @@
                             NotEq
                             (StringConstant
                                 "lfortran"
-                                (Character 1 8 () [])
+                                (Character 1 8 ())
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -172,7 +181,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran working"
-                            (Character 1 16 () [])
+                            (Character 1 16 ())
                         )
                         ()
                     )
@@ -181,10 +190,10 @@
                         (StringSection
                             (Var 2 num)
                             (IntegerBinOp
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 Sub
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             (IntegerBinOp
@@ -192,17 +201,17 @@
                                     2 len_trim
                                     ()
                                     [((Var 2 num))]
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     ()
                                 )
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Character 1 -1 () [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Character 1 -1 ())
                             ()
                         )
                         ()

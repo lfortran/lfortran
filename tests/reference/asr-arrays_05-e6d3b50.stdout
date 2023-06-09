@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,56 +32,65 @@
                                     (ArrayConstant
                                         [(RealConstant
                                             1.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             3.200000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             4.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             0.900000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             7.200000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )]
-                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 5 (Integer 4 [])))])
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 5 (Integer 4)))]
+                                        )
                                         ColMajor
                                     )
                                     (ArrayConstant
                                         [(RealConstant
                                             1.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             3.200000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             4.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             0.900000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         (RealConstant
                                             7.200000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )]
-                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 5 (Integer 4 [])))])
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 5 (Integer 4)))]
+                                        )
                                         ColMajor
                                     )
                                     Save
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -94,8 +103,8 @@
                     [(DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 5 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 5 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -103,7 +112,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Real 4 [])
+                                (Real 4)
                                 ColMajor
                                 ()
                             )
@@ -111,15 +120,15 @@
                                 (Cast
                                     (Var 2 i)
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )
                                 Mul
                                 (RealConstant
                                     2.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -130,26 +139,29 @@
                         (ArrayConstant
                             [(RealConstant
                                 1.500000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 3.200000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 4.500000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 0.900000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 7.200000
-                                (Real 4 [])
+                                (Real 4)
                             )]
-                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 5 (Integer 4 [])))])
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))]
+                            )
                             ColMajor
                         )
                         ()

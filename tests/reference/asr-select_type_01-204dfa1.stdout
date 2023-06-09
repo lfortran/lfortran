@@ -41,7 +41,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -67,10 +67,9 @@
                                     Local
                                     (StructTypeConstructor
                                         2 base
-                                        [((IntegerConstant 10 (Integer 4 [])))]
+                                        [((IntegerConstant 10 (Integer 4)))]
                                         (Struct
                                             2 base
-                                            []
                                         )
                                         ()
                                     )
@@ -78,7 +77,6 @@
                                     Default
                                     (Struct
                                         2 base
-                                        []
                                     )
                                     ()
                                     Source
@@ -98,7 +96,6 @@
                                     (Pointer
                                         (Class
                                             2 base
-                                            []
                                         )
                                     )
                                     ()
@@ -121,7 +118,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -150,7 +147,6 @@
                                     Default
                                     (Struct
                                         2 child
-                                        []
                                     )
                                     ()
                                     Source
@@ -175,7 +171,6 @@
                                                     (Pointer
                                                         (Class
                                                             2 base
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -205,12 +200,12 @@
                                                         ()
                                                         [(StringConstant
                                                             "base type: component value: "
-                                                            (Character 1 28 () [])
+                                                            (Character 1 28 ())
                                                         )
                                                         (StructInstanceMember
                                                             (Var 5 bptr)
                                                             6 1_base_i
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         )]
                                                         ()
@@ -221,12 +216,12 @@
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
                                                                 6 1_base_i
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             )
                                                             NotEq
-                                                            (IntegerConstant 10 (Integer 4 []))
-                                                            (Logical 4 [])
+                                                            (IntegerConstant 10 (Integer 4))
+                                                            (Logical 4)
                                                             ()
                                                         )
                                                         [(ErrorStop
@@ -266,18 +261,18 @@
                                                         ()
                                                         [(StringConstant
                                                             "child type: component values: "
-                                                            (Character 1 30 () [])
+                                                            (Character 1 30 ())
                                                         )
                                                         (StructInstanceMember
                                                             (Var 5 bptr)
                                                             7 1_base_i
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         )
                                                         (StructInstanceMember
                                                             (Var 5 bptr)
                                                             7 1_child_j
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         )]
                                                         ()
@@ -288,12 +283,12 @@
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
                                                                 7 1_base_i
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             )
                                                             NotEq
-                                                            (IntegerConstant 20 (Integer 4 []))
-                                                            (Logical 4 [])
+                                                            (IntegerConstant 20 (Integer 4))
+                                                            (Logical 4)
                                                             ()
                                                         )
                                                         [(ErrorStop
@@ -306,12 +301,12 @@
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
                                                                 7 1_child_j
-                                                                (Integer 4 [])
+                                                                (Integer 4)
                                                                 ()
                                                             )
                                                             NotEq
-                                                            (IntegerConstant 30 (Integer 4 []))
-                                                            (Logical 4 [])
+                                                            (IntegerConstant 30 (Integer 4))
+                                                            (Logical 4)
                                                             ()
                                                         )
                                                         [(ErrorStop
@@ -326,7 +321,6 @@
                                         [(Pointer
                                             (Class
                                                 2 base
-                                                []
                                             )
                                         )]
                                         ()
@@ -373,11 +367,10 @@
                         (Var 2 child_target)
                         (StructTypeConstructor
                             2 child
-                            [((IntegerConstant 20 (Integer 4 [])))
-                            ((IntegerConstant 30 (Integer 4 [])))]
+                            [((IntegerConstant 20 (Integer 4)))
+                            ((IntegerConstant 30 (Integer 4)))]
                             (Struct
                                 2 child
-                                []
                             )
                             ()
                         )
@@ -388,7 +381,7 @@
                         [(StructInstanceMember
                             (Var 2 base_target)
                             2 1_base_i
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -399,13 +392,13 @@
                         [(StructInstanceMember
                             (Var 2 child_target)
                             2 1_base_i
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 2 child_target)
                             2 1_child_j
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()

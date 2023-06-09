@@ -91,7 +91,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -107,7 +107,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -117,8 +117,8 @@
                                         })
                                     assign_large
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
+                                        [(Integer 4)
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Interface
@@ -154,8 +154,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [(()
-                                                    ())])
+                                                    (Array
+                                                        (Logical 4)
+                                                        [(()
+                                                        ())]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -171,7 +174,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -181,9 +184,12 @@
                                         })
                                     assign_logint8_large
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Logical 4 [(()
-                                        ())])]
+                                        [(Integer 4)
+                                        (Array
+                                            (Logical 4)
+                                            [(()
+                                            ())]
+                                        )]
                                         ()
                                         Source
                                         Interface
@@ -219,7 +225,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -235,7 +241,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -251,7 +257,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -267,7 +273,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -283,7 +289,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -293,11 +299,11 @@
                                         })
                                     error_handler
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Integer 4 [])
-                                        (Integer 4 [])
-                                        (Character 1 -1 () [])
-                                        (Character 1 -1 () [])]
+                                        [(Character 1 -1 ())
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Character 1 -1 ())
+                                        (Character 1 -1 ())]
                                         ()
                                         Source
                                         Implementation
@@ -342,7 +348,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -358,7 +364,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -374,7 +380,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -390,7 +396,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -406,7 +412,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -416,11 +422,11 @@
                                         })
                                     error_handler~genericprocedure
                                     (FunctionType
-                                        [(Character 1 -1 () [])
-                                        (Integer 4 [])
-                                        (Integer 4 [])
-                                        (Character 1 -1 () [])
-                                        (Character 1 -1 () [])]
+                                        [(Character 1 -1 ())
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Character 1 -1 ())
+                                        (Character 1 -1 ())]
                                         ()
                                         Source
                                         Interface

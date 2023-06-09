@@ -1,7 +1,7 @@
 function main()
     local a::Int32 = 1
     local b::Int32 = 2
-    local marks::Int32 = 0
+    local marks::Int32
     marks = 94
     if marks ≥ 40 + b
         println("Pass!")

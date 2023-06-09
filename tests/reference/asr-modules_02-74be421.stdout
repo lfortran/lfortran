@@ -92,7 +92,7 @@
                                         ()
                                         [(StringConstant
                                             "b()"
-                                            (Character 1 3 () [])
+                                            (Character 1 3 ())
                                         )]
                                         ()
                                         ()
@@ -141,7 +141,7 @@
                                         ()
                                         [(StringConstant
                                             "d()"
-                                            (Character 1 3 () [])
+                                            (Character 1 3 ())
                                         )]
                                         ()
                                         ()
@@ -179,7 +179,7 @@
                                         ()
                                         [(StringConstant
                                             "e()"
-                                            (Character 1 3 () [])
+                                            (Character 1 3 ())
                                         )]
                                         ()
                                         ()

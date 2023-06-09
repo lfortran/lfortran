@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -46,7 +46,7 @@
                         (Var 2 r)
                         (RealConstant
                             1.500000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -61,7 +61,7 @@
                         (Cast
                             (Var 2 r)
                             RealToInteger
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         ()

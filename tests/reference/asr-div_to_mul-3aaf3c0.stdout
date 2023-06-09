@@ -15,14 +15,14 @@
                                     Local
                                     (RealConstant
                                         0.000001
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         0.000001
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -37,14 +37,14 @@
                                     Local
                                     (RealConstant
                                         3.140000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         3.140000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -59,14 +59,14 @@
                                     Local
                                     (RealConstant
                                         3.140000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         3.140000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -79,10 +79,10 @@
                                     y
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -101,24 +101,24 @@
                                         (Var 2 x)
                                         Div
                                         (Var 2 pi)
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         1.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -136,26 +136,26 @@
                                         Div
                                         (RealConstant
                                             2.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         1.570000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -174,33 +174,33 @@
                                         (Cast
                                             (RealConstant
                                                 2.000000
-                                                (Real 8 [])
+                                                (Real 8)
                                             )
                                             RealToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 2.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         1.570000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -217,32 +217,32 @@
                                         (Var 2 x)
                                         Div
                                         (Cast
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             IntegerToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             (RealConstant
                                                 2.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         1.570000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -259,26 +259,26 @@
                                         (IntegerBinOp
                                             (Var 2 y)
                                             Div
-                                            (IntegerConstant 2 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         Sub
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Integer 4 [])
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Integer 4)
                                         ()
                                     )]
                                     0
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )
                                 IntegerToReal
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

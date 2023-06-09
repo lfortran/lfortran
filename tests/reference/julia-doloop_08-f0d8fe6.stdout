@@ -1,5 +1,5 @@
 function main()
-    local i::Int32 = 0
+    local i::Int32
     i = 1
     while true
         i = i + 1

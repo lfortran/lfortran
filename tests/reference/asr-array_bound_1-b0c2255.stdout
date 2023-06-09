@@ -16,12 +16,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))
-                                    ((IntegerConstant 3 (Integer 4 []))
-                                    (IntegerConstant 7 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 7 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))
+                                        ((IntegerConstant 3 (Integer 4))
+                                        (IntegerConstant 7 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 7 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -37,14 +40,17 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 3 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))
-                                    ((IntegerConstant 4 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 2 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 3 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))
+                                        ((IntegerConstant 4 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -60,10 +66,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 6 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 7 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 6 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 7 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -79,8 +88,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -94,24 +106,24 @@
                         ()
                         [(ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             LBound
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
                             LBound
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
                             LBound
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                         )]
                         ()
                         ()
@@ -120,24 +132,24 @@
                         ()
                         [(ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 5 (Integer 4 []))
+                            (IntegerConstant 5 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 9 (Integer 4 []))
+                            (IntegerConstant 9 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 7 (Integer 4 []))
+                            (IntegerConstant 7 (Integer 4))
                         )]
                         ()
                         ()
@@ -146,31 +158,31 @@
                         ()
                         [(ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             LBound
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
                             LBound
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
                             LBound
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Integer 4)
                             LBound
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                         )]
                         ()
                         ()
@@ -179,50 +191,31 @@
                         ()
                         [(ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 6 (Integer 4 []))
+                            (IntegerConstant 6 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 4 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 4 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 7 (Integer 4 []))
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(ArrayBound
-                            (Var 2 c)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
-                            LBound
-                            (IntegerConstant 6 (Integer 4 []))
-                        )
-                        (ArrayBound
-                            (Var 2 c)
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
-                            LBound
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 7 (Integer 4))
                         )]
                         ()
                         ()
@@ -231,17 +224,36 @@
                         ()
                         [(ArrayBound
                             (Var 2 c)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
-                            UBound
-                            (IntegerConstant 10 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
+                            LBound
+                            (IntegerConstant 6 (Integer 4))
                         )
                         (ArrayBound
                             (Var 2 c)
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
+                            LBound
+                            (IntegerConstant 1 (Integer 4))
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(ArrayBound
+                            (Var 2 c)
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 7 (Integer 4 []))
+                            (IntegerConstant 10 (Integer 4))
+                        )
+                        (ArrayBound
+                            (Var 2 c)
+                            (IntegerConstant 2 (Integer 4))
+                            (Integer 4)
+                            UBound
+                            (IntegerConstant 7 (Integer 4))
                         )]
                         ()
                         ()
@@ -250,10 +262,10 @@
                         ()
                         [(ArrayBound
                             (Var 2 d)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             LBound
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                         )]
                         ()
                         ()
@@ -262,10 +274,10 @@
                         ()
                         [(ArrayBound
                             (Var 2 d)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             UBound
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                         )]
                         ()
                         ()

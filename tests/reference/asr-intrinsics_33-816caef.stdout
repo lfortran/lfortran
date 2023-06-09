@@ -26,36 +26,36 @@
                             (StringConcat
                                 (StringConstant
                                     "This is record 1."
-                                    (Character 1 17 () [])
+                                    (Character 1 17 ())
                                 )
                                 (FunctionCall
                                     2 new_line
                                     ()
                                     [((StringConstant
                                         "A"
-                                        (Character 1 1 () [])
+                                        (Character 1 1 ())
                                     ))]
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                     (StringConstant
                                         "\n"
-                                        (Character 1 1 () [])
+                                        (Character 1 1 ())
                                     )
                                     ()
                                 )
-                                (Character 1 18 () [])
+                                (Character 1 18 ())
                                 (StringConstant
                                     "This is record 1.\n"
-                                    (Character 1 18 () [])
+                                    (Character 1 18 ())
                                 )
                             )
                             (StringConstant
                                 "This is record 2."
-                                (Character 1 17 () [])
+                                (Character 1 17 ())
                             )
-                            (Character 1 35 () [])
+                            (Character 1 35 ())
                             (StringConstant
                                 "This is record 1.\nThis is record 2."
-                                (Character 1 35 () [])
+                                (Character 1 35 ())
                             )
                         )]
                         ()

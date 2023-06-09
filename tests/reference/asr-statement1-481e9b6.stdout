@@ -23,7 +23,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     Source
                                                     Public
@@ -39,7 +39,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -55,7 +55,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -65,9 +65,9 @@
                                         })
                                     dfloat
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Real 8 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Real 8)
                                         Source
                                         Implementation
                                         ()
@@ -88,11 +88,11 @@
                                                 (Var 13 i)
                                                 Add
                                                 (Var 13 j)
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             IntegerToReal
-                                            (Real 8 [])
+                                            (Real 8)
                                             ()
                                         )
                                         ()
@@ -114,15 +114,15 @@
                                         ()
                                         [((RealConstant
                                             0.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         ))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -138,7 +138,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -159,7 +159,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -175,7 +175,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -191,7 +191,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -201,9 +201,9 @@
                                         })
                                     ifloat
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -223,7 +223,7 @@
                                             (Var 14 i)
                                             Add
                                             (Var 14 j)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -243,7 +243,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -274,7 +274,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -290,7 +290,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -306,7 +306,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -316,9 +316,9 @@
                                         })
                                     sfloat
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Real 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Real 4)
                                         Source
                                         Implementation
                                         ()
@@ -339,11 +339,11 @@
                                                 (Var 12 i)
                                                 Mul
                                                 (Var 12 j)
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             IntegerToReal
-                                            (Real 4 [])
+                                            (Real 4)
                                             ()
                                         )
                                         ()
@@ -363,7 +363,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -379,7 +379,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -394,9 +394,9 @@
                         (FunctionCall
                             2 sfloat
                             ()
-                            [((IntegerConstant 1 (Integer 4 [])))
-                            ((IntegerConstant 8 (Integer 4 [])))]
-                            (Real 4 [])
+                            [((IntegerConstant 1 (Integer 4)))
+                            ((IntegerConstant 8 (Integer 4)))]
+                            (Real 4)
                             ()
                             ()
                         )
@@ -410,27 +410,27 @@
                                     (Var 2 ti)
                                     Sub
                                     (Cast
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        (IntegerConstant 8 (Integer 4))
                                         IntegerToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             8.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000010
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -444,18 +444,18 @@
                             (FunctionCall
                                 2 sfloat
                                 ()
-                                [((IntegerConstant 12 (Integer 4 [])))
-                                ((IntegerConstant 9 (Integer 4 [])))]
-                                (Real 4 [])
+                                [((IntegerConstant 12 (Integer 4)))
+                                ((IntegerConstant 9 (Integer 4)))]
+                                (Real 4)
                                 ()
                                 ()
                             )
                             Add
                             (RealConstant
                                 12.420000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -469,21 +469,21 @@
                                     Sub
                                     (RealConstant
                                         120.420000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000010
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -499,43 +499,43 @@
                                     (FunctionCall
                                         2 dfloat
                                         ()
-                                        [((IntegerConstant 5 (Integer 4 [])))
-                                        ((IntegerConstant 4 (Integer 4 [])))]
-                                        (Real 8 [])
+                                        [((IntegerConstant 5 (Integer 4)))
+                                        ((IntegerConstant 4 (Integer 4)))]
+                                        (Real 8)
                                         ()
                                         ()
                                     )
                                     Sub
                                     (Cast
-                                        (IntegerConstant 9 (Integer 4 []))
+                                        (IntegerConstant 9 (Integer 4))
                                         IntegerToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             9.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (Cast
                                 (RealConstant
                                     0.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 RealToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     0.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -548,15 +548,15 @@
                             (FunctionCall
                                 2 ifloat
                                 ()
-                                [((IntegerConstant 5 (Integer 4 [])))
-                                ((IntegerConstant 4 (Integer 4 [])))]
-                                (Integer 4 [])
+                                [((IntegerConstant 5 (Integer 4)))
+                                ((IntegerConstant 4 (Integer 4)))]
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 9 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 9 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

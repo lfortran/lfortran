@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -28,22 +28,22 @@
                     []
                     [(=
                         (Var 2 a)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (If
                         (IntegerCompare
                             (Var 2 a)
                             LtE
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "h"
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )]
                             ()
                             ()

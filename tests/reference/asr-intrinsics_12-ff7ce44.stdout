@@ -25,9 +25,9 @@
                         [(FunctionCall
                             2 kind
                             ()
-                            [((IntegerConstant 5 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )]
                         ()
@@ -38,9 +38,9 @@
                         [(FunctionCall
                             2 kind
                             ()
-                            [((IntegerConstant 5 (Integer 4 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 4)))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )]
                         ()
@@ -51,25 +51,9 @@
                         [(FunctionCall
                             2 kind
                             ()
-                            [((IntegerConstant 5 (Integer 8 [])))]
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
-                            ()
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(FunctionCall
-                            2 kind
-                            ()
-                            [((RealConstant
-                                0.000000
-                                (Real 8 [])
-                            ))]
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
+                            [((IntegerConstant 5 (Integer 8)))]
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
                             ()
                         )]
                         ()
@@ -82,10 +66,26 @@
                             ()
                             [((RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 8)
                             ))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            2 kind
+                            ()
+                            [((RealConstant
+                                0.000000
+                                (Real 4)
+                            ))]
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )]
                         ()
@@ -98,10 +98,10 @@
                             ()
                             [((RealConstant
                                 5.000000
-                                (Real 4 [])
+                                (Real 4)
                             ))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )]
                         ()
@@ -114,10 +114,10 @@
                             ()
                             [((RealConstant
                                 5.000000
-                                (Real 8 [])
+                                (Real 8)
                             ))]
-                            (Integer 4 [])
-                            (IntegerConstant 8 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 8 (Integer 4))
                             ()
                         )]
                         ()
@@ -130,10 +130,10 @@
                             ()
                             [((LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             ))]
-                            (Integer 4 [])
-                            (IntegerConstant 4 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4))
                             ()
                         )]
                         ()

@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,8 +36,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -50,10 +56,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))])
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -69,7 +78,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -85,7 +94,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -99,23 +108,23 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 2 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
+                        (IntegerConstant 3 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -123,7 +132,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
@@ -134,16 +143,16 @@
                                     (IntegerBinOp
                                         (Var 2 i)
                                         Sub
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Integer 4 [])
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Integer 4)
                                         ()
                                     )
                                     ())]
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ColMajor
                                     ()
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             ()
@@ -154,13 +163,13 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -172,9 +181,9 @@
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -188,13 +197,13 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -206,23 +215,23 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         )
                         ()
                     )
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 12 (Integer 4 []))
-                        (IntegerConstant 14 (Integer 4 []))
+                        (IntegerConstant 12 (Integer 4))
+                        (IntegerConstant 14 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -231,12 +240,12 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Sub
-                                    (IntegerConstant 10 (Integer 4 []))
-                                    (Integer 4 [])
+                                    (IntegerConstant 10 (Integer 4))
+                                    (Integer 4)
                                     ()
                                 )
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
@@ -248,21 +257,21 @@
                                         (IntegerBinOp
                                             (Var 2 i)
                                             Sub
-                                            (IntegerConstant 10 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 10 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         Sub
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Integer 4 [])
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Integer 4)
                                         ()
                                     )
                                     ())]
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ColMajor
                                     ()
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             ()
@@ -272,9 +281,9 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -288,13 +297,13 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -306,9 +315,9 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -322,13 +331,13 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -339,8 +348,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -348,7 +357,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
@@ -358,16 +367,16 @@
                                     [(()
                                     (Var 2 i)
                                     ())]
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ColMajor
                                     ()
                                 )
                                 And
                                 (LogicalConstant
                                     .false.
-                                    (Logical 4 [])
+                                    (Logical 4)
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             ()
@@ -377,9 +386,9 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -392,9 +401,9 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -407,9 +416,9 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 3 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -422,9 +431,9 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -434,9 +443,9 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ())]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         ColMajor
                                         ()
                                     )
@@ -444,39 +453,39 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4))
                                         ())]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         ColMajor
                                         ()
                                     )
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                 )
                                 Or
                                 (ArrayItem
                                     (Var 2 b)
                                     [(()
-                                    (IntegerConstant 3 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4))
                                     ())]
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ColMajor
                                     ()
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             Or
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         ()
@@ -486,13 +495,13 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -504,18 +513,18 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -526,13 +535,13 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -543,14 +552,14 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 2 (Integer 4))
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
                             ())
                             [(If
                                 (IntegerCompare
@@ -559,35 +568,35 @@
                                             (Var 2 i)
                                             Add
                                             (Var 2 j)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         Sub
                                         (IntegerBinOp
-                                            (IntegerConstant 2 (Integer 4 []))
+                                            (IntegerConstant 2 (Integer 4))
                                             Mul
                                             (IntegerBinOp
                                                 (IntegerBinOp
                                                     (Var 2 i)
                                                     Add
                                                     (Var 2 j)
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                 )
                                                 Div
-                                                (IntegerConstant 2 (Integer 4 []))
-                                                (Integer 4 [])
+                                                (IntegerConstant 2 (Integer 4))
+                                                (Integer 4)
                                                 ()
                                             )
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ()
                                     )
                                     Eq
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (Logical 4 [])
+                                    (IntegerConstant 1 (Integer 4))
+                                    (Logical 4)
                                     ()
                                 )
                                 [(=
@@ -599,13 +608,13 @@
                                         (()
                                         (Var 2 j)
                                         ())]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         ColMajor
                                         ()
                                     )
                                     (LogicalConstant
                                         .true.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     ()
                                 )]
@@ -618,13 +627,13 @@
                                         (()
                                         (Var 2 j)
                                         ())]
-                                        (Logical 4 [])
+                                        (Logical 4)
                                         ColMajor
                                         ()
                                     )
                                     (LogicalConstant
                                         .false.
-                                        (Logical 4 [])
+                                        (Logical 4)
                                     )
                                     ()
                                 )]
@@ -635,12 +644,12 @@
                         (ArrayItem
                             (Var 2 c)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())
                             (()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )
@@ -654,16 +663,16 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())
                                 (()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -676,16 +685,16 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())
                                 (()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Logical 4 [])
+                                (Logical 4)
                                 ColMajor
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -697,12 +706,12 @@
                         (ArrayItem
                             (Var 2 c)
                             [(()
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ())
                             (()
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ())]
-                            (Logical 4 [])
+                            (Logical 4)
                             ColMajor
                             ()
                         )

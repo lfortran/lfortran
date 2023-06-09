@@ -78,7 +78,6 @@
                                     Default
                                     (Struct
                                         7 t_2
-                                        []
                                     )
                                     ()
                                     Source
@@ -93,7 +92,7 @@
                         7 sub_1
                         ()
                         [((Var 7 type_1))
-                        ((IntegerConstant 123 (Integer 4 [])))]
+                        ((IntegerConstant 123 (Integer 4)))]
                         ()
                     )
                     (Print
@@ -103,8 +102,10 @@
                                 (Var 7 type_1)
                                 7 1_t_2_type_2
                                 (Pointer
-                                    (Struct
-                                        7 t_1
+                                    (Array
+                                        (Struct
+                                            7 t_1
+                                        )
                                         [(()
                                         ())]
                                     )
@@ -112,7 +113,7 @@
                                 ()
                             )
                             7 1_t_1_i
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -163,7 +164,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Integer 4 [])
+                                                                    (Integer 4)
                                                                     ()
                                                                     Source
                                                                     Private
@@ -179,8 +180,10 @@
                                                                 (Var 5 type_1)
                                                                 5 1_t_2_type_2
                                                                 (Pointer
-                                                                    (Struct
-                                                                        2 t_1
+                                                                    (Array
+                                                                        (Struct
+                                                                            2 t_1
+                                                                        )
                                                                         [(()
                                                                         ())]
                                                                     )
@@ -188,7 +191,7 @@
                                                                 ()
                                                             )
                                                             5 1_t_1_i
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         )
                                                         ()
@@ -208,7 +211,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -226,7 +229,6 @@
                                                     Default
                                                     (Class
                                                         2 t_2
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -239,9 +241,8 @@
                                     (FunctionType
                                         [(Class
                                             2 t_2
-                                            []
                                         )
-                                        (Integer 4 [])]
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -260,15 +261,17 @@
                                         [((StructInstanceMember
                                             (Var 5 type_1)
                                             5 1_t_2_type_2
-                                            (Struct
-                                                2 t_1
+                                            (Array
+                                                (Struct
+                                                    2 t_1
+                                                )
                                                 [(()
                                                 ())]
                                             )
                                             ()
                                         )
-                                        [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 0 (Integer 4 [])))])]
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4)))])]
                                         ()
                                         ()
                                         ()
@@ -333,7 +336,6 @@
                                                                     Default
                                                                     (Class
                                                                         2 t_2
-                                                                        []
                                                                     )
                                                                     ()
                                                                     Source
@@ -348,11 +350,10 @@
                                                         (ArrayItem
                                                             (Var 6 progress)
                                                             [(()
-                                                            (IntegerConstant 0 (Integer 4 []))
+                                                            (IntegerConstant 0 (Integer 4))
                                                             ())]
                                                             (Class
                                                                 2 t_2
-                                                                []
                                                             )
                                                             ColMajor
                                                             ()
@@ -365,8 +366,10 @@
                                                                 (Var 9 target)
                                                                 9 1_t_2_type_2
                                                                 (Pointer
-                                                                    (Struct
-                                                                        2 t_1
+                                                                    (Array
+                                                                        (Struct
+                                                                            2 t_1
+                                                                        )
                                                                         [(()
                                                                         ())]
                                                                     )
@@ -374,10 +377,10 @@
                                                                 ()
                                                             )
                                                             9 1_t_1_i
-                                                            (Integer 4 [])
+                                                            (Integer 4)
                                                             ()
                                                         )
-                                                        (IntegerConstant 345 (Integer 4 []))
+                                                        (IntegerConstant 345 (Integer 4))
                                                         ()
                                                     )]
                                                 ),
@@ -389,11 +392,15 @@
                                                     InOut
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Class
-                                                        2 t_2
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Class
+                                                                2 t_2
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -404,10 +411,14 @@
                                         })
                                     sub_2
                                     (FunctionType
-                                        [(Class
-                                            2 t_2
-                                            [(()
-                                            ())]
+                                        [(Allocatable
+                                            (Array
+                                                (Class
+                                                    2 t_2
+                                                )
+                                                [(()
+                                                ())]
+                                            )
                                         )]
                                         ()
                                         Source
@@ -426,15 +437,17 @@
                                         [((StructInstanceMember
                                             (Var 6 progress)
                                             6 1_t_2_type_2
-                                            (Struct
-                                                2 t_1
+                                            (Array
+                                                (Struct
+                                                    2 t_1
+                                                )
                                                 [(()
                                                 ())]
                                             )
                                             ()
                                         )
-                                        [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 0 (Integer 4 [])))])]
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4)))])]
                                         ()
                                         ()
                                         ()
@@ -462,7 +475,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -495,8 +508,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Struct
-                                                            2 t_1
+                                                        (Array
+                                                            (Struct
+                                                                2 t_1
+                                                            )
                                                             [(()
                                                             ())]
                                                         )
@@ -509,7 +524,7 @@
                                                 )
                                         })
                                     t_2
-                                    [t_1]
+                                    []
                                     [type_2]
                                     Source
                                     Public

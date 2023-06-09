@@ -16,10 +16,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -35,10 +38,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -54,7 +60,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -70,7 +76,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -84,10 +90,13 @@
                         (Var 2 b)
                         (ArrayTranspose
                             (Var 2 a)
-                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 4 (Integer 4 [])))
-                            ((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 3 (Integer 4 [])))])
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 4 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
+                            )
                             ()
                         )
                         ()
@@ -95,14 +104,14 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4))
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
                             ())
                             [(If
                                 (IntegerCompare
@@ -114,7 +123,7 @@
                                         (()
                                         (Var 2 j)
                                         ())]
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ColMajor
                                         ()
                                     )
@@ -127,11 +136,11 @@
                                         (()
                                         (Var 2 i)
                                         ())]
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ColMajor
                                         ()
                                     )
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                 )
                                 [(ErrorStop

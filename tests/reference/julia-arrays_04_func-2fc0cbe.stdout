@@ -1,5 +1,5 @@
 function abs(a::Float32)::Float32
-    local r::Float32 = 0.0
+    local r::Float32
     println("abs")
     if a > Float32(0)
         r = a
@@ -10,8 +10,8 @@ function abs(a::Float32)::Float32
 end
 
 function sum(a::Array{Float32, 1})::Float32
-    local i::Int32 = 0
-    local r::Float32 = 0.0
+    local i::Int32
+    local r::Float32
     println("sum")
     r = Float32(0)
     for i ∈ 1:length(a)
@@ -21,8 +21,8 @@ function sum(a::Array{Float32, 1})::Float32
 end
 
 function main()
-    local a = Array{Float32, 1}(undef, 3)
-    local b::Float32 = 0.0
+    local a::Array{Float32, 1}
+    local b::Float32
     a[1] = Float32(3)
     a[2] = Float32(2)
     a[3] = Float32(1)

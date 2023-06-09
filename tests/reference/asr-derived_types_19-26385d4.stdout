@@ -24,7 +24,6 @@
                                                     (Pointer
                                                         (Struct
                                                             4 child_value
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -45,7 +44,6 @@
                                                     (Pointer
                                                         (Class
                                                             4 toml_value
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -75,7 +73,7 @@
                                                         (StructInstanceMember
                                                             (Var 7 ptr)
                                                             8 1_child_value_ok
-                                                            (Logical 4 [])
+                                                            (Logical 4)
                                                             ()
                                                         )
                                                         [(=>
@@ -113,7 +111,7 @@
                                         (PointerAssociated
                                             (Var 7 ptr)
                                             ()
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         [(SelectType
@@ -155,7 +153,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -200,7 +198,7 @@
                                         ()
                                         [(StringConstant
                                             "default class"
-                                            (Character 1 13 () [])
+                                            (Character 1 13 ())
                                         )]
                                         ()
                                         ()
@@ -245,7 +243,7 @@
                                         ()
                                         [(StringConstant
                                             "not ok"
-                                            (Character 1 6 () [])
+                                            (Character 1 6 ())
                                         )]
                                         ()
                                         ()
@@ -269,8 +267,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -363,7 +363,7 @@
                         ()
                         [(StringConstant
                             "running derived_types_19 main program"
-                            (Character 1 37 () [])
+                            (Character 1 37 ())
                         )]
                         ()
                         ()

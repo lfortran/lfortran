@@ -15,9 +15,14 @@
                                     Local
                                     ()
                                     ()
-                                    Allocatable
-                                    (Integer 4 [(()
-                                    ())])
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                        )
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,7 +38,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -49,7 +54,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -65,7 +70,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -77,8 +82,8 @@
                     []
                     [(Allocate
                         [((Var 2 array)
-                        [((IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 35 (Integer 4 [])))])]
+                        [((IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 35 (Integer 4)))])]
                         ()
                         ()
                         ()
@@ -86,10 +91,10 @@
                     (=
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             Sub
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -100,13 +105,13 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             LtE
-                            (IntegerConstant 32 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 32 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(=
@@ -114,8 +119,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -126,7 +131,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -138,8 +143,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -150,7 +155,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -162,8 +167,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -174,7 +179,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -186,8 +191,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -198,7 +203,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -210,8 +215,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -222,7 +227,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -234,8 +239,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -246,7 +251,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -258,8 +263,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -270,7 +275,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -282,8 +287,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -294,7 +299,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -306,8 +311,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -318,7 +323,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -330,8 +335,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -342,7 +347,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -354,8 +359,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -366,7 +371,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -378,8 +383,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -390,7 +395,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -402,8 +407,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -414,7 +419,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -426,8 +431,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -438,7 +443,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -450,8 +455,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -462,7 +467,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -474,8 +479,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -486,7 +491,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -498,8 +503,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -510,7 +515,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -522,8 +527,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -534,7 +539,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -546,8 +551,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -558,7 +563,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -570,8 +575,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -582,7 +587,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -594,8 +599,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -606,7 +611,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -618,8 +623,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -630,7 +635,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -642,8 +647,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -654,7 +659,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -666,8 +671,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -678,7 +683,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -690,8 +695,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -702,7 +707,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -714,8 +719,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -726,7 +731,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -738,8 +743,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -750,7 +755,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -762,8 +767,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -774,7 +779,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -786,8 +791,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -798,7 +803,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -810,8 +815,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -822,7 +827,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -834,8 +839,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -846,7 +851,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -858,8 +863,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -870,7 +875,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )
@@ -883,8 +888,8 @@
                         (IntegerBinOp
                             (Var 2 i)
                             Add
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -895,7 +900,7 @@
                             [(()
                             (Var 2 i)
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
@@ -907,8 +912,8 @@
                         (IntegerBinOp
                             (Var 2 i)
                             Add
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -919,7 +924,7 @@
                             [(()
                             (Var 2 i)
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
@@ -931,8 +936,8 @@
                         (IntegerBinOp
                             (Var 2 i)
                             Add
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -943,7 +948,7 @@
                             [(()
                             (Var 2 i)
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )
@@ -953,10 +958,10 @@
                     (=
                         (Var 2 i)
                         (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             Sub
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -967,13 +972,13 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             LtE
-                            (IntegerConstant 32 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 32 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(=
@@ -981,8 +986,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -994,7 +999,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1006,8 +1011,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1019,7 +1024,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1031,8 +1036,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1044,7 +1049,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1056,8 +1061,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1069,7 +1074,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1081,8 +1086,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1094,7 +1099,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1106,8 +1111,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1119,7 +1124,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1131,8 +1136,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1144,7 +1149,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1156,8 +1161,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1169,7 +1174,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1181,8 +1186,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1194,7 +1199,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1206,8 +1211,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1219,7 +1224,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1231,8 +1236,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1244,7 +1249,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1256,8 +1261,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1269,7 +1274,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1281,8 +1286,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1294,7 +1299,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1306,8 +1311,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1319,7 +1324,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1331,8 +1336,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1344,7 +1349,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1356,8 +1361,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1369,7 +1374,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1381,8 +1386,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1394,7 +1399,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1406,8 +1411,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1419,7 +1424,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1431,8 +1436,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1444,7 +1449,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1456,8 +1461,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1469,7 +1474,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1481,8 +1486,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1494,7 +1499,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1506,8 +1511,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1519,7 +1524,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1531,8 +1536,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1544,7 +1549,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1556,8 +1561,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1569,7 +1574,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1581,8 +1586,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1594,7 +1599,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1606,8 +1611,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1619,7 +1624,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1631,8 +1636,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1644,7 +1649,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1656,8 +1661,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1669,7 +1674,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1681,8 +1686,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1694,7 +1699,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1706,8 +1711,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1719,7 +1724,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1731,8 +1736,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1744,7 +1749,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1756,8 +1761,8 @@
                             (IntegerBinOp
                                 (Var 2 i)
                                 Add
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
                                 ()
                             )
                             ()
@@ -1769,7 +1774,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ColMajor
                                 ()
                             )]
@@ -1782,8 +1787,8 @@
                         (IntegerBinOp
                             (Var 2 i)
                             Add
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -1795,7 +1800,7 @@
                             [(()
                             (Var 2 i)
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )]
@@ -1807,8 +1812,8 @@
                         (IntegerBinOp
                             (Var 2 i)
                             Add
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -1820,7 +1825,7 @@
                             [(()
                             (Var 2 i)
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )]
@@ -1832,8 +1837,8 @@
                         (IntegerBinOp
                             (Var 2 i)
                             Add
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -1845,7 +1850,7 @@
                             [(()
                             (Var 2 i)
                             ())]
-                            (Integer 4 [])
+                            (Integer 4)
                             ColMajor
                             ()
                         )]

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -27,7 +27,7 @@
                     f
                     (FunctionType
                         []
-                        (Integer 4 [])
+                        (Integer 4)
                         Source
                         Implementation
                         ()
@@ -42,7 +42,7 @@
                     []
                     [(=
                         (Var 2 f)
-                        (IntegerConstant 42 (Integer 4 []))
+                        (IntegerConstant 42 (Integer 4))
                         ()
                     )]
                     (Var 2 f)

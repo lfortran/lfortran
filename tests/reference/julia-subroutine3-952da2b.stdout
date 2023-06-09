@@ -1,5 +1,5 @@
 function f()::Int32
-    local f::Int32 = 0
+    local f::Int32
     f = 42
     return f
 end

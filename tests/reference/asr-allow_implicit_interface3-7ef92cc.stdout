@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -37,7 +37,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                     ()
                                                     BindC
                                                     Public
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 () [])
+                                                    (Character 1 1 ())
                                                     ()
                                                     BindC
                                                     Public
@@ -69,7 +69,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -79,9 +79,9 @@
                                         })
                                     lsame
                                     (FunctionType
-                                        [(Character 1 1 () [])
-                                        (Character 1 1 () [])]
-                                        (Logical 4 [])
+                                        [(Character 1 1 ())
+                                        (Character 1 1 ())]
+                                        (Logical 4)
                                         BindC
                                         Interface
                                         ()
@@ -111,7 +111,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 () [])
+                                    (Character 1 1 ())
                                     ()
                                     Source
                                     Public
@@ -121,7 +121,7 @@
                         })
                     ssyr2
                     (FunctionType
-                        [(Character 1 1 () [])]
+                        [(Character 1 1 ())]
                         ()
                         Source
                         Implementation
@@ -137,7 +137,7 @@
                     [(Var 2 uplo)]
                     [(=
                         (Var 2 info)
-                        (IntegerConstant 0 (Integer 4 []))
+                        (IntegerConstant 0 (Integer 4))
                         ()
                     )
                     (If
@@ -149,13 +149,13 @@
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "U"
-                                        (Character 1 1 () [])
+                                        (Character 1 1 ())
                                     ))]
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     ()
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             And
@@ -166,26 +166,26 @@
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "L"
-                                        (Character 1 1 () [])
+                                        (Character 1 1 ())
                                     ))]
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     ()
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(=
                             (Var 2 info)
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ()
                         )]
                         [(=
                             (Var 2 info)
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 2 (Integer 4))
                             ()
                         )]
                     )

@@ -23,7 +23,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 10 () [])
+                                                    (Character 1 10 ())
                                                     ()
                                                     Source
                                                     Public
@@ -43,7 +43,7 @@
                                         })
                                     optional_argument
                                     (FunctionType
-                                        [(Character 1 10 () [])]
+                                        [(Character 1 10 ())]
                                         ()
                                         Source
                                         Implementation
@@ -62,7 +62,7 @@
                                             3 present
                                             ()
                                             [((Var 3 name))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -71,10 +71,10 @@
                                             [(StringConcat
                                                 (StringConstant
                                                     "Hello "
-                                                    (Character 1 6 () [])
+                                                    (Character 1 6 ())
                                                 )
                                                 (Var 3 name)
-                                                (Character 1 16 () [])
+                                                (Character 1 16 ())
                                                 ()
                                             )]
                                             ()
@@ -84,7 +84,7 @@
                                             ()
                                             [(StringConstant
                                                 "Hello world!"
-                                                (Character 1 12 () [])
+                                                (Character 1 12 ())
                                             )]
                                             ()
                                             ()

@@ -25,7 +25,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -36,7 +36,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     kind
-                                                    32 kind
+                                                    31 kind
                                                     lfortran_intrinsic_kind
                                                     []
                                                     kind
@@ -61,7 +61,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [])
+                                                    (Real 8)
                                                     ()
                                                     Source
                                                     Public
@@ -71,7 +71,7 @@
                                         })
                                     a2d
                                     (FunctionType
-                                        [(Real 8 [])]
+                                        [(Real 8)]
                                         ()
                                         Source
                                         Implementation
@@ -90,7 +90,7 @@
                                         (Cast
                                             (Var 3 ivalu)
                                             IntegerToReal
-                                            (Real 8 [])
+                                            (Real 8)
                                             ()
                                         )
                                         ()

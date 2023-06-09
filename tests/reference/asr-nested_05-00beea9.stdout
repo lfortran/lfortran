@@ -74,14 +74,14 @@
                                                     )
                                                     (=
                                                         (Var 3 x)
-                                                        (IntegerConstant 4 (Integer 4 []))
+                                                        (IntegerConstant 4 (Integer 4))
                                                         ()
                                                     )
                                                     (=
                                                         (Var 3 y)
                                                         (RealConstant
                                                             3.500000
-                                                            (Real 4 [])
+                                                            (Real 4)
                                                         )
                                                         ()
                                                     )]
@@ -100,7 +100,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -116,7 +116,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -142,14 +142,14 @@
                                     []
                                     [(=
                                         (Var 3 x)
-                                        (IntegerConstant 6 (Integer 4 []))
+                                        (IntegerConstant 6 (Integer 4))
                                         ()
                                     )
                                     (=
                                         (Var 3 y)
                                         (RealConstant
                                             5.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )

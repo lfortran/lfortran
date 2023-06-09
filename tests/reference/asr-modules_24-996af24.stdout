@@ -28,7 +28,6 @@
                                     Default
                                     (Struct
                                         7 toml_tokenizer_
-                                        []
                                     )
                                     ()
                                     Source
@@ -48,7 +47,6 @@
                                     (Pointer
                                         (Class
                                             7 toml_tokenizer
-                                            []
                                         )
                                     )
                                     ()
@@ -132,7 +130,6 @@
                                                     Default
                                                     (Class
                                                         2 toml_tokenizer
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -152,7 +149,6 @@
                                                     (Pointer
                                                         (Struct
                                                             2 toml_table
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -166,7 +162,6 @@
                                     (FunctionType
                                         [(Class
                                             2 toml_tokenizer
-                                            []
                                         )]
                                         ()
                                         Source
@@ -191,7 +186,6 @@
                                             (Pointer
                                                 (Struct
                                                     2 toml_table
-                                                    []
                                                 )
                                             )
                                             ()
@@ -217,14 +211,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -257,7 +251,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 2 toml_table
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -265,7 +258,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 2 toml_table
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -273,7 +265,6 @@
                                                     (Pointer
                                                         (Struct
                                                             2 toml_table
-                                                            []
                                                         )
                                                     )
                                                     ()

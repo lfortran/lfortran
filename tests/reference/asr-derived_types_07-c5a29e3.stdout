@@ -79,7 +79,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -95,7 +95,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -114,7 +114,6 @@
                                                     (Pointer
                                                         (Class
                                                             9 toml_value
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -134,7 +133,6 @@
                                                     Default
                                                     (Class
                                                         9 toml_vector
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -147,13 +145,11 @@
                                     (FunctionType
                                         [(Class
                                             9 toml_vector
-                                            []
                                         )
-                                        (Character 1 -1 () [])
+                                        (Character 1 -1 ())
                                         (Pointer
                                             (Class
                                                 9 toml_value
-                                                []
                                             )
                                         )]
                                         ()
@@ -178,11 +174,11 @@
                                     (DoLoop
                                         ()
                                         ((Var 13 i)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_toml_vector_n
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ())
@@ -194,8 +190,10 @@
                                                     (StructInstanceMember
                                                         (Var 13 self)
                                                         13 1_toml_vector_lst
-                                                        (Struct
-                                                            9 toml_node
+                                                        (Array
+                                                            (Struct
+                                                                9 toml_node
+                                                            )
                                                             [(()
                                                             ())]
                                                         )
@@ -204,11 +202,10 @@
                                                     13 1_toml_node_val
                                                     (Class
                                                         9 toml_value
-                                                        []
                                                     )
                                                     ()
                                                 ))]
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )
@@ -217,14 +214,16 @@
                                                     13 1_match_key
                                                     ()
                                                     [((Var 13 key))]
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     (StructInstanceMember
                                                         (StructInstanceMember
                                                             (Var 13 self)
                                                             13 1_toml_vector_lst
-                                                            (Struct
-                                                                9 toml_node
+                                                            (Array
+                                                                (Struct
+                                                                    9 toml_node
+                                                                )
                                                                 [(()
                                                                 ())]
                                                             )
@@ -233,7 +232,6 @@
                                                         13 1_toml_node_val
                                                         (Class
                                                             9 toml_value
-                                                            []
                                                         )
                                                         ()
                                                     )
@@ -244,8 +242,10 @@
                                                         (StructInstanceMember
                                                             (Var 13 self)
                                                             13 1_toml_vector_lst
-                                                            (Struct
-                                                                9 toml_node
+                                                            (Array
+                                                                (Struct
+                                                                    9 toml_node
+                                                                )
                                                                 [(()
                                                                 ())]
                                                             )
@@ -254,7 +254,6 @@
                                                         13 1_toml_node_val
                                                         (Class
                                                             9 toml_value
-                                                            []
                                                         )
                                                         ()
                                                     )
@@ -302,7 +301,7 @@
                                                 (ExternalSymbol
                                                     12
                                                     min
-                                                    42 min
+                                                    41 min
                                                     lfortran_intrinsic_math2
                                                     []
                                                     min
@@ -312,7 +311,7 @@
                                                 (ExternalSymbol
                                                     12
                                                     min@imin
-                                                    42 imin
+                                                    41 imin
                                                     lfortran_intrinsic_math2
                                                     []
                                                     imin
@@ -327,7 +326,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -355,7 +354,6 @@
                                                     Default
                                                     (Struct
                                                         9 toml_vector
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -368,9 +366,8 @@
                                     (FunctionType
                                         [(Struct
                                             9 toml_vector
-                                            []
                                         )
-                                        (Integer 4 [])]
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -390,10 +387,10 @@
                                         (StructInstanceMember
                                             (Var 12 self)
                                             12 1_toml_vector_n
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         ()
                                     )
                                     (If
@@ -401,7 +398,7 @@
                                             12 present
                                             ()
                                             [((Var 12 n))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -409,20 +406,22 @@
                                             [((StructInstanceMember
                                                 (Var 12 self)
                                                 12 1_toml_vector_lst
-                                                (Struct
-                                                    9 toml_node
+                                                (Array
+                                                    (Struct
+                                                        9 toml_node
+                                                    )
                                                     [(()
                                                     ())]
                                                 )
                                                 ()
                                             )
-                                            [((IntegerConstant 1 (Integer 4 []))
+                                            [((IntegerConstant 1 (Integer 4))
                                             (FunctionCall
                                                 12 min@imin
                                                 12 min
-                                                [((IntegerConstant 1 (Integer 4 [])))
+                                                [((IntegerConstant 1 (Integer 4)))
                                                 ((Var 12 n))]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                                 ()
                                             ))])]
@@ -451,10 +450,11 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Class
-                                                        9 toml_value
-                                                        []
+                                                    Default
+                                                    (Allocatable
+                                                        (Class
+                                                            9 toml_value
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -464,7 +464,7 @@
                                                 )
                                         })
                                     toml_node
-                                    [toml_value]
+                                    []
                                     [val]
                                     Source
                                     Public
@@ -496,11 +496,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        9 toml_node
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                9 toml_node
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -514,10 +518,10 @@
                                                     n
                                                     []
                                                     Local
-                                                    (IntegerConstant 0 (Integer 4 []))
-                                                    (IntegerConstant 0 (Integer 4 []))
+                                                    (IntegerConstant 0 (Integer 4))
+                                                    (IntegerConstant 0 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -526,7 +530,7 @@
                                                 )
                                         })
                                     toml_vector
-                                    [toml_node]
+                                    []
                                     [n
                                     lst]
                                     Source
@@ -595,7 +599,6 @@
                                                     Default
                                                     (Class
                                                         6 toml_keyval
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -608,7 +611,6 @@
                                     (FunctionType
                                         [(Class
                                             6 toml_keyval
-                                            []
                                         )]
                                         ()
                                         Source
@@ -630,10 +632,10 @@
                                             [((StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             ))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -641,7 +643,7 @@
                                             [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             )]
                                         )]
@@ -654,10 +656,10 @@
                                             [((StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             ))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -665,7 +667,7 @@
                                             [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             )]
                                         )]
@@ -700,8 +702,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -757,7 +761,6 @@
                                                     Default
                                                     (Class
                                                         2 toml_value
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -770,7 +773,6 @@
                                     (FunctionType
                                         [(Class
                                             2 toml_value
-                                            []
                                         )]
                                         ()
                                         Source
@@ -826,7 +828,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -842,7 +844,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -860,7 +862,6 @@
                                                     Default
                                                     (Class
                                                         2 toml_value
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -873,10 +874,9 @@
                                     (FunctionType
                                         [(Class
                                             2 toml_value
-                                            []
                                         )
-                                        (Character 1 -1 () [])]
-                                        (Logical 4 [])
+                                        (Character 1 -1 ())]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -897,10 +897,10 @@
                                             [((StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_toml_value_key
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             ))]
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                             ()
                                         )
@@ -912,10 +912,10 @@
                                                 (StructInstanceMember
                                                     (Var 5 self)
                                                     5 1_toml_value_key
-                                                    (Character 1 -2 () [])
+                                                    (Character 1 -2 ())
                                                     ()
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
                                             ()
@@ -924,7 +924,7 @@
                                             (Var 5 match)
                                             (LogicalConstant
                                                 .false.
-                                                (Logical 4 [])
+                                                (Logical 4)
                                             )
                                             ()
                                         )]
@@ -958,8 +958,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public

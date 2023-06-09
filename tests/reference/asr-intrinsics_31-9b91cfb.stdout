@@ -48,15 +48,15 @@
                                         ()
                                         [((RealConstant
                                             0.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         ))]
-                                        (Integer 4 [])
-                                        (IntegerConstant 8 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
                                         ()
                                     )
-                                    (IntegerConstant 8 (Integer 4 []))
+                                    (IntegerConstant 8 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -82,20 +82,20 @@
                                     (RealUnaryMinus
                                         (RealConstant
                                             1.000001
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             -1.000001
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
                                     (RealConstant
                                         -1.000001
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Save
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -111,7 +111,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -126,14 +126,14 @@
                                     Local
                                     (RealConstant
                                         63.290000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         63.290000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -149,7 +149,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -165,20 +165,20 @@
                                     (RealUnaryMinus
                                         (RealConstant
                                             63.590000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             -63.590000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         -63.590000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -194,7 +194,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -209,14 +209,14 @@
                                     Local
                                     (RealConstant
                                         0.000001
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     (RealConstant
                                         0.000001
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Save
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -232,7 +232,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -249,12 +249,12 @@
                                 2 ceiling@sceiling
                                 2 ceiling
                                 [((Var 2 x))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -266,12 +266,12 @@
                                 2 ceiling@sceiling
                                 2 ceiling
                                 [((Var 2 y))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             IntegerToReal
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -282,7 +282,7 @@
                             2 ceiling@dceiling
                             2 ceiling
                             [((Var 2 z))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -294,7 +294,7 @@
                             2 ceiling@dceiling
                             2 ceiling
                             [((Var 2 w))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -308,27 +308,27 @@
                                     (Var 2 x_ceil)
                                     Sub
                                     (Cast
-                                        (IntegerConstant 64 (Integer 4 []))
+                                        (IntegerConstant 64 (Integer 4))
                                         IntegerToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             64.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000010
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -345,30 +345,30 @@
                                     Sub
                                     (Cast
                                         (IntegerUnaryMinus
-                                            (IntegerConstant 63 (Integer 4 []))
-                                            (Integer 4 [])
-                                            (IntegerConstant -63 (Integer 4 []))
+                                            (IntegerConstant 63 (Integer 4))
+                                            (Integer 4)
+                                            (IntegerConstant -63 (Integer 4))
                                         )
                                         IntegerToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             -63.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000010
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -380,8 +380,8 @@
                         (IntegerCompare
                             (Var 2 z_ceil)
                             NotEq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -394,11 +394,11 @@
                             (Var 2 w_ceil)
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 1 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant -1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -413,7 +413,7 @@
                             2 ceiling@sceiling
                             2 ceiling
                             [((Var 2 x_ceil))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]
@@ -427,7 +427,7 @@
                             2 ceiling@sceiling
                             2 ceiling
                             [((Var 2 y_ceil))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]

@@ -1,17 +1,17 @@
 function f()::Int32
-    local f::Int32 = 0
+    local f::Int32
     f = 42
     return f
 end
 
 function g()::Int32
-    local g::Int32 = 0
+    local g::Int32
     g = 42
     return g
 end
 
 function h()::Int32
-    local h::Int32 = 0
+    local h::Int32
     h = 42
     return h
 end

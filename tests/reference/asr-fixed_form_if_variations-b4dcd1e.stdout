@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -26,7 +26,7 @@
                         })
                     f
                     (FunctionType
-                        [(Integer 4 [])]
+                        [(Integer 4)]
                         ()
                         Source
                         Implementation
@@ -63,20 +63,20 @@
                     []
                     [(If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4))
                             Lt
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(Print
                             ()
                             [(StringConstant
                                 "first branch"
-                                (Character 1 12 () [])
+                                (Character 1 12 ())
                             )]
                             ()
                             ()
@@ -89,7 +89,7 @@
                             ()
                             [(StringConstant
                                 "second branch"
-                                (Character 1 13 () [])
+                                (Character 1 13 ())
                             )]
                             ()
                             ()
@@ -102,18 +102,18 @@
                     (SubroutineCall
                         1 f
                         ()
-                        [((IntegerConstant 1 (Integer 4 [])))]
+                        [((IntegerConstant 1 (Integer 4)))]
                         ()
                     )
                     (If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4))
                             Lt
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(Return)]
@@ -121,13 +121,13 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4))
                             Gt
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(GoTo
@@ -138,19 +138,19 @@
                     )
                     (If
                         (IntegerCompare
-                            (IntegerConstant 0 (Integer 4 []))
+                            (IntegerConstant 0 (Integer 4))
                             Lt
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .true.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(SubroutineCall
                             1 f
                             ()
-                            [((IntegerConstant 2 (Integer 4 [])))]
+                            [((IntegerConstant 2 (Integer 4)))]
                             ()
                         )]
                         []

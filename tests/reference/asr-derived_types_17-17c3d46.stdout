@@ -58,7 +58,6 @@
                                                     Default
                                                     (Struct
                                                         2 t_1
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -72,7 +71,6 @@
                                         []
                                         (Struct
                                             2 t_1
-                                            []
                                         )
                                         Source
                                         Implementation
@@ -90,24 +88,24 @@
                                         (StructInstanceMember
                                             (Var 4 self)
                                             4 1_t_1_num
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
                                             (StructInstanceMember
                                                 (Var 4 self)
                                                 4 1_t_1_num
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Add
                                             (StructInstanceMember
                                                 (Var 4 self)
                                                 4 1_t_1_num
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -144,7 +142,6 @@
                                                     Default
                                                     (Struct
                                                         2 t_1
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -158,7 +155,6 @@
                                         []
                                         (Struct
                                             2 t_1
-                                            []
                                         )
                                         Source
                                         Implementation
@@ -176,24 +172,24 @@
                                         (StructInstanceMember
                                             (Var 5 self)
                                             5 1_t_1_num
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
                                             (StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_t_1_num
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
                                             Mul
                                             (StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_t_1_num
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -215,10 +211,10 @@
                                                     num
                                                     []
                                                     Local
-                                                    (IntegerConstant 100 (Integer 4 []))
-                                                    (IntegerConstant 100 (Integer 4 []))
+                                                    (IntegerConstant 100 (Integer 4))
+                                                    (IntegerConstant 100 (Integer 4))
                                                     Save
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Private
@@ -298,7 +294,6 @@
                                             []
                                             (Struct
                                                 7 1_t_1
-                                                []
                                             )
                                             ()
                                             ()
@@ -314,7 +309,6 @@
                                             []
                                             (Struct
                                                 7 1_t_1
-                                                []
                                             )
                                             ()
                                             ()

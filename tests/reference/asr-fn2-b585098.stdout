@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -27,7 +27,7 @@
                     a
                     (FunctionType
                         []
-                        (Integer 4 [])
+                        (Integer 4)
                         Source
                         Implementation
                         ()
@@ -61,7 +61,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -72,7 +72,7 @@
                     b
                     (FunctionType
                         []
-                        (Real 4 [])
+                        (Real 4)
                         Source
                         Implementation
                         ()
@@ -106,7 +106,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -117,7 +117,7 @@
                     c
                     (FunctionType
                         []
-                        (Logical 4 [])
+                        (Logical 4)
                         Source
                         Implementation
                         ()
@@ -151,7 +151,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -162,7 +162,7 @@
                     d
                     (FunctionType
                         []
-                        (Integer 4 [])
+                        (Integer 4)
                         Source
                         Implementation
                         ()
@@ -196,7 +196,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -207,7 +207,7 @@
                     e
                     (FunctionType
                         []
-                        (Real 4 [])
+                        (Real 4)
                         Source
                         Implementation
                         ()
@@ -241,7 +241,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Logical 4 [])
+                                    (Logical 4)
                                     ()
                                     Source
                                     Public
@@ -252,7 +252,7 @@
                     f
                     (FunctionType
                         []
-                        (Logical 4 [])
+                        (Logical 4)
                         Source
                         Implementation
                         ()

@@ -46,7 +46,7 @@
                                         (Var 3 y)
                                         (RealConstant
                                             3.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         ()
                                     )]
@@ -63,20 +63,20 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4))
                                         IntegerToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             2.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -132,21 +132,21 @@
                                     Sub
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -175,21 +175,21 @@
                                     Sub
                                     (RealConstant
                                         3.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

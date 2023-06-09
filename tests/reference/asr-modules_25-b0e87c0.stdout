@@ -74,7 +74,7 @@
                         ()
                         [(StringConstant
                             "running module_25 program"
-                            (Character 1 25 () [])
+                            (Character 1 25 ())
                         )]
                         ()
                         ()
@@ -101,7 +101,6 @@
                                                     Default
                                                     (Class
                                                         4 toml_character_tokenizer
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -118,7 +117,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -130,9 +129,8 @@
                                     (FunctionType
                                         [(Class
                                             4 toml_character_tokenizer
-                                            []
                                         )
-                                        (Logical 4 [])]
+                                        (Logical 4)]
                                         ()
                                         Source
                                         Implementation
@@ -179,7 +177,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (Character 1 -2 () [])
+                                                        (Character 1 -2 ())
                                                     )
                                                     ()
                                                     Source
@@ -265,7 +263,6 @@
                                                     Default
                                                     (Class
                                                         8 toml_tokenizer
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -282,7 +279,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -294,9 +291,8 @@
                                     (FunctionType
                                         [(Class
                                             8 toml_tokenizer
-                                            []
                                         )
-                                        (Logical 4 [])]
+                                        (Logical 4)]
                                         ()
                                         Source
                                         Interface
@@ -344,7 +340,6 @@
                                                     Default
                                                     (Class
                                                         8 toml_tokenizer
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -364,7 +359,6 @@
                                                     (Pointer
                                                         (Struct
                                                             8 toml_table
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -378,7 +372,6 @@
                                     (FunctionType
                                         [(Class
                                             8 toml_tokenizer
-                                            []
                                         )]
                                         ()
                                         Source
@@ -403,7 +396,6 @@
                                             (Pointer
                                                 (Struct
                                                     8 toml_table
-                                                    []
                                                 )
                                             )
                                             ()
@@ -429,14 +421,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .false.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Private
@@ -469,7 +461,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 8 toml_table
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -477,7 +468,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 8 toml_table
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -485,7 +475,6 @@
                                                     (Pointer
                                                         (Struct
                                                             8 toml_table
-                                                            []
                                                         )
                                                     )
                                                     ()

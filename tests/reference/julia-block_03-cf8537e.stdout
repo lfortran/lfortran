@@ -1,5 +1,5 @@
 function square(b::Int32)
-    local result::Int32 = 0
+    local result::Int32
     result = b * b
     if result ≠ 100
         println(Base.stderr, "ERROR STOP")
@@ -9,11 +9,11 @@ function square(b::Int32)
 end
 
 function main()
-    local a::Int32 = 0
+    local a::Int32
     a = 10
     @label label_1
     let
-        b::Int32 = 0
+        b::Int32
         a = a + 5
         if a == 15
             @goto label_1

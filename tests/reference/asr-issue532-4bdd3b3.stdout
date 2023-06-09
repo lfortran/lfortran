@@ -32,7 +32,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -58,7 +58,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -74,7 +74,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -84,9 +84,9 @@
                                         })
                                     imodulo
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Integer 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -109,16 +109,16 @@
                                                 [((Cast
                                                     (Var 4 x)
                                                     IntegerToReal
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                 ))]
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                                 ()
                                             )
                                             Mul
                                             (Var 4 y)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()
@@ -143,7 +143,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -159,7 +159,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4 [])
+                                                    (Real 4)
                                                     ()
                                                     Source
                                                     Public
@@ -169,8 +169,8 @@
                                         })
                                     sfloor
                                     (FunctionType
-                                        [(Real 4 [])]
-                                        (Integer 4 [])
+                                        [(Real 4)]
+                                        (Integer 4)
                                         Source
                                         Implementation
                                         ()
@@ -188,7 +188,7 @@
                                         (Cast
                                             (Var 3 x)
                                             RealToInteger
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ()

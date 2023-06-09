@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -78,7 +78,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -94,7 +94,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -106,12 +106,12 @@
                     []
                     [(=
                         (Var 2 from)
-                        (IntegerConstant 10 (Integer 4 []))
+                        (IntegerConstant 10 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 from8)
-                        (IntegerConstant 10 (Integer 8 []))
+                        (IntegerConstant 10 (Integer 8))
                         ()
                     )
                     (=
@@ -120,9 +120,9 @@
                             2 ibits@ibits32
                             2 ibits
                             [((Var 2 from))
-                            ((IntegerConstant 2 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))]
-                            (Integer 4 [])
+                            ((IntegerConstant 2 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -132,8 +132,8 @@
                         (IntegerCompare
                             (Var 2 res)
                             NotEq
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -147,9 +147,9 @@
                             2 ibits@ibits64
                             2 ibits
                             [((Var 2 from8))
-                            ((IntegerConstant 2 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))]
-                            (Integer 8 [])
+                            ((IntegerConstant 2 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 8)
                             ()
                             ()
                         )
@@ -159,8 +159,8 @@
                         (IntegerCompare
                             (Var 2 res8)
                             NotEq
-                            (IntegerConstant 2 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 8))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -174,9 +174,9 @@
                             2 ibits@ibits32
                             2 ibits
                             [((Var 2 from))
-                            ((IntegerConstant 0 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))]
-                            (Integer 4 [])
+                            ((IntegerConstant 0 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -186,8 +186,8 @@
                         (IntegerCompare
                             (Var 2 res)
                             NotEq
-                            (IntegerConstant 2 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -201,9 +201,9 @@
                             2 ibits@ibits64
                             2 ibits
                             [((Var 2 from8))
-                            ((IntegerConstant 0 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))]
-                            (Integer 8 [])
+                            ((IntegerConstant 0 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 8)
                             ()
                             ()
                         )
@@ -213,8 +213,8 @@
                         (IntegerCompare
                             (Var 2 res8)
                             NotEq
-                            (IntegerConstant 2 (Integer 8 []))
-                            (Logical 4 [])
+                            (IntegerConstant 2 (Integer 8))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -225,18 +225,18 @@
                     (=
                         (Var 2 from)
                         (IntegerUnaryMinus
-                            (IntegerConstant 20 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant -20 (Integer 4 []))
+                            (IntegerConstant 20 (Integer 4))
+                            (Integer 4)
+                            (IntegerConstant -20 (Integer 4))
                         )
                         ()
                     )
                     (=
                         (Var 2 from8)
                         (IntegerUnaryMinus
-                            (IntegerConstant 20 (Integer 8 []))
-                            (Integer 8 [])
-                            (IntegerConstant -20 (Integer 8 []))
+                            (IntegerConstant 20 (Integer 8))
+                            (Integer 8)
+                            (IntegerConstant -20 (Integer 8))
                         )
                         ()
                     )
@@ -246,9 +246,9 @@
                             2 ibits@ibits32
                             2 ibits
                             [((Var 2 from))
-                            ((IntegerConstant 29 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))]
-                            (Integer 4 [])
+                            ((IntegerConstant 29 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -258,8 +258,8 @@
                         (IntegerCompare
                             (Var 2 res)
                             NotEq
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -273,9 +273,9 @@
                             2 ibits@ibits64
                             2 ibits
                             [((Var 2 from8))
-                            ((IntegerConstant 29 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))]
-                            (Integer 8 [])
+                            ((IntegerConstant 29 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 8)
                             ()
                             ()
                         )
@@ -286,12 +286,12 @@
                             (Var 2 res8)
                             NotEq
                             (Cast
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 3 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 3 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -305,9 +305,9 @@
                             2 ibits@ibits32
                             2 ibits
                             [((Var 2 from))
-                            ((IntegerConstant 2 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))]
-                            (Integer 4 [])
+                            ((IntegerConstant 2 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -317,8 +317,8 @@
                         (IntegerCompare
                             (Var 2 res)
                             NotEq
-                            (IntegerConstant 3 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 3 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -332,9 +332,9 @@
                             2 ibits@ibits64
                             2 ibits
                             [((Var 2 from8))
-                            ((IntegerConstant 2 (Integer 4 [])))
-                            ((IntegerConstant 2 (Integer 4 [])))]
-                            (Integer 8 [])
+                            ((IntegerConstant 2 (Integer 4)))
+                            ((IntegerConstant 2 (Integer 4)))]
+                            (Integer 8)
                             ()
                             ()
                         )
@@ -345,12 +345,12 @@
                             (Var 2 res8)
                             NotEq
                             (Cast
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 3 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 3 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

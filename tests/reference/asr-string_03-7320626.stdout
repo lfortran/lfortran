@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 29 () [])
+                                    (Character 1 29 ())
                                     ()
                                     Source
                                     Public
@@ -42,7 +42,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 7 () [])
+                                    (Character 1 7 ())
                                     ()
                                     Source
                                     Public
@@ -58,7 +58,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 5 () [])
+                                    (Character 1 5 ())
                                     ()
                                     Source
                                     Public
@@ -74,7 +74,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 4 () [])
+                                    (Character 1 4 ())
                                     ()
                                     Source
                                     Public
@@ -90,7 +90,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 8 () [])
+                                    (Character 1 8 ())
                                     ()
                                     Source
                                     Public
@@ -104,7 +104,7 @@
                         (Var 3 verb)
                         (StringConstant
                             "learned "
-                            (Character 1 8 () [])
+                            (Character 1 8 ())
                         )
                         ()
                     )
@@ -112,7 +112,7 @@
                         (Var 3 posit)
                         (StringConstant
                             "from "
-                            (Character 1 5 () [])
+                            (Character 1 5 ())
                         )
                         ()
                     )
@@ -120,7 +120,7 @@
                         (Var 3 title)
                         (StringConstant
                             "the "
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         ()
                     )
@@ -128,7 +128,7 @@
                         (Var 3 last_name)
                         (StringConstant
                             "best"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         )
                         ()
                     )
@@ -141,26 +141,26 @@
                                         (StringConcat
                                             (Var 3 intro)
                                             (Var 3 verb)
-                                            (Character 1 13 () [])
+                                            (Character 1 13 ())
                                             ()
                                         )
                                         (Var 3 posit)
-                                        (Character 1 18 () [])
+                                        (Character 1 18 ())
                                         ()
                                     )
                                     (Var 3 title)
-                                    (Character 1 22 () [])
+                                    (Character 1 22 ())
                                     ()
                                 )
                                 (Var 3 last_name)
-                                (Character 1 29 () [])
+                                (Character 1 29 ())
                                 ()
                             )
                             (StringConstant
                                 "."
-                                (Character 1 1 () [])
+                                (Character 1 1 ())
                             )
-                            (Character 1 30 () [])
+                            (Character 1 30 ())
                             ()
                         )
                         ()
@@ -185,14 +185,14 @@
                                     Local
                                     (StringConstant
                                         "I've "
-                                        (Character 1 5 () [])
+                                        (Character 1 5 ())
                                     )
                                     (StringConstant
                                         "I've "
-                                        (Character 1 5 () [])
+                                        (Character 1 5 ())
                                     )
                                     Parameter
-                                    (Character 1 5 () [])
+                                    (Character 1 5 ())
                                     ()
                                     Source
                                     Public

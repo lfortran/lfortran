@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -48,8 +48,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 100 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 100 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -63,15 +66,15 @@
                         (Var 2 s)
                         (RealConstant
                             0.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
                     (DoLoop
                         ()
                         ((Var 2 j)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 100 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 100 (Integer 4))
                         ())
                         [(=
                             (Var 2 s)
@@ -83,11 +86,11 @@
                                     [(()
                                     (Var 2 j)
                                     ())]
-                                    (Real 4 [])
+                                    (Real 4)
                                     ColMajor
                                     ()
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -97,15 +100,15 @@
                                 (Var 2 s)
                                 GtE
                                 (Cast
-                                    (IntegerConstant 1000000 (Integer 4 []))
+                                    (IntegerConstant 1000000 (Integer 4))
                                     IntegerToReal
-                                    (Real 4 [])
+                                    (Real 4)
                                     (RealConstant
                                         1000000.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                 )
-                                (Logical 4 [])
+                                (Logical 4)
                                 ()
                             )
                             [(GoTo

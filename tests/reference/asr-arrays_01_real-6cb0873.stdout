@@ -16,8 +16,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -33,8 +36,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -50,10 +56,13 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))
-                                    ((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 [])))])
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -69,7 +78,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -85,7 +94,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -98,8 +107,8 @@
                     [(DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -107,7 +116,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
@@ -115,12 +124,12 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Add
-                                    (IntegerConstant 10 (Integer 4 []))
-                                    (Integer 4 [])
+                                    (IntegerConstant 10 (Integer 4))
+                                    (Integer 4)
                                     ()
                                 )
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             ()
@@ -131,23 +140,23 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 11 (Integer 4 []))
+                                (IntegerConstant 11 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     11.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -160,23 +169,23 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 12 (Integer 4 []))
+                                (IntegerConstant 12 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     12.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -189,23 +198,23 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 13 (Integer 4 []))
+                                (IntegerConstant 13 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     13.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -216,8 +225,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 11 (Integer 4 []))
-                        (IntegerConstant 14 (Integer 4 []))
+                        (IntegerConstant 11 (Integer 4))
+                        (IntegerConstant 14 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -226,19 +235,19 @@
                                 (IntegerBinOp
                                     (Var 2 i)
                                     Sub
-                                    (IntegerConstant 10 (Integer 4 []))
-                                    (Integer 4 [])
+                                    (IntegerConstant 10 (Integer 4))
+                                    (Integer 4)
                                     ()
                                 )
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             (Cast
                                 (Var 2 i)
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             ()
@@ -249,23 +258,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 11 (Integer 4 []))
+                                (IntegerConstant 11 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     11.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -278,23 +287,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 12 (Integer 4 []))
+                                (IntegerConstant 12 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     12.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -307,23 +316,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 13 (Integer 4 []))
+                                (IntegerConstant 13 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     13.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -336,23 +345,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 14 (Integer 4 []))
+                                (IntegerConstant 14 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     14.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -363,8 +372,8 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 3 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 3 (Integer 4))
                         ())
                         [(=
                             (ArrayItem
@@ -372,7 +381,7 @@
                                 [(()
                                 (Var 2 i)
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
@@ -382,21 +391,21 @@
                                     [(()
                                     (Var 2 i)
                                     ())]
-                                    (Real 8 [])
+                                    (Real 8)
                                     ColMajor
                                     ()
                                 )
                                 Sub
                                 (Cast
-                                    (IntegerConstant 10 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4))
                                     IntegerToReal
-                                    (Real 8 [])
+                                    (Real 8)
                                     (RealConstant
                                         10.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                 )
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             ()
@@ -407,23 +416,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     1.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -436,23 +445,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     2.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -465,23 +474,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 3 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     3.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -493,9 +502,9 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                             ())]
-                            (Real 8 [])
+                            (Real 8)
                             ColMajor
                             ()
                         )
@@ -505,9 +514,9 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ())]
-                                        (Real 8 [])
+                                        (Real 8)
                                         ColMajor
                                         ()
                                     )
@@ -515,39 +524,39 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4))
                                         ())]
-                                        (Real 8 [])
+                                        (Real 8)
                                         ColMajor
                                         ()
                                     )
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )
                                 Add
                                 (ArrayItem
                                     (Var 2 b)
                                     [(()
-                                    (IntegerConstant 3 (Integer 4 []))
+                                    (IntegerConstant 3 (Integer 4))
                                     ())]
-                                    (Real 8 [])
+                                    (Real 8)
                                     ColMajor
                                     ()
                                 )
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Add
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
-                            (Real 8 [])
+                            (Real 8)
                             ()
                         )
                         ()
@@ -557,23 +566,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 17 (Integer 4 []))
+                                (IntegerConstant 17 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     17.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -585,18 +594,18 @@
                         (ArrayItem
                             (Var 2 b)
                             [(()
-                            (IntegerConstant 4 (Integer 4 []))
+                            (IntegerConstant 4 (Integer 4))
                             ())]
-                            (Real 8 [])
+                            (Real 8)
                             ColMajor
                             ()
                         )
                         (ArrayItem
                             (Var 2 a)
                             [(()
-                            (IntegerConstant 1 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
                             ())]
-                            (Real 8 [])
+                            (Real 8)
                             ColMajor
                             ()
                         )
@@ -607,23 +616,23 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (IntegerConstant 4 (Integer 4 []))
+                                (IntegerConstant 4 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 11 (Integer 4 []))
+                                (IntegerConstant 11 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     11.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -634,14 +643,14 @@
                     (DoLoop
                         ()
                         ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4 []))
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 2 (Integer 4))
                         ())
                         [(DoLoop
                             ()
                             ((Var 2 j)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
                             ())
                             [(=
                                 (ArrayItem
@@ -652,7 +661,7 @@
                                     (()
                                     (Var 2 j)
                                     ())]
-                                    (Real 8 [])
+                                    (Real 8)
                                     ColMajor
                                     ()
                                 )
@@ -662,16 +671,16 @@
                                             (Var 2 i)
                                             Add
                                             (Var 2 j)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         Add
-                                        (IntegerConstant 10 (Integer 4 []))
-                                        (Integer 4 [])
+                                        (IntegerConstant 10 (Integer 4))
+                                        (Integer 4)
                                         ()
                                     )
                                     IntegerToReal
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )
                                 ()
@@ -683,26 +692,26 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())
                                 (()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 12 (Integer 4 []))
+                                (IntegerConstant 12 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     12.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -715,26 +724,26 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())
                                 (()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 13 (Integer 4 []))
+                                (IntegerConstant 13 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     13.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -747,26 +756,26 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())
                                 (()
-                                (IntegerConstant 1 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 13 (Integer 4 []))
+                                (IntegerConstant 13 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     13.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -779,26 +788,26 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())
                                 (()
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Real 8 [])
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
                             NotEq
                             (Cast
-                                (IntegerConstant 14 (Integer 4 []))
+                                (IntegerConstant 14 (Integer 4))
                                 IntegerToReal
-                                (Real 8 [])
+                                (Real 8)
                                 (RealConstant
                                     14.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 )
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

@@ -15,7 +15,7 @@
                         ()
                         [(StringConstant
                             "executing modules_37"
-                            (Character 1 20 () [])
+                            (Character 1 20 ())
                         )]
                         ()
                         ()
@@ -78,7 +78,6 @@
                                                                     (Pointer
                                                                         (Struct
                                                                             2 build_target_t
-                                                                            []
                                                                         )
                                                                     )
                                                                     ()
@@ -99,8 +98,6 @@
                                                                 ())]
                                                                 (Struct
                                                                     2 build_target_ptr
-                                                                    [(()
-                                                                    ())]
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -109,7 +106,6 @@
                                                             (Pointer
                                                                 (Struct
                                                                     2 build_target_t
-                                                                    []
                                                                 )
                                                             )
                                                             ()
@@ -120,21 +116,21 @@
                                                         (StructInstanceMember
                                                             (Var 9 temp)
                                                             12 1_string_t_s
-                                                            (Character 1 -2 () [])
+                                                            (Character 1 -2 ())
                                                             ()
                                                         )
                                                         (StructInstanceMember
                                                             (Var 12 target)
                                                             12 1_build_target_t_output_dir
-                                                            (Character 1 -2 () [])
+                                                            (Character 1 -2 ())
                                                             ()
                                                         )
                                                         ()
                                                     )
                                                     (Allocate
                                                         [((Var 9 build_dirs)
-                                                        [((IntegerConstant 1 (Integer 4 []))
-                                                        (IntegerConstant 2 (Integer 4 [])))])]
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))])]
                                                         ()
                                                         ()
                                                         ()
@@ -144,10 +140,14 @@
                                                         (ArrayConstant
                                                             [(Var 9 build_dirs)
                                                             (Var 9 temp)]
-                                                            (Struct
-                                                                2 string_t
-                                                                [((IntegerConstant 1 (Integer 4 []))
-                                                                (IntegerConstant 2 (Integer 4 [])))]
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Struct
+                                                                        2 string_t
+                                                                    )
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 2 (Integer 4)))]
+                                                                )
                                                             )
                                                             ColMajor
                                                         )
@@ -162,11 +162,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 string_t
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 string_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -183,7 +187,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -199,7 +203,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -217,7 +221,6 @@
                                                     Default
                                                     (Struct
                                                         2 fpm_model_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -234,8 +237,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Struct
-                                                        2 build_target_ptr
+                                                    (Array
+                                                        (Struct
+                                                            2 build_target_ptr
+                                                        )
                                                         [(()
                                                         ())]
                                                     )
@@ -256,7 +261,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -273,7 +277,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -283,16 +287,17 @@
                                         })
                                     build_package
                                     (FunctionType
-                                        [(Struct
-                                            2 build_target_ptr
+                                        [(Array
+                                            (Struct
+                                                2 build_target_ptr
+                                            )
                                             [(()
                                             ())]
                                         )
                                         (Struct
                                             2 fpm_model_t
-                                            []
                                         )
-                                        (Logical 4 [])]
+                                        (Logical 4)]
                                         ()
                                         Source
                                         Implementation
@@ -310,8 +315,8 @@
                                     (Var 9 verbose)]
                                     [(Allocate
                                         [((Var 9 build_dirs)
-                                        [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 0 (Integer 4 [])))])]
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4)))])]
                                         ()
                                         ()
                                         ()
@@ -319,11 +324,11 @@
                                     (DoLoop
                                         ()
                                         ((Var 9 i)
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         (ArraySize
                                             (Var 9 targets)
                                             ()
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         ())
@@ -333,6 +338,360 @@
                                     )
                                     (ImplicitDeallocate
                                         [(Var 9 build_dirs)]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            build_package_targets:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            1_build_target_ptr_ptr:
+                                                (ExternalSymbol
+                                                    13
+                                                    1_build_target_ptr_ptr
+                                                    6 ptr
+                                                    build_target_ptr
+                                                    []
+                                                    ptr
+                                                    Public
+                                                ),
+                                            __1targets:
+                                                (Variable
+                                                    13
+                                                    __1targets
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            __2targets:
+                                                (Variable
+                                                    13
+                                                    __2targets
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            associate_block:
+                                                (AssociateBlock
+                                                    (SymbolTable
+                                                        14
+                                                        {
+                                                            1_build_target_t_output_dir:
+                                                                (ExternalSymbol
+                                                                    14
+                                                                    1_build_target_t_output_dir
+                                                                    7 output_dir
+                                                                    build_target_t
+                                                                    []
+                                                                    output_dir
+                                                                    Public
+                                                                ),
+                                                            1_string_t_s:
+                                                                (ExternalSymbol
+                                                                    14
+                                                                    1_string_t_s
+                                                                    5 s
+                                                                    string_t
+                                                                    []
+                                                                    s
+                                                                    Public
+                                                                ),
+                                                            target:
+                                                                (Variable
+                                                                    14
+                                                                    target
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Pointer
+                                                                        (Struct
+                                                                            2 build_target_t
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    associate_block
+                                                    [(=
+                                                        (Var 14 target)
+                                                        (StructInstanceMember
+                                                            (ArrayItem
+                                                                (Var 13 targets)
+                                                                [(()
+                                                                (Var 13 i)
+                                                                ())]
+                                                                (Struct
+                                                                    2 build_target_ptr
+                                                                )
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            9 1_build_target_ptr_ptr
+                                                            (Pointer
+                                                                (Struct
+                                                                    2 build_target_t
+                                                                )
+                                                            )
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (StructInstanceMember
+                                                            (Var 13 temp)
+                                                            12 1_string_t_s
+                                                            (Character 1 -2 ())
+                                                            ()
+                                                        )
+                                                        (StructInstanceMember
+                                                            (Var 14 target)
+                                                            12 1_build_target_t_output_dir
+                                                            (Character 1 -2 ())
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Allocate
+                                                        [((Var 13 build_dirs)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 2 (Integer 4)))])]
+                                                        ()
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 13 build_dirs)
+                                                        (ArrayConstant
+                                                            [(Var 13 build_dirs)
+                                                            (Var 13 temp)]
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Struct
+                                                                        2 string_t
+                                                                    )
+                                                                    [((IntegerConstant 1 (Integer 4))
+                                                                    (IntegerConstant 2 (Integer 4)))]
+                                                                )
+                                                            )
+                                                            ColMajor
+                                                        )
+                                                        ()
+                                                    )]
+                                                ),
+                                            build_dirs:
+                                                (Variable
+                                                    13
+                                                    build_dirs
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 string_t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    13
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    13
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            model:
+                                                (Variable
+                                                    13
+                                                    model
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 fpm_model_t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            targets:
+                                                (Variable
+                                                    13
+                                                    targets
+                                                    [__1targets
+                                                    __2targets]
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Struct
+                                                            2 build_target_ptr
+                                                        )
+                                                        [((Var 13 __1targets)
+                                                        (Var 13 __2targets))]
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            temp:
+                                                (Variable
+                                                    13
+                                                    temp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Struct
+                                                        2 string_t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            verbose:
+                                                (Variable
+                                                    13
+                                                    verbose
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    build_package_targets
+                                    (FunctionType
+                                        [(Array
+                                            (Struct
+                                                2 build_target_ptr
+                                            )
+                                            [(()
+                                            ())]
+                                        )
+                                        (Struct
+                                            2 fpm_model_t
+                                        )
+                                        (Logical 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ""
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 13 targets)
+                                    (Var 13 __1targets)
+                                    (Var 13 __2targets)
+                                    (Var 13 model)
+                                    (Var 13 verbose)]
+                                    [(Allocate
+                                        [((Var 13 build_dirs)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 0 (Integer 4)))])]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 13 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (ArraySize
+                                            (Var 13 targets)
+                                            ()
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ())
+                                        [(AssociateBlockCall
+                                            9 associate_block
+                                        )]
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 13 build_dirs)]
                                     )]
                                     ()
                                     Public
@@ -355,7 +714,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 2 build_target_t
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -363,7 +721,6 @@
                                                         (Pointer
                                                             (Struct
                                                                 2 build_target_t
-                                                                []
                                                             )
                                                         )
                                                     )
@@ -371,7 +728,6 @@
                                                     (Pointer
                                                         (Struct
                                                             2 build_target_t
-                                                            []
                                                         )
                                                     )
                                                     ()
@@ -404,8 +760,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -449,7 +807,6 @@
                                                     Default
                                                     (Struct
                                                         2 fpm_model_t
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -468,7 +825,6 @@
                                                     Default
                                                     (Struct
                                                         2 fpm_build_settings
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -484,11 +840,15 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Struct
-                                                        2 build_target_ptr
-                                                        [(()
-                                                        ())]
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Struct
+                                                                2 build_target_ptr
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -501,7 +861,6 @@
                                     (FunctionType
                                         [(Struct
                                             2 fpm_build_settings
-                                            []
                                         )]
                                         ()
                                         Source
@@ -514,17 +873,30 @@
                                         .false.
                                         .false.
                                     )
-                                    [build_package]
+                                    [build_package_targets]
                                     [(Var 10 settings)]
                                     [(SubroutineCall
-                                        2 build_package
-                                        ()
+                                        2 build_package_targets
+                                        2 build_package_targets
                                         [((Var 10 targets))
+                                        ((ArrayBound
+                                            (Var 10 targets)
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
+                                            LBound
+                                            ()
+                                        ))
+                                        ((ArraySize
+                                            (Var 10 targets)
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
+                                            ()
+                                        ))
                                         ((Var 10 model))
                                         ((StructInstanceMember
                                             (Var 10 settings)
                                             10 1_fpm_cmd_settings_verbose
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         ))]
                                         ()
@@ -568,14 +940,14 @@
                                                     Local
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     (LogicalConstant
                                                         .true.
-                                                        (Logical 4 [])
+                                                        (Logical 4)
                                                     )
                                                     Save
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -623,8 +995,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public

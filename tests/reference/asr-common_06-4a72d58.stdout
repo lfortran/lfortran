@@ -37,8 +37,11 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                                                    (IntegerConstant 209 (Integer 4 [])))])
+                                                    (Array
+                                                        (Real 8)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (IntegerConstant 209 (Integer 4)))]
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -67,7 +70,6 @@
                                     Default
                                     (Struct
                                         3 ls0001
-                                        []
                                     )
                                     ()
                                     Source

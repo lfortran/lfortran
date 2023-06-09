@@ -14,14 +14,14 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 16 (Integer 4 []))
+                                        (IntegerConstant 16 (Integer 4))
                                         IntegerToInteger
-                                        (Integer 8 [])
-                                        (IntegerConstant 16 (Integer 8 []))
+                                        (Integer 8)
+                                        (IntegerConstant 16 (Integer 8))
                                     )
-                                    (IntegerConstant 16 (Integer 8 []))
+                                    (IntegerConstant 16 (Integer 8))
                                     Save
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -34,10 +34,10 @@
                                     epsisp
                                     []
                                     Local
-                                    (IntegerConstant 16 (Integer 4 []))
-                                    (IntegerConstant 16 (Integer 4 []))
+                                    (IntegerConstant 16 (Integer 4))
+                                    (IntegerConstant 16 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -53,21 +53,21 @@
                                     (Cast
                                         (RealConstant
                                             0.000001
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             0.000001
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
                                     (RealConstant
                                         0.000001
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Save
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -82,14 +82,14 @@
                                     Local
                                     (RealConstant
                                         0.000001
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         0.000001
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -103,14 +103,14 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4 []))
+                                        (IntegerConstant 5 (Integer 4))
                                         IntegerToInteger
-                                        (Integer 8 [])
-                                        (IntegerConstant 5 (Integer 8 []))
+                                        (Integer 8)
+                                        (IntegerConstant 5 (Integer 8))
                                     )
-                                    (IntegerConstant 5 (Integer 8 []))
+                                    (IntegerConstant 5 (Integer 8))
                                     Save
-                                    (Integer 8 [])
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -123,10 +123,10 @@
                                     ixsp
                                     []
                                     Local
-                                    (IntegerConstant 5 (Integer 4 []))
-                                    (IntegerConstant 5 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -142,21 +142,21 @@
                                     (Cast
                                         (RealConstant
                                             5.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             5.500000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
                                     (RealConstant
                                         5.500000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Save
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -171,14 +171,14 @@
                                     Local
                                     (RealConstant
                                         5.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         5.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -248,14 +248,14 @@
                                 2 sign
                                 [((RealConstant
                                     1.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 ))
                                 ((Var 2 epsrsp))]
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                                 ()
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -275,18 +275,18 @@
                                     Sub
                                     (RealConstant
                                         5.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 epsrsp)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -304,18 +304,18 @@
                                 2 sign
                                 [((RealConstant
                                     1.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 ))
                                 ((RealUnaryMinus
                                     (Var 2 epsrsp)
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 ))]
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                                 ()
                             )
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )
                         ()
@@ -335,18 +335,18 @@
                                     Add
                                     (RealConstant
                                         5.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 epsrsp)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -364,14 +364,14 @@
                                 2 sign
                                 [((RealConstant
                                     1.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 ))
                                 ((Var 2 epsrdp))]
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                                 ()
                             )
-                            (Real 8 [])
+                            (Real 8)
                             ()
                         )
                         ()
@@ -392,25 +392,25 @@
                                     (Cast
                                         (RealConstant
                                             5.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             5.500000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (Var 2 epsrdp)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -428,18 +428,18 @@
                                 2 sign
                                 [((RealConstant
                                     1.000000
-                                    (Real 8 [])
+                                    (Real 8)
                                 ))
                                 ((RealUnaryMinus
                                     (Var 2 epsrdp)
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 ))]
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                                 ()
                             )
-                            (Real 8 [])
+                            (Real 8)
                             ()
                         )
                         ()
@@ -460,25 +460,25 @@
                                     (Cast
                                         (RealConstant
                                             5.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             5.500000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                 )]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             )
                             Gt
                             (Var 2 epsrdp)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -494,13 +494,13 @@
                             (FunctionCall
                                 2 sign@signi32
                                 2 sign
-                                [((IntegerConstant 1 (Integer 4 [])))
+                                [((IntegerConstant 1 (Integer 4)))
                                 ((Var 2 epsisp))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -515,8 +515,8 @@
                         (IntegerCompare
                             (Var 2 ixsp)
                             NotEq
-                            (IntegerConstant 5 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 5 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -532,13 +532,13 @@
                             (FunctionCall
                                 2 sign@signi64
                                 2 sign
-                                [((IntegerConstant 1 (Integer 8 [])))
+                                [((IntegerConstant 1 (Integer 8)))
                                 ((Var 2 epsidp))]
-                                (Integer 8 [])
+                                (Integer 8)
                                 ()
                                 ()
                             )
-                            (Integer 8 [])
+                            (Integer 8)
                             ()
                         )
                         ()
@@ -554,12 +554,12 @@
                             (Var 2 ixdp)
                             NotEq
                             (Cast
-                                (IntegerConstant 5 (Integer 4 []))
+                                (IntegerConstant 5 (Integer 4))
                                 IntegerToInteger
-                                (Integer 8 [])
-                                (IntegerConstant 5 (Integer 8 []))
+                                (Integer 8)
+                                (IntegerConstant 5 (Integer 8))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

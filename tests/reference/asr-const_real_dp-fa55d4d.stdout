@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -64,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -78,7 +78,7 @@
                         (Var 2 zero)
                         (RealConstant
                             0.000000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -87,13 +87,13 @@
                         (Cast
                             (RealConstant
                                 1.050000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             RealToReal
-                            (Real 8 [])
+                            (Real 8)
                             (RealConstant
                                 1.050000
-                                (Real 8 [])
+                                (Real 8)
                             )
                         )
                         ()
@@ -102,7 +102,7 @@
                         (Var 2 v)
                         (RealConstant
                             1.050000
-                            (Real 8 [])
+                            (Real 8)
                         )
                         ()
                     )
@@ -110,7 +110,7 @@
                         (Var 2 x)
                         (RealConstant
                             1.050000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )

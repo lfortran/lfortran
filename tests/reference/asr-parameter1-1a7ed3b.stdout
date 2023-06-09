@@ -36,7 +36,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -52,7 +52,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -68,7 +68,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -84,7 +84,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -100,7 +100,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public
@@ -133,24 +133,24 @@
                                 Abs
                                 [(Var 2 three)]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             ))
                             ((IntrinsicFunction
                                 Abs
                                 [(Var 2 two)]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             ))
                             ((IntrinsicFunction
                                 Abs
                                 [(Var 2 p66)]
                                 0
-                                (Real 8 [])
+                                (Real 8)
                                 ()
                             ))]
-                            (Real 8 [])
+                            (Real 8)
                             ()
                             ()
                         )

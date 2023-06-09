@@ -8,7 +8,7 @@ function main()
     local d::Float32 =   2.00000000000000000e+00
     local dp::Float32 =   2.00000000000000000e+00
     local grade_fixed::String = "B"
-    local marks::Int32 = 0
+    local marks::Int32
     local marks_fixed::Int32 = 94
     if grade_fixed == "A"
         println("Excellent!")

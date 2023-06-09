@@ -16,15 +16,15 @@
                                     (Cast
                                         (RealConstant
                                             5.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                         RealToInteger
-                                        (Integer 4 [])
-                                        (IntegerConstant 5 (Integer 4 []))
+                                        (Integer 4)
+                                        (IntegerConstant 5 (Integer 4))
                                     )
-                                    (IntegerConstant 5 (Integer 4 []))
+                                    (IntegerConstant 5 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -38,20 +38,20 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4 []))
+                                        (IntegerConstant 5 (Integer 4))
                                         IntegerToReal
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             5.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
                                     (RealConstant
                                         5.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Parameter
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -65,20 +65,20 @@
                                     []
                                     Local
                                     (Cast
-                                        (IntegerConstant 5 (Integer 4 []))
+                                        (IntegerConstant 5 (Integer 4))
                                         IntegerToReal
-                                        (Real 8 [])
+                                        (Real 8)
                                         (RealConstant
                                             5.000000
-                                            (Real 8 [])
+                                            (Real 8)
                                         )
                                     )
                                     (RealConstant
                                         5.000000
-                                        (Real 8 [])
+                                        (Real 8)
                                     )
                                     Parameter
-                                    (Real 8 [])
+                                    (Real 8)
                                     ()
                                     Source
                                     Public

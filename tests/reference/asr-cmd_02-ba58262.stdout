@@ -42,7 +42,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 255 () [])
+                                    (Character 1 255 ())
                                     ()
                                     Source
                                     Public
@@ -53,7 +53,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    31 len_trim
+                                    30 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -63,7 +63,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    31 trim
+                                    30 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
@@ -77,7 +77,7 @@
                         ()
                         [((StringConstant
                             "HOME"
-                            (Character 1 4 () [])
+                            (Character 1 4 ())
                         ))
                         ((Var 2 homedir))
                         (())
@@ -95,10 +95,10 @@
                                 2 len_trim
                                 ()
                                 [((Var 2 homedir))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
-                            ) [])
+                            ))
                             ()
                             ()
                         )]
@@ -110,7 +110,7 @@
                         ()
                         [((StringConstant
                             "printenv"
-                            (Character 1 8 () [])
+                            (Character 1 8 ())
                         ))
                         (())
                         (())

@@ -74,7 +74,6 @@ struct IntrinsicProcedures {
         comptime_eval_map = {
             // Arguments can be evaluated or not
             {"kind", {m_kind, &eval_kind, false}},
-            {"tiny", {m_builtin, &eval_tiny, false}},
             // real and int get transformed into ExplicitCast
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
@@ -115,6 +114,7 @@ struct IntrinsicProcedures {
             {"zexp", {m_math, &eval_zexp, true}},
             {"range", {m_math, &eval_range, false}},
             {"epsilon", {m_math, &eval_epsilon, false}},
+            {"tiny", {m_math, &eval_tiny, false}},
             {"log", {m_math, &eval_log, true}},
             {"alog", {m_math, &eval_alog, true}},
             {"slog", {m_math, &eval_slog, true}},
@@ -308,8 +308,7 @@ struct IntrinsicProcedures {
             }
         }
         ASR::ttype_t *type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc,
-                    4, nullptr, 0));
+                ASR::make_Integer_t(al, loc, 4));
         return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc,
                 kind_num, type));
     }
@@ -330,7 +329,7 @@ struct IntrinsicProcedures {
                 break;
             }
         }
-        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, bit_size_val, int32_type));
     }
 
@@ -343,7 +342,7 @@ struct IntrinsicProcedures {
         ASR::Integer_t* arg_int_type = ASR::down_cast<ASR::Integer_t>(arg_type);
         ASR::IntegerConstant_t* arg_int = ASR::down_cast<ASR::IntegerConstant_t>(arg);
         int64_t not_arg = ~(arg_int->m_n);
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, arg_int_type->m_kind, nullptr, 0));
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, arg_int_type->m_kind));
         return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, not_arg, int_type));
     }
 
@@ -389,7 +388,7 @@ struct IntrinsicProcedures {
             double rv = ASR::down_cast<ASR::RealConstant_t>(func_expr)->m_r;
             int64_t ival = floor(rv);
             ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+                    ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, type));
         } else {
             throw SemanticError("floor must have one real argument", loc);
@@ -405,7 +404,7 @@ struct IntrinsicProcedures {
             double rv = ASR::down_cast<ASR::RealConstant_t>(func_expr)->m_r;
             int64_t ival = ceil(rv);
             ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+                    ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, type));
         } else {
             throw SemanticError("floor must have one real argument", loc);
@@ -420,7 +419,7 @@ struct IntrinsicProcedures {
             double rv = ASR::down_cast<ASR::RealConstant_t>(func_expr)->m_r;
             int64_t ival = round(rv);
             ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+                    ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, type));
         } else {
             throw SemanticError("nint must have one real argument", loc);
@@ -507,7 +506,7 @@ struct IntrinsicProcedures {
             int64_t rv2 = ASR::down_cast<ASR::IntegerConstant_t>(trig_arg2)->m_n;
             int64_t val = eval2_int(rv1, rv2);
             ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+                    ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
         } else {
             throw SemanticError("Arguments for this intrinsic function must be Real or Integer", loc);
@@ -590,8 +589,7 @@ TRIG2(sqrt, dsqrt)
         LCOMPILERS_ASSERT(arg_value->type == ASR::exprType::StringConstant);
         ASR::StringConstant_t *value_str = ASR::down_cast<ASR::StringConstant_t>(arg_value);
         int64_t len_str = to_lower(value_str->m_s).length();
-        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
-                                                        4, nullptr, 0));
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, len_str, type));
     }
 
@@ -747,7 +745,7 @@ TRIG2(sqrt, dsqrt)
         } else {
             throw SemanticError("Argument of the range function must be Integer, Real or Complex", loc);
         }
-        ASR::ttype_t* tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+        ASR::ttype_t* tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, range_val, tmp_int_type));;
     }
 
@@ -773,7 +771,7 @@ TRIG2(sqrt, dsqrt)
         ASR::expr_t* int_expr = args[0];
         if( int_expr->type == ASR::exprType::IntegerBOZ ) {
             ASR::IntegerBOZ_t *boz_expr = ASR::down_cast<ASR::IntegerBOZ_t>(int_expr);
-            ASR::ttype_t* tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+            ASR::ttype_t* tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, boz_expr->m_v, tmp_int_type));;
         }
         ASR::ttype_t* int_type = ASRUtils::expr_type(int_expr);
@@ -824,7 +822,7 @@ TRIG2(sqrt, dsqrt)
             char *str_val = s.c_str(al);
             // TODO: Should be 0 for char(0) but we store it as 1
             ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_Character_t(al,
-                loc, 1, 1, nullptr, nullptr, 0));
+                loc, 1, 1, nullptr));
             return ASR::down_cast<ASR::expr_t>(
                 ASR::make_StringConstant_t(al, loc,
                 str_val, str_type));
@@ -840,8 +838,7 @@ TRIG2(sqrt, dsqrt)
         if (ASR::is_a<ASR::Integer_t>(*int_type)) {
             int64_t c = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(int_expr))->m_n;
             ASR::ttype_t* str_type =
-                ASRUtils::TYPE(ASR::make_Character_t(al,
-                loc, 1, 1, nullptr, nullptr, 0));
+                ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, 1, nullptr));
             char cc = c;
             std::string svalue;
             svalue += cc;
@@ -863,8 +860,7 @@ TRIG2(sqrt, dsqrt)
         if (ASR::is_a<ASR::Character_t>(*char_type)) {
             char* c = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(char_expr))->m_s;
             ASR::ttype_t* int_type =
-                ASRUtils::TYPE(ASR::make_Integer_t(al,
-                loc, 4, nullptr, 0));
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(
                 ASR::make_IntegerConstant_t(al, loc,
                 c[0], int_type));
@@ -940,8 +936,7 @@ TRIG2(sqrt, dsqrt)
                 a_kind = 8;
             }
             ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc,
-                        4, nullptr, 0));
+                    ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(
                 ASR::make_IntegerConstant_t(al, loc,
                 a_kind, type));
@@ -965,8 +960,7 @@ TRIG2(sqrt, dsqrt)
                 a_kind = 8;
             }
             ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc,
-                        4, nullptr, 0));
+                    ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(
                 ASR::make_IntegerConstant_t(al, loc,
                 a_kind, type));
@@ -980,8 +974,7 @@ TRIG2(sqrt, dsqrt)
         ASR::ttype_t* real_type = ASRUtils::expr_type(real_expr);
         if (ASR::is_a<ASR::Character_t>(*real_type)) {
             ASR::ttype_t *type = ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc,
-                        4, nullptr, 0));
+                    ASR::make_Integer_t(al, loc, 4));
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc,
                     1, type));
         } else {
@@ -1004,12 +997,12 @@ TRIG2(sqrt, dsqrt)
             if (t1_kind == 4 && pos >= 0 && pos < 32) {
                 int32_t i = ASR::down_cast<ASR::IntegerConstant_t>(arg1)->m_n;
                 int32_t val = IntrinsicProcedures::lfortran_ibclr32(i, pos);
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind, nullptr, 0));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind));
                 return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
             } else if (t1_kind == 8 && pos >= 0 && pos < 64) {
                 int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(arg1)->m_n;
                 int64_t val = IntrinsicProcedures::lfortran_ibclr64(i, pos);
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind, nullptr, 0));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind));
                 return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
             } else {
                 throw SemanticError("ibclr(i, pos) for pos < 0 or pos >= bit_size(i) is not allowed", loc);
@@ -1034,12 +1027,12 @@ TRIG2(sqrt, dsqrt)
             if (t1_kind == 4 && pos >= 0 && pos < 32) {
                 int32_t i = ASR::down_cast<ASR::IntegerConstant_t>(arg1)->m_n;
                 int32_t val = IntrinsicProcedures::lfortran_ibset32(i, pos);
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind, nullptr, 0));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind));
                 return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
             } else if (t1_kind == 8 && pos >= 0 && pos < 64) {
                 int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(arg1)->m_n;
                 int64_t val = IntrinsicProcedures::lfortran_ibset64(i, pos);
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind, nullptr, 0));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind));
                 return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
             } else {
                 throw SemanticError("ibset(i, pos) for pos < 0 or pos >= bit_size(i) is not allowed", loc);
@@ -1065,13 +1058,13 @@ TRIG2(sqrt, dsqrt)
                 int32_t x = ASR::down_cast<ASR::IntegerConstant_t>(arg1)->m_n;
                 int32_t y = ASR::down_cast<ASR::IntegerConstant_t>(arg2)->m_n;
                 int32_t val = IntrinsicProcedures::lfortran_ieor32(x, y);
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind, nullptr, 0));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind));
                 return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
             } else if (t1_kind == 8 && t2_kind == 8) {
                 int64_t x = ASR::down_cast<ASR::IntegerConstant_t>(arg1)->m_n;
                 int64_t y = ASR::down_cast<ASR::IntegerConstant_t>(arg2)->m_n;
                 int64_t val = IntrinsicProcedures::lfortran_ieor64(x, y);
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind, nullptr, 0));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, t1_kind));
                 return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
             } else {
                 throw SemanticError("ieor(x, y): x and y should have the same kind type", loc);
@@ -1176,7 +1169,7 @@ TRIG2(sqrt, dsqrt)
                         val = x;
                     }
                     ASR::ttype_t *type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, loc, t1_kind, nullptr, 0)
+                        ASR::make_Integer_t(al, loc, t1_kind)
                     );
                     return ASR::down_cast<ASR::expr_t>(
                         ASR::make_IntegerConstant_t(al, loc, val, type)
@@ -1205,7 +1198,7 @@ TRIG2(sqrt, dsqrt)
                         val = x;
                     }
                     ASR::ttype_t *type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, loc, t1_kind, nullptr, 0)
+                        ASR::make_Integer_t(al, loc, t1_kind)
                     );
                     return ASR::down_cast<ASR::expr_t>(
                         ASR::make_IntegerConstant_t(al, loc, val, type)

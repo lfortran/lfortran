@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -69,7 +69,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 6 () [])
+                                                    (Character 1 6 ())
                                                     ()
                                                     BindC
                                                     Public
@@ -85,7 +85,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -101,7 +101,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -111,9 +111,9 @@
                                         })
                                     prinf
                                     (FunctionType
-                                        [(Character 1 6 () [])
-                                        (Integer 4 [])
-                                        (Integer 4 [])]
+                                        [(Character 1 6 ())
+                                        (Integer 4)
+                                        (Integer 4)]
                                         ()
                                         BindC
                                         Interface
@@ -145,7 +145,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -161,7 +161,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -177,7 +177,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -187,11 +187,11 @@
                         })
                     idd_frm
                     (FunctionType
-                        [(Integer 4 [])
-                        (Integer 4 [])
-                        (Integer 4 [])
-                        (Integer 4 [])
-                        (Integer 4 [])]
+                        [(Integer 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)]
                         ()
                         Source
                         Implementation
@@ -214,10 +214,10 @@
                         ()
                         [((StringConstant
                             "lw = *"
-                            (Character 1 6 () [])
+                            (Character 1 6 ())
                         ))
                         ((Var 2 lw))
-                        ((IntegerConstant 1 (Integer 4 [])))]
+                        ((IntegerConstant 1 (Integer 4)))]
                         ()
                     )
                     (SubroutineCall
@@ -225,22 +225,22 @@
                         ()
                         [((StringConstant
                             "16m+70 = *"
-                            (Character 1 10 () [])
+                            (Character 1 10 ())
                         ))
                         ((IntegerBinOp
                             (IntegerBinOp
-                                (IntegerConstant 16 (Integer 4 []))
+                                (IntegerConstant 16 (Integer 4))
                                 Mul
                                 (Var 2 m)
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )
                             Add
-                            (IntegerConstant 70 (Integer 4 []))
-                            (Integer 4 [])
+                            (IntegerConstant 70 (Integer 4))
+                            (Integer 4)
                             ()
                         ))
-                        ((IntegerConstant 1 (Integer 4 [])))]
+                        ((IntegerConstant 1 (Integer 4)))]
                         ()
                     )
                     (Return)]

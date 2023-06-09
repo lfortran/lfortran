@@ -22,7 +22,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 32 () [])
+                                    (Character 1 32 ())
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -71,10 +71,10 @@
                                     i
                                     []
                                     Local
-                                    (IntegerConstant 0 (Integer 4 []))
-                                    (IntegerConstant 0 (Integer 4 []))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -85,7 +85,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    31 len_trim
+                                    30 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -95,7 +95,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    31 trim
+                                    30 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim
@@ -110,7 +110,7 @@
                             2 command_argument_count
                             ()
                             []
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )
@@ -120,7 +120,7 @@
                         ()
                         [(StringConstant
                             "count: "
-                            (Character 1 7 () [])
+                            (Character 1 7 ())
                         )
                         (Var 2 count)]
                         ()
@@ -145,10 +145,10 @@
                                 2 len_trim
                                 ()
                                 [((Var 2 arg))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
-                            ) [])
+                            ))
                             ()
                             ()
                         )]

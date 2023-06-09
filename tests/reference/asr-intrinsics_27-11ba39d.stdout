@@ -16,18 +16,21 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerUnaryMinus
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant -1 (Integer 4 []))
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4))
+                                        )
+                                        (IntegerConstant 3 (Integer 4)))
+                                        ((IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4))
+                                        )
+                                        (IntegerConstant 4 (Integer 4)))]
                                     )
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerUnaryMinus
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant -1 (Integer 4 []))
-                                    )
-                                    (IntegerConstant 4 (Integer 4 [])))])
                                     ()
                                     Source
                                     Public
@@ -53,7 +56,7 @@
                             2 shape
                             ()
                             [((Var 2 a))]
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                             ()
                         )]
@@ -66,14 +69,14 @@
                             (FunctionCall
                                 2 shape
                                 ()
-                                [((IntegerConstant 42 (Integer 4 [])))]
-                                (Integer 4 [])
+                                [((IntegerConstant 42 (Integer 4)))]
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             ()
-                            (Integer 4 [])
-                            (IntegerConstant 1 (Integer 4 []))
+                            (Integer 4)
+                            (IntegerConstant 1 (Integer 4))
                         )]
                         ()
                         ()

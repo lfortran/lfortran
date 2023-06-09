@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -32,7 +32,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -53,7 +53,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 6 () [])
+                                                    (Character 1 6 ())
                                                     ()
                                                     BindC
                                                     Public
@@ -69,7 +69,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     BindC
                                                     Public
@@ -79,8 +79,8 @@
                                         })
                                     prinf
                                     (FunctionType
-                                        [(Character 1 6 () [])
-                                        (Integer 4 [])]
+                                        [(Character 1 6 ())
+                                        (Integer 4)]
                                         ()
                                         BindC
                                         Interface
@@ -105,7 +105,7 @@
                         })
                     idd_frm
                     (FunctionType
-                        [(Integer 4 [])]
+                        [(Integer 4)]
                         ()
                         Source
                         Implementation
@@ -121,7 +121,7 @@
                     [(Var 2 m)]
                     [(=
                         (Var 2 a)
-                        (IntegerConstant 2 (Integer 4 []))
+                        (IntegerConstant 2 (Integer 4))
                         ()
                     )
                     (SubroutineCall
@@ -129,9 +129,9 @@
                         ()
                         [((StringConstant
                             "lw = *"
-                            (Character 1 6 () [])
+                            (Character 1 6 ())
                         ))
-                        ((IntegerConstant 1 (Integer 4 [])))]
+                        ((IntegerConstant 1 (Integer 4)))]
                         ()
                     )
                     (SubroutineCall
@@ -139,14 +139,14 @@
                         ()
                         [((StringConstant
                             "16m+70 = *"
-                            (Character 1 10 () [])
+                            (Character 1 10 ())
                         ))
-                        ((IntegerConstant 1 (Integer 4 [])))]
+                        ((IntegerConstant 1 (Integer 4)))]
                         ()
                     )
                     (=
                         (Var 2 m)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (Return)]

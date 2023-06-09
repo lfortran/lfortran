@@ -33,7 +33,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -50,7 +49,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 () [])
+                                                    (Character 1 -1 ())
                                                     ()
                                                     Source
                                                     Public
@@ -62,9 +61,8 @@
                                     (FunctionType
                                         [(Struct
                                             2 string_type
-                                            []
                                         )
-                                        (Character 1 -1 () [])]
+                                        (Character 1 -1 ())]
                                         ()
                                         Source
                                         Implementation
@@ -83,7 +81,7 @@
                                         (StructInstanceMember
                                             (Var 4 lhs)
                                             4 1_string_type_raw
-                                            (Character 1 -2 () [])
+                                            (Character 1 -2 ())
                                             ()
                                         )
                                         (Var 4 rhs)
@@ -108,8 +106,10 @@
                                                     Local
                                                     ()
                                                     ()
-                                                    Allocatable
-                                                    (Character 1 -2 () [])
+                                                    Default
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                     Source
                                                     Public
@@ -153,7 +153,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -172,7 +171,6 @@
                                                     Default
                                                     (Struct
                                                         2 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -185,11 +183,9 @@
                                     (FunctionType
                                         [(Struct
                                             2 string_type
-                                            []
                                         )]
                                         (Struct
                                             2 string_type
-                                            []
                                         )
                                         Source
                                         Implementation
@@ -208,7 +204,7 @@
                                         (StructInstanceMember
                                             (Var 5 string)
                                             5 1_string_type_raw
-                                            (Character 1 -2 () [])
+                                            (Character 1 -2 ())
                                             ()
                                         )
                                         (SubroutineCall
@@ -218,7 +214,7 @@
                                             ((StructInstanceMember
                                                 (Var 5 string)
                                                 5 1_string_type_raw
-                                                (Character 1 -2 () [])
+                                                (Character 1 -2 ())
                                                 ()
                                             ))]
                                             ()
@@ -274,7 +270,6 @@
                                                     Default
                                                     (Struct
                                                         6 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -291,7 +286,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -309,7 +304,6 @@
                                                     Default
                                                     (Struct
                                                         6 string_type
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -332,11 +326,9 @@
                                     (FunctionType
                                         [(Struct
                                             6 string_type
-                                            []
                                         )]
                                         (Struct
                                             6 string_type
-                                            []
                                         )
                                         Source
                                         Implementation

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -28,18 +28,18 @@
                     []
                     [(=
                         (Var 2 x)
-                        (IntegerConstant 24 (Integer 4 []))
+                        (IntegerConstant 24 (Integer 4))
                         ()
                     )
                     (Print
                         ()
                         [(StringConstant
                             ""
-                            (Character 1 0 () [])
+                            (Character 1 0 ())
                         )
                         (StringConstant
                             "x is "
-                            (Character 1 5 () [])
+                            (Character 1 5 ())
                         )
                         (Var 2 x)]
                         ()
@@ -54,11 +54,11 @@
                         ()
                         [(StringConstant
                             ""
-                            (Character 1 0 () [])
+                            (Character 1 0 ())
                         )
                         (StringConstant
                             "x is "
-                            (Character 1 5 () [])
+                            (Character 1 5 ())
                         )
                         (Var 2 x)]
                         ()
@@ -68,11 +68,11 @@
                         ()
                         [(StringConstant
                             ""
-                            (Character 1 0 () [])
+                            (Character 1 0 ())
                         )
                         (StringConstant
                             "ok"
-                            (Character 1 2 () [])
+                            (Character 1 2 ())
                         )]
                         ()
                         ()
@@ -86,11 +86,11 @@
                         ()
                         [(StringConstant
                             ""
-                            (Character 1 0 () [])
+                            (Character 1 0 ())
                         )
                         (StringConstant
                             "ok"
-                            (Character 1 2 () [])
+                            (Character 1 2 ())
                         )]
                         ()
                         ()

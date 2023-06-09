@@ -13,10 +13,10 @@
                                     a
                                     []
                                     Local
-                                    (IntegerConstant 10 (Integer 4 []))
-                                    (IntegerConstant 10 (Integer 4 []))
+                                    (IntegerConstant 10 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -30,13 +30,13 @@
                                     []
                                     Local
                                     (IntegerUnaryMinus
-                                        (IntegerConstant 20 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant -20 (Integer 4 []))
+                                        (IntegerConstant 20 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant -20 (Integer 4))
                                     )
-                                    (IntegerConstant -20 (Integer 4 []))
+                                    (IntegerConstant -20 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -49,10 +49,10 @@
                                     c
                                     []
                                     Local
-                                    (IntegerConstant 30 (Integer 4 []))
-                                    (IntegerConstant 30 (Integer 4 []))
+                                    (IntegerConstant 30 (Integer 4))
+                                    (IntegerConstant 30 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -66,13 +66,13 @@
                                     []
                                     Local
                                     (IntegerUnaryMinus
-                                        (IntegerConstant 40 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant -40 (Integer 4 []))
+                                        (IntegerConstant 40 (Integer 4))
+                                        (Integer 4)
+                                        (IntegerConstant -40 (Integer 4))
                                     )
-                                    (IntegerConstant -40 (Integer 4 []))
+                                    (IntegerConstant -40 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -85,10 +85,10 @@
                                     e
                                     []
                                     Local
-                                    (IntegerConstant 0 (Integer 4 []))
-                                    (IntegerConstant 0 (Integer 4 []))
+                                    (IntegerConstant 0 (Integer 4))
+                                    (IntegerConstant 0 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -101,10 +101,10 @@
                                     f
                                     []
                                     Local
-                                    (IntegerConstant 50 (Integer 4 []))
-                                    (IntegerConstant 50 (Integer 4 []))
+                                    (IntegerConstant 50 (Integer 4))
+                                    (IntegerConstant 50 (Integer 4))
                                     Parameter
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -195,17 +195,17 @@
                                 ((Var 2 d))
                                 ((Var 2 e))
                                 ((Var 2 f))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 40 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant -40 (Integer 4 []))
+                                (IntegerConstant 40 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -40 (Integer 4))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -224,13 +224,13 @@
                                 ((Var 2 d))
                                 ((Var 2 e))
                                 ((Var 2 f))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 50 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 50 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -245,16 +245,16 @@
                                 2 max
                                 [((Var 2 a))
                                 ((Var 2 b))]
-                                (Integer 4 [])
-                                (IntegerConstant 10 (Integer 4 []))
+                                (Integer 4)
+                                (IntegerConstant 10 (Integer 4))
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 10 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 10 (Integer 4))
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -269,20 +269,20 @@
                                 2 min
                                 [((Var 2 a))
                                 ((Var 2 b))]
-                                (Integer 4 [])
-                                (IntegerConstant -20 (Integer 4 []))
+                                (Integer 4)
+                                (IntegerConstant -20 (Integer 4))
                                 ()
                             )
                             NotEq
                             (IntegerUnaryMinus
-                                (IntegerConstant 20 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant -20 (Integer 4 []))
+                                (IntegerConstant 20 (Integer 4))
+                                (Integer 4)
+                                (IntegerConstant -20 (Integer 4))
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             (LogicalConstant
                                 .false.
-                                (Logical 4 [])
+                                (Logical 4)
                             )
                         )
                         [(ErrorStop
@@ -298,13 +298,13 @@
                                 [((Var 2 a))
                                 ((Var 2 b))
                                 ((Var 2 c))]
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             NotEq
-                            (IntegerConstant 30 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 30 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

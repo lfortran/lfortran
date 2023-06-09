@@ -98,7 +98,6 @@
                                     Default
                                     (Struct
                                         6 rectangle
-                                        []
                                     )
                                     ()
                                     Source
@@ -137,7 +136,6 @@
                                     Default
                                     (Struct
                                         6 shape
-                                        []
                                     )
                                     ()
                                     Source
@@ -151,25 +149,25 @@
                     [(SubroutineCall
                         6 1_initialize
                         ()
-                        [((IntegerConstant 1 (Integer 4 [])))
+                        [((IntegerConstant 1 (Integer 4)))
                         ((LogicalConstant
                             .true.
-                            (Logical 4 [])
+                            (Logical 4)
                         ))
-                        ((IntegerConstant 10 (Integer 4 [])))
-                        ((IntegerConstant 20 (Integer 4 [])))]
+                        ((IntegerConstant 10 (Integer 4)))
+                        ((IntegerConstant 20 (Integer 4)))]
                         (Var 6 shp)
                     )
                     (SubroutineCall
                         6 1_initialize
                         ()
-                        [((IntegerConstant 2 (Integer 4 [])))
+                        [((IntegerConstant 2 (Integer 4)))
                         ((LogicalConstant
                             .false.
-                            (Logical 4 [])
+                            (Logical 4)
                         ))
-                        ((IntegerConstant 100 (Integer 4 [])))
-                        ((IntegerConstant 200 (Integer 4 [])))]
+                        ((IntegerConstant 100 (Integer 4)))
+                        ((IntegerConstant 200 (Integer 4)))]
                         (Var 6 rect)
                     )
                     (Print
@@ -177,25 +175,25 @@
                         [(StructInstanceMember
                             (Var 6 shp)
                             6 1_shape_color
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 shp)
                             6 1_shape_filled
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 shp)
                             6 1_shape_x
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 shp)
                             6 1_shape_y
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -206,25 +204,25 @@
                         [(StructInstanceMember
                             (Var 6 rect)
                             6 1_shape_color
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 rect)
                             6 1_shape_filled
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 rect)
                             6 1_shape_x
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 rect)
                             6 1_shape_y
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -234,20 +232,20 @@
                         (StructInstanceMember
                             (Var 6 rect)
                             6 1_rectangle_length
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
-                        (IntegerConstant 100 (Integer 4 []))
+                        (IntegerConstant 100 (Integer 4))
                         ()
                     )
                     (=
                         (StructInstanceMember
                             (Var 6 rect)
                             6 1_rectangle_width
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
-                        (IntegerConstant 200 (Integer 4 []))
+                        (IntegerConstant 200 (Integer 4))
                         ()
                     )
                     (Print
@@ -255,13 +253,13 @@
                         [(StructInstanceMember
                             (Var 6 rect)
                             6 1_rectangle_length
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )
                         (StructInstanceMember
                             (Var 6 rect)
                             6 1_rectangle_width
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -327,7 +325,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -343,7 +341,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -361,7 +359,6 @@
                                                     Default
                                                     (Class
                                                         2 shape
-                                                        []
                                                     )
                                                     ()
                                                     Source
@@ -378,7 +375,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -394,7 +391,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -406,12 +403,11 @@
                                     (FunctionType
                                         [(Class
                                             2 shape
-                                            []
                                         )
-                                        (Integer 4 [])
-                                        (Logical 4 [])
-                                        (Integer 4 [])
-                                        (Integer 4 [])]
+                                        (Integer 4)
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -433,7 +429,7 @@
                                         (StructInstanceMember
                                             (Var 5 sh)
                                             5 1_shape_color
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         (Var 5 color)
@@ -443,7 +439,7 @@
                                         (StructInstanceMember
                                             (Var 5 sh)
                                             5 1_shape_filled
-                                            (Logical 4 [])
+                                            (Logical 4)
                                             ()
                                         )
                                         (Var 5 filled)
@@ -453,7 +449,7 @@
                                         (StructInstanceMember
                                             (Var 5 sh)
                                             5 1_shape_x
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         (Var 5 x)
@@ -463,7 +459,7 @@
                                         (StructInstanceMember
                                             (Var 5 sh)
                                             5 1_shape_y
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         (Var 5 y)
@@ -489,7 +485,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -505,7 +501,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -538,7 +534,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -554,7 +550,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -580,7 +576,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -596,7 +592,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public

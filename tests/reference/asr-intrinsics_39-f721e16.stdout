@@ -22,7 +22,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 8 () [])
+                                    (Character 1 8 ())
                                     ()
                                     Source
                                     Public
@@ -48,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 10 () [])
+                                    (Character 1 10 ())
                                     ()
                                     Source
                                     Public
@@ -64,8 +64,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 8 (Integer 4 [])))])
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 8 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -81,7 +84,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 5 () [])
+                                    (Character 1 5 ())
                                     ()
                                     Source
                                     Public
@@ -130,7 +133,7 @@
                     (Print
                         (StringConstant
                             "(a,2x,a,2x,a)"
-                            (Character 1 13 () [])
+                            (Character 1 13 ())
                         )
                         [(Var 2 date)
                         (Var 2 time)
@@ -141,7 +144,7 @@
                     (Print
                         (StringConstant
                             "(8i5)"
-                            (Character 1 5 () [])
+                            (Character 1 5 ())
                         )
                         [(Var 2 values)]
                         ()

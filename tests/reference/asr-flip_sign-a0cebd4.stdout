@@ -15,14 +15,14 @@
                                     Local
                                     (RealConstant
                                         0.000001
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     (RealConstant
                                         0.000001
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
                                     Save
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -58,7 +58,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -74,7 +74,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -86,14 +86,14 @@
                     []
                     [(=
                         (Var 2 number)
-                        (IntegerConstant 123 (Integer 4 []))
+                        (IntegerConstant 123 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 x)
                         (RealConstant
                             5.500000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -103,21 +103,21 @@
                                 2 modulo@imodulo
                                 2 modulo
                                 [((Var 2 number))
-                                ((IntegerConstant 2 (Integer 4 [])))]
-                                (Integer 4 [])
+                                ((IntegerConstant 2 (Integer 4)))]
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             Eq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(=
                             (Var 2 x)
                             (RealUnaryMinus
                                 (Var 2 x)
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -134,24 +134,24 @@
                                     (RealUnaryMinus
                                         (RealConstant
                                             5.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             -5.500000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -161,14 +161,14 @@
                     )
                     (=
                         (Var 2 number)
-                        (IntegerConstant 124 (Integer 4 []))
+                        (IntegerConstant 124 (Integer 4))
                         ()
                     )
                     (=
                         (Var 2 x)
                         (RealConstant
                             5.500000
-                            (Real 4 [])
+                            (Real 4)
                         )
                         ()
                     )
@@ -178,21 +178,21 @@
                                 2 modulo@imodulo
                                 2 modulo
                                 [((Var 2 number))
-                                ((IntegerConstant 2 (Integer 4 [])))]
-                                (Integer 4 [])
+                                ((IntegerConstant 2 (Integer 4)))]
+                                (Integer 4)
                                 ()
                                 ()
                             )
                             Eq
-                            (IntegerConstant 1 (Integer 4 []))
-                            (Logical 4 [])
+                            (IntegerConstant 1 (Integer 4))
+                            (Logical 4)
                             ()
                         )
                         [(=
                             (Var 2 x)
                             (RealUnaryMinus
                                 (Var 2 x)
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             ()
@@ -208,18 +208,18 @@
                                     Sub
                                     (RealConstant
                                         5.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (Var 2 eps)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

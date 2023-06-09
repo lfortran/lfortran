@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -33,7 +33,7 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (Integer 4 [])
+                                        (Integer 4)
                                     )
                                     ()
                                     Source
@@ -47,10 +47,10 @@
                                     t1
                                     []
                                     Local
-                                    (IntegerConstant 2 (Integer 4 []))
-                                    (IntegerConstant 2 (Integer 4 []))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -63,10 +63,10 @@
                                     t2
                                     []
                                     Local
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 1 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -88,7 +88,7 @@
                             (Var 2 t1)
                             Gt
                             (Var 2 t2)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(=>
@@ -116,7 +116,7 @@
                             (Var 2 i)
                             Eq
                             (Var 2 t2)
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

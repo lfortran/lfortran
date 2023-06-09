@@ -23,10 +23,10 @@
                                     i
                                     []
                                     Local
-                                    (IntegerConstant 31 (Integer 4 []))
-                                    (IntegerConstant 31 (Integer 4 []))
+                                    (IntegerConstant 31 (Integer 4))
+                                    (IntegerConstant 31 (Integer 4))
                                     Save
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -42,8 +42,8 @@
                             4 all_set
                             ()
                             [((Var 4 i))
-                            ((IntegerConstant 5 (Integer 4 [])))]
-                            (Logical 4 [])
+                            ((IntegerConstant 5 (Integer 4)))]
+                            (Logical 4)
                             ()
                             ()
                         )]
@@ -94,7 +94,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -110,7 +110,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -126,7 +126,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     Source
                                                     Public
@@ -142,7 +142,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4 [])
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -152,9 +152,9 @@
                                         })
                                     all_set
                                     (FunctionType
-                                        [(Integer 4 [])
-                                        (Integer 4 [])]
-                                        (Logical 4 [])
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -172,19 +172,19 @@
                                         (Var 3 res)
                                         (LogicalConstant
                                             .true.
-                                            (Logical 4 [])
+                                            (Logical 4)
                                         )
                                         ()
                                     )
                                     (DoLoop
                                         ()
                                         ((Var 3 pos)
-                                        (IntegerConstant 0 (Integer 4 []))
+                                        (IntegerConstant 0 (Integer 4))
                                         (IntegerBinOp
                                             (Var 3 num_bits)
                                             Sub
-                                            (IntegerConstant 1 (Integer 4 []))
-                                            (Integer 4 [])
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Integer 4)
                                             ()
                                         )
                                         ())
@@ -195,18 +195,18 @@
                                                     3 btest
                                                     [((Var 3 x))
                                                     ((Var 3 pos))]
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                     ()
                                                     ()
                                                 )
-                                                (Logical 4 [])
+                                                (Logical 4)
                                                 ()
                                             )
                                             [(=
                                                 (Var 3 res)
                                                 (LogicalConstant
                                                     .false.
-                                                    (Logical 4 [])
+                                                    (Logical 4)
                                                 )
                                                 ()
                                             )]

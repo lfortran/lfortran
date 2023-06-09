@@ -19,30 +19,39 @@
                                                 [(IntegerBinOp
                                                     (Var 2 j)
                                                     Mul
-                                                    (IntegerConstant 3 (Integer 4 []))
-                                                    (Integer 4 [])
+                                                    (IntegerConstant 3 (Integer 4))
+                                                    (Integer 4)
                                                     ()
                                                 )]
                                                 (Var 2 j)
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (IntegerConstant 3 (Integer 4 []))
+                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4))
                                                 ()
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )]
-                                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 1 (Integer 4 [])))])
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                            )
                                             ColMajor
                                         )
                                         IntegerToReal
-                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 3 (Integer 4 [])))])
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                        )
                                         ()
                                     )
                                     ()
                                     Save
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -61,30 +70,39 @@
                                                 [(IntegerBinOp
                                                     (Var 2 j)
                                                     Mul
-                                                    (IntegerConstant 2 (Integer 4 []))
-                                                    (Integer 4 [])
+                                                    (IntegerConstant 2 (Integer 4))
+                                                    (Integer 4)
                                                     ()
                                                 )]
                                                 (Var 2 j)
-                                                (IntegerConstant 1 (Integer 4 []))
-                                                (IntegerConstant 3 (Integer 4 []))
+                                                (IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4))
                                                 ()
-                                                (Integer 4 [])
+                                                (Integer 4)
                                                 ()
                                             )]
-                                            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 1 (Integer 4 [])))])
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                            )
                                             ColMajor
                                         )
                                         IntegerToReal
-                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 3 (Integer 4 [])))])
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 3 (Integer 4)))]
+                                        )
                                         ()
                                     )
                                     ()
                                     Save
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 3 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -100,7 +118,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -116,7 +134,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -132,7 +150,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -146,7 +164,7 @@
                         ()
                         [(StringConstant
                             "Loop 1"
-                            (Character 1 6 () [])
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
@@ -160,21 +178,21 @@
                                     (Var 2 i)
                                     Mul
                                     (Var 2 j)
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )]
                                 (Var 2 j)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4))
                                 ()
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )]
                             (Var 2 i)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
                             ()
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -184,7 +202,7 @@
                         ()
                         [(StringConstant
                             "Loop 2"
-                            (Character 1 6 () [])
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
@@ -199,7 +217,7 @@
                                         [(()
                                         (Var 2 i)
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
@@ -209,25 +227,25 @@
                                         [(()
                                         (Var 2 j)
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 (Var 2 j)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4))
                                 ()
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )]
                             (Var 2 i)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
                             ()
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )]
                         ()
@@ -237,7 +255,7 @@
                         ()
                         [(StringConstant
                             "Loop 3"
-                            (Character 1 6 () [])
+                            (Character 1 6 ())
                         )]
                         ()
                         ()
@@ -252,7 +270,7 @@
                                         [(()
                                         (Var 2 i)
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
@@ -262,25 +280,25 @@
                                         [(()
                                         (Var 2 j)
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 (Var 2 i)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 3 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4))
                                 ()
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )]
                             (Var 2 j)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 2 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 2 (Integer 4))
                             ()
-                            (Real 4 [])
+                            (Real 4)
                             ()
                         )]
                         ()
@@ -290,7 +308,7 @@
                         ()
                         [(StringConstant
                             "Loop4"
-                            (Character 1 5 () [])
+                            (Character 1 5 ())
                         )]
                         ()
                         ()
@@ -304,7 +322,7 @@
                                     (Var 2 i)
                                     Add
                                     (Var 2 j)
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )
                                 (ImpliedDoLoop
@@ -313,33 +331,33 @@
                                             (Var 2 i)
                                             Add
                                             (Var 2 j)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         Add
                                         (Var 2 k)
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ()
                                     )]
                                     (Var 2 k)
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
                                     ()
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )]
                                 (Var 2 j)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4))
                                 ()
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )]
                             (Var 2 i)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
                             ()
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()
@@ -349,7 +367,7 @@
                         ()
                         [(StringConstant
                             "Loop5"
-                            (Character 1 5 () [])
+                            (Character 1 5 ())
                         )]
                         ()
                         ()
@@ -363,7 +381,7 @@
                                     (Var 2 i)
                                     Mul
                                     (Var 2 j)
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )
                                 (ImpliedDoLoop
@@ -372,33 +390,33 @@
                                             (Var 2 i)
                                             Mul
                                             (Var 2 j)
-                                            (Integer 4 [])
+                                            (Integer 4)
                                             ()
                                         )
                                         Add
                                         (Var 2 k)
-                                        (Integer 4 [])
+                                        (Integer 4)
                                         ()
                                     )]
                                     (Var 2 k)
-                                    (IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 []))
+                                    (IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4))
                                     ()
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                 )]
                                 (Var 2 j)
-                                (IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 2 (Integer 4 []))
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4))
                                 ()
-                                (Integer 4 [])
+                                (Integer 4)
                                 ()
                             )]
                             (Var 2 i)
-                            (IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 3 (Integer 4 []))
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 3 (Integer 4))
                             ()
-                            (Integer 4 [])
+                            (Integer 4)
                             ()
                         )]
                         ()

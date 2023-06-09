@@ -32,8 +32,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -49,8 +52,11 @@
                                     ()
                                     ()
                                     Default
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                     Source
                                     Public
@@ -79,22 +85,25 @@
                         (ArrayConstant
                             [(RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 2.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 3.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 4.000000
-                                (Real 4 [])
+                                (Real 4)
                             )]
-                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 4 (Integer 4 [])))])
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 4 (Integer 4)))]
+                            )
                             ColMajor
                         )
                         ()
@@ -105,35 +114,38 @@
                             [(RealUnaryMinus
                                 (RealConstant
                                     1.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     -1.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
                             (RealUnaryMinus
                                 (RealConstant
                                     2.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Real 4 [])
+                                (Real 4)
                                 (RealConstant
                                     -2.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                             )
                             (RealConstant
                                 5.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             (RealConstant
                                 7.000000
-                                (Real 4 [])
+                                (Real 4)
                             )]
-                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 4 (Integer 4 [])))])
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 4 (Integer 4)))]
+                            )
                             ColMajor
                         )
                         ()
@@ -143,15 +155,18 @@
                             (Var 2 a)
                             Gt
                             (Var 2 b)
-                            (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 4 (Integer 4 [])))])
+                            (Array
+                                (Logical 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 4 (Integer 4)))]
+                            )
                             ()
                         )
                         [(=
                             (Var 2 a)
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             ()
                         )]
@@ -163,17 +178,20 @@
                             Eq
                             (RealConstant
                                 1.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                            (IntegerConstant 4 (Integer 4 [])))])
+                            (Array
+                                (Logical 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 4 (Integer 4)))]
+                            )
                             ()
                         )
                         [(=
                             (Var 2 a)
                             (RealConstant
                                 2.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
                             ()
                         )]
@@ -183,17 +201,20 @@
                                 Eq
                                 (RealConstant
                                     2.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
-                                (Logical 4 [((IntegerConstant 1 (Integer 4 []))
-                                (IntegerConstant 4 (Integer 4 [])))])
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                )
                                 ()
                             )
                             [(=
                                 (Var 2 b)
                                 (RealConstant
                                     3.000000
-                                    (Real 4 [])
+                                    (Real 4)
                                 )
                                 ()
                             )]
@@ -206,25 +227,34 @@
                                             Mul
                                             (RealConstant
                                                 2.000000
-                                                (Real 4 [])
+                                                (Real 4)
                                             )
-                                            (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                            (IntegerConstant 4 (Integer 4 [])))])
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 4 (Integer 4)))]
+                                            )
                                             ()
                                         )
                                         Div
                                         (Var 2 a)
-                                        (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                        (IntegerConstant 4 (Integer 4 [])))])
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4))
+                                            (IntegerConstant 4 (Integer 4)))]
+                                        )
                                         ()
                                     )
                                     Mul
                                     (RealConstant
                                         3.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [((IntegerConstant 1 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 [])))])
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 4 (Integer 4)))]
+                                    )
                                     ()
                                 )
                                 ()
@@ -239,30 +269,30 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -278,30 +308,30 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4))
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         2.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -317,30 +347,30 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 3 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4))
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         10.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -356,30 +386,30 @@
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4))
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         10.500000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -395,9 +425,9 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 1 (Integer 4 []))
+                                        (IntegerConstant 1 (Integer 4))
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
@@ -405,27 +435,27 @@
                                     (RealUnaryMinus
                                         (RealConstant
                                             1.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             -1.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -441,9 +471,9 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 2 (Integer 4 []))
+                                        (IntegerConstant 2 (Integer 4))
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
@@ -451,27 +481,27 @@
                                     (RealUnaryMinus
                                         (RealConstant
                                             2.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
-                                        (Real 4 [])
+                                        (Real 4)
                                         (RealConstant
                                             -2.000000
-                                            (Real 4 [])
+                                            (Real 4)
                                         )
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -487,30 +517,30 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 3 (Integer 4 []))
+                                        (IntegerConstant 3 (Integer 4))
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         5.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop
@@ -526,30 +556,30 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (IntegerConstant 4 (Integer 4 []))
+                                        (IntegerConstant 4 (Integer 4))
                                         ())]
-                                        (Real 4 [])
+                                        (Real 4)
                                         ColMajor
                                         ()
                                     )
                                     Sub
                                     (RealConstant
                                         7.000000
-                                        (Real 4 [])
+                                        (Real 4)
                                     )
-                                    (Real 4 [])
+                                    (Real 4)
                                     ()
                                 )]
                                 0
-                                (Real 4 [])
+                                (Real 4)
                                 ()
                             )
                             Gt
                             (RealConstant
                                 0.000000
-                                (Real 4 [])
+                                (Real 4)
                             )
-                            (Logical 4 [])
+                            (Logical 4)
                             ()
                         )
                         [(ErrorStop

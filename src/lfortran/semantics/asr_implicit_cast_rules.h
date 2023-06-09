@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <lfortran/ast.h>
 #include <lfortran/semantics/semantic_exception.h>
+#include <libasr/asr_utils.h>
 
 
 #define num_types 7
@@ -106,7 +107,15 @@ public:
                                   ASR::expr_t **convert_can,
                                   ASR::ttype_t *source_type,
                                   ASR::ttype_t *dest_type) {
-    if (source_type->type == dest_type->type ||
+    if( ASRUtils::types_equal(source_type, dest_type, true) ) {
+        return;
+    }
+
+    ASR::ttype_t *source_type2 = ASRUtils::type_get_past_array(
+      ASRUtils::type_get_past_pointer(source_type));
+    ASR::ttype_t *dest_type2 = ASRUtils::type_get_past_array(
+      ASRUtils::type_get_past_pointer(dest_type));
+    if (source_type2->type == dest_type2->type ||
         ASRUtils::is_same_type_pointer(source_type, dest_type)) {
       bool is_source_pointer = ASRUtils::is_pointer(source_type);
       bool is_dest_pointer = ASRUtils::is_pointer(dest_type);
@@ -122,8 +131,7 @@ public:
         return;
       }
     }
-    ASR::ttype_t *source_type2 = ASRUtils::type_get_past_pointer(source_type);
-    ASR::ttype_t *dest_type2 = ASRUtils::type_get_past_pointer(dest_type);
+
     LCOMPILERS_ASSERT(source_type2->type < num_types);
     LCOMPILERS_ASSERT(dest_type2->type < num_types);
     int cast_kind = rule_map[source_type2->type][dest_type2->type];
@@ -148,8 +156,9 @@ public:
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*dest_type2))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(
+                  *ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
                   ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
@@ -165,7 +174,7 @@ public:
 
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type)))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*dest_type2));
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::RealConstant_t>(*value))
@@ -213,14 +222,25 @@ public:
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*value))
-                ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
-                int64_t ival = i->m_n;
-                value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
-                    ival, dest_type2);
+                if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
+                    ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
+                    int64_t ival = i->m_n;
+                    value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
+                        ival, dest_type2);
+                }
             }
 
         }
+
+      if( !ASRUtils::is_array(source_type) ) {
+          dest_type = dest_type2;
+      }
+      if( ASRUtils::is_array(source_type) && !ASRUtils::is_array(dest_type) ) {
+          ASR::dimension_t* m_dims = nullptr;
+          size_t n_dims = ASRUtils::extract_dimensions_from_ttype(source_type, m_dims);
+          dest_type = ASRUtils::make_Array_t_util(
+            al, source_type->base.loc, dest_type, m_dims, n_dims);
+      }
 
       *convert_can = (ASR::expr_t *)ASR::make_Cast_t(
           al, a_loc, *convert_can, (ASR::cast_kindType)cast_kind, dest_type,
@@ -262,8 +282,10 @@ public:
                                         ASR::ttype_t **source_type,
                                         ASR::ttype_t **dest_type) {
 
-    ASR::ttype_t *left_type2 = ASRUtils::type_get_past_pointer(left_type);
-    ASR::ttype_t *right_type2 = ASRUtils::type_get_past_pointer(right_type);
+    ASR::ttype_t *left_type2 = ASRUtils::type_get_past_array(
+      ASRUtils::type_get_past_pointer(left_type));
+    ASR::ttype_t *right_type2 = ASRUtils::type_get_past_array(
+      ASRUtils::type_get_past_pointer(right_type));
     LCOMPILERS_ASSERT(left_type2->type < num_types);
     LCOMPILERS_ASSERT(right_type2->type < num_types);
     int left_type_p = type_priority[left_type2->type];

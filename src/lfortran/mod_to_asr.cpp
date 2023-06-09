@@ -227,7 +227,7 @@ ASR::ttype_t* parse_type(Allocator &al, const std::vector<Item> &l)
     std::string name = item_token(l[0]);
     if (name == "INTEGER") {
         Location loc;
-        ASR::asr_t *t = ASR::make_Integer_t(al, loc, 4, nullptr, 0);
+        ASR::asr_t *t = ASR::make_Integer_t(al, loc, 4);
         return down_cast<ASR::ttype_t>(t);
     } else {
         throw LCompilersException("Type not supported yet");

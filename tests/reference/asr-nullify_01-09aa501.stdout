@@ -17,7 +17,7 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (Integer 4 [])
+                                        (Integer 4)
                                     )
                                     ()
                                     Source
@@ -35,7 +35,7 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (Integer 4 [])
+                                        (Integer 4)
                                     )
                                     ()
                                     Source
@@ -52,7 +52,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4 [])
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -72,7 +72,7 @@
                     )
                     (=
                         (Var 2 p1)
-                        (IntegerConstant 1 (Integer 4 []))
+                        (IntegerConstant 1 (Integer 4))
                         ()
                     )
                     (Nullify

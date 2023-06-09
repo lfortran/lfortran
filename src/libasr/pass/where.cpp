@@ -184,7 +184,7 @@ public:
         ASR::RealCompare_t* real_cmp = nullptr;
         ASR::expr_t* left, *right;
         bool is_right_array = false;
-        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4,nullptr, 0));
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
 
         if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
             int_cmp = ASR::down_cast<ASR::IntegerCompare_t>(test);
@@ -273,7 +273,7 @@ public:
         PassUtils::create_idx_vars(idx_vars, 1, loc, al, current_scope);
         ASR::expr_t* var = idx_vars[0];
 
-        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4, nullptr, 0));
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
         if (ASR::is_a<ASR::FunctionCall_t>(*left)) {
             // Create an assignment `return_var = left` and replace function call with return_var
@@ -282,8 +282,9 @@ public:
             ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fc->m_name);
             ASR::expr_t* return_var_expr = fn->m_return_var;
             ASR::Variable_t* return_var = ASRUtils::EXPR2VAR(return_var_expr);
-            ASR::expr_t* new_return_var_expr = PassUtils::create_var(1, return_var->m_name, return_var->base.base.loc, return_var->m_type,
-                                                al, current_scope, return_var->m_storage);
+            ASR::expr_t* new_return_var_expr = PassUtils::create_var(1,
+                return_var->m_name, return_var->base.base.loc,
+                return_var->m_type, al, current_scope);
             assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, new_return_var_expr, left, nullptr));
             opt_left = new_return_var_expr;
             return_var_hash[h] = opt_left;
