@@ -1589,6 +1589,11 @@ public:
                                     throw SemanticError("Attribute declaration not "
                                             "supported", x.base.base.loc);
                                 }
+                                ASR::symbol_t* sym_ = current_scope->resolve_symbol(sym);
+                                if (!sym_ && compiler_options.implicit_typing && sa->m_attr != AST::simple_attributeType
+                                                        ::AttrExternal) {
+                                    sym_ = declare_implicit_variable(x.m_syms[i].loc, sym, ASR::intentType::Local);
+                                }
                             }
                         }
                     }

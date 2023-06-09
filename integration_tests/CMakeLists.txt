@@ -504,6 +504,7 @@ RUN(NAME modules_45 LABELS gfortran)
 RUN(NAME modules_48 LABELS gfortran)
 RUN(NAME modules_49 LABELS gfortran llvm NOFAST)
 RUN(NAME modules_50 LABELS gfortran)
+RUN(NAME modules_51 LABELS gfortran llvmImplicit NOFAST)
 RUN(NAME operator_overloading_05_module3 LABELS gfortran llvm EXTRAFILES
         operator_overloading_05_module1.f90 operator_overloading_05_module2.f90)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
