@@ -285,6 +285,10 @@ public:
                 set_empty_block(current_scope, func->base.base.loc);
                 continue;
             }
+            if( !ASR::is_a<ASR::Variable_t>(*itr.second) ) {
+                arg2value.clear();
+                return ;
+            }
             ASR::Variable_t* func_var = ASR::down_cast<ASR::Variable_t>(itr.second);
             std::string func_var_name = itr.first;
             if( arg2value.find(func_var_name) == arg2value.end() ) {
