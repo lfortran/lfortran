@@ -2076,6 +2076,24 @@ public:
                 original_sym = current_scope->resolve_symbol(sub_name);
                 LCOMPILERS_ASSERT(original_sym!=nullptr);
             }
+            // remove from external_procedures
+            if (original_sym && std::find(external_procedures.begin(), external_procedures.end(), sub_name) != external_procedures.end()) {
+                external_procedures.erase(std::remove(external_procedures.begin(), external_procedures.end(), sub_name), external_procedures.end());
+            }
+
+            // Update arguments if the symbol belonged to a function
+            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                for (size_t i = 0; i < current_function->n_args; i++) {
+                    if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
+                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
+                        if (std::string(ASRUtils::symbol_name(var->m_v)) == sub_name) {
+                            var->m_v = original_sym;
+                        }
+                    }
+                }
+            }
         }
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
         ASR::Function_t *f = nullptr;
