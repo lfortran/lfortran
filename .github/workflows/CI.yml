@@ -36,12 +36,12 @@ jobs:
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
         shell: bash -l {0}
-        run: mamba install m2-bison=3.0.4 m2-filesystem
+        run: micromamba install m2-bison=3.0.4 m2-filesystem
 
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         shell: bash -l {0}
-        run: mamba install bison=3.4
+        run: micromamba install bison=3.4
 
       - uses: hendrikmuhs/ccache-action@main
         with:
