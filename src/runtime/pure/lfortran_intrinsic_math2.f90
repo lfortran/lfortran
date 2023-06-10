@@ -45,6 +45,14 @@ interface max
     module procedure imax, imax8, imax16, imax64, smax, dmax, dmax1, imax_3_args, imax_6args, dmax_3args
 end interface
 
+interface max0
+    module procedure imax, imax8, imax16, imax64, imax_3_args, imax_6args
+end interface
+
+interface min0
+    module procedure imin, imin8, imin16, imin64, imin_3_args, imin_6args
+end interface
+
 interface huge
     module procedure i32huge, i64huge, sphuge, dphuge
 end interface
@@ -325,6 +333,11 @@ else
 end if
 end function
 
+elemental integer function imin_3_args(x, y, z) result(r)
+integer, intent(in) :: x, y, z
+r = imin(imin(x, y), z)
+end function
+
 elemental integer function imin_6args(a, b, c, d, e, f) result(r)
 integer, intent(in) :: a, b, c, d, e, f
 integer :: args(6)
@@ -347,24 +360,6 @@ end function
 elemental integer function imax(x, y) result(r)
 integer, intent(in) :: x, y
 if (x > y) then
-    r = x
-else
-    r = y
-end if
-end function
-
-elemental integer function max0(x, y) result(r)
-integer, intent(in) :: x, y
-if (x > y) then
-    r = x
-else
-    r = y
-end if
-end function
-
-elemental integer function min0(x, y) result(r)
-integer, intent(in) :: x, y
-if (x < y) then
     r = x
 else
     r = y
