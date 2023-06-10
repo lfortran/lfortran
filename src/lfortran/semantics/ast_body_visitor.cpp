@@ -1746,6 +1746,7 @@ public:
     }
 
     void create_statement_function(const AST::Assignment_t &x) {
+        current_function_dependencies.clear(al);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -1840,7 +1841,8 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, var_name),
-            nullptr, 0,
+            /* m_dependency */ current_function_dependencies.p, 
+            /* n_dependency */ current_function_dependencies.size(),
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ body.p,
@@ -1849,6 +1851,7 @@ public:
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
             nullptr, false, false, false, false, false,
             false, false, false);
+        current_function_dependencies.clear(al);
         parent_scope->overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
