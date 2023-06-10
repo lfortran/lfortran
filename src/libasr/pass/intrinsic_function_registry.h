@@ -1368,7 +1368,10 @@ namespace Max {
              "ASR Verify: Arguments to max0 must be of real or integer type",
             x.base.base.loc, diagnostics);
         for(size_t i=0;i<x.n_args;i++){
-            ASRUtils::require_impl(ASRUtils::expr_type(x.m_args[i]) == ASRUtils::expr_type(x.m_args[0]),
+            ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[i])) &&
+                                            ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
+                                        (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[i])) &&
+                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))),
             "ASR Verify: All arguments must be of the same type",
             x.base.base.loc, diagnostics);
         }
@@ -1399,6 +1402,9 @@ namespace Max {
     static inline ASR::asr_t* create_Max(
         Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
         const std::function<void (const std::string &, const Location &)> err) {
+        for(size_t i=0; i<100;i++){
+            args.erase(nullptr);
+        }
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
         for(size_t i=0;i<args.size();i++){
@@ -1415,6 +1421,7 @@ namespace Max {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
         Vec<ASR::call_arg_t>& new_args, int64_t overload_id, ASR::expr_t* compile_time_value) {
         // TODO
+        return nullptr;
     }
 
 }  // namespace max0
