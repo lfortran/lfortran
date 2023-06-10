@@ -1,0 +1,152 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            cumchn:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            dble:
+                                (Variable
+                                    2
+                                    dble
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            dg:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            dg_return_var_name:
+                                                (Variable
+                                                    4
+                                                    dg_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            i:
+                                                (Variable
+                                                    4
+                                                    i
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    dg
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 i)]
+                                    [(=
+                                        (Var 4 dg_return_var_name)
+                                        (Cast
+                                            (RealBinOp
+                                                (RealConstant
+                                                    2.000000
+                                                    (Real 8)
+                                                )
+                                                Mul
+                                                (Cast
+                                                    (Var 4 i)
+                                                    IntegerToReal
+                                                    (Real 8)
+                                                    ()
+                                                )
+                                                (Real 8)
+                                                ()
+                                            )
+                                            RealToReal
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 4 dg_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    cumchn
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    []
+                    []
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            statement_03:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            
+                        })
+                    statement_03
+                    []
+                    [(SubroutineCall
+                        1 cumchn
+                        ()
+                        []
+                        ()
+                    )]
+                )
+        })
+    []
+)
