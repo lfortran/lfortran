@@ -1501,6 +1501,42 @@ public:
             }
         }
     }
+
+    template <typename T>
+    void update_call_args( T&x ) {
+        // iterate over body of program, check if there are any subroutine calls if yes, iterate over its args 
+        // and update the args if they are equal to the old symbol
+        if (compiler_options.implicit_interface) {
+            for (size_t i = 0; i < x->n_body; i++) {
+                ASR::stmt_t* stmt = x->m_body[i];
+                if (stmt->type == ASR::stmtType::SubroutineCall) {
+                    /*
+                        case: call func(f)
+                        where f is an implicit interface, currently f is a variable
+                    */
+                    ASR::SubroutineCall_t* subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+                    for (size_t j = 0; j < subrout_call->n_args; j++) {
+                        ASR::call_arg_t arg = subrout_call->m_args[j];
+                        ASR::expr_t* arg_expr = arg.m_value;
+                        if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
+                            ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg_expr);
+                            ASR::symbol_t* arg_sym = arg_var->m_v;
+                            ASR::symbol_t* arg_sym_underlying = ASRUtils::symbol_get_past_external(arg_sym);
+                            if (ASR::is_a<ASR::Variable_t>(*arg_sym_underlying)) {
+                                ASR::Variable_t* arg_variable = ASR::down_cast<ASR::Variable_t>(arg_sym_underlying);
+                                std::string arg_variable_name = std::string(arg_variable->m_name);
+                                ASR::symbol_t* sym = current_scope->resolve_symbol(arg_variable_name);
+                                if (sym != arg_sym) {
+                                    subrout_call->m_args[j].m_value = ASRUtils::EXPR(ASR::make_Var_t(al, arg_expr->base.loc, sym));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     void visit_Program(const AST::Program_t &x) {
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
@@ -1522,6 +1558,8 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             visit_program_unit(*x.m_contains[i]);
         }
+
+        update_call_args(v);
 
         starting_m_body = nullptr;
         starting_n_body =  0;
@@ -1609,6 +1647,8 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
+        update_call_args(v);
+
         starting_m_body = nullptr;
         starting_n_body = 0;
         remove_common_variable_declarations(current_scope);
@@ -1656,6 +1696,8 @@ public:
                 visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
+
+        update_call_args(v);
 
         starting_m_body = nullptr;
         starting_n_body = 0;
