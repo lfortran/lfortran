@@ -1756,6 +1756,7 @@ public:
 
         Vec<ASR::expr_t*> args;
         args.reserve(al, v->n_args);
+
         for (size_t i=0; i<v->n_args; i++) {
             visit_expr(*(v->m_args[i]).m_end);
             ASR::expr_t *end = ASRUtils::EXPR(tmp);
@@ -1765,6 +1766,7 @@ public:
             } else {
                 throw SemanticError("Statement function can only contain variables as arguments.", x.base.base.loc);
             }
+
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
             std::string arg_name = variable->m_name;
             arg_name = to_lower(arg_name);
@@ -1778,7 +1780,11 @@ public:
                 ASR::storage_typeType::Default, ASRUtils::expr_type(end), nullptr,
                 ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false);
-            current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            if (compiler_options.implicit_typing) {
+                current_scope->add_or_overwrite_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            } else {
+                current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            }
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 current_scope->get_symbol(arg_name))));
         }
