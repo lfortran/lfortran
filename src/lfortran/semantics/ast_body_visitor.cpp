@@ -1795,6 +1795,7 @@ public:
 
         if (sym==nullptr) {
             if (compiler_options.implicit_typing) {
+                implicit_dictionary = implicit_mapping[get_hash(parent_scope->asr_owner)];
                 type = implicit_dictionary[std::string(1, to_lower(var_name)[0])];
             } else {
                 throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
@@ -1858,7 +1859,7 @@ public:
             nullptr, false, false, false, false, false,
             false, false, false);
         current_function_dependencies.clear(al);
-        parent_scope->overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        parent_scope->add_or_overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
 
