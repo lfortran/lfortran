@@ -3208,6 +3208,10 @@ asr = true
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
+[[test]]
+filename = "../integration_tests/statement_02.f90"
+asr_implicit_interface_and_typing = true
+
 # Parser
 
 [[test]]
