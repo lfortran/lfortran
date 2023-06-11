@@ -1544,6 +1544,11 @@ public:
                                         type = ASRUtils::symbol_type(sym_);
                                     } else if (compiler_options.implicit_typing) {
                                         type = implicit_dictionary[std::string(1,sym[0])];
+                                        if (!type) {
+                                            // There exists an `implicit none` statement, here compiler has 
+                                            // no information about type of symbol hence keeping it real*4.
+                                            type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
+                                        }
                                     } else {
                                         // Here compiler has no information about type of symbol hence keeping it real*4.
                                         type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
