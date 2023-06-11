@@ -1504,8 +1504,18 @@ public:
 
     template <typename T>
     void update_call_args( T&x ) {
-        // iterate over body of program, check if there are any subroutine calls if yes, iterate over its args 
-        // and update the args if they are equal to the old symbol
+        /*
+        Iterate over body of program, check if there are any subroutine calls if yes, iterate over its args 
+        and update the args if they are equal to the old symbol 
+        For example:
+            function func(f)
+                double precision c
+                call sub2(c)
+                print *, c(d)
+            end function
+        This function updates `sub2` to use the new symbol `c` that is now a function, not a variable.
+        */
+
         if (compiler_options.implicit_interface) {
             for (size_t i = 0; i < x->n_body; i++) {
                 ASR::stmt_t* stmt = x->m_body[i];
