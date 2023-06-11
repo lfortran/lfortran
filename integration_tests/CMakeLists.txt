@@ -816,6 +816,7 @@ RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
 RUN(NAME minpack_02 LABELS gfortran llvm)
 
 RUN(NAME external_01 LABELS gfortran llvm)
+RUN(NAME external_02 LABELS gfortran llvmImplicit)
 
 RUN(NAME interface_12 LABELS gfortran llvm)
 
