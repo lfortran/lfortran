@@ -3216,6 +3216,10 @@ asr_implicit_interface_and_typing = true
 filename = "../integration_tests/statement_03.f90"
 asr_implicit_interface_and_typing = true
 
+[[test]]
+filename = "allow_implicit_interface4.f90"
+asr_implicit_interface_and_typing = true
+
 # Parser
 
 [[test]]
