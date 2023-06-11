@@ -3220,6 +3220,10 @@ asr_implicit_interface_and_typing = true
 filename = "allow_implicit_interface4.f90"
 asr_implicit_interface_and_typing = true
 
+[[test]]
+filename = "external3.f90"
+asr_implicit_interface_and_typing = true
+
 # Parser
 
 [[test]]
