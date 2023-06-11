@@ -3204,6 +3204,18 @@ asr = true
 filename = "errors/common1.f90"
 asr = true
 
+[[test]]
+filename = "../integration_tests/statement_01.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "../integration_tests/statement_02.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "../integration_tests/statement_03.f90"
+asr_implicit_interface_and_typing = true
+
 # Parser
 
 [[test]]

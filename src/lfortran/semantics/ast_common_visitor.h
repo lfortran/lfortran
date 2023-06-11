@@ -4251,6 +4251,12 @@ public:
                 && ASR::is_a<ASR::Variable_t>(*v)
                 && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
                 && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
+            if (var_name == "float" || var_name == "dble") {
+                Vec<ASR::call_arg_t> args;
+                visit_expr_list(x.m_args, x.n_args, args);
+                tmp = handle_intrinsic_float(al, args, x.base.base.loc);
+                return;
+            }
             // If implicit interface is allowed, we have to handle the
             // following case here:
             // real :: x

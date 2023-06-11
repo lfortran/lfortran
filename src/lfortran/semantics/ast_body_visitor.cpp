@@ -1746,6 +1746,7 @@ public:
     }
 
     void create_statement_function(const AST::Assignment_t &x) {
+        current_function_dependencies.clear(al);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -1755,6 +1756,7 @@ public:
 
         Vec<ASR::expr_t*> args;
         args.reserve(al, v->n_args);
+
         for (size_t i=0; i<v->n_args; i++) {
             visit_expr(*(v->m_args[i]).m_end);
             ASR::expr_t *end = ASRUtils::EXPR(tmp);
@@ -1764,6 +1766,7 @@ public:
             } else {
                 throw SemanticError("Statement function can only contain variables as arguments.", x.base.base.loc);
             }
+
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(tmp_var->m_v);
             std::string arg_name = variable->m_name;
             arg_name = to_lower(arg_name);
@@ -1777,7 +1780,11 @@ public:
                 ASR::storage_typeType::Default, ASRUtils::expr_type(end), nullptr,
                 ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false);
-            current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            if (compiler_options.implicit_typing) {
+                current_scope->add_or_overwrite_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            } else {
+                current_scope->add_symbol(arg_name, ASR::down_cast<ASR::symbol_t>(arg_var));
+            }
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                 current_scope->get_symbol(arg_name))));
         }
@@ -1788,6 +1795,7 @@ public:
 
         if (sym==nullptr) {
             if (compiler_options.implicit_typing) {
+                implicit_dictionary = implicit_mapping[get_hash(parent_scope->asr_owner)];
                 type = implicit_dictionary[std::string(1, to_lower(var_name)[0])];
             } else {
                 throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
@@ -1840,7 +1848,8 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, var_name),
-            nullptr, 0,
+            /* m_dependency */ current_function_dependencies.p, 
+            /* n_dependency */ current_function_dependencies.size(),
             /* a_args */ args.p,
             /* n_args */ args.size(),
             /* a_body */ body.p,
@@ -1849,7 +1858,8 @@ public:
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
             nullptr, false, false, false, false, false,
             false, false, false);
-        parent_scope->overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_function_dependencies.clear(al);
+        parent_scope->add_or_overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
 

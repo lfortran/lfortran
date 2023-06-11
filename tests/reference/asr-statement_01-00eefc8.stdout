@@ -1,0 +1,169 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            alnorm:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            alnorm:
+                                (Variable
+                                    2
+                                    alnorm
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            zexp:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            dexp:
+                                                (ExternalSymbol
+                                                    4
+                                                    dexp
+                                                    6 dexp
+                                                    lfortran_intrinsic_math
+                                                    []
+                                                    dexp
+                                                    Private
+                                                ),
+                                            z:
+                                                (Variable
+                                                    4
+                                                    z
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            zexp_return_var_name:
+                                                (Variable
+                                                    4
+                                                    zexp_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    zexp
+                                    (FunctionType
+                                        [(Real 8)]
+                                        (Real 8)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    [dexp]
+                                    [(Var 4 z)]
+                                    [(=
+                                        (Var 4 zexp_return_var_name)
+                                        (FunctionCall
+                                            4 dexp
+                                            ()
+                                            [((Var 4 z))]
+                                            (Real 8)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 4 zexp_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    alnorm
+                    (FunctionType
+                        []
+                        (Real 8)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    []
+                    []
+                    [(Return)]
+                    (Var 2 alnorm)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math),
+            statement_01:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            
+                        })
+                    statement_01
+                    []
+                    []
+                )
+        })
+    []
+)
