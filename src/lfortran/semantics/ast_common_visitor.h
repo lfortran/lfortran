@@ -1543,13 +1543,9 @@ public:
                                     if (sym_) {
                                         type = ASRUtils::symbol_type(sym_);
                                     } else if (compiler_options.implicit_typing) {
-                                        type = implicit_dictionary[sym];
-                                        if (!type) {
-                                            // currently hardcoing type to real*4
-                                            type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
-                                        }
+                                        type = implicit_dictionary[std::string(1,sym[0])];
                                     } else {
-                                        // currently hardcoing type to real*4
+                                        // Here compiler has no information about type of symbol hence keeping it real*4.
                                         type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
                                     }
                                     // add return var
