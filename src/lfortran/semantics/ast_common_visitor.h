@@ -768,6 +768,7 @@ public:
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
 
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
+    std::vector<std::string> &external_procedures;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
@@ -777,10 +778,12 @@ public:
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash)
+            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
+            std::vector<std::string>& external_procedures)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
-          common_variables_hash{common_variables_hash}, current_variable_type_{nullptr} {
+          common_variables_hash{common_variables_hash}, external_procedures{external_procedures},
+          current_variable_type_{nullptr} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -1521,8 +1524,7 @@ public:
                                     assgnd_access[sym] = ASR::accessType::Private;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPublic || sa->m_attr == AST::simple_attributeType
-                                                ::AttrParameter || sa->m_attr == AST::simple_attributeType
-                                                        ::AttrExternal) {
+                                                ::AttrParameter) {
                                     assgnd_access[sym] = ASR::accessType::Public;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
@@ -1532,9 +1534,50 @@ public:
                                     // Ignore Intrinsic attribute
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
-                                    // TODO
-                                    throw SemanticError("External attribute declaration not "
-                                        "supported yet", x.base.base.loc);
+                                    external_procedures.push_back(sym);
+                                    ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
+                                    assgnd_access[sym] = ASR::accessType::Public;
+                                    SymbolTable *parent_scope = current_scope;
+                                    current_scope = al.make_new<SymbolTable>(parent_scope);
+                                    ASR::ttype_t *type;
+                                    if (sym_) {
+                                        type = ASRUtils::symbol_type(sym_);
+                                    } else if (compiler_options.implicit_typing) {
+                                        type = implicit_dictionary[std::string(1,sym[0])];
+                                    } else {
+                                        // Here compiler has no information about type of symbol hence keeping it real*4.
+                                        type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
+                                    }
+                                    // add return var
+                                    std::string return_var_name = sym + "_return_var_name";
+                                    SetChar variable_dependencies_vec;
+                                    variable_dependencies_vec.reserve(al, 1);
+                                    ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+                                    ASR::asr_t *return_var = ASR::make_Variable_t(al, x.m_syms[i].loc,
+                                        current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                                        variable_dependencies_vec.size(), ASRUtils::intent_return_var,
+                                        nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                                        ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                                        false);
+                                    current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+                                    ASR::expr_t *to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.m_syms[i].loc,
+                                        ASR::down_cast<ASR::symbol_t>(return_var)));
+                                    
+                                    tmp = ASRUtils::make_Function_t_util(
+                                        al, x.m_syms[i].loc,
+                                        /* a_symtab */ current_scope,
+                                        /* a_name */ s2c(al, sym),
+                                        nullptr, 0,
+                                        /* a_args */ nullptr,
+                                        /* n_args */ 0,
+                                        /* a_body */ nullptr,
+                                        /* n_body */ 0,
+                                        /* a_return_var */ to_return,
+                                        ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+                                        nullptr, false, false, false, false, false,
+                                        false, false, false);
+                                    parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
+                                    current_scope = parent_scope;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrCommon) {
                                     is_common_variable = true;
@@ -4115,7 +4158,7 @@ public:
                     nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr,
                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
-                current_scope->add_symbol(arg_name, v);
+                current_scope->add_or_overwrite_symbol(arg_name, v);
             }
             LCOMPILERS_ASSERT(v != nullptr)
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -4152,7 +4195,7 @@ public:
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false,
             false, false, false);
-        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
 
@@ -4248,7 +4291,7 @@ public:
         }
         if (compiler_options.implicit_interface
                 && !is_common_variable
-                && ASR::is_a<ASR::Variable_t>(*v)
+                && ( ASR::is_a<ASR::Variable_t>(*v) || (std::find(external_procedures.begin(), external_procedures.end(), var_name) != external_procedures.end()) )
                 && (!ASRUtils::is_array(ASRUtils::symbol_type(v)))
                 && (!ASRUtils::is_character(*ASRUtils::symbol_type(v)))) {
             if (var_name == "float" || var_name == "dble") {
@@ -4265,10 +4308,13 @@ public:
             // We remove "x" from the symbol table and instead recreate it.
             // We use the type of the old "x" as the return value type.
             current_scope->erase_symbol(var_name);
-            ASR::ttype_t* old_type = ASR::down_cast<ASR::Variable_t>(v)->m_type;
+            ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
             create_implicit_interface_function(x, var_name, true, old_type);
             v = current_scope->resolve_symbol(var_name);
             LCOMPILERS_ASSERT(v!=nullptr);
+
+            // erase from external_procedures
+            external_procedures.erase(std::remove(external_procedures.begin(), external_procedures.end(), var_name), external_procedures.end());
 
             // Update arguments if the symbol belonged to a function
             ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);

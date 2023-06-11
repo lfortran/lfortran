@@ -26,11 +26,11 @@
                             lsame:
                                 (Function
                                     (SymbolTable
-                                        3
+                                        4
                                         {
                                             lsame_arg_0:
                                                 (Variable
-                                                    3
+                                                    4
                                                     lsame_arg_0
                                                     []
                                                     Unspecified
@@ -46,7 +46,7 @@
                                                 ),
                                             lsame_arg_1:
                                                 (Variable
-                                                    3
+                                                    4
                                                     lsame_arg_1
                                                     []
                                                     Unspecified
@@ -62,7 +62,7 @@
                                                 ),
                                             lsame_return_var_name:
                                                 (Variable
-                                                    3
+                                                    4
                                                     lsame_return_var_name
                                                     []
                                                     ReturnVar
@@ -93,10 +93,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 3 lsame_arg_0)
-                                    (Var 3 lsame_arg_1)]
+                                    [(Var 4 lsame_arg_0)
+                                    (Var 4 lsame_arg_1)]
                                     []
-                                    (Var 3 lsame_return_var_name)
+                                    (Var 4 lsame_return_var_name)
                                     Public
                                     .false.
                                     .false.

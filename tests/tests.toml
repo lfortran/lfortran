@@ -3263,3 +3263,15 @@ ast = true
 [[test]]
 filename = "errors/program_without_line_04.f90"
 ast = true
+
+[[test]]
+filename = "external1.f90"
+asr = true
+
+[[test]]
+filename = "errors/implicit_typing4.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "external2.f90"
+asr_implicit_interface_and_typing = true
