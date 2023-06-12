@@ -4306,50 +4306,58 @@ public:
                 tmp = handle_intrinsic_float(al, args, x.base.base.loc);
                 return;
             }
-            // If implicit interface is allowed, we have to handle the
-            // following case here:
-            // real :: x
-            // print *, x(5)
-            // Which is a function call.
-            // We remove "x" from the symbol table and instead recreate it.
-            // We use the type of the old "x" as the return value type.
-            std::map<std::string, ASR::symbol_t*> scope_ = current_scope->get_scope();
-            bool in_current_scope = (scope_.find(var_name) != scope_.end());
-            SymbolTable* sym_scope = current_scope;
-            if (in_current_scope) {
-                current_scope->erase_symbol(var_name);
-            } else {
-                ASR::symbol_t* sym_ = current_scope->get_symbol(var_name);
-                while(!sym_) {
-                    sym_scope = sym_scope->parent;
-                    sym_ = sym_scope->get_symbol(var_name);
+            if (intrinsic_procedures.is_intrinsic(var_name)) {
+                bool is_function = true;
+                v = intrinsic_as_node(x, is_function);
+                if( !is_function ) {
+                    return;
                 }
-            }
-            ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
-            create_implicit_interface_function(x, var_name, true, old_type);
-            v = current_scope->resolve_symbol(var_name);
-            LCOMPILERS_ASSERT(v!=nullptr);
-            if (!in_current_scope && is_external_procedure) {
-                SymbolTable* temp_scope = current_scope;
-                current_scope = sym_scope;
+            } else {
+                // If implicit interface is allowed, we have to handle the
+                // following case here:
+                // real :: x
+                // print *, x(5)
+                // Which is a function call.
+                // We remove "x" from the symbol table and instead recreate it.
+                // We use the type of the old "x" as the return value type.
+                std::map<std::string, ASR::symbol_t*> scope_ = current_scope->get_scope();
+                bool in_current_scope = (scope_.find(var_name) != scope_.end());
+                SymbolTable* sym_scope = current_scope;
+                if (in_current_scope) {
+                    current_scope->erase_symbol(var_name);
+                } else {
+                    ASR::symbol_t* sym_ = current_scope->get_symbol(var_name);
+                    while(!sym_) {
+                        sym_scope = sym_scope->parent;
+                        sym_ = sym_scope->get_symbol(var_name);
+                    }
+                }
+                ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
                 create_implicit_interface_function(x, var_name, true, old_type);
-                current_scope = temp_scope;
-                LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
-            }
+                v = current_scope->resolve_symbol(var_name);
+                LCOMPILERS_ASSERT(v!=nullptr);
+                if (!in_current_scope && is_external_procedure) {
+                    SymbolTable* temp_scope = current_scope;
+                    current_scope = sym_scope;
+                    create_implicit_interface_function(x, var_name, true, old_type);
+                    current_scope = temp_scope;
+                    LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
+                }
 
-            // erase from external_procedures
-            external_procedures.erase(std::remove(external_procedures.begin(), external_procedures.end(), var_name), external_procedures.end());
+                // erase from external_procedures
+                external_procedures.erase(std::remove(external_procedures.begin(), external_procedures.end(), var_name), external_procedures.end());
 
-            // Update arguments if the symbol belonged to a function
-            if (current_scope->asr_owner) {
-                ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-                if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
-                    ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
-                    for (size_t i = 0; i < current_function->n_args; i++) {
-                        if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
-                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
-                            if (std::string(ASRUtils::symbol_name(var->m_v)) == var_name) {
-                                var->m_v = v;
+                // Update arguments if the symbol belonged to a function
+                if (current_scope->asr_owner) {
+                    ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                    if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                        ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                        for (size_t i = 0; i < current_function->n_args; i++) {
+                            if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
+                                ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
+                                if (std::string(ASRUtils::symbol_name(var->m_v)) == var_name) {
+                                    var->m_v = v;
+                                }
                             }
                         }
                     }

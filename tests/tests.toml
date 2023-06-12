@@ -2890,6 +2890,10 @@ filename = "fixed_form/contains1.f"
 ast = true
 
 [[test]]
+filename = "fixed_form/intrinsic_implicit.f"
+asr_implicit_interface_and_typing = true
+
+[[test]]
 filename = "parameter1.f90"
 ast = true
 asr = true

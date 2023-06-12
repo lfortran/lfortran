@@ -16,7 +16,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len
-                                                    75 len
+                                                    74 len
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     len
@@ -26,7 +26,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_repeati32
-                                                    101 len_repeati32
+                                                    100 len_repeati32
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_repeati32
@@ -36,7 +36,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_trim
-                                                    101 len_trim
+                                                    100 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -114,7 +114,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     present
-                                                    75 present
+                                                    74 present
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     present
@@ -124,7 +124,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     repeat
-                                                    101 repeat
+                                                    100 repeat
                                                     lfortran_intrinsic_string
                                                     []
                                                     repeat
@@ -134,7 +134,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     repeat@repeati32
-                                                    101 repeati32
+                                                    100 repeati32
                                                     lfortran_intrinsic_string
                                                     []
                                                     repeati32
@@ -191,7 +191,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     trim
-                                                    101 trim
+                                                    100 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -441,7 +441,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     len
-                                                    75 len
+                                                    74 len
                                                     lfortran_intrinsic_builtin
                                                     []
                                                     len
@@ -451,7 +451,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     len_trim
-                                                    101 len_trim
+                                                    100 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -541,7 +541,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     trim
-                                                    101 trim
+                                                    100 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim

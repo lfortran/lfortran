@@ -42,133 +42,6 @@
                             bcorr:
                                 (Function
                                     (SymbolTable
-                                        6
-                                        {
-                                            a:
-                                                (Variable
-                                                    6
-                                                    a
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            b:
-                                                (Variable
-                                                    6
-                                                    b
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            bcorr_arg_0:
-                                                (Variable
-                                                    6
-                                                    bcorr_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            bcorr_arg_1:
-                                                (Variable
-                                                    6
-                                                    bcorr_arg_1
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            bcorr_return_var_name:
-                                                (Variable
-                                                    6
-                                                    bcorr_return_var_name
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    bcorr
-                                    (FunctionType
-                                        [(Real 4)
-                                        (Real 4)]
-                                        (Real 8)
-                                        BindC
-                                        Interface
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 6 bcorr_arg_0)
-                                    (Var 6 bcorr_arg_1)]
-                                    []
-                                    (Var 6 bcorr_return_var_name)
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            brcmp1:
-                                (Variable
-                                    2
-                                    brcmp1
-                                    []
-                                    ReturnVar
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 8)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            exp:
-                                (Function
-                                    (SymbolTable
                                         4
                                         {
                                             a:
@@ -203,139 +76,12 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            bcorr:
-                                                (Function
-                                                    (SymbolTable
-                                                        5
-                                                        {
-                                                            a:
-                                                                (Variable
-                                                                    5
-                                                                    a
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            b:
-                                                                (Variable
-                                                                    5
-                                                                    b
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            bcorr_arg_0:
-                                                                (Variable
-                                                                    5
-                                                                    bcorr_arg_0
-                                                                    []
-                                                                    Unspecified
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    BindC
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            bcorr_arg_1:
-                                                                (Variable
-                                                                    5
-                                                                    bcorr_arg_1
-                                                                    []
-                                                                    Unspecified
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    BindC
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            bcorr_return_var_name:
-                                                                (Variable
-                                                                    5
-                                                                    bcorr_return_var_name
-                                                                    []
-                                                                    ReturnVar
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 8)
-                                                                    ()
-                                                                    BindC
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                )
-                                                        })
-                                                    bcorr
-                                                    (FunctionType
-                                                        [(Real 4)
-                                                        (Real 4)]
-                                                        (Real 8)
-                                                        BindC
-                                                        Interface
-                                                        ()
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                    )
-                                                    []
-                                                    [(Var 5 bcorr_arg_0)
-                                                    (Var 5 bcorr_arg_1)]
-                                                    []
-                                                    (Var 5 bcorr_return_var_name)
-                                                    Public
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                ),
-                                            exp_arg_0:
+                                            bcorr_arg_0:
                                                 (Variable
                                                     4
-                                                    exp_arg_0
+                                                    bcorr_arg_0
                                                     []
                                                     Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 8)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            exp_return_var_name:
-                                                (Variable
-                                                    4
-                                                    exp_return_var_name
-                                                    []
-                                                    ReturnVar
                                                     ()
                                                     ()
                                                     Default
@@ -345,12 +91,45 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                ),
+                                            bcorr_arg_1:
+                                                (Variable
+                                                    4
+                                                    bcorr_arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            bcorr_return_var_name:
+                                                (Variable
+                                                    4
+                                                    bcorr_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
                                                 )
                                         })
-                                    exp
+                                    bcorr
                                     (FunctionType
-                                        [(Real 8)]
-                                        (Real 4)
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 8)
                                         BindC
                                         Interface
                                         ()
@@ -362,13 +141,46 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 4 exp_arg_0)]
+                                    [(Var 4 bcorr_arg_0)
+                                    (Var 4 bcorr_arg_1)]
                                     []
-                                    (Var 4 exp_return_var_name)
+                                    (Var 4 bcorr_return_var_name)
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            brcmp1:
+                                (Variable
+                                    2
+                                    brcmp1
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            exp:
+                                (Variable
+                                    2
+                                    exp
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     brcmp1
@@ -385,33 +197,26 @@
                         .false.
                         .false.
                     )
-                    [bcorr
-                    exp]
+                    [bcorr]
                     []
                     [(=
                         (Var 2 brcmp1)
-                        (Cast
-                            (FunctionCall
-                                2 exp
-                                ()
-                                [((RealUnaryMinus
-                                    (FunctionCall
-                                        2 bcorr
-                                        ()
-                                        [((Var 2 a))
-                                        ((Var 2 b))]
-                                        (Real 8)
-                                        ()
-                                        ()
-                                    )
+                        (IntrinsicFunction
+                            Exp
+                            [(RealUnaryMinus
+                                (FunctionCall
+                                    2 bcorr
+                                    ()
+                                    [((Var 2 a))
+                                    ((Var 2 b))]
                                     (Real 8)
                                     ()
-                                ))]
-                                (Real 4)
+                                    ()
+                                )
+                                (Real 8)
                                 ()
-                                ()
-                            )
-                            RealToReal
+                            )]
+                            0
                             (Real 8)
                             ()
                         )
