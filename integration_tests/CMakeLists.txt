@@ -643,6 +643,7 @@ RUN(NAME derived_types_20 LABELS gfortran
                    derived_types_20_module1.f90)
 RUN(NAME derived_types_21 LABELS gfortran llvm NOFAST)
 RUN(NAME derived_types_22 LABELS gfortran llvm)
+RUN(NAME derived_types_23 LABELS gfortran llvm NOFAST)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
