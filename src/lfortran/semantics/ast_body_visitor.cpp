@@ -1505,8 +1505,8 @@ public:
     template <typename T>
     void update_call_args( T&x ) {
         /*
-        Iterate over body of program, check if there are any subroutine calls if yes, iterate over its args 
-        and update the args if they are equal to the old symbol 
+        Iterate over body of program, check if there are any subroutine calls if yes, iterate over its args
+        and update the args if they are equal to the old symbol
         For example:
             function func(f)
                 double precision c
@@ -1900,7 +1900,7 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, var_name),
-            /* m_dependency */ current_function_dependencies.p, 
+            /* m_dependency */ current_function_dependencies.p,
             /* n_dependency */ current_function_dependencies.size(),
             /* a_args */ args.p,
             /* n_args */ args.size(),
@@ -2539,6 +2539,10 @@ public:
                 body.size());
     }
 
+    #define cast_as_loop_var(conv_candidate) \
+        ASR::ttype_t *des_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(var)); \
+        ASR::ttype_t *src_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(*conv_candidate)); \
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, conv_candidate, src_type, des_type);
 
     void visit_DoLoop(const AST::DoLoop_t &x) {
         ASR::expr_t *var, *start, *end;
@@ -2549,10 +2553,12 @@ public:
         if (x.m_start) {
             visit_expr(*x.m_start);
             start = ASRUtils::EXPR(tmp);
+            cast_as_loop_var(&start);
         }
         if (x.m_end) {
             visit_expr(*x.m_end);
             end = ASRUtils::EXPR(tmp);
+            cast_as_loop_var(&end);
         }
 
         ASR::expr_t* increment;
@@ -2566,6 +2572,7 @@ public:
                     throw SemanticError("Step expression (Increment) in DO loop cannot be zero", increment->base.loc);
                 }
             }
+            cast_as_loop_var(&increment);
         } else {
             increment = nullptr;
         }
