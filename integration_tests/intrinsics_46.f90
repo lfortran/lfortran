@@ -26,4 +26,8 @@ program test_ichar
     if (c /= 100) error stop
     if (char(c) /= 'd') error stop
 
+    c = 100
+    c_1 = achar(c)
+    if (c_1 /= "d") error stop
+
 end program test_ichar
