@@ -432,6 +432,7 @@ RUN(NAME intrinsics_49 LABELS gfortran llvm)
 RUN(NAME intrinsics_50 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_51 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_52 LABELS gfortran llvm) # min0, max0
+RUN(NAME intrinsics_53 LABELS gfortran llvm NOFAST) # repeat
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 
 RUN(NAME parameter_01 LABELS gfortran)
