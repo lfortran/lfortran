@@ -330,7 +330,8 @@
                                 )
                         })
                     intrinsics_36
-                    [lfortran_intrinsic_string]
+                    [lfortran_intrinsic_string
+                    lfortran_intrinsic_builtin]
                     [(Print
                         ()
                         [(Var 2 empty)]

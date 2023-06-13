@@ -2706,14 +2706,16 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
     Vec<ASR::call_arg_t>& orig_args;
 
     SetChar& current_function_dependencies;
+    SetChar& current_module_dependencies;
 
     public:
 
     ReplaceArgVisitor(Allocator& al_, SymbolTable* current_scope_,
                       ASR::Function_t* orig_func_, Vec<ASR::call_arg_t>& orig_args_,
-                      SetChar& current_function_dependencies_) :
+                      SetChar& current_function_dependencies_, SetChar& current_module_dependencies_) :
         al(al_), current_scope(current_scope_), orig_func(orig_func_),
-        orig_args(orig_args_), current_function_dependencies(current_function_dependencies_)
+        orig_args(orig_args_), current_function_dependencies(current_function_dependencies_),
+        current_module_dependencies(current_module_dependencies_)
     {}
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
@@ -2784,6 +2786,7 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
                 break;
         }
         current_function_dependencies.push_back(al, ASRUtils::symbol_name(new_es));
+        ASRUtils::insert_module_dependency(new_es, al, current_module_dependencies);
         x->m_name = new_es;
     }
 
