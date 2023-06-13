@@ -1545,7 +1545,7 @@ public:
                                     } else if (compiler_options.implicit_typing) {
                                         type = implicit_dictionary[std::string(1,sym[0])];
                                         if (!type) {
-                                            // There exists an `implicit none` statement, here compiler has 
+                                            // There exists an `implicit none` statement, here compiler has
                                             // no information about type of symbol hence keeping it real*4.
                                             type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
                                         }
@@ -1567,7 +1567,7 @@ public:
                                     current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
                                     ASR::expr_t *to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.m_syms[i].loc,
                                         ASR::down_cast<ASR::symbol_t>(return_var)));
-                                    
+
                                     tmp = ASRUtils::make_Function_t_util(
                                         al, x.m_syms[i].loc,
                                         /* a_symtab */ current_scope,

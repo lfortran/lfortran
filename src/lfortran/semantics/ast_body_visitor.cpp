@@ -1505,8 +1505,8 @@ public:
     template <typename T>
     void update_call_args( T&x ) {
         /*
-        Iterate over body of program, check if there are any subroutine calls if yes, iterate over its args 
-        and update the args if they are equal to the old symbol 
+        Iterate over body of program, check if there are any subroutine calls if yes, iterate over its args
+        and update the args if they are equal to the old symbol
         For example:
             function func(f)
                 double precision c
@@ -1900,7 +1900,7 @@ public:
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, var_name),
-            /* m_dependency */ current_function_dependencies.p, 
+            /* m_dependency */ current_function_dependencies.p,
             /* n_dependency */ current_function_dependencies.size(),
             /* a_args */ args.p,
             /* n_args */ args.size(),
