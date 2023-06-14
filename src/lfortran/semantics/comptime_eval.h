@@ -200,7 +200,7 @@ struct IntrinsicProcedures {
             {"ibits", {m_bit, &not_implemented, true}},
             {"count", {m_bit, &not_implemented, false}},
             {"iachar",  {m_builtin, &eval_iachar, true}},
-            {"achar", {m_builtin, &eval_achar, false}},
+            {"achar", {m_builtin, &eval_achar, true}},
             {"len", {m_builtin, &eval_len, false}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
             {"shape", {m_builtin, &not_implemented, false}},

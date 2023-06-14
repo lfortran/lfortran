@@ -8160,6 +8160,11 @@ public:
                     builder->CreateCall(fn, args);
                     tmp = CreateLoad(result);
                     return;
+                } else if (func_name == "achar") {
+                    // TODO: make achar just StringChr
+                    this->visit_expr_wrapper(x.m_args[0].m_value, true);
+                    tmp = lfortran_str_chr(tmp);
+                    return;
                 }
                 if( ASRUtils::get_FunctionType(s)->m_deftype == ASR::deftypeType::Interface ) {
                     throw CodeGenError("Intrinsic '" + func_name + "' not implemented yet and compile time value is not available.");
