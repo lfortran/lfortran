@@ -2,11 +2,23 @@
     (SymbolTable
         1
         {
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
             test_ichar:
                 (Program
                     (SymbolTable
                         2
                         {
+                            achar:
+                                (ExternalSymbol
+                                    2
+                                    achar
+                                    4 achar
+                                    lfortran_intrinsic_builtin
+                                    []
+                                    achar
+                                    Private
+                                ),
                             c:
                                 (Variable
                                     2
@@ -355,6 +367,40 @@
                                 (Character 1 1 ())
                                 ()
                             )
+                            NotEq
+                            (StringConstant
+                                "d"
+                                (Character 1 1 ())
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 c)
+                        (IntegerConstant 100 (Integer 4))
+                        ()
+                    )
+                    (=
+                        (Var 2 c_1)
+                        (FunctionCall
+                            2 achar
+                            ()
+                            [((Var 2 c))
+                            (())]
+                            (Character 1 1 ())
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 c_1)
                             NotEq
                             (StringConstant
                                 "d"
