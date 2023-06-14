@@ -27,26 +27,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@main
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment.yml
-          extra-specs: |
+          create-args: >-
             python=${{ matrix.python-version }}
-            sel(unix): bison=3.4
-            sel(win): m2-bison=3.0.4
-            sel(win): m2-filesystem
+
+      - name: Install Windows Packages
+        if: contains(matrix.os, 'windows')
+        shell: bash -l {0}
+        run: micromamba install m2-bison=3.0.4 m2-filesystem
+
+      - name: Install Linux / macOS Packages
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        shell: bash -l {0}
+        run: micromamba install bison=3.4
 
       - uses: hendrikmuhs/ccache-action@main
         with:
-          variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Setup Platform
         shell: bash -l {0}
         run: |
             echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
-            echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
-            echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
 
       - name: Build (Linux / macOS)
         shell: bash -l {0}
@@ -56,9 +62,15 @@ jobs:
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
-        shell: cmd /C CALL {0}
+        shell: cmd
         run: |
+            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
             call micromamba activate lf
+            set LFORTRAN_CMAKE_GENERATOR=Ninja
+            set WIN=1
+            set MACOS=0
+            set ENABLE_RUNTIME_STACKTRACE=no
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\build_tmp.xsh
 
@@ -70,9 +82,15 @@ jobs:
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
-        shell: cmd /C CALL {0}
+        shell: cmd
         run: |
+            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
             call micromamba activate lf
+            set LFORTRAN_CMAKE_GENERATOR=Ninja
+            set WIN=1
+            set MACOS=0
+            set ENABLE_RUNTIME_STACKTRACE=no
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             xonsh ci\test.xsh
 
@@ -84,10 +102,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@main
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -161,10 +179,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -206,10 +224,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -251,10 +269,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -329,10 +347,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -374,10 +392,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux_llvm10.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -415,10 +433,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux_llvm14.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -456,10 +474,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux_llvm15.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -511,10 +529,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -566,10 +584,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - name: Test
@@ -585,10 +603,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - name: Test CPP
@@ -604,10 +622,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
             nodejs
 
@@ -653,10 +671,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
@@ -707,10 +725,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_linux.yml
-          extra-specs: |
+          create-args: >-
             python=3.10
 
       - name: Upload Tarball
@@ -731,7 +749,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/provision-with-micromamba@v16
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci/environment_docs_linux.yml
 
