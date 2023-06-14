@@ -2413,39 +2413,42 @@ public:
         }
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
-        LCOMPILERS_ASSERT(der_type_name.size() != 0);
-        while( name2memidx[der_type_name].find(member_name) == name2memidx[der_type_name].end() ) {
-            if( dertype2parent.find(der_type_name) == dertype2parent.end() ) {
-                throw CodeGenError(der_type_name + " doesn't have any member named " + member_name,
-                                    x.base.base.loc);
+        if (der_type_name.size() != 0) {
+            while( name2memidx[der_type_name].find(member_name) == name2memidx[der_type_name].end() ) {
+                if( dertype2parent.find(der_type_name) == dertype2parent.end() ) {
+                    throw CodeGenError(der_type_name + " doesn't have any member named " + member_name,
+                                        x.base.base.loc);
+                }
+                tmp = llvm_utils->create_gep(tmp, 0);
+                der_type_name = dertype2parent[der_type_name];
             }
-            tmp = llvm_utils->create_gep(tmp, 0);
-            der_type_name = dertype2parent[der_type_name];
-        }
-        int member_idx = name2memidx[der_type_name][member_name];
-        std::vector<llvm::Value*> idx_vec = {
-            llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-            llvm::ConstantInt::get(context, llvm::APInt(32, member_idx))};
-        // if( (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ||
-        //      ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v)) &&
-        //     is_nested_pointer(tmp) ) {
-        //     tmp = CreateLoad(tmp);
-        // }
-        llvm::Value* tmp1 = CreateGEP(tmp, idx_vec);
-        ASR::ttype_t* member_type = member->m_type;
-        if( ASR::is_a<ASR::Pointer_t>(*member_type) ) {
-            member_type = ASR::down_cast<ASR::Pointer_t>(member_type)->m_type;
-        }
-        if( member_type->type == ASR::ttypeType::Struct ) {
-            ASR::Struct_t* der = (ASR::Struct_t*)(&(member_type->base));
-            ASR::StructType_t* der_type = (ASR::StructType_t*)(&(der->m_derived_type->base));
-            der_type_name = std::string(der_type->m_name);
-            uint32_t h = get_hash((ASR::asr_t*)member);
-            if( llvm_symtab.find(h) != llvm_symtab.end() ) {
-                tmp = llvm_symtab[h];
+            int member_idx = name2memidx[der_type_name][member_name];
+            std::vector<llvm::Value*> idx_vec = {
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                llvm::ConstantInt::get(context, llvm::APInt(32, member_idx))};
+                llvm::Value* tmp1 = CreateGEP(tmp, idx_vec);
+                tmp = tmp1;
+        } else {
+            // if( (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ||
+            //      ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v)) &&
+            //     is_nested_pointer(tmp) ) {
+            //     tmp = CreateLoad(tmp);
+            // }
+            ASR::ttype_t* member_type = member->m_type;
+            if( ASR::is_a<ASR::Pointer_t>(*member_type) ) {
+                member_type = ASR::down_cast<ASR::Pointer_t>(member_type)->m_type;
+            }
+            if( member_type->type == ASR::ttypeType::Struct ) {
+                ASR::Struct_t* der = (ASR::Struct_t*)(&(member_type->base));
+                ASR::StructType_t* der_type = (ASR::StructType_t*)(&(der->m_derived_type->base));
+                der_type_name = std::string(der_type->m_name);
+                uint32_t h = get_hash((ASR::asr_t*)member);
+                if( llvm_symtab.find(h) != llvm_symtab.end() ) {
+                    tmp = llvm_symtab[h];
+                    return;
+                }
             }
         }
-        tmp = tmp1;
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
