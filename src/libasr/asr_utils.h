@@ -1350,6 +1350,7 @@ static inline Vec<char*> get_scope_names(Allocator &al, const SymbolTable *symta
 }
 
 static inline ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR::ttype_t* asr_type) {
+    asr_type = ASRUtils::type_get_past_pointer(asr_type);
     asr_type = ASRUtils::type_get_past_array(asr_type);
     switch (asr_type->type) {
         case ASR::ttypeType::Integer: {
