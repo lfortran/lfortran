@@ -390,6 +390,38 @@
                         (FunctionCall
                             2 achar
                             ()
+                            [((IntegerConstant 100 (Integer 4)))
+                            (())]
+                            (Character 1 1 ())
+                            (StringConstant
+                                "d"
+                                (Character 1 1 ())
+                            )
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 c_1)
+                            NotEq
+                            (StringConstant
+                                "d"
+                                (Character 1 1 ())
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 c_1)
+                        (FunctionCall
+                            2 achar
+                            ()
                             [((Var 2 c))
                             (())]
                             (Character 1 1 ())
@@ -406,6 +438,161 @@
                                 "d"
                                 (Character 1 1 ())
                             )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 c_1)
+                        (StringChr
+                            (IntegerConstant 100 (Integer 4))
+                            (Character 1 1 ())
+                            (StringConstant
+                                "d"
+                                (Character 1 1 ())
+                            )
+                        )
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 c_1)
+                            NotEq
+                            (StringConstant
+                                "d"
+                                (Character 1 1 ())
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 c_1)
+                        (StringChr
+                            (Var 2 c)
+                            (Character 1 1 ())
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 2 c_1)
+                            NotEq
+                            (StringConstant
+                                "d"
+                                (Character 1 1 ())
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 c_1)
+                        (StringConstant
+                            "e"
+                            (Character 1 1 ())
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 2 c)
+                        (Iachar
+                            (StringConstant
+                                "e"
+                                (Character 1 1 ())
+                            )
+                            (Integer 4)
+                            (IntegerConstant 101 (Integer 4))
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 c)
+                            NotEq
+                            (IntegerConstant 101 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 c)
+                        (Iachar
+                            (Var 2 c_1)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 c)
+                            NotEq
+                            (IntegerConstant 101 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 c)
+                        (Ichar
+                            (StringConstant
+                                "e"
+                                (Character 1 1 ())
+                            )
+                            (Integer 4)
+                            (IntegerConstant 101 (Integer 4))
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 c)
+                            NotEq
+                            (IntegerConstant 101 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 c)
+                        (Ichar
+                            (Var 2 c_1)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 c)
+                            NotEq
+                            (IntegerConstant 101 (Integer 4))
                             (Logical 4)
                             ()
                         )
