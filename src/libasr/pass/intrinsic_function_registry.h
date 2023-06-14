@@ -224,13 +224,15 @@ class ASRBuilder {
 
     ASR::expr_t* ElementalAdd(ASR::expr_t* left, ASR::expr_t* right,
         const Location& loc, ASR::expr_t* value=nullptr) {
-        switch (ASRUtils::expr_type(left)->type) {
+        ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+        left_type = ASRUtils::type_get_past_pointer(left_type);
+        switch (left_type->type) {
             create_ElementalBinOp(Real, make_RealBinOp_t, Add, value)
             create_ElementalBinOp(Integer, make_IntegerBinOp_t, Add, value)
             create_ElementalBinOp(Complex, make_ComplexBinOp_t, Add, value)
             default: {
                 throw LCompilersException("Expression type, " +
-                                          std::to_string(left->type) +
+                                          std::to_string(left_type->type) +
                                           " not yet supported");
             }
         }
