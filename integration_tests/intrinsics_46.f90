@@ -27,7 +27,23 @@ program test_ichar
     if (char(c) /= 'd') error stop
 
     c = 100
+    c_1 = achar(100)
+    if (c_1 /= "d") error stop
     c_1 = achar(c)
     if (c_1 /= "d") error stop
+    c_1 = char(100)
+    if (c_1 /= "d") error stop
+    c_1 = char(c)
+    if (c_1 /= "d") error stop
+
+    c_1 = "e"
+    c = iachar("e")
+    if (c /= 101) error stop
+    c = iachar(c_1)
+    if (c /= 101) error stop
+    c = ichar("e")
+    if (c /= 101) error stop
+    c = ichar(c_1)
+    if (c /= 101) error stop
 
 end program test_ichar
