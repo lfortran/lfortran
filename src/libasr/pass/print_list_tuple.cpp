@@ -353,7 +353,7 @@ class PrintListTupleVisitor
                 tmp_vec.push_back(al, e);
             }
             ASR::stmt_t *print_stmt = ASRUtils::STMT(
-                ASR::make_Print_t(al, x.base.base.loc, nullptr, tmp_vec.p, tmp_vec.size(),
+                ASR::make_Print_t(al, x.base.base.loc, x.m_fmt, tmp_vec.p, tmp_vec.size(),
                             x.m_separator, x.m_end));
             print_tmp.clear();
             pass_result.push_back(al, print_stmt);

@@ -162,7 +162,7 @@ public:
                 body.push_back(al, print_body[j]);
             }
             print_stmt = ASRUtils::STMT(ASR::make_Print_t(
-                al, x.base.base.loc, nullptr, body.p, body.size(),
+                al, x.base.base.loc, x.m_fmt, body.p, body.size(),
                 x.m_separator, x.m_end));
             pass_result.push_back(al, print_stmt);
             print_body.clear();
@@ -243,7 +243,7 @@ public:
                 body.push_back(al, write_body[j]);
             }
             write_stmt = ASRUtils::STMT(ASR::make_FileWrite_t(
-                al, x.base.base.loc, x.m_label, nullptr, nullptr, nullptr, nullptr, nullptr, body.p, body.size(), nullptr, nullptr));
+                al, x.base.base.loc, x.m_label, nullptr, x.m_fmt, nullptr, nullptr, nullptr, body.p, body.size(), nullptr, nullptr));
             pass_result.push_back(al, write_stmt);
             write_body.clear();
         }

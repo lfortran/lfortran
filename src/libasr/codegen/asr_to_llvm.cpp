@@ -6952,22 +6952,22 @@ public:
 
     void visit_Print(const ASR::Print_t &x) {
         if (x.m_fmt != nullptr) {
-            diag.codegen_warning_label("format string in `print` is not implemented yet and it is currently treated as '*'",
-                {x.m_fmt->base.loc}, "treated as '*'");
+            handle_formatted_print(x);
+        } else {
+            handle_print(x);
         }
-        handle_print(x);
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
-        if (x.m_fmt != nullptr) {
-            diag.codegen_warning_label("format string in write() is not implemented yet and it is currently treated as '*'",
-                {x.m_fmt->base.loc}, "treated as '*'");
-        }
         if (x.m_unit != nullptr) {
             diag.codegen_warning_label("unit in write() is not implemented yet and it is currently treated as '*'",
                 {x.m_unit->base.loc}, "treated as '*'");
         }
-        handle_print(x);
+        if (x.m_fmt != nullptr) {
+            handle_formatted_print(x);
+        } else {
+            handle_print(x);
+        }
     }
 
     template <typename T>
@@ -7171,6 +7171,194 @@ public:
         printf(context, *module, *builder, printf_args);
     }
 
+    template <typename T>
+    void handle_formatted_print(const T &x) {
+        // Remove the paratheses and split the strings separated by comma
+        std::vector<llvm::Value *> args;
+        std::vector<std::string> fmt;
+        llvm::Value *end = builder->CreateGlobalStringPtr("\n");
+        std::string input_string = std::string(ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(x.m_fmt))->m_s);
+        input_string = input_string.substr(1, input_string.length() - 2);
+        std::vector<std::string> format_values;
+        std::stringstream ss(input_string);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            format_values.push_back(item);
+        }
+        size_t arguments = 0;
+        for(unsigned long i=0;i<format_values.size();i++){
+            std::string value = format_values[i];
+            int64_t ptr_loads_copy = ptr_loads;
+            int a_kind,reduce_loads = 0;
+            ptr_loads = 2;
+            ASR::expr_t *v;
+            ASR::ttype_t *t;
+            if( arguments < x.n_values) {
+                if( ASR::is_a<ASR::Var_t>(*x.m_values[arguments]) ) {
+                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(x.m_values[arguments]);
+                    reduce_loads = var->m_intent == ASRUtils::intent_in;
+                    if (ASR::is_a<ASR::Pointer_t>(*var->m_type) ) {
+                        ptr_loads = 1;
+                    }
+                }
+                ptr_loads = ptr_loads - reduce_loads;
+                lookup_enum_value_for_nonints = true;
+                this->visit_expr_wrapper(x.m_values[arguments], true);
+                lookup_enum_value_for_nonints = false;
+                ptr_loads = ptr_loads_copy;
+                v = x.m_values[arguments];
+                t = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v));
+                if( ASR::is_a<ASR::Const_t>(*t) ) {
+                    t = ASRUtils::get_contained_type(t);
+                }
+                t = ASRUtils::type_get_past_allocatable(t);
+                a_kind = ASRUtils::extract_kind_from_ttype_t(t);
+            }
+            if (value[0] == '/') {
+                // Slash Editing (newlines)
+                size_t i = 0;
+                while (value[i++] == '/') {
+                    fmt.push_back("%s");
+                    args.push_back(end);
+                }
+                value = value.substr(i-1,value.size());
+            }
+            int newline = 0;
+            if (value[value.size()-1] == '/') {
+                // Newlines at the end of the argument
+                size_t i = value.size()-1;
+                while (value[i--] == '/') {
+                    newline++;
+                }
+                value = value.substr(0,value.size()-newline);
+            }
+            if (value[0] == '\"' && value[value.size()-1] == '\"' ) {
+                // String
+                value = value.substr(1, value.length() - 2);
+                fmt.push_back(value);
+            } else if (value[0] == 'A' || value[0] == 'a') {
+                // Character Editing (A[n])
+                std::string str = value.substr(1,value.size() -1);
+                std::string s = "%" + str + "." + str + "s";
+                fmt.push_back(s);
+                if (t->type == ASR::ttypeType::Character) {
+                    args.push_back(tmp);
+                    arguments++;
+                } else {
+                    throw LCompilersException("Expected character or string to be used for " + value + " format.");
+                }
+            } else if (value[value.size()-1] == 'X' || value[value.size()-1] == 'x') {
+                // Positional Editing (nX)
+                int t = std::stoi(value.substr(0,value.size()-1));
+                std::string spaces = "";
+                for(int i=0; i<t; i++) {
+                    spaces += " ";
+                }
+                fmt.push_back(spaces);
+            } else if (value[0] == 'I' || value[0] == 'i') {
+                // Integer Editing ( I[w[.m]] )
+                int len, width, min_width = 0;
+                int64_t val = 0;
+                size_t dot_pos = value.find('.');
+                if (dot_pos != std::string::npos) {
+                    width = std::stoi(value.substr(1,dot_pos + 1));
+                    min_width = std::stoi(value.substr(dot_pos + 1,value.size()));
+                    if (min_width > width) {
+                        throw LCompilersException("Minimum number of digits cannot be more than the specified width");
+                    }
+                } else {
+                    width = std::stoi(value.substr(1,value.size()));
+                }
+                if (ASRUtils::is_integer(*t) || ASRUtils::is_unsigned_integer(*t)) {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*v)) {
+                        ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(v);
+                        val = i->m_n;
+                    } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*v)) {
+                        ASR::UnsignedIntegerConstant_t *i = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(v);
+                        val = i->m_n;
+                    } else if( ASR::is_a<ASR::Pointer_t>(*t) && ASR::is_a<ASR::Var_t>(*v) ) {
+                        // How do we get the value from variables?
+                    }
+                    len = val > 0 ? static_cast<int>(std::log10(val)) + 1 : static_cast<int>(std::log10(-val)) + 1;
+                    len = (val == 0) ? 1 : len;
+                    if (width >= len) {
+                        if (min_width > len) {
+                            for (int i=0; i < (width - min_width); i++) {
+                                fmt.push_back(" ");
+                            }
+                            for (int i=0; i < (min_width - len); i++) {
+                                fmt.push_back("0");
+                            }
+                        } else {
+                            for (int i=0; i < (width - len); i++) {
+                                fmt.push_back(" ");
+                            }
+                        }
+                        switch (a_kind) {
+                            case 1 : {
+                                fmt.push_back("%hhi");
+                                break;
+                            }
+                            case 2 : {
+                                fmt.push_back("%hi");
+                                break;
+                            }
+                            case 4 : {
+                                fmt.push_back("%d");
+                                break;
+                            }
+                            case 8 : {
+                                fmt.push_back("%lld");
+                                break;
+                            }
+                            default: {
+                                throw CodeGenError(R"""(Printing support is available only
+                                                    for 8, 16, 32, and 64 bit unsigned integer kinds.)""",
+                                                    x.base.base.loc);
+                                }
+                        }
+                        args.push_back(tmp);
+                        arguments++;
+                    } else if (width < len) {
+                        for(int i=0;i<width;i++) {
+                            fmt.push_back("*");
+                        }
+                    }
+                } else {
+                    throw LCompilersException("Expected integer number or variable to be used for " + value + " format.");
+                }
+            } else if (value.size() != 0) {
+                throw LCompilersException("Printing support is not available for " + value + " format.");
+            }
+            while (newline != 0) {
+                fmt.push_back("\n");
+                newline--;
+            }
+        }
+
+        fmt.push_back("%s");
+        args.push_back(end);
+        std::string fmt_str;
+        for (size_t i=0; i<fmt.size(); i++) {
+            fmt_str += fmt[i];
+        }
+        // Printing the formatting string to check
+        // std::cout<<"THE FORMATTING STRING: ";
+        // for (size_t i=0; i<fmt.size(); i++) {
+        //     if(fmt[i]!="\n"){
+        //         std::cout<<fmt[i];
+        //     } else {
+        //         std::cout<<"\\n";
+        //     }
+        // }
+        // std::cout<<std::endl;
+        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        std::vector<llvm::Value *> printf_args;
+        printf_args.push_back(fmt_ptr);
+        printf_args.insert(printf_args.end(), args.begin(), args.end());
+        printf(context, *module, *builder, printf_args);
+    }
+    
     void visit_Stop(const ASR::Stop_t &x) {
         if (compiler_options.emit_debug_info) {
             debug_emit_loc(x);
