@@ -1,3 +1,4 @@
 program format_04
-print '(a)', "ok"
+print *, "ok", "b"
+print '(a,a)', "ok", "b"
 end program
