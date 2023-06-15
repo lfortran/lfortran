@@ -8377,6 +8377,16 @@ public:
         tmp = res;
     }
 
+    void visit_StringFormat(const ASR::StringFormat_t& x) {
+        ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
+        if (fmt_value) {
+            // Handle compile time format
+            throw CodeGenError("XX return string here");
+        } else {
+            throw CodeGenError("Runtime format string not implemented yet");
+        }
+    }
+
 };
 
 
