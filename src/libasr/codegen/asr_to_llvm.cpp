@@ -8359,12 +8359,21 @@ public:
     }
 
     void visit_StringFormat(const ASR::StringFormat_t& x) {
-        ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
-        if (fmt_value) {
-            // Handle compile time format
-            throw CodeGenError("XX return string here");
+        // TODO: Handle some things at compile time if possible:
+        //ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
+        // if (fmt_value) ...
+        if (x.m_kind == ASR::string_format_kindType::FormatFortran) {
+            std::vector<llvm::Value *> args;
+            visit_expr(*x.m_fmt);
+            args.push_back(tmp);
+
+            for (size_t i=0; i<x.n_args; i++) {
+                visit_expr(*x.m_args[i]);
+                args.push_back(tmp);
+            }
+            tmp = string_format_fortran(context, *module, *builder, args);
         } else {
-            throw CodeGenError("Runtime format string not implemented yet");
+            throw CodeGenError("Only FormatFortran string formatting implemented so far.");
         }
     }
 
