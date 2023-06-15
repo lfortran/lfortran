@@ -2091,6 +2091,20 @@ public:
         }
     }
 
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
+        switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd : {
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                break ;
+            }
+            default: {
+                throw CodeGenError( ASRUtils::IntrinsicImpureFunctionRegistry::
+                        get_intrinsic_function_name(x.m_intrinsic_id) +
+                        " is not implemented by LLVM backend.", x.base.base.loc);
+            }
+        }
+    }
+
     void visit_ListClear(const ASR::ListClear_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;

@@ -230,6 +230,8 @@ expr
             ttype type, expr? value, expr? dt)
     | IntrinsicFunction(int intrinsic_id, expr* args, int overload_id,
             ttype? type, expr? value)
+    | IntrinsicImpureFunction(int intrinsic_id, expr* args, int overload_id,
+            ttype? type, expr? value)
     | StructTypeConstructor(symbol dt_sym, call_arg* args, ttype type, expr? value)
     | EnumTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
     | UnionTypeConstructor(symbol dt_sym, expr* args, ttype type, expr? value)
