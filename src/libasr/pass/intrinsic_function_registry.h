@@ -2625,6 +2625,7 @@ inline std::string get_intrinsic_name(int x) {
 /************************* Intrinsic Impure Function **************************/
 enum class IntrinsicImpureFunctions : int64_t {
     IsIostatEnd,
+    IsIostatEor,
     // ...
 };
 
@@ -2641,11 +2642,25 @@ namespace IsIostatEnd {
 
 } // namespace IsIostatEnd
 
+namespace IsIostatEor {
+
+    static inline ASR::asr_t* create_IsIostatEor(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> /*err*/) {
+        // Compile time value cannot be computed
+        return ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::IsIostatEor),
+                args.p, args.n, 0, logical, nullptr);
+    }
+
+} // namespace IsIostatEor
+
 namespace IntrinsicImpureFunctionRegistry {
 
     static const std::map<std::string, std::tuple<create_intrinsic_function,
             eval_intrinsic_function>>& function_by_name_db = {
         {"is_iostat_end", {&IsIostatEnd::create_IsIostatEnd, nullptr}},
+        {"is_iostat_eor", {&IsIostatEor::create_IsIostatEor, nullptr}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -2667,6 +2682,7 @@ namespace IntrinsicImpureFunctionRegistry {
 inline std::string get_impure_intrinsic_name(int x) {
     switch (x) {
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEnd)
+        IMPURE_INTRINSIC_NAME_CASE(IsIostatEor)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }

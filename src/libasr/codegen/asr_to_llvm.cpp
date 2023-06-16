@@ -2098,8 +2098,12 @@ public:
                 // until then, this returns `False`
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
                 break ;
-            }
-            default: {
+            } case ASRUtils::IntrinsicImpureFunctions::IsIostatEor : {
+                // TODO: Fix this once the iostat is implemented in file handling;
+                // until then, this returns `False`
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
+                break ;
+            } default: {
                 throw CodeGenError( ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id) +
                         " is not implemented by LLVM backend.", x.base.base.loc);
             }
