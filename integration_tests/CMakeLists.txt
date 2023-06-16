@@ -809,6 +809,8 @@ RUN(NAME template_array_02 LABELS llvm wasm NOFAST)
 RUN(NAME template_array_02b LABELS llvm wasm NOFAST)
 RUN(NAME template_array_03 LABELS llvm wasm)
 RUN(NAME template_array_04 LABELS llvm wasm NOFAST)
+RUN(NAME template_01 LABELS llvm wasm NOFAST)
+
 
 RUN(NAME statement1 LABELS gfortran llvm)
 

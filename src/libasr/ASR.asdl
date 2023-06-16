@@ -111,8 +111,10 @@ symbol
         identifier proc_name, symbol proc, abi abi, bool is_deferred)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
-    | Requirement(symbol_table symtab, identifier name, identifier* args)
-    | Template(symbol_table symtab, identifier name, identifier* args)
+    | Requirement(symbol_table symtab, identifier name, identifier* args,
+        require_instantiation* requires)
+    | Template(symbol_table symtab, identifier name, identifier* args,
+        require_instantiation* requires)
 
 storage_type = Default | Save | Parameter
 access = Public | Private
@@ -441,5 +443,7 @@ type_stmt
     | TypeStmtType(ttype type, stmt* body)
 
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
+
+require_instantiation = Require(identifier name, identifier* args)
 
 }

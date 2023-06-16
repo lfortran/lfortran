@@ -396,6 +396,11 @@
                                     add_t
                                     [t
                                     f]
+                                    [(Require
+                                        r
+                                        [t
+                                        f]
+                                    )]
                                 ),
                             func_arg_int:
                                 (Function
@@ -693,6 +698,7 @@
                                     r
                                     [t
                                     f]
+                                    []
                                 ),
                             test_template:
                                 (Function

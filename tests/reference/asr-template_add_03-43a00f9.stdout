@@ -366,6 +366,11 @@
                                     add_t
                                     [t
                                     f]
+                                    [(Require
+                                        r
+                                        [t
+                                        f]
+                                    )]
                                 ),
                             r:
                                 (Requirement
@@ -503,6 +508,7 @@
                                     r
                                     [t
                                     f]
+                                    []
                                 ),
                             test_template:
                                 (Function

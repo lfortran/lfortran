@@ -758,7 +758,6 @@ public:
     std::vector<ASR::asr_t*> current_requirement_type_parameters;
     std::map<std::string, ASR::asr_t*> called_requirement;
 
-    std::vector<std::string> current_template_args;
     std::map<std::string, std::string> current_template_map;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;

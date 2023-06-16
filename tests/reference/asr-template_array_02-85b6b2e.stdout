@@ -455,6 +455,12 @@
                                     [t
                                     plus_t
                                     zero_t]
+                                    [(Require
+                                        operations
+                                        [t
+                                        plus_t
+                                        zero_t]
+                                    )]
                                 ),
                             mysum_integer:
                                 (Function
@@ -782,6 +788,7 @@
                                     [t
                                     plus_t
                                     zero_t]
+                                    []
                                 ),
                             test_template:
                                 (Function
