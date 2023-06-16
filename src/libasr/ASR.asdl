@@ -450,10 +450,10 @@ enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonIn
 require_instantiation = Require(identifier name, identifier* args)
 
 string_format_kind
-    = FormatFortran        -- "(a,f8.3,a,f4.2,a)"
-    | FormatC              -- "%d: %d" (In the C language)
-    | FormatPythonC        -- "%d: %d" (In Python)
-    | FormatPythonF        -- f"{a}: {b}"
+    = FormatFortran        -- "(f8.3,i4.2)", a, b
+    | FormatC              -- "%f: %d", a, b
+    | FormatPythonPercent  -- "%f: %d" % (a, b)
+    | FormatPythonFString  -- f"{a}: {b}"
     | FormatPythonFormat   -- "{}: {}".format(a, b)
 
 }
