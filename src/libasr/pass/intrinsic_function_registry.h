@@ -2679,6 +2679,20 @@ namespace IntrinsicImpureFunctionRegistry {
 } // namespace IntrinsicImpureFunctionRegistry
 
 
+#define IMPURE_INTRINSIC_NAME_CASE(X)                                           \
+    case (static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::X)) : {      \
+        return #X;                                                              \
+    }
+
+inline std::string get_impure_intrinsic_name(int x) {
+    switch (x) {
+        IMPURE_INTRINSIC_NAME_CASE(IsIostatEnd)
+        default : {
+            throw LCompilersException("pickle: intrinsic_id not implemented");
+        }
+    }
+}
+
 } // namespace ASRUtils
 
 } // namespace LCompilers

@@ -2092,14 +2092,15 @@ public:
     }
 
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
-        switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_intrinsic_id)) {
+        switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_impure_intrinsic_id)) {
             case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd : {
+                // TODO: Fix this once the iostat is implemented in file handling;
+                // until then, this returns `False`
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
                 break ;
             }
             default: {
-                throw CodeGenError( ASRUtils::IntrinsicImpureFunctionRegistry::
-                        get_intrinsic_function_name(x.m_intrinsic_id) +
+                throw CodeGenError( ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id) +
                         " is not implemented by LLVM backend.", x.base.base.loc);
             }
         }
