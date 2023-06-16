@@ -1,25 +1,29 @@
-module template_compose_m
+module template_01_m
     implicit none
     private
     public :: op_t
+
+    requirement semigroup(t, combine)
+        type, deferred :: t
+        elemental function combine(x, y) result(combined)
+            type(t), intent(in) :: x, y
+            type(t) :: combined
+        end function
+    end requirement
   
-    ! first adding a Requirement structure is the
-    ! simplest way to process this
-    requirement pure_oper(t, op)
-      type, deferred :: t
-      pure function op(x, y) result(z)
-        type(t), intent(in) :: x, y
-        type(t) :: z
-      end function
+    requirement extended_semigroup(t, combine, sconcat, stimes)
+        requires semigroup(t, combine)
+        pure function sconcat(list) result(combined)
+            type(t), intent(in) :: list(:)
+            type(t) :: combined
+        end function
+        elemental function stimes(n, a) result(repeated)
+            integer, intent(in) :: n
+            type(t), intent(in) :: a
+            type(t) :: repeated
+        end function
     end requirement
 
-    !template op_t(s, plus, minus)
-    !    requires pure_oper(s, plus)
-    !contains
-
-       
-    !end template
-  
   contains
     
     subroutine test_template()
@@ -27,8 +31,8 @@ module template_compose_m
     
   end module
     
-  program template_compose
-  use template_compose_m
+  program template_01
+  use template_01_m
   implicit none
   
-  end program template_compose
+  end program template_01
