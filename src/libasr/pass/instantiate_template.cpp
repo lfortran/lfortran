@@ -284,6 +284,11 @@ public:
             x->m_original_name, args.p, args.size(), dt);
     }
 
+    ASR::asr_t* duplicate_TemplateBinOp(ASR::TemplateBinOp_t *x) {
+        ASR::expr_t *left = duplicate_expr(x->m_left);
+        ASR::expr_t *right = duplicate_expr(x->m_right);
+        return make_BinOp_helper(left, right, x->m_op, x->base.base.loc);
+    }
 
     ASR::ttype_t* substitute_type(ASR::ttype_t *param_type) {
         if (ASR::is_a<ASR::List_t>(*param_type)) {
