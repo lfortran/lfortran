@@ -874,6 +874,18 @@ public:
                 current_scope->add_symbol(var_name_, v);
             }
         }
+        if (var_name == "c_null_ptr") {
+            // Check if c_null_ptr is imported from iso_c_binding (intrinsic module)
+            if (v && ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
+                std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_module_name;
+                if (startswith(m_name, "lfortran_intrinsic")) {
+                    ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+                    tmp = ASR::make_PointerNullConstant_t(al, loc, type_);
+                    return tmp;
+                }
+
+            }
+        }
         if (!v) {
             if (compiler_options.implicit_typing) {
                 std::string first_letter = std::string(1,var_name[0]);
@@ -1883,6 +1895,30 @@ public:
                             } else {
                                 LCOMPILERS_ASSERT(false);
                             }
+                        }
+                    } else if (AST::is_a<AST::Name_t>(*s.m_initializer)) {
+                        std::string sym_name = AST::down_cast<AST::Name_t>(s.m_initializer)->m_id;
+                        if (sym_name == "c_null_ptr") {
+                            ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
+                            if (sym_found == nullptr) {
+                                throw SemanticError("Symbol not found: `c_null_ptr`",
+                                    x.base.base.loc);
+                            }
+                            // Check if c_null_ptr is imported from iso_c_binding (intrinsic module)
+                            if (ASR::is_a<ASR::ExternalSymbol_t>(*sym_found)) {
+                                std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(sym_found)->m_module_name;
+                                if (startswith(m_name, "lfortran_intrinsic")) {
+                                    init_expr = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al,
+                                                    x.base.base.loc, current_variable_type_));
+                                }
+                            } else {
+                                throw SemanticError("Named initialization not supported with: " + sym_name,
+                                    x.base.base.loc);
+                            }
+
+                        } else {
+                            throw SemanticError("Named initialization not supported with: " + sym_name,
+                                    x.base.base.loc);
                         }
                     } else {
                         throw SemanticError("Only function call assignment is allowed for now",
