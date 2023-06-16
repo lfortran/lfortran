@@ -30,7 +30,7 @@ ast = true
 asr = true
 
 [[test]]
-filename = "../integration_tests/template_add_06.f90"
+filename = "../integration_tests/template_add_01b.f90"
 asr = true
 
 [[test]]
