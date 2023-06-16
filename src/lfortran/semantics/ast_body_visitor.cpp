@@ -2438,7 +2438,7 @@ public:
             body.push_back(al, expr);
         }
 
-        if (fmt) {
+        if (fmt && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(fmt))) {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
                         al, x.base.base.loc, -1, 0, nullptr));
             ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, fmt->base.loc,
@@ -2452,7 +2452,7 @@ public:
             tmp = ASR::make_Print_t(al, x.base.base.loc, nullptr,
                 print_args.p, print_args.size(), nullptr, nullptr);
         } else {
-            tmp = ASR::make_Print_t(al, x.base.base.loc, nullptr,
+            tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
                 body.p, body.size(), nullptr, nullptr);
         }
     }
