@@ -4009,7 +4009,8 @@ public:
         std::string var_name = to_lower(x.m_func);
         if( intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
-            ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
+            ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ||
+            ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name)) {
             is_function = false;
             if( ASRUtils::IntrinsicFunctionRegistry::is_intrinsic_function(var_name) ) {
                 std::vector<IntrinsicSignature> signatures = get_intrinsic_signature(var_name);
@@ -4038,6 +4039,17 @@ public:
                     tmp = create_func(al, x.base.base.loc, args,
                             [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
                 }
+            } else if( ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ) {
+                Vec<ASR::expr_t*> args;
+                args.reserve(al, 1);
+                for( size_t i = 0; i < x.n_args; i++ ) {
+                    this->visit_expr(*x.m_args[i].m_end);
+                    args.push_back(al, ASRUtils::EXPR(tmp));
+                }
+                ASRUtils::create_intrinsic_function create_func =
+                    ASRUtils::IntrinsicImpureFunctionRegistry::get_create_function(var_name);
+                tmp = create_func(al, x.base.base.loc, args,
+                    [&](const std::string &msg, const Location &loc) { throw SemanticError(msg, loc); });
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if( var_name == "lbound" || var_name == "ubound" ) {
