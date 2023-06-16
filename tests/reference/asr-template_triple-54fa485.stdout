@@ -1453,6 +1453,7 @@
                                     magma_r
                                     [t
                                     plus_t]
+                                    []
                                 ),
                             triple_tmpl:
                                 (Template
@@ -1758,6 +1759,11 @@
                                     triple_tmpl
                                     [t
                                     plus_t]
+                                    [(Require
+                                        magma_r
+                                        [t
+                                        plus_t]
+                                    )]
                                 )
                         })
                     triple_m

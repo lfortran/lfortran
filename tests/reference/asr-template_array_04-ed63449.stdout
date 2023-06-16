@@ -171,6 +171,7 @@
                                         })
                                     default_behavior
                                     [t]
+                                    []
                                 ),
                             ireverse:
                                 (Function
@@ -603,6 +604,10 @@
                                         })
                                     reverse_tmpl
                                     [t]
+                                    [(Require
+                                        default_behavior
+                                        [t]
+                                    )]
                                 ),
                             test_reverse:
                                 (Function

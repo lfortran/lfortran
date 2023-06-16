@@ -206,6 +206,10 @@
                                         })
                                     array_tmpl
                                     [t]
+                                    [(Require
+                                        r
+                                        [t]
+                                    )]
                                 ),
                             insert_int:
                                 (Function
@@ -345,6 +349,7 @@
                                         })
                                     r
                                     [t]
+                                    []
                                 ),
                             test_template:
                                 (Function

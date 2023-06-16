@@ -572,6 +572,11 @@
                                     add_t
                                     [t
                                     f]
+                                    [(Require
+                                        r
+                                        [t
+                                        f]
+                                    )]
                                 ),
                             func_arg_real:
                                 (Function
@@ -780,6 +785,7 @@
                                     r
                                     [t
                                     f]
+                                    []
                                 ),
                             test_template:
                                 (Function
