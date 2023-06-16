@@ -1,6 +1,7 @@
 program bindc4
-use iso_c_binding, only: c_associated, c_loc, c_ptr, c_f_pointer
+use iso_c_binding, only: c_associated, c_loc, c_ptr, c_f_pointer, c_null_ptr
 type(c_ptr) :: queries
+type(c_ptr) :: queries2 = c_null_ptr
 integer :: i, j
 integer(2), target :: xv(3, 4), yv(3,4)
 integer :: newshape(2)
@@ -41,6 +42,9 @@ end do
 if (c_associated(queries, c_loc(x(0, 0)))) error stop
 if (.not. c_associated(queries, c_loc(x))) error stop
 if (c_associated(queries, c_loc(y))) error stop
+if (c_associated(queries2)) error stop
 ! TODO: Fix the following test
 !if (.not. c_associated(queries)) error stop
+queries = c_null_ptr
+
 end program
