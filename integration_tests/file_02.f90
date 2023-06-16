@@ -13,6 +13,6 @@ program file_02
         print *, "End of record reached."
         stop
     end if
-    print *, i
+    print *, i ! TODO Check for the value
     close(unit)
 end program file_02

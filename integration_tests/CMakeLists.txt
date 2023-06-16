@@ -746,6 +746,7 @@ RUN(NAME return_03 LABELS gfortran llvm wasm)
 RUN(NAME return_04 LABELS gfortran llvm wasm)
 
 RUN(NAME file_01       LABELS gfortran llvm)
+RUN(NAME file_02       LABELS gfortran llvm)
 RUN(NAME inquire_01    LABELS gfortran llvm)
 
 RUN(NAME class_01 LABELS gfortran)
