@@ -30,6 +30,10 @@ ast = true
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_add_06.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_travel.f90"
 ast = true
 asr = true
