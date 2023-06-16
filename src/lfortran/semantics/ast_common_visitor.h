@@ -4691,6 +4691,8 @@ public:
 
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
+        } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)){
+            asr = ASR::make_TemplateBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
         }
 
         if (overloaded != nullptr) {
