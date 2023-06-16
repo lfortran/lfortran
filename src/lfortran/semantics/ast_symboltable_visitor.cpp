@@ -2142,7 +2142,8 @@ public:
         }
 
         ASR::asr_t *req = ASR::make_Requirement_t(al, x.base.base.loc,
-            current_scope, s2c(al, to_lower(x.m_name)), args.p, args.size());
+            current_scope, s2c(al, to_lower(x.m_name)), args.p, args.size(),
+            nullptr, 0);
 
         parent_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(req));
 
@@ -2165,9 +2166,12 @@ public:
             throw SemanticError("Too many parameters passed to the '" +
                 require_name + "'", x.base.base.loc);
         }
-
+        
+        SetChar args;
+        args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
             std::string temp_arg = to_lower(x.m_namelist[i]);
+            args.push_back(al, s2c(al, temp_arg));
             if (std::find(current_template_args.begin(),
                           current_template_args.end(),
                           temp_arg) == current_template_args.end()) {
@@ -2180,6 +2184,9 @@ public:
             ASR::symbol_t *temp_arg_sym = replace_symbol(req_arg_sym, temp_arg);
             current_scope->add_symbol(temp_arg, temp_arg_sym);
         }
+
+        tmp = ASR::make_Require_t(al, x.base.base.loc, s2c(al, require_name),
+            args.p, args.size());
     }
 
     void visit_Template(const AST::Template_t &x){
@@ -2192,9 +2199,15 @@ public:
             current_template_args.push_back(to_lower(x.m_namelist[i]));
         }
 
+        Vec<ASR::require_instantiation_t*> reqs;
+        reqs.reserve(al, x.n_decl);
         // For interface and type parameters (derived type)
         for (size_t i=0; i<x.n_decl; i++) {
             this->visit_unit_decl2(*x.m_decl[i]);
+            if (tmp && ASR::is_a<ASR::require_instantiation_t>(*tmp)) {
+                reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                tmp = nullptr;
+            }
         }
 
         for (size_t i=0; i<x.n_contains; i++) {
@@ -2209,7 +2222,7 @@ public:
         }
 
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
-            current_scope, x.m_name, args.p, args.size());
+            current_scope, x.m_name, args.p, args.size(), reqs.p, reqs.size());
 
         parent_scope->add_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(temp));
 
