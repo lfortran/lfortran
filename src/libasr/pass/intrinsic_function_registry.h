@@ -2622,7 +2622,7 @@ inline std::string get_intrinsic_name(int x) {
     }
 }
 
-
+/************************* Intrinsic Impure Function **************************/
 enum class IntrinsicImpureFunctions : int64_t {
     IsIostatEnd,
     // ...
@@ -2630,50 +2630,30 @@ enum class IntrinsicImpureFunctions : int64_t {
 
 namespace IsIostatEnd {
 
-    static inline ASR::expr_t *eval_IsIostatEnd(Allocator &/*al*/,
-            const Location &/*loc*/, Vec<ASR::expr_t*>& /*args*/) {
-        // TODO
-        return nullptr;
-    }
-
     static inline ASR::asr_t* create_IsIostatEnd(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> /*err*/) {
-        ASR::expr_t* compile_time_value = eval_IsIostatEnd(al, loc, args);
+        // Compile time value cannot be computed
         return ASR::make_IntrinsicImpureFunction_t(al, loc,
                 static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::IsIostatEnd),
-                args.p, args.n, 0, logical, compile_time_value);
+                args.p, args.n, 0, logical, nullptr);
     }
 
 } // namespace IsIostatEnd
 
 namespace IntrinsicImpureFunctionRegistry {
 
-    static const std::map<std::string,
-        std::tuple<create_intrinsic_function,
-                    eval_intrinsic_function>>& intrinsic_function_by_name_db = {
-        {"is_iostat_end", {&IsIostatEnd::create_IsIostatEnd, &IsIostatEnd::eval_IsIostatEnd}},
+    static const std::map<std::string, std::tuple<create_intrinsic_function,
+            eval_intrinsic_function>>& function_by_name_db = {
+        {"is_iostat_end", {&IsIostatEnd::create_IsIostatEnd, nullptr}},
     };
-
-    static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
-        {static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::IsIostatEnd),
-            "is_iostat_end"},
-    };
-
-    static inline std::string get_intrinsic_function_name(int64_t id) {
-        if( intrinsic_function_id_to_name.find(id) == intrinsic_function_id_to_name.end() ) {
-            throw LCompilersException("IntrinsicImpureFunction with ID " + std::to_string(id) +
-                                      " has no name registered for it");
-        }
-        return intrinsic_function_id_to_name.at(id);
-    }
 
     static inline bool is_intrinsic_function(const std::string& name) {
-        return intrinsic_function_by_name_db.find(name) != intrinsic_function_by_name_db.end();
+        return function_by_name_db.find(name) != function_by_name_db.end();
     }
 
     static inline create_intrinsic_function get_create_function(const std::string& name) {
-        return  std::get<0>(intrinsic_function_by_name_db.at(name));
+        return  std::get<0>(function_by_name_db.at(name));
     }
 
 } // namespace IntrinsicImpureFunctionRegistry
