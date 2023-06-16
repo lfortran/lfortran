@@ -37,6 +37,16 @@
                                     c_loc
                                     Public
                                 ),
+                            c_null_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_null_ptr
+                                    4 c_null_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_ptr
+                                    Public
+                                ),
                             c_ptr:
                                 (ExternalSymbol
                                     2
@@ -107,6 +117,26 @@
                                     Local
                                     ()
                                     ()
+                                    Default
+                                    (CPtr)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            queries2:
+                                (Variable
+                                    2
+                                    queries2
+                                    []
+                                    Local
+                                    (PointerNullConstant
+                                        (CPtr)
+                                    )
+                                    (PointerNullConstant
+                                        (CPtr)
+                                    )
                                     Default
                                     (CPtr)
                                     ()
@@ -556,6 +586,25 @@
                             ()
                         )]
                         []
+                    )
+                    (If
+                        (PointerAssociated
+                            (Var 2 queries2)
+                            ()
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 queries)
+                        (PointerNullConstant
+                            (CPtr)
+                        )
+                        ()
                     )]
                 ),
             iso_c_binding:
