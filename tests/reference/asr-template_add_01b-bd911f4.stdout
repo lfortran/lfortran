@@ -1,0 +1,877 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            template_add:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            add_integer2:
+                                (ExternalSymbol
+                                    8
+                                    add_integer2
+                                    2 add_integer2
+                                    template_add_m
+                                    []
+                                    add_integer2
+                                    Public
+                                ),
+                            add_t:
+                                (ExternalSymbol
+                                    8
+                                    add_t
+                                    2 add_t
+                                    template_add_m
+                                    []
+                                    add_t
+                                    Public
+                                ),
+                            r:
+                                (ExternalSymbol
+                                    8
+                                    r
+                                    2 r
+                                    template_add_m
+                                    []
+                                    r
+                                    Public
+                                ),
+                            test_template:
+                                (ExternalSymbol
+                                    8
+                                    test_template
+                                    2 test_template
+                                    template_add_m
+                                    []
+                                    test_template
+                                    Public
+                                )
+                        })
+                    template_add
+                    [template_add_m]
+                    [(SubroutineCall
+                        8 test_template
+                        ()
+                        []
+                        ()
+                    )]
+                ),
+            template_add_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            add_integer:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            s:
+                                                (Variable
+                                                    10
+                                                    s
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    10
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    10
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            z:
+                                                (Variable
+                                                    10
+                                                    z
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    add_integer
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 10 x)
+                                    (Var 10 y)
+                                    (Var 10 z)]
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "x, y, z, x+y+z ="
+                                            (Character 1 16 ())
+                                        )
+                                        (Var 10 x)
+                                        (Var 10 y)
+                                        (Var 10 z)
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 10 x)
+                                                Add
+                                                (Var 10 y)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 10 z)
+                                            (Integer 4)
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 10 s)
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 10 x)
+                                                Add
+                                                (Var 10 y)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 10 z)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 10 s)]
+                                        ()
+                                        ()
+                                    )]
+                                    (Var 10 s)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            add_integer2:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            s:
+                                                (Variable
+                                                    6
+                                                    s
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    6
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    6
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            z:
+                                                (Variable
+                                                    6
+                                                    z
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    add_integer2
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 6 x)
+                                    (Var 6 y)
+                                    (Var 6 z)]
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "x, y, z, x+y+z ="
+                                            (Character 1 16 ())
+                                        )
+                                        (Var 6 x)
+                                        (Var 6 y)
+                                        (Var 6 z)
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 6 x)
+                                                Add
+                                                (Var 6 y)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 6 z)
+                                            (Integer 4)
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 6 s)
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 6 x)
+                                                Add
+                                                (Var 6 y)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 6 z)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 6 s)]
+                                        ()
+                                        ()
+                                    )]
+                                    (Var 6 s)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            add_real:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            s:
+                                                (Variable
+                                                    9
+                                                    s
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    9
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    9
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            z:
+                                                (Variable
+                                                    9
+                                                    z
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    add_real
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 9 x)
+                                    (Var 9 y)
+                                    (Var 9 z)]
+                                    [(Print
+                                        ()
+                                        [(StringConstant
+                                            "x, y, z, x+y+z ="
+                                            (Character 1 16 ())
+                                        )
+                                        (Var 9 x)
+                                        (Var 9 y)
+                                        (Var 9 z)
+                                        (RealBinOp
+                                            (RealBinOp
+                                                (Var 9 x)
+                                                Add
+                                                (Var 9 y)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 9 z)
+                                            (Real 4)
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 9 s)
+                                        (RealBinOp
+                                            (RealBinOp
+                                                (Var 9 x)
+                                                Add
+                                                (Var 9 y)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 9 z)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(Var 9 s)]
+                                        ()
+                                        ()
+                                    )]
+                                    (Var 9 s)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            add_t:
+                                (Template
+                                    (SymbolTable
+                                        4
+                                        {
+                                            add_generic:
+                                                (Function
+                                                    (SymbolTable
+                                                        5
+                                                        {
+                                                            s:
+                                                                (Variable
+                                                                    5
+                                                                    s
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    5
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    5
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            z:
+                                                                (Variable
+                                                                    5
+                                                                    z
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    add_generic
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 5 x)
+                                                    (Var 5 y)
+                                                    (Var 5 z)]
+                                                    [(Print
+                                                        ()
+                                                        [(StringConstant
+                                                            "x, y, z, x+y+z ="
+                                                            (Character 1 16 ())
+                                                        )
+                                                        (Var 5 x)
+                                                        (Var 5 y)
+                                                        (Var 5 z)
+                                                        (TemplateBinOp
+                                                            (TemplateBinOp
+                                                                (Var 5 x)
+                                                                Add
+                                                                (Var 5 y)
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (Var 5 z)
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ()
+                                                        )]
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 5 s)
+                                                        (TemplateBinOp
+                                                            (TemplateBinOp
+                                                                (Var 5 x)
+                                                                Add
+                                                                (Var 5 y)
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (Var 5 z)
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Print
+                                                        ()
+                                                        [(Var 5 s)]
+                                                        ()
+                                                        ()
+                                                    )]
+                                                    (Var 5 s)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    4
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    add_t
+                                    [t]
+                                ),
+                            r:
+                                (Requirement
+                                    (SymbolTable
+                                        3
+                                        {
+                                            t:
+                                                (Variable
+                                                    3
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    r
+                                    [t]
+                                ),
+                            test_template:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            a:
+                                                (Variable
+                                                    7
+                                                    a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    7
+                                                    n
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            s:
+                                                (Variable
+                                                    7
+                                                    s
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    test_template
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    [add_real
+                                    add_integer
+                                    add_integer2]
+                                    []
+                                    [(=
+                                        (Var 7 a)
+                                        (FunctionCall
+                                            2 add_real
+                                            ()
+                                            [((RealConstant
+                                                5.100000
+                                                (Real 4)
+                                            ))
+                                            ((RealConstant
+                                                7.200000
+                                                (Real 4)
+                                            ))
+                                            ((RealConstant
+                                                10.000000
+                                                (Real 4)
+                                            ))]
+                                            (Real 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "The result is "
+                                            (Character 1 14 ())
+                                        )
+                                        (Var 7 a)]
+                                        ()
+                                        ()
+                                    )
+                                    (=
+                                        (Var 7 n)
+                                        (FunctionCall
+                                            2 add_integer
+                                            ()
+                                            [((IntegerConstant 5 (Integer 4)))
+                                            ((IntegerConstant 9 (Integer 4)))
+                                            ((IntegerConstant 10 (Integer 4)))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (=
+                                        (Var 7 s)
+                                        (FunctionCall
+                                            2 add_integer2
+                                            ()
+                                            [((IntegerConstant 5 (Integer 4)))
+                                            ((IntegerConstant 9 (Integer 4)))
+                                            ((IntegerConstant 10 (Integer 4)))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "The result is "
+                                            (Character 1 14 ())
+                                        )
+                                        (Var 7 n)
+                                        (Var 7 s)]
+                                        ()
+                                        ()
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    template_add_m
+                    [template_add_m]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
