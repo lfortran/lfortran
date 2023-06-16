@@ -113,6 +113,19 @@ LFORTRAN_API void _lfortran_printf(const char* format, ...)
     va_end(args);
 }
 
+LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    char *str;
+    str = (char*) malloc(100 * sizeof(char));
+    str[0] = 'o';
+    str[1] = 'k';
+    str[2] = '\0';
+    va_end(args);
+    return str;
+}
+
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
 {
     va_list args;

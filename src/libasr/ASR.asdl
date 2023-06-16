@@ -284,6 +284,7 @@ expr
     | StringCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | StringOrd(expr arg, ttype type, expr? value)
     | StringChr(expr arg, ttype type, expr? value)
+    | StringFormat(expr fmt, expr* args, string_format_kind kind, ttype type, expr? value)
 
     | CPtrCompare(expr left, cmpop op, expr right, ttype type, expr? value)
 
@@ -447,5 +448,12 @@ type_stmt
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 
 require_instantiation = Require(identifier name, identifier* args)
+
+string_format_kind
+    = FormatFortran        -- "(f8.3,i4.2)", a, b
+    | FormatC              -- "%f: %d", a, b
+    | FormatPythonPercent  -- "%f: %d" % (a, b)
+    | FormatPythonFString  -- f"{a}: {b}"
+    | FormatPythonFormat   -- "{}: {}".format(a, b)
 
 }

@@ -2889,6 +2889,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         handle_print(x);
     }
 
+    void visit_StringFormat(const ASR::StringFormat_t &x) {
+        diag.codegen_warning_label(
+            "StringFormat not implemented yet, ignored for now",
+            {x.m_fmt->base.loc}, "ignored");
+        this->visit_expr(*x.m_fmt);
+    }
+
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if (x.m_fmt != nullptr) {
             diag.codegen_warning_label(

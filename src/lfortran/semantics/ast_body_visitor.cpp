@@ -2438,8 +2438,23 @@ public:
             body.push_back(al, expr);
         }
 
-        tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
-            body.p, body.size(), nullptr, nullptr);
+        if (fmt && ASR::is_a<ASR::Character_t>(*ASRUtils::expr_type(fmt))) {
+            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, x.base.base.loc, -1, 0, nullptr));
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, fmt->base.loc,
+                fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
+                type, nullptr));
+
+            Vec<ASR::expr_t*> print_args;
+            print_args.reserve(al, 1);
+            print_args.push_back(al, string_format);
+
+            tmp = ASR::make_Print_t(al, x.base.base.loc, nullptr,
+                print_args.p, print_args.size(), nullptr, nullptr);
+        } else {
+            tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
+                body.p, body.size(), nullptr, nullptr);
+        }
     }
 
     void visit_If(const AST::If_t &x) {
