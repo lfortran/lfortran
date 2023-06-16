@@ -104,6 +104,22 @@ LFORTRAN_API int _lfortran_random_int(int lower, int upper)
     return randint;
 }
 
+char* substring(const char* str, int start, int end) {
+    int len = end - start;
+    char* substr = (char*)malloc((len + 1) * sizeof(char));
+    strncpy(substr, str + start, len);
+    substr[len] = '\0';
+    return substr;
+}
+
+char* appendToString(char* str, const char* append) {
+    int len1 = strlen(str);
+    int len2 = strlen(append);
+    str = (char*)realloc(str, (len1 + len2 + 1) * sizeof(char));
+    strcat(str, append);
+    return str;
+}
+
 LFORTRAN_API void _lfortran_printf(const char* format, ...)
 {
     va_list args;
@@ -117,13 +133,82 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    char *str;
-    str = (char*) malloc(100 * sizeof(char));
-    str[0] = 'o';
-    str[1] = 'k';
-    str[2] = '\0';
+
+    char* modified_input_string = substring(format, 1, strlen(format) - 1);
+    char** format_values = NULL;
+    int format_values_count = 0;
+    char* token = strtok(modified_input_string, ",");
+    while (token != NULL) {
+        format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
+        format_values[format_values_count] = token;
+        format_values_count++;
+        token = strtok(NULL, ",");
+    }
+    char* result = (char*)malloc(sizeof(char));
+    result[0] = '\0';
+    int arguments = 0;
+    for (int i = 0; i < format_values_count; i++) {
+        char* value = format_values[i];
+
+        if (value[0] == '/') {
+            // Slash Editing (newlines)
+            int j = 0;
+            while (value[j] == '/') {
+                result = appendToString(result, "\n");
+                j++;
+            }
+            value = substring(value, j, strlen(value));
+        }
+
+        int newline = 0;
+        if (value[strlen(value) - 1] == '/') {
+            // Newlines at the end of the argument
+            int j = strlen(value) - 1;
+            while (value[j] == '/') {
+                newline++;
+                j--;
+            }
+            value = substring(value, 0, strlen(value) - newline);
+        }
+
+        if (value[0] == '\"' && value[strlen(value) - 1] == '\"') {
+            // String
+            value = substring(value, 1, strlen(value) - 1);
+            result = appendToString(result, value);
+        } else if (value[0] == 'A' || value[0] == 'a') {
+            // Character Editing (A[n])
+            char* str = substring(value, 1, strlen(value));
+            char* arg = va_arg(args,char*);
+            if (strlen(str) == 0) {
+                sprintf(str, "%lu", strlen(arg));
+            }
+            char* s = (char*)malloc((strlen(str) + 4) * sizeof(char));
+            sprintf(s, "%%%s.%ss", str, str);
+            char* string = (char*)malloc((strlen(arg)) * sizeof(char));;
+            sprintf(string,s, arg);
+            result = appendToString(result, string);
+            free(s);
+            free(string);
+        } else if (value[strlen(value) - 1] == 'X' || value[strlen(value) - 1] == 'x') {
+            // Positional Editing (nX)
+            int t = atoi(substring(value, 0, strlen(value) - 1));
+            for (int i = 0; i < t; i++) {
+                result = appendToString(result, " ");
+            }
+        } else if (strlen(value) != 0) {
+            perror("Printing support is not available for %s format.\n");
+        }
+
+        while (newline != 0) {
+            result = appendToString(result, " ");
+            newline--;
+        }
+    }
+
+    free(modified_input_string);
+    free(format_values);
     va_end(args);
-    return str;
+    return result;
 }
 
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
