@@ -104,6 +104,15 @@ LFORTRAN_API int _lfortran_random_int(int lower, int upper)
     return randint;
 }
 
+LFORTRAN_API void _lfortran_printf(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vfprintf(stdout, format, args);
+    fflush(stdout);
+    va_end(args);
+}
+
 char* substring(const char* str, int start, int end) {
     int len = end - start;
     char* substr = (char*)malloc((len + 1) * sizeof(char));
@@ -120,13 +129,49 @@ char* appendToString(char* str, const char* append) {
     return str;
 }
 
-LFORTRAN_API void _lfortran_printf(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    vfprintf(stdout, format, args);
-    fflush(stdout);
-    va_end(args);
+void handle_integer(char* format, int val, char** result) {
+    int len, width, min_width = 0;
+    int dot_pos = -1;
+    for (int j = 0; j < strlen(format); j++) {
+        if (format[j] == '.') {
+            dot_pos = j;
+            break;
+        }
+    }
+    if (dot_pos != -1) {
+        width = atoi(substring(format, 1, dot_pos));
+        min_width = atoi(substring(format, dot_pos + 1, strlen(format)));
+        if (min_width > width) {
+            perror("Minimum number of digits cannot be more than the specified width for format.\n");
+        }
+    } else {
+        width = atoi(substring(format, 1, strlen(format)));
+    }
+    len = val > 0 ? (int)log10(val) + 1 : (int)log10(-val) + 1;
+    len = (val == 0) ? 1 : len;
+    if (width >= len) {
+        if (min_width > len) {
+            for (int i = 0; i < (width - min_width); i++) {
+                *result = appendToString(*result, " ");
+            }
+            for (int i = 0; i < (min_width - len); i++) {
+                *result = appendToString(*result, "0");
+            }
+        } else {
+            for (int i = 0; i < (width - len); i++) {
+                *result = appendToString(*result, " ");
+            }
+        }
+        int length = snprintf( NULL, 0, "%d", val );
+        char* str = malloc( length + 1 );
+        snprintf( str, length + 1, "%d", val );
+        *result = appendToString(*result, str);
+        free(str);
+    } else if (width < len) {
+        for (int i = 0; i < width; i++) {
+            *result = appendToString(*result, "*");
+        }
+    }
 }
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
@@ -213,6 +258,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             for (int i = 0; i < t; i++) {
                 result = appendToString(result, " ");
             }
+        } else if (tolower(value[0]) == 'i') {
+            // Integer Editing ( I[w[.m]] )
+            int val = va_arg(args,int);
+            handle_integer(value, val, &result);
+            arguments++;
         } else if (strlen(value) != 0) {
             perror("Printing support is not available for %s format.\n");
         }
