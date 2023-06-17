@@ -282,7 +282,7 @@ public:
             use_ref = use_ref && !is_array;
             if (ASRUtils::is_integer(*v_m_type)) {
                 headers.insert("inttypes.h");
-                ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(v_m_type);
+                ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_allocatable(v_m_type));
                 std::string type_name = "int" + std::to_string(t->m_kind * 8) + "_t";
                 if( is_array ) {
                     bool is_fixed_size = true;
