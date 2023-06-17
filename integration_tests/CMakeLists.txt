@@ -397,7 +397,7 @@ RUN(NAME intrinsics_14 LABELS gfortran llvm) # selected_real,int_kind body
 RUN(NAME intrinsics_15 LABELS gfortran llvm) # real
 RUN(NAME intrinsics_16 LABELS gfortran llvm) # aimag
 RUN(NAME intrinsics_17 LABELS gfortran llvm) # exp, log, erf
-RUN(NAME intrinsics_17b LABELS gfortran llvm) # log
+RUN(NAME intrinsics_17b LABELS gfortran llvm c) # log
 RUN(NAME intrinsics_18 LABELS gfortran llvm)
 RUN(NAME intrinsics_18c LABELS gfortran llvm)
 RUN(NAME intrinsics_19 LABELS gfortran llvm)
