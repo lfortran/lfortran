@@ -171,11 +171,29 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             value = substring(value, 0, strlen(value) - newline);
         }
 
+        if (isdigit(value[0])) {
+            // Repeat Count
+            int j = 0;
+            while (isdigit(value[j])) {
+                j++;
+            }
+            if (tolower(value[j]) != 'x') {
+                int repeat = atoi(substring(value, 0, j));
+                value = substring(value, j, strlen(value));
+                for (int k = 0; k < repeat - 1; k++) {
+                    format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
+                    memmove(format_values + i + 2, format_values + i + 1, (format_values_count - i - 1) * sizeof(char*));
+                    format_values[i + 1] = value;
+                    format_values_count++;
+                }
+            }
+        }
+
         if (value[0] == '\"' && value[strlen(value) - 1] == '\"') {
             // String
             value = substring(value, 1, strlen(value) - 1);
             result = appendToString(result, value);
-        } else if (value[0] == 'A' || value[0] == 'a') {
+        } else if (tolower(value[0]) == 'a') {
             // Character Editing (A[n])
             char* str = substring(value, 1, strlen(value));
             char* arg = va_arg(args,char*);
@@ -189,7 +207,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             result = appendToString(result, string);
             free(s);
             free(string);
-        } else if (value[strlen(value) - 1] == 'X' || value[strlen(value) - 1] == 'x') {
+        } else if (tolower(value[strlen(value) - 1]) == 'x') {
             // Positional Editing (nX)
             int t = atoi(substring(value, 0, strlen(value) - 1));
             for (int i = 0; i < t; i++) {
