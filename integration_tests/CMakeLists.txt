@@ -905,3 +905,6 @@ RUN(NAME statement_03 LABELS gfortran llvmImplicit)
 
 RUN(NAME data_implied_do_01 LABELS gfortran llvm NOFAST)
 RUN(NAME data_implied_do_02 LABELS gfortran llvm NOFAST)
+RUN(NAME data_implied_do_03 LABELS gfortran llvm NOFAST)
+RUN(NAME data_implied_do_04 LABELS gfortran llvm NOFAST)
+
