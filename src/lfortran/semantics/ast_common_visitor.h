@@ -767,7 +767,8 @@ public:
     std::map<uint64_t, ASR::symbol_t*> &common_variables_hash;
 
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
-    std::vector<std::string> &external_procedures;
+    std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
+    std::vector<std::string> external_procedures;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
@@ -779,10 +780,10 @@ public:
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
             std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-            std::vector<std::string>& external_procedures)
+            std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
-          common_variables_hash{common_variables_hash}, external_procedures{external_procedures},
+          common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
           current_variable_type_{nullptr} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
@@ -1515,6 +1516,21 @@ public:
         parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
+    
+    bool check_is_external(std::string sym) {
+        if (current_scope->asr_owner) {
+            external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
+        }
+        return ( std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end() );
+    }
+
+    void erase_from_external_mapping(std::string sym) {
+        uint64_t hash = get_hash(current_scope->asr_owner);
+        external_procedures_mapping[hash].erase(
+            std::remove(external_procedures_mapping[hash].begin(), 
+            external_procedures_mapping[hash].end(), sym), 
+            external_procedures_mapping[hash].end());
+    }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         if (x.m_vartype == nullptr &&
@@ -1786,7 +1802,7 @@ public:
                 bool is_implicitly_declared = false;
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
-                bool is_external = ( std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end() );
+                bool is_external = check_is_external(sym);
                 ASR::accessType s_access = dflt_access;
                 ASR::presenceType s_presence = dflt_presence;
                 bool value_attr = false;
@@ -4458,7 +4474,7 @@ public:
         std::string var_name = to_lower(x.m_func);
         ASR::symbol_t *v = nullptr;
         ASR::expr_t *v_expr = nullptr;
-        bool is_external_procedure = ( std::find(external_procedures.begin(), external_procedures.end(), var_name) != external_procedures.end() );
+        bool is_external_procedure = check_is_external(var_name);
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
@@ -4544,8 +4560,8 @@ public:
                     LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
                 }
 
-                // erase from external_procedures
-                external_procedures.erase(std::remove(external_procedures.begin(), external_procedures.end(), var_name), external_procedures.end());
+                // erase from external_procedures_mapping
+                erase_from_external_mapping(var_name);
 
                 // Update arguments if the symbol belonged to a function
                 if (current_scope->asr_owner) {
@@ -4573,7 +4589,7 @@ public:
             ASR::symbol_t* v2 = current_scope->parent->resolve_symbol(var_name);
             if (ASR::is_a<ASR::Function_t>(*v2)) {
                 current_scope->erase_symbol(var_name);
-                external_procedures.erase(std::remove(external_procedures.begin(), external_procedures.end(), var_name), external_procedures.end());
+                erase_from_external_mapping(var_name);
                 v = v2;
             }
         }

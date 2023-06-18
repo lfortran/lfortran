@@ -35,8 +35,8 @@ public:
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::vector<std::string>& external_procedures)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures),
+            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -2141,6 +2141,7 @@ public:
         std::string sub_name = to_lower(x.m_name);
         ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
+        bool is_external = check_is_external(sub_name);
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
@@ -2155,7 +2156,7 @@ public:
         } else {
             original_sym = current_scope->resolve_symbol(sub_name);
         }
-        if (!original_sym || (original_sym && std::find(external_procedures.begin(), external_procedures.end(), sub_name) != external_procedures.end())) {
+        if (!original_sym || (original_sym && is_external)) {
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
             if (!original_sym && compiler_options.implicit_interface) {
                 ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
@@ -2163,9 +2164,9 @@ public:
                 original_sym = current_scope->resolve_symbol(sub_name);
                 LCOMPILERS_ASSERT(original_sym!=nullptr);
             }
-            // remove from external_procedures
-            if (original_sym && std::find(external_procedures.begin(), external_procedures.end(), sub_name) != external_procedures.end()) {
-                external_procedures.erase(std::remove(external_procedures.begin(), external_procedures.end(), sub_name), external_procedures.end());
+            // remove from external_procedures_mapping
+            if (original_sym && is_external) {
+                erase_from_external_mapping(sub_name);
             }
 
             // Update arguments if the symbol belonged to a function
@@ -2959,9 +2960,9 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::vector<std::string>& external_procedures)
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
