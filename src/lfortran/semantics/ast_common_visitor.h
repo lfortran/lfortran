@@ -1149,6 +1149,53 @@ public:
                         v2->m_dependencies = var_deps_vec.p;
                         v2->n_dependencies = var_deps_vec.size();
 
+                    } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*object)) {
+                        /*
+                            case: DATA (a(i),i=1,5) /1.0, 2.0, 3*0.0/
+                            Here the implied do loop gets expanded to:
+                            DATA a(1), a(2), a(3), a(4), a(5) /1.0, 2.0, 0.0, 0.0, 0.0/
+                        */
+                        ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(object);
+
+                        ASR::expr_t* idl_start = idl->m_start;
+                        ASR::expr_t* idl_end = idl->m_end;
+                        ASR::expr_t* idl_increment = idl->m_increment;
+
+                        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+
+                        if (!idl_increment) {
+                            idl_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+                        }
+
+                        ASR::IntegerConstant_t* idl_start_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_start);
+                        ASR::IntegerConstant_t* idl_end_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_end);
+                        ASR::IntegerConstant_t* idl_increment_int = ASR::down_cast<ASR::IntegerConstant_t>(idl_increment);
+
+                        int64_t start = idl_start_int->m_n;
+                        int64_t end = idl_end_int->m_n;
+                        int64_t increment = idl_increment_int->m_n;
+
+                        // Ideally idl->n_values should be 1, as it will be an implied do loop
+                        LCOMPILERS_ASSERT(idl->n_values == 1)
+                        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                        for (int64_t i = start; i <= end; i += increment) {
+                            ASR::expr_t* array_item_expr = expr_duplicator.duplicate_expr(idl->m_values[0]);
+                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(array_item_expr);
+                            for (size_t j = 0; j < array_item->n_args; j++) {
+                                ASR::array_index_t arg = array_item->m_args[j];
+                                ASR::expr_t* arg_right = arg.m_right;
+                                if (ASR::is_a<ASR::Var_t>(*arg_right)) {
+                                    array_item->m_args[j].m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, idl->base.base.loc, i, int32_type));
+                                }
+                            }
+                            ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item);
+                            this->visit_expr(*a->m_value[i-1]);
+                            ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al,
+                                    x.base.base.loc, target, value, nullptr));
+                            LCOMPILERS_ASSERT(current_body != nullptr)
+                            current_body->push_back(al, assign_stmt);
+                        }
                     } else {
                         throw SemanticError("There is one variable and multiple values, but the variable is not an array",
                             x.base.base.loc);
@@ -4254,6 +4301,55 @@ public:
             false, false, false);
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
+    }
+
+    void visit_DataImpliedDo(const AST::DataImpliedDo_t& x) {
+        Vec<ASR::expr_t*> a_values_vec;
+        ASR::expr_t *a_start, *a_end, *a_increment;
+        a_start = a_end = a_increment = nullptr;
+        a_values_vec.reserve(al, x.n_object_list);
+        ASR::ttype_t* type = nullptr;
+        Vec<ASR::ttype_t*> type_tuple;
+        type_tuple.reserve(al, 1);
+        bool unique_type = true;
+        for( size_t i = 0; i < x.n_object_list; i++ ) {
+            this->visit_expr(*(x.m_object_list[i]));
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            ASR::ttype_t* type_ = ASRUtils::expr_type(expr);
+            if( type == nullptr ) {
+                type = type_;
+            } else {
+                if (!unique_type || !ASRUtils::types_equal(type_, type)) {
+                    unique_type = false;
+                }
+            }
+            type_tuple.push_back(al, type_);
+
+            a_values_vec.push_back(al, expr);
+        }
+        this->visit_expr(*(x.m_start));
+        a_start = ASRUtils::EXPR(tmp);
+        this->visit_expr(*(x.m_end));
+        a_end = ASRUtils::EXPR(tmp);
+        if( x.m_increment != nullptr ) {
+            this->visit_expr(*(x.m_increment));
+            a_increment = ASRUtils::EXPR(tmp);
+        }
+        ASR::expr_t** a_values = a_values_vec.p;
+        size_t n_values = a_values_vec.size();
+
+        ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
+        if (a_sym == nullptr) {
+            throw SemanticError("The implied do loop variable '" +
+                to_lower(x.m_var) + "' is not declared", x.base.base.loc);
+        }
+        ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        if( !unique_type ) {
+            type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
+        }
+        tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
+                                        a_var, a_start, a_end, a_increment,
+                                        type, nullptr);
     }
 
     void visit_ImpliedDoLoop(const AST::ImpliedDoLoop_t& x) {
