@@ -5,7 +5,10 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 # We don't execute this if we have a tarball
 if (LFORTRAN_BUILD_ALL)
     find_program(BASH_BIN bash)
-    execute_process(COMMAND "${BASH_BIN}" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    execute_process(COMMAND "${BASH_BIN}" "-e" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
+    if (NOT _BUILD0_EXIT EQUAL 0)
+        message(FATAL_ERROR "Running build0.sh failed (see error above)")
+    endif ()
 endif()
 
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/version" LFORTRAN_VERSION)
