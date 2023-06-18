@@ -130,25 +130,20 @@ char* appendToString(char* str, const char* append) {
 }
 
 void handle_integer(char* format, int val, char** result) {
-    int len, width, min_width = 0;
-    int dot_pos = -1;
-    for (int j = 0; j < strlen(format); j++) {
-        if (format[j] == '.') {
-            dot_pos = j;
-            break;
-        }
-    }
-    if (dot_pos != -1) {
-        width = atoi(substring(format, 1, dot_pos));
-        min_width = atoi(substring(format, dot_pos + 1, strlen(format)));
+    int width = 0, min_width = 0;
+    char* dot_pos = strchr(format, '.');
+    if (dot_pos != NULL) {
+        dot_pos++;
+        width = atoi(format + 1);
+        min_width = atoi(dot_pos);
         if (min_width > width) {
             perror("Minimum number of digits cannot be more than the specified width for format.\n");
         }
     } else {
-        width = atoi(substring(format, 1, strlen(format)));
+        width = atoi(format + 1);
     }
-    len = val > 0 ? (int)log10(val) + 1 : (int)log10(-val) + 1;
-    len = (val == 0) ? 1 : len;
+
+    int len = (val == 0) ? 1 : (int)log10(abs(val)) + 1;
     if (width >= len) {
         if (min_width > len) {
             for (int i = 0; i < (width - min_width); i++) {
@@ -162,15 +157,105 @@ void handle_integer(char* format, int val, char** result) {
                 *result = appendToString(*result, " ");
             }
         }
-        int length = snprintf( NULL, 0, "%d", val );
-        char* str = malloc( length + 1 );
-        snprintf( str, length + 1, "%d", val );
+        char str[20];
+        sprintf(str, "%d", val);
         *result = appendToString(*result, str);
-        free(str);
     } else if (width < len) {
         for (int i = 0; i < width; i++) {
             *result = appendToString(*result, "*");
         }
+    }
+}
+
+void handle_decimal(char* format, double val, char** result, char c) {
+    int width = 0, decimal_digits = 0;
+    int64_t integer_part = (int64_t)val;
+    int integer_length = (integer_part == 0) ? 0 : (int)log10(llabs(integer_part)) + 1;
+
+    char val_str[64];
+    sprintf(val_str, "%lf", val);
+
+    int i = strlen(val_str) - 1;
+    while (val_str[i] == '0') {
+        val_str[i] = '\0';
+        i--;
+    }
+
+    char* ptr = strchr(val_str, '.');
+    if (ptr != NULL) {
+        memmove(ptr, ptr + 1, strlen(ptr));
+    }
+
+    if (val < 0) {
+        memmove(val_str, val_str + 1, strlen(val_str));
+    }
+
+    int decimal = -1;
+    while (val_str[0] == '0') {
+        memmove(val_str, val_str + 1, strlen(val_str));
+        decimal++;
+    }
+
+    char* dot_pos = strchr(format, '.');
+    if (dot_pos != NULL) {
+        dot_pos++;
+        width = atoi(format + 1);
+        decimal_digits = atoi(dot_pos);
+        if (decimal_digits > width - 3) {
+            perror("Specified width is not enough for the specified number of decimal digits\n");
+        }
+    } else {
+        width = atoi(format + 1);
+    }
+    if (decimal_digits > strlen(val_str)) {
+        for(int i=0; i < decimal_digits - integer_length; i++) {
+            strcat(val_str, "0");
+        }
+    }
+
+    if (decimal_digits < strlen(val_str)) {
+        int t = round((float)atoi(val_str) / pow(10, (strlen(val_str) - decimal_digits)));
+        sprintf(val_str, "%d", t);
+    }
+
+    char formatted_value[64] = "";
+    int sign_width = (val < 0) ? 1 : 0;
+    int spaces = width - sign_width - decimal_digits - 6;
+    for (int i = 0; i < spaces; i++) {
+        strcat(formatted_value, " ");
+    }
+
+    if (sign_width == 1) {
+        strcat(formatted_value, "-");
+    }
+
+    strcat(formatted_value, "0.");
+    strncat(formatted_value, val_str, decimal_digits);
+    strcat(formatted_value, &c);
+    strcat(formatted_value, (integer_length > 0 ? "+" : "-"));
+
+    char exponent[3];
+    if (integer_length > 0) {
+        sprintf(exponent, "%02d", integer_length);
+    } else {
+        sprintf(exponent, "%02d", decimal);
+    }
+
+    strcat(formatted_value, exponent);
+
+    if (strlen(formatted_value) == width + 1) {
+        char* ptr = strchr(formatted_value, '0');
+        if (ptr != NULL) {
+            memmove(ptr, ptr + 1, strlen(ptr));
+        }
+    }
+
+    if (strlen(formatted_value) > width) {
+        for(int i=0; i<width; i++){
+            *result = appendToString(*result,"*");
+        }
+    } else {
+        *result = appendToString(*result, formatted_value);
     }
 }
 
@@ -262,6 +347,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             // Integer Editing ( I[w[.m]] )
             int val = va_arg(args,int);
             handle_integer(value, val, &result);
+            arguments++;
+        } else if (tolower(value[0]) == 'd') {
+            // D Editing (D[w[.d]])
+            double val = va_arg(args, double);
+            handle_decimal(value, val, &result,'D');
+            arguments++;
+        } else if (tolower(value[0]) == 'e') {
+            // E Editing E[w[.d][Ee]]
+            // Only (E[w[.d]]) has been implemented yet
+            double val = va_arg(args, double);
+            handle_decimal(value, val, &result,'E');
             arguments++;
         } else if (strlen(value) != 0) {
             perror("Printing support is not available for %s format.\n");
