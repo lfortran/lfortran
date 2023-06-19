@@ -1466,55 +1466,57 @@ public:
     }
 
     void create_external_function(std::string sym, Location loc) {
-        external_procedures.push_back(sym);
-        ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
-        assgnd_access[sym] = ASR::accessType::Public;
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        ASR::ttype_t *type;
-        if (sym_) {
-            type = ASRUtils::symbol_type(sym_);
-        } else if (compiler_options.implicit_typing) {
-            type = implicit_dictionary[std::string(1,sym[0])];
-            if (!type) {
-                // There exists an `implicit none` statement, here compiler has
-                // no information about type of symbol hence keeping it real*4.
+        if (compiler_options.implicit_interface) {
+            external_procedures.push_back(sym);
+            ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
+            assgnd_access[sym] = ASR::accessType::Public;
+            SymbolTable *parent_scope = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+            ASR::ttype_t *type;
+            if (sym_) {
+                type = ASRUtils::symbol_type(sym_);
+            } else if (compiler_options.implicit_typing) {
+                type = implicit_dictionary[std::string(1,sym[0])];
+                if (!type) {
+                    // There exists an `implicit none` statement, here compiler has
+                    // no information about type of symbol hence keeping it real*4.
+                    type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                }
+            } else {
+                // Here compiler has no information about type of symbol hence keeping it real*4.
                 type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
             }
-        } else {
-            // Here compiler has no information about type of symbol hence keeping it real*4.
-            type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+            // add return var
+            std::string return_var_name = sym + "_return_var_name";
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+            ASR::asr_t *return_var = ASR::make_Variable_t(al, loc,
+                current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                variable_dependencies_vec.size(), ASRUtils::intent_return_var,
+                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                false);
+            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+            ASR::expr_t *to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                ASR::down_cast<ASR::symbol_t>(return_var)));
+        
+            tmp = ASRUtils::make_Function_t_util(
+                al, loc,
+                /* a_symtab */ current_scope,
+                /* a_name */ s2c(al, sym),
+                nullptr, 0,
+                /* a_args */ nullptr,
+                /* n_args */ 0,
+                /* a_body */ nullptr,
+                /* n_body */ 0,
+                /* a_return_var */ to_return,
+                ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+                nullptr, false, false, false, false, false,
+                false, false, false);
+            parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
+            current_scope = parent_scope;
         }
-        // add return var
-        std::string return_var_name = sym + "_return_var_name";
-        SetChar variable_dependencies_vec;
-        variable_dependencies_vec.reserve(al, 1);
-        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
-        ASR::asr_t *return_var = ASR::make_Variable_t(al, loc,
-            current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
-            variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-            nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-            ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
-            false);
-        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-        ASR::expr_t *to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-            ASR::down_cast<ASR::symbol_t>(return_var)));
-      
-        tmp = ASRUtils::make_Function_t_util(
-            al, loc,
-            /* a_symtab */ current_scope,
-            /* a_name */ s2c(al, sym),
-            nullptr, 0,
-            /* a_args */ nullptr,
-            /* n_args */ 0,
-            /* a_body */ nullptr,
-            /* n_body */ 0,
-            /* a_return_var */ to_return,
-            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
-            nullptr, false, false, false, false, false,
-            false, false, false);
-        parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-        current_scope = parent_scope;
     }
     
     bool check_is_external(std::string sym) {
