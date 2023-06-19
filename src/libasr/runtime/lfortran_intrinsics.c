@@ -270,8 +270,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
     char* token = strtok(modified_input_string, ",");
     while (token != NULL) {
         format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
-        format_values[format_values_count] = token;
-        format_values_count++;
+        format_values[format_values_count++] = token;
         token = strtok(NULL, ",");
     }
     char* result = (char*)malloc(sizeof(char));
@@ -307,8 +306,35 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             while (isdigit(value[j])) {
                 j++;
             }
-            if (tolower(value[j]) != 'x') {
-                int repeat = atoi(substring(value, 0, j));
+            int repeat = atoi(substring(value, 0, j));
+            if (value[j] == '(') {
+                value = substring(value, 1, strlen(value));
+                format_values[i] = substring(format_values[i], 1, strlen(format_values[i]));
+                char* new_input_string = (char*)malloc(sizeof(char));
+                new_input_string[0] = '\0';
+                for (int k = i; k < format_values_count; k++) {
+                    new_input_string = appendToString(new_input_string, format_values[k]);
+                    new_input_string = appendToString(new_input_string, ",");
+                }
+                new_input_string = substring(new_input_string, 1, strchr(new_input_string, ')') - new_input_string);
+                char** new_fmt_val = NULL;
+                int new_fmt_val_count = 0;
+                char* new_token = strtok(new_input_string, ",");
+                while (new_token != NULL) {
+                    new_fmt_val = (char**)realloc(new_fmt_val, (new_fmt_val_count + 1) * sizeof(char*));
+                    new_fmt_val[new_fmt_val_count++] = new_token;
+                    new_token = strtok(NULL, ",");
+                }
+                for (int p = 0; p < repeat - 1; p++) {
+                    for (int k = 0; k < new_fmt_val_count; k++) {
+                        int f = i + new_fmt_val_count + k;
+                        format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
+                        memmove(format_values + f + 1, format_values + f, (format_values_count - f) * sizeof(char*));
+                        format_values[f] = new_fmt_val[k];
+                        format_values_count++;
+                    }
+                }
+            } else if (tolower(value[j]) != 'x') {
                 value = substring(value, j, strlen(value));
                 for (int k = 0; k < repeat - 1; k++) {
                     format_values = (char**)realloc(format_values, (format_values_count + 1) * sizeof(char*));
@@ -318,6 +344,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
                 }
             }
         }
+        if (value[0] == '(') {
+            value = substring(value, 1, strlen(value));
+        } else if (value[strlen(value)-1] == ')') {
+            value = substring(value, 0, strlen(value) - 1);
+        }
 
         if (value[0] == '\"' && value[strlen(value) - 1] == '\"') {
             // String
@@ -326,14 +357,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
         } else if (tolower(value[0]) == 'a') {
             // Character Editing (A[n])
             char* str = substring(value, 1, strlen(value));
-            char* arg = va_arg(args,char*);
+            char* arg = va_arg(args, char*);
             if (strlen(str) == 0) {
                 sprintf(str, "%lu", strlen(arg));
             }
             char* s = (char*)malloc((strlen(str) + 4) * sizeof(char));
             sprintf(s, "%%%s.%ss", str, str);
-            char* string = (char*)malloc((strlen(arg)) * sizeof(char));;
-            sprintf(string,s, arg);
+            char* string = (char*)malloc((strlen(arg)) * sizeof(char));
+            sprintf(string, s, arg);
             result = appendToString(result, string);
             free(s);
             free(string);
@@ -345,22 +376,22 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             }
         } else if (tolower(value[0]) == 'i') {
             // Integer Editing ( I[w[.m]] )
-            int val = va_arg(args,int);
+            int val = va_arg(args, int);
             handle_integer(value, val, &result);
             arguments++;
         } else if (tolower(value[0]) == 'd') {
             // D Editing (D[w[.d]])
             double val = va_arg(args, double);
-            handle_decimal(value, val, &result,'D');
+            handle_decimal(value, val, &result, 'D');
             arguments++;
         } else if (tolower(value[0]) == 'e') {
             // E Editing E[w[.d][Ee]]
             // Only (E[w[.d]]) has been implemented yet
             double val = va_arg(args, double);
-            handle_decimal(value, val, &result,'E');
+            handle_decimal(value, val, &result, 'E');
             arguments++;
         } else if (strlen(value) != 0) {
-            perror("Printing support is not available for %s format.\n");
+            printf("Printing support is not available for %s format.\n",value);
         }
 
         while (newline != 0) {
