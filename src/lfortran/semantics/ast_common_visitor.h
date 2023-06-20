@@ -1500,7 +1500,7 @@ public:
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
             ASR::expr_t *to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                 ASR::down_cast<ASR::symbol_t>(return_var)));
-        
+
             tmp = ASRUtils::make_Function_t_util(
                 al, loc,
                 /* a_symtab */ current_scope,
@@ -1516,6 +1516,16 @@ public:
                 false, false, false);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
             current_scope = parent_scope;
+        } else {
+            /*
+                To handle: ./integration_tests/external_01.f90 
+                Later we should prohibit it, since one can't call a global function from inside a module or a program. 
+                One can only do it by having an explicit interface to it.
+            */
+            ASR::symbol_t* sym_ = current_scope->resolve_symbol(sym);
+            if (!sym_) {
+                throw SemanticError("function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`", loc);
+            }
         }
     }
     
