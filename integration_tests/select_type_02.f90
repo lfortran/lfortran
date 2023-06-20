@@ -44,11 +44,11 @@ implicit none
          print *, "color_point: ", an%x, an%y, an%color
    end select
 
-   select type ( an => p_or_cp )
-      class is ( point )
-         print *, "point: ", an%x, an%y
-      type is ( point_3d )
-         print *, "point3d: ", an%x, an%y, an%z
-   end select
+   ! select type ( an => p_or_cp )
+   !    class is ( point )
+   !       print *, "point: ", an%x, an%y
+   !    type is ( point_3d )
+   !       print *, "point3d: ", an%x, an%y, an%z
+   ! end select
 
 end program select_type_02

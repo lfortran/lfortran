@@ -507,7 +507,8 @@ RUN(NAME modules_41 LABELS gfortran llvm NOFAST)
 RUN(NAME modules_42 LABELS gfortran llvm NOFAST)
 RUN(NAME modules_43 LABELS gfortran)
 RUN(NAME modules_45 LABELS gfortran)
-RUN(NAME modules_48 LABELS gfortran)
+RUN(NAME modules_47 LABELS gfortran llvm NOFAST)
+RUN(NAME modules_48 LABELS gfortran llvm NOFAST)
 RUN(NAME modules_49 LABELS gfortran llvm NOFAST)
 RUN(NAME modules_50 LABELS gfortran)
 RUN(NAME modules_51 LABELS gfortran llvmImplicit NOFAST)
@@ -650,6 +651,8 @@ RUN(NAME derived_types_21 LABELS gfortran llvm NOFAST)
 RUN(NAME derived_types_22 LABELS gfortran llvm)
 RUN(NAME derived_types_23 LABELS gfortran llvm NOFAST)
 RUN(NAME derived_types_24 LABELS gfortran llvm)
+RUN(NAME derived_types_25 LABELS gfortran llvm)
+RUN(NAME derived_types_26 LABELS gfortran llvm)
 
 RUN(NAME line_continuation_01 LABELS gfortran llvm wasm)
 RUN(NAME line_continuation_02 LABELS gfortran llvm wasm)
@@ -713,6 +716,7 @@ RUN(NAME string_15 LABELS gfortran) # lge, lgt lle, llt
 RUN(NAME string_16 LABELS gfortran) # achar
 RUN(NAME string_19 LABELS gfortran) # achar
 RUN(NAME string_20 LABELS gfortran llvm NOFAST)
+RUN(NAME string_21 LABELS gfortran llvm NOFAST)
 
 RUN(NAME nested_01 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_02 LABELS gfortran llvm)
@@ -887,6 +891,8 @@ RUN(NAME allocated_01 LABELS gfortran llvm)
 RUN(NAME allocated_02 LABELS gfortran llvm)
 RUN(NAME allocated_03 LABELS gfortran llvm)
 RUN(NAME allocate_07 LABELS gfortran llvm NOFAST)
+RUN(NAME allocate_08 LABELS gfortran llvm NOFAST)
+RUN(NAME allocate_09 LABELS gfortran llvm)
 
 RUN(NAME double_complex_01 LABELS gfortran llvm)
 
@@ -907,4 +913,3 @@ RUN(NAME data_implied_do_01 LABELS gfortran llvm NOFAST)
 RUN(NAME data_implied_do_02 LABELS gfortran llvm NOFAST)
 RUN(NAME data_implied_do_03 LABELS gfortran llvm NOFAST)
 RUN(NAME data_implied_do_04 LABELS gfortran llvm NOFAST)
-
