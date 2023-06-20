@@ -5,7 +5,9 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
   %p1 = alloca float*, align 8
+  store float* null, float** %p1, align 8
   %p2 = alloca i32*, align 8
+  store i32* null, i32** %p2, align 8
   %t1 = alloca float, align 4
   %t2 = alloca i32, align 4
   store float* %t1, float** %p1, align 8

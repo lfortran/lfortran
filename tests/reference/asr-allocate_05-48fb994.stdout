@@ -46,7 +46,9 @@
                     []
                     [(Allocate
                         [((Var 2 string)
-                        [])]
+                        []
+                        (IntegerConstant 3 (Integer 4))
+                        ())]
                         ()
                         ()
                         ()

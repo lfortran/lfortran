@@ -30,16 +30,12 @@
                                             "    "
                                             (Character 1 4 ())
                                         ))]
-                                        (Character 1 -3 (FunctionCall
-                                            2 len
-                                            ()
-                                            [((StringConstant
+                                        (Character 1 -3 (StringLen
+                                            (StringConstant
                                                 "    "
                                                 (Character 1 4 ())
-                                            ))
-                                            (())]
+                                            )
                                             (Integer 4)
-                                            ()
                                             ()
                                         ))
                                         (StringConstant
@@ -73,16 +69,12 @@
                                             ""
                                             (Character 1 0 ())
                                         ))]
-                                        (Character 1 -3 (FunctionCall
-                                            2 len
-                                            ()
-                                            [((StringConstant
+                                        (Character 1 -3 (StringLen
+                                            (StringConstant
                                                 ""
                                                 (Character 1 0 ())
-                                            ))
-                                            (())]
+                                            )
                                             (Integer 4)
-                                            ()
                                             ()
                                         ))
                                         (StringConstant
@@ -103,16 +95,6 @@
                                     Required
                                     .false.
                                 ),
-                            len:
-                                (ExternalSymbol
-                                    2
-                                    len
-                                    28 len
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    len
-                                    Private
-                                ),
                             simple:
                                 (Variable
                                     2
@@ -126,16 +108,12 @@
                                             "gfortran"
                                             (Character 1 8 ())
                                         ))]
-                                        (Character 1 -3 (FunctionCall
-                                            2 len
-                                            ()
-                                            [((StringConstant
+                                        (Character 1 -3 (StringLen
+                                            (StringConstant
                                                 "gfortran"
                                                 (Character 1 8 ())
-                                            ))
-                                            (())]
+                                            )
                                             (Integer 4)
-                                            ()
                                             ()
                                         ))
                                         (StringConstant
@@ -169,16 +147,12 @@
                                             "gfortran   "
                                             (Character 1 11 ())
                                         ))]
-                                        (Character 1 -3 (FunctionCall
-                                            2 len
-                                            ()
-                                            [((StringConstant
+                                        (Character 1 -3 (StringLen
+                                            (StringConstant
                                                 "gfortran   "
                                                 (Character 1 11 ())
-                                            ))
-                                            (())]
+                                            )
                                             (Integer 4)
-                                            ()
                                             ()
                                         ))
                                         (StringConstant
@@ -212,16 +186,12 @@
                                             "   gfortran"
                                             (Character 1 11 ())
                                         ))]
-                                        (Character 1 -3 (FunctionCall
-                                            2 len
-                                            ()
-                                            [((StringConstant
+                                        (Character 1 -3 (StringLen
+                                            (StringConstant
                                                 "   gfortran"
                                                 (Character 1 11 ())
-                                            ))
-                                            (())]
+                                            )
                                             (Integer 4)
-                                            ()
                                             ()
                                         ))
                                         (StringConstant
@@ -255,16 +225,12 @@
                                             "   g for tran   "
                                             (Character 1 16 ())
                                         ))]
-                                        (Character 1 -3 (FunctionCall
-                                            2 len
-                                            ()
-                                            [((StringConstant
+                                        (Character 1 -3 (StringLen
+                                            (StringConstant
                                                 "   g for tran   "
                                                 (Character 1 16 ())
-                                            ))
-                                            (())]
+                                            )
                                             (Integer 4)
-                                            ()
                                             ()
                                         ))
                                         (StringConstant
@@ -298,16 +264,12 @@
                                             "  # gfor* t $ ran &    "
                                             (Character 1 23 ())
                                         ))]
-                                        (Character 1 -3 (FunctionCall
-                                            2 len
-                                            ()
-                                            [((StringConstant
+                                        (Character 1 -3 (StringLen
+                                            (StringConstant
                                                 "  # gfor* t $ ran &    "
                                                 (Character 1 23 ())
-                                            ))
-                                            (())]
+                                            )
                                             (Integer 4)
-                                            ()
                                             ()
                                         ))
                                         (StringConstant
@@ -330,8 +292,7 @@
                                 )
                         })
                     intrinsics_36
-                    [lfortran_intrinsic_string
-                    lfortran_intrinsic_builtin]
+                    [lfortran_intrinsic_string]
                     [(Print
                         ()
                         [(Var 2 empty)]

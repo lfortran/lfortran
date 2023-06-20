@@ -307,7 +307,11 @@
                                     [(Var 7 cmd_settings)]
                                     [(Allocate
                                         [((Var 7 cmd_settings)
-                                        [])]
+                                        []
+                                        ()
+                                        (Struct
+                                            4 fpm_new_settings
+                                        ))]
                                         ()
                                         ()
                                         ()

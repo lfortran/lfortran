@@ -253,6 +253,7 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
   %i = alloca %array.0*, align 8
+  store %array.0* null, %array.0** %i, align 8
   %iv = alloca %array.0, align 8
   %2 = getelementptr %array.0, %array.0* %iv, i32 0, i32 1
   store i32 0, i32* %2, align 4
@@ -279,6 +280,7 @@ define i32 @main(i32 %0, i8** %1) {
   %16 = alloca i32, i32 %15, align 4
   store i32* %16, i32** %14, align 8
   %r = alloca %array*, align 8
+  store %array* null, %array** %r, align 8
   %rv = alloca %array, align 8
   %17 = getelementptr %array, %array* %rv, i32 0, i32 1
   store i32 0, i32* %17, align 4

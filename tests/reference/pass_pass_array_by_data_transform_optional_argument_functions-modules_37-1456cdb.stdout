@@ -116,13 +116,17 @@
                                                         (StructInstanceMember
                                                             (Var 9 temp)
                                                             12 1_string_t_s
-                                                            (Character 1 -2 ())
+                                                            (Allocatable
+                                                                (Character 1 -2 ())
+                                                            )
                                                             ()
                                                         )
                                                         (StructInstanceMember
                                                             (Var 12 target)
                                                             12 1_build_target_t_output_dir
-                                                            (Character 1 -2 ())
+                                                            (Allocatable
+                                                                (Character 1 -2 ())
+                                                            )
                                                             ()
                                                         )
                                                         ()
@@ -130,7 +134,9 @@
                                                     (Allocate
                                                         [((Var 9 build_dirs)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))])]
+                                                        (IntegerConstant 2 (Integer 4)))]
+                                                        ()
+                                                        ())]
                                                         ()
                                                         ()
                                                         ()
@@ -316,7 +322,9 @@
                                     [(Allocate
                                         [((Var 9 build_dirs)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4)))])]
+                                        (IntegerConstant 0 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -467,13 +475,17 @@
                                                         (StructInstanceMember
                                                             (Var 13 temp)
                                                             12 1_string_t_s
-                                                            (Character 1 -2 ())
+                                                            (Allocatable
+                                                                (Character 1 -2 ())
+                                                            )
                                                             ()
                                                         )
                                                         (StructInstanceMember
                                                             (Var 14 target)
                                                             12 1_build_target_t_output_dir
-                                                            (Character 1 -2 ())
+                                                            (Allocatable
+                                                                (Character 1 -2 ())
+                                                            )
                                                             ()
                                                         )
                                                         ()
@@ -481,7 +493,9 @@
                                                     (Allocate
                                                         [((Var 13 build_dirs)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))])]
+                                                        (IntegerConstant 2 (Integer 4)))]
+                                                        ()
+                                                        ())]
                                                         ()
                                                         ()
                                                         ()
@@ -670,7 +684,9 @@
                                     [(Allocate
                                         [((Var 13 build_dirs)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4)))])]
+                                        (IntegerConstant 0 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()

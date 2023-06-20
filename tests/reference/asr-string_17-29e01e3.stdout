@@ -41,16 +41,6 @@
                                                     allocated
                                                     Private
                                                 ),
-                                            len:
-                                                (ExternalSymbol
-                                                    4
-                                                    len
-                                                    7 len
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    len
-                                                    Private
-                                                ),
                                             length:
                                                 (Variable
                                                     4
@@ -102,8 +92,7 @@
                                         .false.
                                         .false.
                                     )
-                                    [allocated
-                                    len]
+                                    [allocated]
                                     [(Var 4 string)]
                                     [(If
                                         (FunctionCall
@@ -112,7 +101,9 @@
                                             [((StructInstanceMember
                                                 (Var 4 string)
                                                 4 1_string_type_raw
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -121,18 +112,16 @@
                                         )
                                         [(=
                                             (Var 4 length)
-                                            (FunctionCall
-                                                4 len
-                                                ()
-                                                [((StructInstanceMember
+                                            (StringLen
+                                                (StructInstanceMember
                                                     (Var 4 string)
                                                     4 1_string_type_raw
-                                                    (Character 1 -2 ())
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
-                                                ))
-                                                (())]
+                                                )
                                                 (Integer 4)
-                                                ()
                                                 ()
                                             )
                                             ()
@@ -255,7 +244,9 @@
                                             [((StructInstanceMember
                                                 (Var 5 string)
                                                 5 1_string_type_raw
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -267,7 +258,9 @@
                                             (StructInstanceMember
                                                 (Var 5 string)
                                                 5 1_string_type_raw
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             )
                                             ()

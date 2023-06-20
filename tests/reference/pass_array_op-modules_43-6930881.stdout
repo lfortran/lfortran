@@ -59,7 +59,9 @@
                     [(Allocate
                         [((Var 5 sources)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 1 (Integer 4)))])]
+                        (IntegerConstant 1 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -226,7 +228,9 @@
                                     [(Allocate
                                         [((Var 4 dir_sources)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))])]
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -361,7 +365,9 @@
                                         [(Allocate
                                             [((Var 4 sources)
                                             [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 2 (Integer 4)))])]
+                                            (IntegerConstant 2 (Integer 4)))]
+                                            ()
+                                            ())]
                                             ()
                                             ()
                                             ()
