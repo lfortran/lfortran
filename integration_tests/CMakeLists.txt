@@ -832,8 +832,8 @@ RUN(NAME minpack_02 LABELS gfortran llvm)
 
 RUN(NAME external_01 LABELS gfortran llvm)
 RUN(NAME external_02 LABELS gfortran llvmImplicit)
-RUN(NAME external_03 LABELS gfortran llvm)
-RUN(NAME external_04 LABELS gfortran llvm)
+RUN(NAME external_03 LABELS gfortran llvmImplicit)
+RUN(NAME external_04 LABELS gfortran llvmImplicit)
 RUN(NAME external_05 LABELS gfortran llvmImplicit)
 
 
