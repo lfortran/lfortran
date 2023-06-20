@@ -409,7 +409,10 @@ public:
             visit_unit_decl2(*x.m_decl[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
             visit_program_unit(*x.m_contains[i]);
+            default_storage_save = current_storage_save;
         }
         current_module_sym = nullptr;
         add_generic_procedures();
@@ -460,6 +463,23 @@ public:
         in_submodule = false;
     }
 
+    void handle_save() {
+        if (default_storage_save) {
+            /*
+                Iterate over all variables in the symbol table
+                and set the storageType to Save
+            */
+            for (auto &it: current_scope->get_scope()) {
+                ASR::symbol_t* sym = it.second;
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                    var->m_storage = ASR::storage_typeType::Save;
+                }
+            }
+            default_storage_save = false;
+        }
+    }
+
     void visit_Program(const AST::Program_t &x) {
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -471,7 +491,10 @@ public:
             visit_unit_decl2(*x.m_decl[i]);
         }
         for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
             visit_program_unit(*x.m_contains[i]);
+            default_storage_save = current_storage_save;
         }
         tmp = ASR::make_Program_t(
             al, x.base.base.loc,
@@ -485,6 +508,7 @@ public:
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             throw SemanticError("Program already defined", tmp->loc);
         }
+        handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
@@ -533,7 +557,10 @@ public:
             is_Function = false;
         }
         for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
             visit_program_unit(*x.m_contains[i]);
+            default_storage_save = current_storage_save;
         }
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
@@ -640,6 +667,7 @@ public:
             is_pure, is_module, false, false, false,
             is_requirement,
             false, false);
+        handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         /* FIXME: This can become incorrect/get cleared prematurely, perhaps
@@ -762,7 +790,10 @@ public:
             is_Function = false;
         }
         for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
             visit_program_unit(*x.m_contains[i]);
+            default_storage_save = current_storage_save;
         }
         // Convert and check arguments
         Vec<ASR::expr_t*> args;
@@ -1024,6 +1055,7 @@ public:
             bindc_name, is_elemental, false, false, false, false,
             is_requirement,
             false, false);
+        handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         current_procedure_args.clear();

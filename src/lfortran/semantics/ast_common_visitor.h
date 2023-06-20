@@ -773,6 +773,7 @@ public:
     ASR::ttype_t* current_variable_type_;
 
     int32_t enum_init_val;
+    bool default_storage_save = false;
 
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
@@ -1553,12 +1554,11 @@ public:
                             LCOMPILERS_ASSERT(dflt_access == ASR::accessType::Public);
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrSave) {
-                            if (in_module) {
+                            if (in_module && !in_Subroutine) {
                                 // Do nothing (all variables implicitly have the
                                 // save attribute in a module/main program)
                             } else {
-                                throw SemanticError("Save Attribute not "
-                                        "supported yet", x.base.base.loc);
+                                default_storage_save = true;
                             }
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrSequence) {
@@ -1656,9 +1656,25 @@ public:
                                     is_common_variable = false;
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrSave) {
-                                    // TODO
-                                    throw SemanticError("Save attribute not "
-                                        "supported yet", x.base.base.loc);
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        if (compiler_options.implicit_typing) {
+                                            ASR::ttype_t* type = implicit_dictionary[std::string(1,sym[0])];
+                                            if (type) {
+                                                sym_ = declare_implicit_variable(x.m_syms[i].loc, sym, ASR::intentType::Local);
+                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                                v->m_storage = ASR::storage_typeType::Save;
+                                            } else {
+                                                // there exists an `implicit none` statement
+                                                throw SemanticError("Save `" + sym + "` has no IMPLICIT Type" , x.base.base.loc);
+                                            }
+                                        } else {
+                                            throw SemanticError("Save `" + sym + "` has no IMPLICIT Type, use `--implicit-typing`" , x.base.base.loc);
+                                        }
+                                    } else {
+                                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                        v->m_storage = ASR::storage_typeType::Save;
+                                    }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrEnumerator) {
                                     ASR::symbol_t *sym;
                                     ASR::ttype_t *init_type = ASRUtils::TYPE(
