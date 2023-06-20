@@ -1,0 +1,13 @@
+{
+    "basename": "asr-save2-63c8bcc",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/save2.f90",
+    "infile_hash": "94b2d712cd16fab489e1cd6d8d1d36d005aed23e1ed44b2335109fe3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-save2-63c8bcc.stdout",
+    "stdout_hash": "439c76fd2fa473a83cd6892579b0590f144b0a118ff5d601549b490e",
+    "stderr": "asr-save2-63c8bcc.stderr",
+    "stderr_hash": "bb0425aa3b8b36d0a900e3059e01ec00afe18f3d106db791bac0a0dd",
+    "returncode": 0
+}
