@@ -157,7 +157,9 @@
                                     [(Allocate
                                         [((Var 8 littlefile)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))])]
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -188,7 +190,9 @@
                                         [((StructInstanceMember
                                             (Var 8 settings)
                                             8 1_fpm_new_settings_name
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         ))
                                         ((Var 8 littlefile))]

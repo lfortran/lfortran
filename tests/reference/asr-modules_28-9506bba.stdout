@@ -107,7 +107,9 @@
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_git_target_t_url
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (Var 13 url)
@@ -117,7 +119,9 @@
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_git_target_t_object
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (Var 13 branch)
@@ -540,8 +544,10 @@
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_dependency_config_t_git
-                                            (Struct
-                                                4 git_target_t
+                                            (Allocatable
+                                                (Struct
+                                                    4 git_target_t
+                                                )
                                             )
                                             ()
                                         )

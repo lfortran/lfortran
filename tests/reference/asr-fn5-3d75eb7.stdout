@@ -12,16 +12,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            len:
-                                                (ExternalSymbol
-                                                    3
-                                                    len
-                                                    74 len
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    len
-                                                    Private
-                                                ),
                                             len_repeati32:
                                                 (ExternalSymbol
                                                     3
@@ -154,10 +144,8 @@
                                                         3 max@imax
                                                         3 max
                                                         [((Var 3 length))
-                                                        ((FunctionCall
-                                                            3 len
-                                                            ()
-                                                            [((FunctionCall
+                                                        ((StringLen
+                                                            (FunctionCall
                                                                 3 trim
                                                                 ()
                                                                 [((Var 3 line))]
@@ -171,10 +159,8 @@
                                                                 ))
                                                                 ()
                                                                 ()
-                                                            ))
-                                                            (())]
+                                                            )
                                                             (Integer 4)
-                                                            ()
                                                             ()
                                                         ))]
                                                         (Integer 4)
@@ -211,10 +197,8 @@
                                                 (Integer 4)
                                                 ()
                                             ))
-                                            ((FunctionCall
-                                                3 len
-                                                ()
-                                                [((FunctionCall
+                                            ((StringLen
+                                                (FunctionCall
                                                     3 trim
                                                     ()
                                                     [((FunctionParam
@@ -236,10 +220,8 @@
                                                     ))
                                                     ()
                                                     ()
-                                                ))
-                                                (())]
+                                                )
                                                 (Integer 4)
-                                                ()
                                                 ()
                                             ))]
                                             (Integer 4)
@@ -258,7 +240,6 @@
                                     )
                                     [len_trim
                                     trim
-                                    len
                                     max@imax
                                     present
                                     len_repeati32
@@ -285,23 +266,15 @@
                                                     [((Var 3 pattern))
                                                     ((IntegerBinOp
                                                         (IntegerBinOp
-                                                            (FunctionCall
-                                                                3 len
-                                                                ()
-                                                                [((Var 3 strout))
-                                                                (())]
+                                                            (StringLen
+                                                                (Var 3 strout)
                                                                 (Integer 4)
-                                                                ()
                                                                 ()
                                                             )
                                                             Div
-                                                            (FunctionCall
-                                                                3 len
-                                                                ()
-                                                                [((Var 3 pattern))
-                                                                (())]
+                                                            (StringLen
+                                                                (Var 3 pattern)
                                                                 (Integer 4)
-                                                                ()
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -317,23 +290,15 @@
                                                         ()
                                                         [((IntegerBinOp
                                                             (IntegerBinOp
-                                                                (FunctionCall
-                                                                    3 len
-                                                                    ()
-                                                                    [((Var 3 strout))
-                                                                    (())]
+                                                                (StringLen
+                                                                    (Var 3 strout)
                                                                     (Integer 4)
-                                                                    ()
                                                                     ()
                                                                 )
                                                                 Div
-                                                                (FunctionCall
-                                                                    3 len
-                                                                    ()
-                                                                    [((Var 3 pattern))
-                                                                    (())]
+                                                                (StringLen
+                                                                    (Var 3 pattern)
                                                                     (Integer 4)
-                                                                    ()
                                                                     ()
                                                                 )
                                                                 (Integer 4)
@@ -436,16 +401,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            len:
-                                                (ExternalSymbol
-                                                    4
-                                                    len
-                                                    74 len
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    len
-                                                    Private
                                                 ),
                                             len_trim:
                                                 (ExternalSymbol
@@ -585,8 +540,7 @@
                                         .false.
                                         .false.
                                     )
-                                    [len
-                                    max@imax
+                                    [max@imax
                                     len_trim
                                     trim
                                     imax
@@ -613,13 +567,23 @@
                                             ((FunctionCall
                                                 4 max@imax
                                                 4 max
-                                                [((FunctionCall
-                                                    4 len
-                                                    ()
-                                                    [((Var 4 keywords))
-                                                    (())]
+                                                [((StringLen
+                                                    (ArrayItem
+                                                        (Var 4 keywords)
+                                                        [(()
+                                                        (ArrayBound
+                                                            (Var 4 keywords)
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            LBound
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Character 1 -2 ())
+                                                        ColMajor
+                                                        ()
+                                                    )
                                                     (Integer 4)
-                                                    ()
                                                     ()
                                                 ))
                                                 ((IntegerConstant 8 (Integer 4)))]
@@ -634,13 +598,23 @@
                                                 [((FunctionCall
                                                     4 max@imax
                                                     4 max
-                                                    [((FunctionCall
-                                                        4 len
-                                                        ()
-                                                        [((Var 4 keywords))
-                                                        (())]
+                                                    [((StringLen
+                                                        (ArrayItem
+                                                            (Var 4 keywords)
+                                                            [(()
+                                                            (ArrayBound
+                                                                (Var 4 keywords)
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                LBound
+                                                                ()
+                                                            )
+                                                            ())]
+                                                            (Character 1 -2 ())
+                                                            ColMajor
+                                                            ()
+                                                        )
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))
                                                     ((IntegerConstant 8 (Integer 4)))]
@@ -648,10 +622,8 @@
                                                     ()
                                                     ()
                                                 ))
-                                                ((FunctionCall
-                                                    4 len
-                                                    ()
-                                                    [((FunctionCall
+                                                ((StringLen
+                                                    (FunctionCall
                                                         4 trim
                                                         ()
                                                         [((StringConstant
@@ -671,10 +643,8 @@
                                                         ))
                                                         ()
                                                         ()
-                                                    ))
-                                                    (())]
+                                                    )
                                                     (Integer 4)
-                                                    ()
                                                     ()
                                                 ))]
                                                 (Integer 4)
@@ -725,13 +695,23 @@
                                                 ((FunctionCall
                                                     4 max@imax
                                                     4 max
-                                                    [((FunctionCall
-                                                        4 len
-                                                        ()
-                                                        [((Var 4 keywords))
-                                                        (())]
+                                                    [((StringLen
+                                                        (ArrayItem
+                                                            (Var 4 keywords)
+                                                            [(()
+                                                            (ArrayBound
+                                                                (Var 4 keywords)
+                                                                (IntegerConstant 1 (Integer 4))
+                                                                (Integer 4)
+                                                                LBound
+                                                                ()
+                                                            )
+                                                            ())]
+                                                            (Character 1 -2 ())
+                                                            ColMajor
+                                                            ()
+                                                        )
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))
                                                     ((IntegerConstant 8 (Integer 4)))]
@@ -746,13 +726,23 @@
                                                     [((FunctionCall
                                                         4 max@imax
                                                         4 max
-                                                        [((FunctionCall
-                                                            4 len
-                                                            ()
-                                                            [((Var 4 keywords))
-                                                            (())]
+                                                        [((StringLen
+                                                            (ArrayItem
+                                                                (Var 4 keywords)
+                                                                [(()
+                                                                (ArrayBound
+                                                                    (Var 4 keywords)
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Integer 4)
+                                                                    LBound
+                                                                    ()
+                                                                )
+                                                                ())]
+                                                                (Character 1 -2 ())
+                                                                ColMajor
+                                                                ()
+                                                            )
                                                             (Integer 4)
-                                                            ()
                                                             ()
                                                         ))
                                                         ((IntegerConstant 8 (Integer 4)))]
@@ -760,10 +750,8 @@
                                                         ()
                                                         ()
                                                     ))
-                                                    ((FunctionCall
-                                                        4 len
-                                                        ()
-                                                        [((FunctionCall
+                                                    ((StringLen
+                                                        (FunctionCall
                                                             4 trim
                                                             ()
                                                             [((ArrayItem
@@ -793,10 +781,8 @@
                                                             ))
                                                             ()
                                                             ()
-                                                        ))
-                                                        (())]
+                                                        )
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))]
                                                     (Integer 4)
@@ -849,13 +835,23 @@
                                                     [((FunctionCall
                                                         4 max@imax
                                                         4 max
-                                                        [((FunctionCall
-                                                            4 len
-                                                            ()
-                                                            [((Var 4 keywords))
-                                                            (())]
+                                                        [((StringLen
+                                                            (ArrayItem
+                                                                (Var 4 keywords)
+                                                                [(()
+                                                                (ArrayBound
+                                                                    (Var 4 keywords)
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Integer 4)
+                                                                    LBound
+                                                                    ()
+                                                                )
+                                                                ())]
+                                                                (Character 1 -2 ())
+                                                                ColMajor
+                                                                ()
+                                                            )
                                                             (Integer 4)
-                                                            ()
                                                             ()
                                                         ))
                                                         ((IntegerConstant 8 (Integer 4)))]
@@ -863,10 +859,8 @@
                                                         ()
                                                         ()
                                                     ))
-                                                    ((FunctionCall
-                                                        4 len
-                                                        ()
-                                                        [((FunctionCall
+                                                    ((StringLen
+                                                        (FunctionCall
                                                             4 trim
                                                             ()
                                                             [((ArrayItem
@@ -896,10 +890,8 @@
                                                             ))
                                                             ()
                                                             ()
-                                                        ))
-                                                        (())]
+                                                        )
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))]
                                                     (Integer 4)
@@ -930,8 +922,8 @@
                         })
                     fn5
                     [lfortran_intrinsic_math2
-                    lfortran_intrinsic_builtin
                     lfortran_intrinsic_string
+                    lfortran_intrinsic_builtin
                     fn5]
                     .false.
                     .false.

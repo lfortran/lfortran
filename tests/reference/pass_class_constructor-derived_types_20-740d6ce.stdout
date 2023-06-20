@@ -377,7 +377,11 @@
                                     [(Var 7 cmd_settings)]
                                     [(Allocate
                                         [((Var 7 cmd_settings)
-                                        [])]
+                                        []
+                                        ()
+                                        (Struct
+                                            4 fpm_new_settings
+                                        ))]
                                         ()
                                         ()
                                         ()
@@ -445,7 +449,9 @@
                                             (StructInstanceMember
                                                 (Var 7 cmd_settings)
                                                 7 1_fpm_new_settings_name
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             )
                                             (StringConstant

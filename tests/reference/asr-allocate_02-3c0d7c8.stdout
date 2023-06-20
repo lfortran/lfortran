@@ -430,13 +430,19 @@
                                     (Allocate
                                         [((Var 3 a_2)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (Var 3 n))])
+                                        (Var 3 n))]
+                                        ()
+                                        ())
                                         ((Var 3 b_2)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (Var 3 n))])
+                                        (Var 3 n))]
+                                        ()
+                                        ())
                                         ((Var 3 c_2)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (Var 3 n))])]
+                                        (Var 3 n))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -444,16 +450,24 @@
                                     (Allocate
                                         [((Var 3 ab)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (Var 3 n))])
+                                        (Var 3 n))]
+                                        ()
+                                        ())
                                         ((Var 3 bc)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (Var 3 n))])
+                                        (Var 3 n))]
+                                        ()
+                                        ())
                                         ((Var 3 ca)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (Var 3 n))])
+                                        (Var 3 n))]
+                                        ()
+                                        ())
                                         ((Var 3 abc)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (Var 3 n))])]
+                                        (Var 3 n))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -613,13 +627,19 @@
                     (Allocate
                         [((Var 2 a)
                         [((IntegerConstant 1 (Integer 4))
-                        (Var 2 n))])
+                        (Var 2 n))]
+                        ()
+                        ())
                         ((Var 2 b)
                         [((IntegerConstant 1 (Integer 4))
-                        (Var 2 n))])
+                        (Var 2 n))]
+                        ()
+                        ())
                         ((Var 2 c)
                         [((IntegerConstant 1 (Integer 4))
-                        (Var 2 n))])]
+                        (Var 2 n))]
+                        ()
+                        ())]
                         (Var 2 ierr)
                         ()
                         (Var 2 isource)

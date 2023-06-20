@@ -81,7 +81,9 @@
                                         (StructInstanceMember
                                             (Var 4 lhs)
                                             4 1_string_type_raw
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (Var 4 rhs)
@@ -204,7 +206,9 @@
                                         (StructInstanceMember
                                             (Var 5 string)
                                             5 1_string_type_raw
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (SubroutineCall
@@ -214,7 +218,9 @@
                                             ((StructInstanceMember
                                                 (Var 5 string)
                                                 5 1_string_type_raw
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             ()

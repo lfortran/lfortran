@@ -1,4 +1,4 @@
-module derived_types_08_fpm_error
+module derived_types_25_fpm_error
 implicit none
 
     type :: error_t
@@ -14,21 +14,25 @@ contains
         logical :: bad_name_error
 
         allocate(error)
-        ! allocate(character(len=4) :: error%message) ! TODO: Should happen automatically in AST -> ASR transition
         error%message = label//"_"//name
-        ! bad_name_error = allocated(error%message) ! TODO: Uncomment
+        bad_name_error = allocated(error%message)
 
     end function bad_name_error
 
-end module derived_types_08_fpm_error
+end module derived_types_25_fpm_error
 
-program derived_types_08
-use derived_types_08_fpm_error
+program derived_types_25
+use derived_types_25_fpm_error
 implicit none
 
 type(error_t), allocatable :: error
+character(len=:), allocatable :: message
 
-print *, bad_name_error(error, "1", "x")
+print *, allocated(message)
+if( allocated(message) ) error stop
+
+if( .not. bad_name_error(error, "1", "x") ) error stop
 print *, error%message
+if( error%message /= "1_x" ) error stop
 
 end program

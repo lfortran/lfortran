@@ -190,18 +190,22 @@
                                                     (StructInstanceMember
                                                         (Var 13 self)
                                                         13 1_toml_vector_lst
-                                                        (Array
-                                                            (Struct
-                                                                9 toml_node
+                                                        (Allocatable
+                                                            (Array
+                                                                (Struct
+                                                                    9 toml_node
+                                                                )
+                                                                [(()
+                                                                ())]
                                                             )
-                                                            [(()
-                                                            ())]
                                                         )
                                                         ()
                                                     )
                                                     13 1_toml_node_val
-                                                    (Class
-                                                        9 toml_value
+                                                    (Allocatable
+                                                        (Class
+                                                            9 toml_value
+                                                        )
                                                     )
                                                     ()
                                                 ))]
@@ -220,18 +224,22 @@
                                                         (StructInstanceMember
                                                             (Var 13 self)
                                                             13 1_toml_vector_lst
-                                                            (Array
-                                                                (Struct
-                                                                    9 toml_node
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Struct
+                                                                        9 toml_node
+                                                                    )
+                                                                    [(()
+                                                                    ())]
                                                                 )
-                                                                [(()
-                                                                ())]
                                                             )
                                                             ()
                                                         )
                                                         13 1_toml_node_val
-                                                        (Class
-                                                            9 toml_value
+                                                        (Allocatable
+                                                            (Class
+                                                                9 toml_value
+                                                            )
                                                         )
                                                         ()
                                                     )
@@ -242,18 +250,22 @@
                                                         (StructInstanceMember
                                                             (Var 13 self)
                                                             13 1_toml_vector_lst
-                                                            (Array
-                                                                (Struct
-                                                                    9 toml_node
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Struct
+                                                                        9 toml_node
+                                                                    )
+                                                                    [(()
+                                                                    ())]
                                                                 )
-                                                                [(()
-                                                                ())]
                                                             )
                                                             ()
                                                         )
                                                         13 1_toml_node_val
-                                                        (Class
-                                                            9 toml_value
+                                                        (Allocatable
+                                                            (Class
+                                                                9 toml_value
+                                                            )
                                                         )
                                                         ()
                                                     )
@@ -406,12 +418,14 @@
                                             [((StructInstanceMember
                                                 (Var 12 self)
                                                 12 1_toml_vector_lst
-                                                (Array
-                                                    (Struct
-                                                        9 toml_node
+                                                (Allocatable
+                                                    (Array
+                                                        (Struct
+                                                            9 toml_node
+                                                        )
+                                                        [(()
+                                                        ())]
                                                     )
-                                                    [(()
-                                                    ())]
                                                 )
                                                 ()
                                             )
@@ -424,7 +438,9 @@
                                                 (Integer 4)
                                                 ()
                                                 ()
-                                            ))])]
+                                            ))]
+                                            ()
+                                            ())]
                                             ()
                                             ()
                                             ()
@@ -632,7 +648,9 @@
                                             [((StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -643,7 +661,9 @@
                                             [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             )]
                                         )]
@@ -656,7 +676,9 @@
                                             [((StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -667,7 +689,9 @@
                                             [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             )]
                                         )]
@@ -897,7 +921,9 @@
                                             [((StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_toml_value_key
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -912,7 +938,9 @@
                                                 (StructInstanceMember
                                                     (Var 5 self)
                                                     5 1_toml_value_key
-                                                    (Character 1 -2 ())
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                 )
                                                 (Logical 4)

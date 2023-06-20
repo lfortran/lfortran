@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             m_cli2_21:
                 (Module
                     (SymbolTable
@@ -14,16 +12,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            len:
-                                                (ExternalSymbol
-                                                    3
-                                                    len
-                                                    6 len
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    len
-                                                    Private
-                                                ),
                                             place:
                                                 (Variable
                                                     3
@@ -105,12 +93,14 @@
                                         .false.
                                         .false.
                                     )
-                                    [len]
+                                    []
                                     [(Var 3 strings)]
                                     [(Allocate
                                         [((Var 3 strings_a)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))])]
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        (IntegerConstant 5 (Integer 4))
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -125,23 +115,43 @@
                                         )
                                         [(If
                                             (IntegerCompare
-                                                (FunctionCall
-                                                    3 len
-                                                    ()
-                                                    [((Var 3 strings_a))
-                                                    (())]
+                                                (StringLen
+                                                    (ArrayItem
+                                                        (Var 3 strings_a)
+                                                        [(()
+                                                        (ArrayBound
+                                                            (Var 3 strings_a)
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            LBound
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Character 1 -2 ())
+                                                        ColMajor
+                                                        ()
+                                                    )
                                                     (Integer 4)
-                                                    ()
                                                     ()
                                                 )
                                                 LtE
-                                                (FunctionCall
-                                                    3 len
-                                                    ()
-                                                    [((Var 3 strings))
-                                                    (())]
+                                                (StringLen
+                                                    (ArrayItem
+                                                        (Var 3 strings)
+                                                        [(()
+                                                        (ArrayBound
+                                                            (Var 3 strings)
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Integer 4)
+                                                            LBound
+                                                            ()
+                                                        )
+                                                        ())]
+                                                        (Character 1 -1 ())
+                                                        ColMajor
+                                                        ()
+                                                    )
                                                     (Integer 4)
-                                                    ()
                                                     ()
                                                 )
                                                 (Logical 4)
@@ -155,7 +165,9 @@
                                             [(Allocate
                                                 [((Var 3 strings)
                                                 [((IntegerConstant 1 (Integer 4))
-                                                (IntegerConstant 0 (Integer 4)))])]
+                                                (IntegerConstant 0 (Integer 4)))]
+                                                ()
+                                                ())]
                                                 ()
                                                 ()
                                                 ()
@@ -174,7 +186,9 @@
                                         [(Allocate
                                             [((Var 3 strings)
                                             [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 0 (Integer 4)))])]
+                                            (IntegerConstant 0 (Integer 4)))]
+                                            ()
+                                            ())]
                                             ()
                                             ()
                                             ()
@@ -192,7 +206,7 @@
                                 )
                         })
                     m_cli2_21
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
                 ),
@@ -239,7 +253,9 @@
                     [(Allocate
                         [((Var 4 string)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 2 (Integer 4)))])]
+                        (IntegerConstant 2 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()

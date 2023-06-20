@@ -119,17 +119,6 @@ namespace LCompilers {
                     bool get_pointer=false) = 0;
 
                 /*
-                * Same as get_array_type but for allocatable
-                * arrays. It doesn't require dimensions for
-                * creating array llvm::Type*.
-                */
-                virtual
-                llvm::Type* get_malloc_array_type(
-                    ASR::ttype_t* m_type_,
-                    llvm::Type* el_type,
-                    bool get_pointer=false) = 0;
-
-                /*
                 * Creates an array of dimension descriptors
                 * whose each element describes structure
                 * of a dimension's information.
@@ -276,13 +265,10 @@ namespace LCompilers {
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr) = 0;
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array) = 0;
+                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
 
                 virtual
-                void set_is_allocated_flag(llvm::Value* array, bool status) = 0;
-
-                virtual
-                void set_is_allocated_flag(llvm::Value* array, llvm::Value* status) = 0;
+                void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
 
                 virtual
                 llvm::Value* reshape(llvm::Value* array, llvm::Type* llvm_data_type,
@@ -349,12 +335,6 @@ namespace LCompilers {
 
                 virtual
                 llvm::Type* get_array_type(
-                    ASR::ttype_t* m_type_,
-                    llvm::Type* el_type,
-                    bool get_pointer=false);
-
-                virtual
-                llvm::Type* get_malloc_array_type(
                     ASR::ttype_t* m_type_,
                     llvm::Type* el_type,
                     bool get_pointer=false);
@@ -444,13 +424,10 @@ namespace LCompilers {
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr);
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array);
+                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);
 
                 virtual
-                void set_is_allocated_flag(llvm::Value* array, bool status);
-
-                virtual
-                void set_is_allocated_flag(llvm::Value* array, llvm::Value* status);
+                void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);
 
                 virtual
                 llvm::Value* reshape(llvm::Value* array, llvm::Type* llvm_data_type,

@@ -314,7 +314,9 @@
                                             [((StructInstanceMember
                                                 (Var 6 self)
                                                 6 1_toml_value_key
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -325,7 +327,9 @@
                                             [(StructInstanceMember
                                                 (Var 6 self)
                                                 6 1_toml_value_key
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             )]
                                         )]
@@ -338,8 +342,10 @@
                                             [((StructInstanceMember
                                                 (Var 6 self)
                                                 6 1_toml_array_list
-                                                (Class
-                                                    4 toml_ordered
+                                                (Allocatable
+                                                    (Class
+                                                        4 toml_ordered
+                                                    )
                                                 )
                                                 ()
                                             ))]
@@ -354,8 +360,10 @@
                                             (StructInstanceMember
                                                 (Var 6 self)
                                                 6 1_toml_array_list
-                                                (Class
-                                                    4 toml_ordered
+                                                (Allocatable
+                                                    (Class
+                                                        4 toml_ordered
+                                                    )
                                                 )
                                                 ()
                                             )
@@ -364,8 +372,10 @@
                                             [(StructInstanceMember
                                                 (Var 6 self)
                                                 6 1_toml_array_list
-                                                (Class
-                                                    4 toml_ordered
+                                                (Allocatable
+                                                    (Class
+                                                        4 toml_ordered
+                                                    )
                                                 )
                                                 ()
                                             )]

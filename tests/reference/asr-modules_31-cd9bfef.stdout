@@ -170,17 +170,21 @@
                                             (StructInstanceMember
                                                 (Var 7 deps)
                                                 7 1_dependency_tree_t_dep
-                                                (Array
-                                                    (Struct
-                                                        7 fpm_dependency_modules_31_dependency_node_t
+                                                (Allocatable
+                                                    (Array
+                                                        (Struct
+                                                            7 fpm_dependency_modules_31_dependency_node_t
+                                                        )
+                                                        [(()
+                                                        ())]
                                                     )
-                                                    [(()
-                                                    ())]
                                                 )
                                                 ()
                                             )
                                             7 1_dependency_config_t_name
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         ))
                                         ((Var 7 error))]
