@@ -491,7 +491,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         *current_expr = array_section_pointer;
     }
 
-    #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg) bool is_dimension_empty = false; \
+    #define allocate_result_var(op_arg, op_dims_arg, op_n_dims_arg) if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(result_var)) || \
+        ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(result_var)) ) { \
+        bool is_dimension_empty = false; \
         for( int i = 0; i < op_n_dims_arg; i++ ) { \
             if( op_dims_arg->m_length == nullptr ) { \
                 is_dimension_empty = true; \
@@ -503,6 +505,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         if( !is_dimension_empty ) { \
             ASR::alloc_arg_t alloc_arg; \
             alloc_arg.loc = loc; \
+            alloc_arg.m_len_expr = nullptr; \
+            alloc_arg.m_type = nullptr; \
             alloc_arg.m_a = result_var; \
             alloc_arg.m_dims = op_dims_arg; \
             alloc_arg.n_dims = op_n_dims_arg; \
@@ -522,6 +526,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             } \
             ASR::alloc_arg_t alloc_arg; \
             alloc_arg.loc = loc; \
+            alloc_arg.m_len_expr = nullptr; \
+            alloc_arg.m_type = nullptr; \
             alloc_arg.m_a = result_var; \
             alloc_arg.m_dims = alloc_dims.p; \
             alloc_arg.n_dims = alloc_dims.size(); \
@@ -531,6 +537,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         } \
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, \
             loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr))); \
+    }
 
     template <typename T>
     void replace_ArrayOpCommon(T* x, std::string res_prefix) {
@@ -1050,6 +1057,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 op_n_dims = ASRUtils::extract_dimensions_from_ttype(
                     ASRUtils::expr_type(*current_expr), op_dims);
             }
+
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, x->n_args + 1);
             for( size_t i = 0; i < x->n_args; i++ ) {
@@ -1062,10 +1070,14 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                                             x->m_name, nullptr, s_args.p, s_args.size(), nullptr));
             pass_result.push_back(al, subrout_call);
-            if (is_allocatable && result_var != *current_expr) {
+
+            if (is_allocatable && result_var != *current_expr &&
+                ASRUtils::is_allocatable(result_var)) {
                 Vec<ASR::alloc_arg_t> vec_alloc;
                 vec_alloc.reserve(al, 1);
                 ASR::alloc_arg_t alloc_arg;
+                alloc_arg.m_len_expr = nullptr;
+                alloc_arg.m_type = nullptr;
                 alloc_arg.loc = loc;
                 alloc_arg.m_a = result_var;
 

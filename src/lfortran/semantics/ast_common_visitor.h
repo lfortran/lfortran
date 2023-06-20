@@ -2435,8 +2435,7 @@ public:
         args.reserve(al, n_args);
         ASR::expr_t* v_Var = nullptr;
         if( v_expr ) {
-            ASR::ttype_t* struct_t_mem_type = ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)));
+            ASR::ttype_t* struct_t_mem_type = ASRUtils::symbol_type(v);
             ASR::symbol_t* v_ext = ASRUtils::import_struct_instance_member(al, v, current_scope, struct_t_mem_type);
             v_Var = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                         al, v_expr->base.loc, v_expr, v_ext,
@@ -2609,7 +2608,7 @@ public:
                     }
                 }
             }
-            if( ASR::is_a<ASR::Character_t>(*root_v_type) &&
+            if( ASRUtils::is_character(*root_v_type) &&
                 !ASRUtils::is_array(root_v_type) ) {
                 return ASR::make_StringItem_t(al, loc,
                     v_Var, args.p[0].m_right, type, arr_ref_val);
@@ -3516,6 +3515,41 @@ public:
         return ASR::make_ArraySize_t(al, x.base.base.loc, v_Var, dim, type, size_compiletime);
     }
 
+    ASR::asr_t* create_StringLen(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"kind"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, std::string("len"));
+        ASR::expr_t *v_Var = args[0], *kind = args[1];
+        int64_t kind_const = handle_kind(kind);
+        ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
+        if( ASRUtils::is_array(ASRUtils::expr_type(v_Var)) ) {
+            // TODO: If possible try to use m_len_expr of `character(len=m_len_expr)`
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
+            Vec<ASR::array_index_t> lbs; lbs.reserve(al, n_dims);
+            for( int i = 0; i < n_dims; i++ ) {
+                ASR::array_index_t index;
+                index.loc = x.base.base.loc;
+                index.m_left = nullptr;
+                index.m_right = ASRUtils::get_bound(v_Var, i + 1, "lbound", al);
+                index.m_step = nullptr;
+                lbs.push_back(al, index);
+            }
+            v_Var = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, x.base.base.loc, v_Var, lbs.p, lbs.size(),
+                ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var)))),
+                        ASR::arraystorageType::ColMajor, nullptr));
+        }
+        ASR::expr_t* len_compiletime = nullptr;
+        std::string input_string;
+        if( ASRUtils::is_value_constant(v_Var, input_string) ) {
+            len_compiletime = make_ConstantWithType(
+                make_IntegerConstant_t, input_string.size(), type, x.base.base.loc);
+        }
+
+        return ASR::make_StringLen_t(al, x.base.base.loc, v_Var, type, len_compiletime);
+    }
+
     ASR::asr_t* create_ArrayTranspose(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names;
@@ -4132,6 +4166,8 @@ public:
                 tmp = create_ScanVerify_util(x, var_name);
             } else if( var_name == "verify" ) {
                 tmp = create_ScanVerify_util(x, var_name);
+            } else if( var_name == "len" ) {
+                tmp = create_StringLen(x);
             } else if( var_name == "null" ) {
                 tmp = create_NullPointerConstant(x);
             } else if( var_name == "associated" ) {

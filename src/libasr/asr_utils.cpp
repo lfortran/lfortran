@@ -340,12 +340,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
     } else {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
         ASR::Variable_t* member_variable = ASR::down_cast<ASR::Variable_t>(member);
-        ASR::ttype_t* member_type = ASRUtils::type_get_past_allocatable(member_variable->m_type);
-        bool is_pointer = false;
-        if (ASRUtils::is_pointer(member_type)) {
-            is_pointer = true;
-            member_type = ASR::down_cast<ASR::Pointer_t>(member_type)->m_type;
-        }
+        ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(member_variable->m_type));
         ASR::ttype_t* member_type_ = ASRUtils::type_get_past_array(member_type);
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(member_type, m_dims);
@@ -415,9 +411,13 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             default :
                 break;
         }
-        if (is_pointer) {
-            member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-                ASRUtils::type_get_past_allocatable(member_type)));
+
+        if( ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) ) {
+            member_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+            member_variable->base.base.loc, member_type));
+        } else if( ASR::is_a<ASR::Pointer_t>(*member_variable->m_type) ) {
+            member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+            member_variable->base.base.loc, member_type));
         }
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope, member_type);
         ASR::expr_t* value = nullptr;

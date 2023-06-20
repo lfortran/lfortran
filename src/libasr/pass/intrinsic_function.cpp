@@ -146,6 +146,8 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
                                             al, loc_, 4)), nullptr));
 
             ASR::alloc_arg_t alloc_arg;
+            alloc_arg.m_len_expr = nullptr;
+            alloc_arg.m_type = nullptr;
             alloc_arg.loc = loc_;
             alloc_arg.m_a = result_var_;
             Vec<ASR::dimension_t> alloc_dims;

@@ -956,14 +956,46 @@ public:
         ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t new_arg;
+            new_arg.m_len_expr = nullptr;
+            new_arg.m_type = nullptr;
+            ASR::expr_t* tmp_stmt = nullptr;
             new_arg.loc = x.base.base.loc;
             if( x.m_args[i].m_end && !x.m_args[i].m_start && !x.m_args[i].m_step ) {
                 this->visit_expr(*(x.m_args[i].m_end));
+                tmp_stmt = ASRUtils::EXPR(tmp);
             } else if( x.m_args[i].m_start && !x.m_args[i].m_end && x.m_args[i].m_step ) {
                 this->visit_expr(*(x.m_args[i].m_step));
+                tmp_stmt = ASRUtils::EXPR(tmp);
+                if( AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i].m_start) ) {
+                    AST::FuncCallOrArray_t* func_call_t =
+                        AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i].m_start);
+                    if( to_lower(std::string(func_call_t->m_func)) == "character" ) {
+                        LCOMPILERS_ASSERT(func_call_t->n_args == 1 ||
+                                          func_call_t->n_keywords <= 2);
+                        if( func_call_t->m_args[0].m_end ) {
+                            visit_expr(*func_call_t->m_args[0].m_end);
+                            new_arg.m_len_expr = ASRUtils::EXPR(tmp);
+                        } else {
+                            for( size_t i = 0; i < func_call_t->n_keywords; i++ ) {
+                                if( to_lower(std::string(func_call_t->m_keywords[i].m_arg)) == "len" ) {
+                                    visit_expr(*func_call_t->m_keywords[i].m_value);
+                                    new_arg.m_len_expr = ASRUtils::EXPR(tmp);
+                                }
+                            }
+                        }
+                    } else {
+                        LCOMPILERS_ASSERT_MSG(false, std::string(func_call_t->m_func));
+                    }
+                } else if( AST::is_a<AST::Name_t>(*x.m_args[i].m_start) ) {
+                    AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
+                    ASR::symbol_t *v = current_scope->resolve_symbol(name_t->m_id);
+                    ASR::ttype_t* struct_t = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
+                    new_arg.m_type = struct_t;
+                } else {
+                    LCOMPILERS_ASSERT_MSG(false, std::to_string(x.m_args[i].m_start->type));
+                }
             }
             // Assume that tmp is an `ArraySection` or `ArrayItem`
-            ASR::expr_t* tmp_stmt = ASRUtils::EXPR(tmp);
             if( ASR::is_a<ASR::ArraySection_t>(*tmp_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(tmp_stmt);
                 new_arg.m_a = array_ref->m_v;
@@ -1001,7 +1033,8 @@ public:
                 new_arg.m_dims = dims_vec.p;
                 new_arg.n_dims = dims_vec.size();
                 alloc_args_vec.push_back(al, new_arg);
-            } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ) {
+            } else if( ASR::is_a<ASR::Var_t>(*tmp_stmt) ||
+                       ASR::is_a<ASR::StructInstanceMember_t>(*tmp_stmt) ) {
                 new_arg.m_a = tmp_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
@@ -2025,6 +2058,8 @@ public:
             vec_alloc.reserve(al, 1);
             ASR::alloc_arg_t alloc_arg;
             alloc_arg.loc = ac->base.base.loc;
+            alloc_arg.m_len_expr = nullptr;
+            alloc_arg.m_type = nullptr;
             alloc_arg.m_a = target;
             alloc_arg.n_dims = ASRUtils::extract_dimensions_from_ttype(
                 ac->m_type, alloc_arg.m_dims);

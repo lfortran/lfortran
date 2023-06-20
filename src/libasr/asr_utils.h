@@ -2105,6 +2105,7 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc) {
             }
             break;
         }
+        case ASR::exprType::StringLen:
         case ASR::exprType::FunctionCall: {
             a_len = -3;
             break;
@@ -2582,6 +2583,7 @@ static inline ASR::ttype_t* get_type_parameter(ASR::ttype_t* t) {
 
 static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::symbol_t* v,
     SymbolTable* scope, ASR::ttype_t*& mem_type) {
+    ASR::ttype_t* mem_type_ = mem_type;
     v = ASRUtils::symbol_get_past_external(v);
     ASR::symbol_t* struct_t = ASRUtils::get_asr_owner(v);
     std::string v_name = ASRUtils::symbol_name(v);
@@ -2622,7 +2624,6 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
 
     ASR::dimension_t* m_dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(mem_type, m_dims);
-    bool is_pointer = ASRUtils::is_pointer(mem_type);
     mem_type = ASRUtils::type_get_past_array(
         ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(mem_type)));
@@ -2649,9 +2650,15 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
     if( n_dims > 0 ) {
         mem_type = ASRUtils::make_Array_t_util(al, mem_type->base.loc, mem_type, m_dims, n_dims);
     }
-    if( is_pointer ) {
-        mem_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, mem_type->base.loc, mem_type));
+
+    if( ASR::is_a<ASR::Allocatable_t>(*mem_type_) ) {
+        mem_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+        mem_type->base.loc, mem_type));
+    } else if( ASR::is_a<ASR::Pointer_t>(*mem_type_) ) {
+        mem_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+        mem_type->base.loc, mem_type));
     }
+
     return scope->get_symbol(v_ext_name);
 }
 

@@ -190,6 +190,43 @@ function verify_kind4(string, set, back) result(r)
     character(len=*) :: set
     logical, optional :: back
     integer :: r
+    integer :: i, j
+    logical :: back_val, matched
+
+    back_val = .false.
+    r = 0
+
+    if( present(back) ) then
+        back_val = back
+    end if
+
+    if( back_val ) then
+        do i = len(string), 1, -1
+            matched = .false.
+            do j = 1, len(set)
+                if( string(i:i) == set(j:j) ) then
+                    matched = .true.
+                end if
+            end do
+            if (.not. matched) then
+                r = i
+                return
+            end if
+        end do
+    else
+        do i = 1, len(string), 1
+            matched = .false.
+            do j = 1, len(set)
+                if( string(i:i) == set(j:j) ) then
+                    matched = .true.
+                end if
+            end do
+            if (.not. matched) then
+                r = i
+                return
+            end if
+        end do
+    end if
 end function
 
 function verify_kind8(string, set, back) result(r)
@@ -197,6 +234,43 @@ function verify_kind8(string, set, back) result(r)
     character(len=*) :: set
     logical, optional :: back
     integer(8) :: r
+    integer :: i, j
+    logical :: back_val, matched
+
+    back_val = .false.
+    r = 0
+
+    if( present(back) ) then
+        back_val = back
+    end if
+
+    if( back_val ) then
+        do i = len(string), 1, -1
+            matched = .false.
+            do j = 1, len(set)
+                if( string(i:i) == set(j:j) ) then
+                    matched = .true.
+                end if
+            end do
+            if (.not. matched) then
+                r = i
+                return
+            end if
+        end do
+    else
+        do i = 1, len(string), 1
+            matched = .false.
+            do j = 1, len(set)
+                if( string(i:i) == set(j:j) ) then
+                    matched = .true.
+                end if
+            end do
+            if (.not. matched) then
+                r = i
+                return
+            end if
+        end do
+    end if
 end function
 
 end module

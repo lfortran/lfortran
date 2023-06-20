@@ -103,15 +103,10 @@ public:
         ASR::stmt_t* back = ASRUtils::STMT(ASR::make_Print_t(al, x.base.base.loc,
                                             nullptr, nullptr, 0, nullptr, backspace));
         for (size_t i=0; i<x.n_values; i++) {
-            // TODO: This will disallow printing array pointer in Fortran
-            // Pointers are treated the same as normal variables in Fortran
-            // However, LPython prints the address of pointers when you do
-            // print(some_pointer). Same goes for C/C++ (if we add their frontends in future).
-            // So we need to figure out a way to de-couple printing support from libasr
-            // or add nodes according to the frontends because each frontend will have a different
-            // way of handling printing of pointers and non-pointers
-            if (!ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_values[i])) &&
-                PassUtils::is_array(x.m_values[i])) {
+            // DIVERGENCE between LFortran and LPython
+            // If a pointer array variable is provided
+            // then it will be printed as a normal array.
+            if (PassUtils::is_array(x.m_values[i])) {
                 if (print_body.size() > 0) {
                     Vec<ASR::expr_t*> body;
                     body.reserve(al, print_body.size());
@@ -208,15 +203,10 @@ public:
                                             x.m_label, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr));
         ASR::stmt_t* write_stmt;
         for (size_t i=0; i<x.n_values; i++) {
-            // TODO: This will disallow printing array pointer in Fortran
-            // Pointers are treated the same as normal variables in Fortran
-            // However, LPython prints the address of pointers when you do
-            // print(some_pointer). Same goes for C/C++ (if we add their frontends in future).
-            // So we need to figure out a way to de-couple printing support from libasr
-            // or add nodes according to the frontends because each frontend will have a different
-            // way of handling printing of pointers and non-pointers
-            if (!ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_values[i])) &&
-                PassUtils::is_array(x.m_values[i])) {
+            // DIVERGENCE between LFortran and LPython
+            // If a pointer array variable is provided
+            // then it will be printed as a normal array.
+            if (PassUtils::is_array(x.m_values[i])) {
                 if (write_body.size() > 0) {
                     Vec<ASR::expr_t*> body;
                     body.reserve(al, write_body.size());
