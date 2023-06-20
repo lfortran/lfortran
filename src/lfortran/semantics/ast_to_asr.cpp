@@ -28,7 +28,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, 
-        std::vector<std::string>& external_procedures);
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
@@ -37,7 +37,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::vector<std::string>& external_procedures);
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping);
 
 void load_rtlib(Allocator &al, ASR::TranslationUnit_t &tu, CompilerOptions &compiler_options) {
     SymbolTable *tu_symtab = tu.m_global_scope;
@@ -79,10 +79,10 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
 {
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::map<uint64_t, ASR::symbol_t*> common_variables_hash;
-    std::vector<std::string> external_procedures;
+    std::map<uint64_t, std::vector<std::string>> external_procedures_mapping;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
-        compiler_options, implicit_mapping, common_variables_hash, external_procedures);
+        compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -96,7 +96,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
 #endif
     if (!symtab_only) {
         auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
-            implicit_mapping, common_variables_hash, external_procedures);
+            implicit_mapping, common_variables_hash, external_procedures_mapping);
         if (res.ok) {
             tu = res.result;
         } else {

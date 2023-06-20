@@ -100,8 +100,8 @@ public:
 
     SymbolTableVisitor(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::vector<std::string>& external_procedures)
-      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures) {}
+        std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
+      : CommonVisitor(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         if (!current_scope) {
@@ -511,6 +511,11 @@ public:
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
+
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
+
         fix_type_info(ASR::down_cast2<ASR::Program_t>(tmp));
         mark_common_blocks_as_declared();
     }
@@ -685,6 +690,11 @@ public:
 
             implicit_dictionary.clear();
         }
+
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
+
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
         mark_common_blocks_as_declared();
@@ -1070,6 +1080,11 @@ public:
 
             implicit_dictionary.clear();
         }
+
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
+
         current_function_dependencies = current_function_dependencies_copy;
         in_Subroutine = false;
         mark_common_blocks_as_declared();
@@ -2469,9 +2484,9 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::vector<std::string>& external_procedures)
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
 {
-    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures);
+    SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticError &e) {

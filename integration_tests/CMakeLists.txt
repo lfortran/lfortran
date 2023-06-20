@@ -830,10 +830,13 @@ RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90 NOFAST)
 RUN(NAME minpack_02 LABELS gfortran llvm)
 
-RUN(NAME external_01 LABELS gfortran llvm)
+RUN(NAME external_01 LABELS gfortran llvmImplicit)
 RUN(NAME external_02 LABELS gfortran llvmImplicit)
-RUN(NAME external_03 LABELS gfortran llvm)
-RUN(NAME external_04 LABELS gfortran llvm)
+RUN(NAME external_03 LABELS gfortran llvmImplicit)
+RUN(NAME external_04 LABELS gfortran llvmImplicit)
+RUN(NAME external_05 LABELS gfortran llvmImplicit)
+RUN(NAME external_06 LABELS gfortran llvmImplicit)
+
 
 
 RUN(NAME interface_12 LABELS gfortran llvm)
