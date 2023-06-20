@@ -3090,6 +3090,14 @@ filename = "save1.f90"
 asr = true
 
 [[test]]
+filename = "save2.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/save_03.f90"
+asr = true
+
+[[test]]
 filename = "allow_implicit_interface3.f90"
 asr_implicit_interface = true
 
