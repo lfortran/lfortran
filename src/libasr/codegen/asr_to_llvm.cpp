@@ -8532,7 +8532,36 @@ public:
 
             for (size_t i=0; i<x.n_args; i++) {
                 visit_expr(*x.m_args[i]);
-                args.push_back(tmp);
+                ASR::expr_t *v = x.m_args[i];
+                ASR::ttype_t *t = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v));
+                t = ASRUtils::type_get_past_allocatable(t);
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
+                if (ASRUtils::is_real(*t)) {
+                    llvm::Value *d;
+                    switch( a_kind ) {
+                        case 4 : {
+                            // Cast float to double as a workaround for the fact that
+                            // vprintf() seems to cast to double even for %f, which
+                            // causes it to print 0.000000.
+                            d = builder->CreateFPExt(tmp,
+                            llvm::Type::getDoubleTy(context));
+                            break;
+                        }
+                        case 8 : {
+                            d = builder->CreateFPExt(tmp,
+                            llvm::Type::getDoubleTy(context));
+                            break;
+                        }
+                        default: {
+                        throw CodeGenError(R"""(Printing support is available only
+                                            for 32, and 64 bit real kinds.)""",
+                                            x.base.base.loc);
+                        }
+                    }
+                    args.push_back(d);
+                } else {
+                    args.push_back(tmp);
+                }
             }
             tmp = string_format_fortran(context, *module, *builder, args);
         } else {
