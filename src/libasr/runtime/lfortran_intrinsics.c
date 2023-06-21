@@ -121,7 +121,7 @@ char* substring(const char* str, int start, int end) {
     return substr;
 }
 
-char* appendToString(char* str, const char* append) {
+char* append_to_string(char* str, const char* append) {
     int len1 = strlen(str);
     int len2 = strlen(append);
     str = (char*)realloc(str, (len1 + len2 + 1) * sizeof(char));
@@ -147,27 +147,27 @@ void handle_integer(char* format, int val, char** result) {
     if (width >= len) {
         if (min_width > len) {
             for (int i = 0; i < (width - min_width); i++) {
-                *result = appendToString(*result, " ");
+                *result = append_to_string(*result, " ");
             }
             for (int i = 0; i < (min_width - len); i++) {
-                *result = appendToString(*result, "0");
+                *result = append_to_string(*result, "0");
             }
         } else {
             for (int i = 0; i < (width - len); i++) {
-                *result = appendToString(*result, " ");
+                *result = append_to_string(*result, " ");
             }
         }
         char str[20];
         sprintf(str, "%d", val);
-        *result = appendToString(*result, str);
+        *result = append_to_string(*result, str);
     } else if (width < len) {
         for (int i = 0; i < width; i++) {
-            *result = appendToString(*result, "*");
+            *result = append_to_string(*result, "*");
         }
     }
 }
 
-void handle_decimal(char* format, double val, char** result, char c) {
+void handle_decimal(char* format, double val, int scale, char** result, char* c) {
     int width = 0, decimal_digits = 0;
     int64_t integer_part = (int64_t)val;
     int integer_length = (integer_part == 0) ? 0 : (int)log10(llabs(integer_part)) + 1;
@@ -213,14 +213,12 @@ void handle_decimal(char* format, double val, char** result, char c) {
         }
     }
 
-    if (decimal_digits < strlen(val_str)) {
-        int t = round((float)atoi(val_str) / pow(10, (strlen(val_str) - decimal_digits)));
-        sprintf(val_str, "%d", t);
-    }
-
     char formatted_value[64] = "";
     int sign_width = (val < 0) ? 1 : 0;
     int spaces = width - sign_width - decimal_digits - 6;
+    if (scale > 1){
+        decimal_digits -= scale - 1;
+    }
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
     }
@@ -228,22 +226,35 @@ void handle_decimal(char* format, double val, char** result, char c) {
     if (sign_width == 1) {
         strcat(formatted_value, "-");
     }
-
-    strcat(formatted_value, "0.");
-    strncat(formatted_value, val_str, decimal_digits);
-    strcat(formatted_value, &c);
-    strcat(formatted_value, (integer_length > 0 ? "+" : "-"));
-
-    char exponent[3];
-    if (integer_length > 0) {
-        sprintf(exponent, "%02d", integer_length);
+    if (scale <= 0) {
+        strcat(formatted_value, "0.");
+        for (int k = 0; k < abs(scale); k++) {
+            strcat(formatted_value, "0");
+        }
+        if (decimal_digits + scale < strlen(val_str)) {
+            int t = round((float)atoi(val_str) / pow(10, (strlen(val_str) - decimal_digits - scale)));
+            sprintf(val_str, "%d", t);
+        }
+        strncat(formatted_value, val_str, decimal_digits + scale);
     } else {
-        sprintf(exponent, "%02d", decimal);
+        strcat(formatted_value, substring(val_str, 0, scale));
+        strcat(formatted_value, ".");
+        char* new_str = substring(val_str, scale, strlen(val_str));
+        if (decimal_digits < strlen(new_str)) {
+            int t = round((float)atoi(new_str) / pow(10, (strlen(new_str) - decimal_digits)));
+            sprintf(new_str, "%d", t);
+        }
+        strcat(formatted_value, substring(new_str, 0, decimal_digits));
     }
+
+    strcat(formatted_value, c);
+
+    char exponent[12];
+    sprintf(exponent, "%+03d", (integer_length > 0 ? integer_length : decimal) - scale);
 
     strcat(formatted_value, exponent);
 
-    if (strlen(formatted_value) == width + 1) {
+    if (strlen(formatted_value) == width + 1 && scale <= 0) {
         char* ptr = strchr(formatted_value, '0');
         if (ptr != NULL) {
             memmove(ptr, ptr + 1, strlen(ptr));
@@ -252,10 +263,10 @@ void handle_decimal(char* format, double val, char** result, char c) {
 
     if (strlen(formatted_value) > width) {
         for(int i=0; i<width; i++){
-            *result = appendToString(*result,"*");
+            *result = append_to_string(*result,"*");
         }
     } else {
-        *result = appendToString(*result, formatted_value);
+        *result = append_to_string(*result, formatted_value);
     }
 }
 
@@ -283,7 +294,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             // Slash Editing (newlines)
             int j = 0;
             while (value[j] == '/') {
-                result = appendToString(result, "\n");
+                result = append_to_string(result, "\n");
                 j++;
             }
             value = substring(value, j, strlen(value));
@@ -300,6 +311,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             value = substring(value, 0, strlen(value) - newline);
         }
 
+        int scale = 0;
+        if (isdigit(value[0]) && tolower(value[1]) == 'p') {
+            // Scale Factor (nP)
+            scale = atoi(&value[0]);
+            value = substring(value, 2, strlen(value));
+        } else if (value[0] == '-' && isdigit(value[1]) && tolower(value[2]) == 'p') {
+            scale = atoi(substring(value, 0, 2));
+            value = substring(value, 3, strlen(value));
+        }
+
         if (isdigit(value[0])) {
             // Repeat Count
             int j = 0;
@@ -313,8 +334,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
                 char* new_input_string = (char*)malloc(sizeof(char));
                 new_input_string[0] = '\0';
                 for (int k = i; k < format_values_count; k++) {
-                    new_input_string = appendToString(new_input_string, format_values[k]);
-                    new_input_string = appendToString(new_input_string, ",");
+                    new_input_string = append_to_string(new_input_string, format_values[k]);
+                    new_input_string = append_to_string(new_input_string, ",");
                 }
                 new_input_string = substring(new_input_string, 1, strchr(new_input_string, ')') - new_input_string);
                 char** new_fmt_val = NULL;
@@ -353,7 +374,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
         if (value[0] == '\"' && value[strlen(value) - 1] == '\"') {
             // String
             value = substring(value, 1, strlen(value) - 1);
-            result = appendToString(result, value);
+            result = append_to_string(result, value);
         } else if (tolower(value[0]) == 'a') {
             // Character Editing (A[n])
             char* str = substring(value, 1, strlen(value));
@@ -365,14 +386,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             sprintf(s, "%%%s.%ss", str, str);
             char* string = (char*)malloc((strlen(arg)) * sizeof(char));
             sprintf(string, s, arg);
-            result = appendToString(result, string);
+            result = append_to_string(result, string);
             free(s);
             free(string);
         } else if (tolower(value[strlen(value) - 1]) == 'x') {
             // Positional Editing (nX)
             int t = atoi(substring(value, 0, strlen(value) - 1));
             for (int i = 0; i < t; i++) {
-                result = appendToString(result, " ");
+                result = append_to_string(result, " ");
             }
         } else if (tolower(value[0]) == 'i') {
             // Integer Editing ( I[w[.m]] )
@@ -382,20 +403,20 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
         } else if (tolower(value[0]) == 'd') {
             // D Editing (D[w[.d]])
             double val = va_arg(args, double);
-            handle_decimal(value, val, &result, 'D');
+            handle_decimal(value, val, scale, &result, "D");
             arguments++;
         } else if (tolower(value[0]) == 'e') {
             // E Editing E[w[.d][Ee]]
             // Only (E[w[.d]]) has been implemented yet
             double val = va_arg(args, double);
-            handle_decimal(value, val, &result, 'E');
+            handle_decimal(value, val, scale, &result, "E");
             arguments++;
         } else if (strlen(value) != 0) {
             printf("Printing support is not available for %s format.\n",value);
         }
 
         while (newline != 0) {
-            result = appendToString(result, " ");
+            result = append_to_string(result, " ");
             newline--;
         }
     }
