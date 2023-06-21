@@ -4566,6 +4566,7 @@ public:
 
                 // erase from external_procedures_mapping
                 erase_from_external_mapping(var_name);
+                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
 
                 // Update arguments if the symbol belonged to a function
                 if (current_scope->asr_owner) {
@@ -4594,6 +4595,7 @@ public:
             if (ASR::is_a<ASR::Function_t>(*v2)) {
                 current_scope->erase_symbol(var_name);
                 erase_from_external_mapping(var_name);
+                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
                 v = v2;
             }
         }

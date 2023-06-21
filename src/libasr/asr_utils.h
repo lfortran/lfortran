@@ -1432,6 +1432,8 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
         std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
         std::string module_name);
 
+void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface);
+
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
 
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
