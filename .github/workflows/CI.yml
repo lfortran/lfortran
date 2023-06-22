@@ -121,7 +121,8 @@ jobs:
             sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
 
       - name: Install Emscripten from Git
-        shell: bash -e -l {0}
+        # TODO: This fails with "-e" for some reason:
+        shell: bash -l {0}
         run: |
             mkdir $HOME/ext
             cd $HOME/ext
