@@ -1546,6 +1546,7 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
@@ -1626,6 +1627,7 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
+        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -1669,6 +1671,7 @@ public:
         body.reserve(al, x.n_body);
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
+        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -2435,6 +2438,37 @@ public:
                         al, x.base.base.loc, -1, 0, nullptr));
             ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, fmt->base.loc,
                 fmt, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
+                type, nullptr));
+
+            Vec<ASR::expr_t*> print_args;
+            print_args.reserve(al, 1);
+            print_args.push_back(al, string_format);
+
+            tmp = ASR::make_Print_t(al, x.base.base.loc, nullptr,
+                print_args.p, print_args.size(), nullptr, nullptr);
+        } else if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
+            ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
+            int64_t label = f->m_n;
+            if (format_statements.find(label) == format_statements.end()) {
+                // TODO: make this an error once we can find labels
+                // below us
+                diag.semantic_warning_label(
+                    "The label " + std::to_string(label) + " does not point to any format statement",
+                    {fmt->base.loc},
+                    "ignored for now"
+                );
+                tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
+                    body.p, body.size(), nullptr, nullptr);
+                return;
+            }
+            ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+                al, fmt->base.loc, 1, format_statements[label].size(), nullptr));
+            ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                al, fmt->base.loc, s2c(al, format_statements[label]), fmt_type));
+            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, x.base.base.loc, -1, 0, nullptr));
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, fmt->base.loc,
+                fmt_constant, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
                 type, nullptr));
 
             Vec<ASR::expr_t*> print_args;

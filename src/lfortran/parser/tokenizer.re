@@ -765,6 +765,7 @@ void lex_format(unsigned char *&cur, Location &loc,
             "&" ws_comment+ whitespace? "&"? { continue; }
             '"' ('""'|[^"\x00])* '"' { continue; }
             "'" ("''"|[^'\x00])* "'" { continue; }
+            '-' { continue; }
             (int)? data_edit_desc { continue; }
             control_edit_desc { continue; }
         */

@@ -776,6 +776,9 @@ public:
     int32_t enum_init_val;
     bool default_storage_save = false;
 
+    // Stores the strings for format statements inside a function
+    std::map<int64_t, std::string> format_statements;
+
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
@@ -986,11 +989,7 @@ public:
     }
 
     void visit_Format(const AST::Format_t &x) {
-        diag.semantic_warning_label(
-            "Format statement is not implemented yet, for now we will ignore it",
-            {x.base.base.loc},
-            "ignored for now"
-        );
+        format_statements[x.m_label] = x.m_fmt;
         tmp = nullptr;
     }
 
