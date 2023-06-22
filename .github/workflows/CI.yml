@@ -345,6 +345,18 @@ jobs:
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90
             # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90
 
+      - name: Test fastGPT
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/certik/fastGPT.git
+            cd fastGPT
+            git checkout -t origin/lf
+            git checkout 20502f9b1193487ebf0d2b32082875f60ec340c9
+            FC=$(pwd)/../src/bin/lfortran cmake .
+            make fastgpt
+            $(pwd)/../src/bin/lfortran --show-asr --no-indent --no-color main.f90
+
+
   fpm:
     name: Check fpm Compilation
     runs-on: ubuntu-latest
