@@ -2450,8 +2450,16 @@ public:
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
-                throw SemanticError("The label " + std::to_string(label) + " does not point to any format statement",
-                    fmt->base.loc);
+                // TODO: make this an error once we can find labels
+                // below us
+                diag.semantic_warning_label(
+                    "The label " + std::to_string(label) + " does not point to any format statement",
+                    {fmt->base.loc},
+                    "ignored for now"
+                );
+                tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
+                    body.p, body.size(), nullptr, nullptr);
+                return;
             }
             ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
                 al, fmt->base.loc, 1, format_statements[label].size(), nullptr));
