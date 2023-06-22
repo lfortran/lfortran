@@ -2446,6 +2446,29 @@ public:
 
             tmp = ASR::make_Print_t(al, x.base.base.loc, nullptr,
                 print_args.p, print_args.size(), nullptr, nullptr);
+        } else if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
+            ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);
+            int64_t label = f->m_n;
+            if (format_statements.find(label) == format_statements.end()) {
+                throw SemanticError("The label " + std::to_string(label) + " does not point to any format statement",
+                    fmt->base.loc);
+            }
+            ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+                al, fmt->base.loc, 1, format_statements[label].size(), nullptr));
+            ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                al, fmt->base.loc, s2c(al, format_statements[label]), fmt_type));
+            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, x.base.base.loc, -1, 0, nullptr));
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, fmt->base.loc,
+                fmt_constant, body.p, body.size(), ASR::string_format_kindType::FormatFortran,
+                type, nullptr));
+
+            Vec<ASR::expr_t*> print_args;
+            print_args.reserve(al, 1);
+            print_args.push_back(al, string_format);
+
+            tmp = ASR::make_Print_t(al, x.base.base.loc, nullptr,
+                print_args.p, print_args.size(), nullptr, nullptr);
         } else {
             tmp = ASR::make_Print_t(al, x.base.base.loc, fmt,
                 body.p, body.size(), nullptr, nullptr);
