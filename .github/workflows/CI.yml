@@ -139,7 +139,7 @@ jobs:
             ./emsdk activate node-14.18.2-64bit
 
       - name: Show Emscripten and Node Info
-        shell: bash -e -l {0}
+        shell: bash -l {0}
         run: |
             set -ex
             # Activate PATH and other environment variables in the current terminal
@@ -150,14 +150,14 @@ jobs:
             node -v
 
       - name: Build to WASM
-        shell: bash -e -l {0}
+        shell: bash -l {0}
         run: |
             set -ex
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             ./build_to_wasm.sh
 
       - name: Test built lfortran.wasm
-        shell: bash -e -l {0}
+        shell: bash -l {0}
         run: |
             set -ex
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
@@ -166,7 +166,7 @@ jobs:
             node --experimental-wasm-bigint src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
-        shell: bash -e -l {0}
+        shell: bash -l {0}
         run: |
             ci/upload_lfortran_wasm.sh
         env:
