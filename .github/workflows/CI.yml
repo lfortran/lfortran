@@ -35,12 +35,12 @@ jobs:
 
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: micromamba install m2-bison=3.0.4 m2-filesystem
 
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: micromamba install bison=3.4
 
       - uses: hendrikmuhs/ccache-action@main
@@ -48,14 +48,14 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Setup Platform
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
             echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
 
       - name: Build (Linux / macOS)
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             xonsh ci/build_tmp.xsh
@@ -75,7 +75,7 @@ jobs:
             xonsh ci\build_tmp.xsh
 
       - name: Test (Linux / macOS)
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             xonsh ci/test.xsh
@@ -114,14 +114,14 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name : Remove existing node
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run : |
             which node
             node -v
             sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
 
       - name: Install Emscripten from Git
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             mkdir $HOME/ext
             cd $HOME/ext
@@ -138,7 +138,7 @@ jobs:
             ./emsdk activate node-14.18.2-64bit
 
       - name: Show Emscripten and Node Info
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             set -ex
             # Activate PATH and other environment variables in the current terminal
@@ -149,14 +149,14 @@ jobs:
             node -v
 
       - name: Build to WASM
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             set -ex
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             ./build_to_wasm.sh
 
       - name: Test built lfortran.wasm
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             set -ex
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
@@ -165,7 +165,7 @@ jobs:
             node --experimental-wasm-bigint src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ci/upload_lfortran_wasm.sh
         env:
@@ -191,7 +191,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             export CXXFLAGS="-Werror"
@@ -208,7 +208,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ctest
             ./run_tests.py -s
@@ -236,7 +236,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             export CXXFLAGS="-Werror"
@@ -253,7 +253,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ctest
             ./run_tests.py -s
@@ -281,7 +281,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -297,7 +297,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Legacy Minpack (SciPy)
-        shell: bash -x -l {0}
+        shell: bash -e -x -l {0}
         run: |
             git clone https://github.com/certik/minpack.git
             cd minpack
@@ -315,7 +315,7 @@ jobs:
             ctest
 
       - name: Test Modern Minpack (Fortran-Lang)
-        shell: bash -x -l {0}
+        shell: bash -e -x -l {0}
         run: |
             git clone https://github.com/fortran-lang/minpack modern_minpack_01
             cd modern_minpack_01
@@ -327,7 +327,7 @@ jobs:
             $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90
 
       - name: Test Modern Minpack (check results)
-        shell: bash -x -l {0}
+        shell: bash -e -x -l {0}
         run: |
             git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
             cd modern_minpack_02
@@ -364,7 +364,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -380,7 +380,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test fpm
-        shell: bash -x -l {0}
+        shell: bash -e -x -l {0}
         run: |
             git clone https://github.com/certik/fpm.git
             cd fpm
@@ -409,7 +409,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -425,7 +425,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b llvm
@@ -450,7 +450,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -466,7 +466,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b llvm
@@ -491,7 +491,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -507,7 +507,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
@@ -521,7 +521,7 @@ jobs:
           fetch-depth: 0
 
       - name: Test integration_tests with GFortran
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b gfortran
@@ -546,7 +546,7 @@ jobs:
           key: ${{ github.job }}-ubuntu-latest
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -562,7 +562,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test SciPy
-        shell: bash -x -l {0}
+        shell: bash -e -x -l {0}
         run: |
             git clone https://github.com/scipy/scipy.git
             cd scipy
@@ -596,7 +596,7 @@ jobs:
             python=3.10
 
       - name: Test
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
           xonsh ci/test_without_llvm_backend.xsh
 
@@ -615,7 +615,7 @@ jobs:
             python=3.10
 
       - name: Test CPP
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             xonsh ci/test_cpp_version.xsh
 
@@ -640,14 +640,14 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Show Node Info
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
           set -ex
           which node
           node --version
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -663,7 +663,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b wasm
@@ -688,7 +688,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             ./build0.sh
             cmake . -GNinja \
@@ -704,7 +704,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
             mkdir build-kokkos
             cd build-kokkos
@@ -737,7 +737,7 @@ jobs:
             python=3.10
 
       - name: Upload Tarball
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
           ./build0.sh
           lfortran_version=$(<version)
@@ -764,7 +764,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name: Build Kernel
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         run: |
           ./build0.sh
           export CXXFLAGS="-Werror"
@@ -782,13 +782,13 @@ jobs:
           jupyter kernelspec list --json
 
       - name: Build Docs
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         working-directory: doc
         run: |
           $(command -v python) build.py
 
       - name: Upload Docs
-        shell: bash -l {0}
+        shell: bash -e -l {0}
         working-directory: doc
         run: |
           ../ci/upload_docs.sh
