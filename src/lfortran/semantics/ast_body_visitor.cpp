@@ -1546,6 +1546,7 @@ public:
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
         ASR::stmt_t* impl_del = create_implicit_deallocate(x.base.base.loc);
         if( impl_del != nullptr ) {
@@ -1626,6 +1627,7 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
         body.reserve(al, x.n_body);
+        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
@@ -1669,6 +1671,7 @@ public:
         body.reserve(al, x.n_body);
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
+        format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
