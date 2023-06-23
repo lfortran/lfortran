@@ -753,9 +753,6 @@ public:
     bool is_common_variable = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
-    // fields for generics
-    std::map<std::string, std::string> context_map;
-
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
 
@@ -775,15 +772,23 @@ public:
     // Stores the strings for format statements inside a function
     std::map<int64_t, std::string> format_statements;
 
+    // fields for generics
+    std::map<std::string, std::string> context_map;
+    std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
+    std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
+
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
             std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-            std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
+            std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+            std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
-          current_variable_type_{nullptr} {
+          current_variable_type_{nullptr},
+          instantiate_types{instantiate_types}, instantiate_symbols{instantiate_symbols} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }

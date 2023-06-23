@@ -35,8 +35,11 @@ public:
 
     BodyVisitor(Allocator &al, ASR::asr_t *unit, diag::Diagnostics &diagnostics,
             CompilerOptions &compiler_options, std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
-            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
-        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping),
+            std::map<uint64_t, ASR::symbol_t*>& common_variables_hash, std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+            std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
+        : CommonVisitor(al, nullptr, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
+                        instantiate_types, instantiate_symbols),
         asr{unit}, from_block{false} {}
 
     void visit_Declaration(const AST::Declaration_t& x) {
@@ -518,6 +521,7 @@ public:
         tmp = ASR::make_FileRewind_t(al, x.base.base.loc, x.m_label, unit, iostat, err);
     }
 
+/*
     void visit_Instantiate(const AST::Instantiate_t &x){
         std::string template_name = x.m_name;
         Vec<ASR::dimension_t> dims;
@@ -739,6 +743,7 @@ public:
 
     }
 
+
     void check_restriction(std::map<std::string, ASR::ttype_t*> subs,
             std::map<std::string, ASR::symbol_t*>& restriction_subs,
             ASR::Function_t* restriction, ASR::symbol_t *sym_arg, const Location& loc) {
@@ -823,6 +828,33 @@ public:
             }
         }
         restriction_subs[restriction_name] = sym_arg;
+    }
+*/
+
+    void visit_Instantiate(const AST::Instantiate_t &x) {
+        std::string template_name = x.m_name;
+        ASR::symbol_t *sym = current_scope->resolve_symbol(template_name);
+        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
+
+        if (instantiate_types.find(x.base.base.loc.first) == instantiate_types.end()) {
+            LCOMPILERS_ASSERT(false);
+        }
+
+        std::map<std::string, ASR::ttype_t*> type_subs = instantiate_types[x.base.base.loc.first];
+        std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
+
+        for (size_t i = 0; i < x.n_symbols; i++){
+            AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
+            std::string generic_name = to_lower(use_symbol->m_remote_sym);
+            ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+            if (ASR::is_a<ASR::Function_t>(*s)) {
+                std::string new_s_name = to_lower(use_symbol->m_local_rename);
+                ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
+                    current_scope->resolve_symbol(new_s_name));
+                pass_instantiate_function_body(al, type_subs, symbol_subs, current_scope,
+                    temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
+            } 
+        }
     }
 
     void visit_Inquire(const AST::Inquire_t& x) {
@@ -1613,14 +1645,14 @@ public:
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
+        ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
+        current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Instantiate)
                 visit_unit_decl2(*x.m_decl[i]);
             is_Function = false;
         }
-        ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
-        current_scope = v->m_symtab;
         Vec<ASR::stmt_t*> body;
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
@@ -2946,9 +2978,12 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
+        std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
 {
-    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping);
+    BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
+                  instantiate_types, instantiate_symbols);
     try {
         b.is_body_visitor = true;
         b.visit_TranslationUnit(ast);
