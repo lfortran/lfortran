@@ -35,11 +35,10 @@ message("LFORTRAN_BACKEND: ${LFORTRAN_BACKEND}")
 message("DISABLE_FAST: ${DISABLE_FAST}")
 
 
-macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_INCLUDE_PATH RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
     set(fail ${${RUN_FAIL}})
     set(name ${${RUN_NAME}})
     set(file_name ${${RUN_FILE_NAME}})
-    set(include_path ${${RUN_INCLUDE_PATH}})
     set(labels ${${RUN_LABELS}})
     set(extra_files ${${RUN_EXTRAFILES}})
     set(extra_args ${${RUN_EXTRA_ARGS}})
@@ -66,21 +65,14 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_INCLUDE_PATH RUN_LABELS RUN_E
     endif()
 
     if (ADD_TEST)
-		if (include_path)
-			# Only relative include path supported currently for testing
-			set(include_path_with_flag -I${CMAKE_CURRENT_SOURCE_DIR}/${include_path})
-		else ()
-			set(include_path_with_flag "")
-		endif()
-
         if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86") OR (LFORTRAN_BACKEND STREQUAL "c"))
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC ${include_path_with_flag} ${extra_args} --backend=${LFORTRAN_BACKEND})
+            target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "wasm")
             # wasm test
-            execute_process(COMMAND lfortran ${include_path_with_flag} ${extra_args} --backend=wasm ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -o ${name})
+            execute_process(COMMAND lfortran ${extra_args} --backend=wasm ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -o ${name})
 
             find_program(WASM_EXEC_RUNTIME node)
             execute_process(COMMAND "${WASM_EXEC_RUNTIME}" --version
@@ -97,25 +89,25 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_INCLUDE_PATH RUN_LABELS RUN_E
             add_test(${name} ${WASM_EXEC_RUNTIME} ${WASM_EXEC_FLAGS} ${CURRENT_BINARY_DIR}/${name}.js)
         elseif (LFORTRAN_BACKEND STREQUAL "llvm2")
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC --generate-object-code ${include_path_with_flag} ${extra_args})
-            target_link_options(${name} PUBLIC  --generate-object-code ${include_path_with_flag} ${extra_args})
+            target_compile_options(${name} PUBLIC --generate-object-code ${extra_args})
+            target_link_options(${name} PUBLIC  --generate-object-code ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_rtlib")
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC --generate-object-code ${include_path_with_flag} ${extra_args})
+            target_compile_options(${name} PUBLIC --generate-object-code ${extra_args})
             set_source_files_properties(${file_name}.f90 PROPERTIES COMPILE_OPTIONS "--rtlib")
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicit")
             execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
-				${include_path_with_flag} ${extra_args} --implicit-typing --implicit-interface -o ${name})
+				${extra_args} --implicit-typing --implicit-interface -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC ${include_path_with_flag} ${extra_args})
+            target_compile_options(${name} PUBLIC ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC ${include_path_with_flag})
+            target_compile_options(${name} PUBLIC ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
 
@@ -139,13 +131,19 @@ macro(RUN)
     set(RUN_EXTRA_ARGS "")
     set(RUN_FILE_NAME ${RUN_NAME})
 
-    RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_INCLUDE_PATH RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+    if (RUN_INCLUDE_PATH)
+        # Only one include path supported for now
+        # Later add support for multiple include paths by looping over and appending to extra args
+        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} -I${CMAKE_CURRENT_SOURCE_DIR}/${RUN_INCLUDE_PATH})
+    endif()
+
+    RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
 
     if ((NOT DISABLE_FAST) AND (NOT RUN_NOFAST))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --fast)
         set(RUN_NAME "${RUN_NAME}_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_INCLUDE_PATH RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
     endif()
 endmacro(RUN)
 
