@@ -634,24 +634,6 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
-        Vec<ASR::ttype_t*> params;
-        if (is_requirement) {
-            params.reserve(al, current_requirement_type_parameters.size());
-            for (ASR::asr_t *tp: current_requirement_type_parameters) {
-                params.push_back(al, ASR::down_cast<ASR::ttype_t>(tp));
-            }
-        } else {
-            params.reserve(al, called_requirement.size());
-            /*
-            for (const auto &req: called_requirement) {
-                if (ASR::is_a<ASR::ttype_t>(*req.second)) {
-                    ASR::ttype_t *new_param = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::ttype_t>(req.second));
-                    params.push_back(al, new_param);
-                }
-            }
-            */
-        }
-
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -908,50 +890,7 @@ public:
                             + derived_type_name + "' not declared", x.base.base.loc);
 
                     }
-
-                    // TODO: abstract this into a function
-                    bool type_param = false;
-                    if (is_requirement) {
-                        for (size_t i = 0; i < current_requirement_type_parameters.size(); i++) {
-                            ASR::ttype_t *param_ttype = ASRUtils::TYPE(
-                                current_requirement_type_parameters[i]);
-                            ASR::dimension_t* param_m_dims = nullptr;
-                            int param_n_dims = ASRUtils::extract_dimensions_from_ttype(param_ttype, param_m_dims);
-                            if( ASR::is_a<ASR::Array_t>(*param_ttype) ) {
-                                param_ttype = ASR::down_cast<ASR::Array_t>(param_ttype)->m_type;
-                            }
-                            ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(
-                                current_requirement_type_parameters[i]);
-                            std::string name = std::string(param->m_param);
-                            if (name.compare(derived_type_name) == 0) {
-                                type_param = true;
-                                // TODO: if current_requirement_type_parameters can be replaced with
-                                // std::vector<ASR::ttype_t*> then use duplicate instead
-                                type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param));
-                                if( param_n_dims > 0 ) {
-                                    type = ASRUtils::make_Array_t_util(al, x.base.base.loc, type,
-                                                param_m_dims, param_n_dims);
-                                }
-                            }
-                        }
-                    } else if (is_template) {
-                        /*
-                        for (const auto &pair: called_requirement) {
-                            if (pair.first.compare(derived_type_name) == 0) {
-                                ASR::asr_t *req_asr = pair.second;
-                                if (ASR::is_a<ASR::ttype_t>(*req_asr)) {
-                                    ASR::TypeParameter_t *param = ASR::down_cast2<ASR::TypeParameter_t>(req_asr);
-                                    type_param = true;
-                                    type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param,
-                                                                                    param->m_dims, param->n_dims));
-                                }
-                            }
-                        }
-                        */
-                    }
-                    if (!type_param) {
-                        type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
-                    }
+                    type = ASRUtils::TYPE(ASR::make_Struct_t(al, x.base.base.loc, v));
                     break;
                 }
                 default :
@@ -1027,25 +966,6 @@ public:
             }
         }
 
-        Vec<ASR::ttype_t*> params;
-        if (is_requirement) {
-            params.reserve(al, current_requirement_type_parameters.size());
-            for (ASR::asr_t *tp: current_requirement_type_parameters) {
-                params.push_back(al, ASR::down_cast<ASR::ttype_t>(tp));
-            }
-        } else {
-            // TODO: build based on called requirement
-            params.reserve(al, called_requirement.size());
-            /*
-            for (const auto &req: called_requirement) {
-                if (ASR::is_a<ASR::ttype_t>(*req.second)) {
-                    ASR::ttype_t *new_param = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::ttype_t>(req.second));
-                    params.push_back(al, new_param);
-                }
-            }
-            */
-        }
-
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -1098,14 +1018,12 @@ public:
         if (is_requirement) {
             ASR::asr_t *tp = ASR::make_TypeParameter_t(
                 al, x.base.base.loc, s2c(al, to_lower(x.m_name)));
-            current_requirement_type_parameters.push_back(tp);
             tmp = ASR::make_Variable_t(al, x.base.base.loc, current_scope,
                 s2c(al, to_lower(x.m_name)), nullptr, 0, ASRUtils::intent_in,
                 nullptr, nullptr, ASR::storage_typeType::Default,
                 ASRUtils::TYPE(tp), nullptr, ASR::abiType::Source,
                 dflt_access, ASR::presenceType::Required, false);
             current_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
-            is_derived_type = false;
             return;
         }
         SymbolTable *parent_scope = current_scope;
@@ -2277,7 +2195,7 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
-        current_template_map.clear();
+        context_map.clear();
         is_template = false;
 
     }
@@ -2297,7 +2215,7 @@ public:
                 t = ASRUtils::type_get_past_array(t);
                 if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
                     ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-                    current_template_map[tp->m_param] = name;
+                    context_map[tp->m_param] = name;
                     t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
                         tp->base.base.loc, s2c(al, name)));
                     if( tp_n_dims > 0 ) {
@@ -2330,9 +2248,9 @@ public:
                     param_type = ASRUtils::type_get_past_array(param_type);
                     if (ASR::is_a<ASR::TypeParameter_t>(*param_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(param_type);
-                        if (current_template_map.find(tp->m_param) != current_template_map.end()) {
+                        if (context_map.find(tp->m_param) != context_map.end()) {
                             param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param])));
+                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
                             if( tp_n_dims > 0 ) {
                                 param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                                     param_type, tp_m_dims, tp_n_dims);
@@ -2377,9 +2295,9 @@ public:
                     return_type = ASRUtils::type_get_past_array(return_type);
                     if (ASR::is_a<ASR::TypeParameter_t>(*return_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(return_type);
-                        if (current_template_map.find(tp->m_param) != current_template_map.end()) {
+                        if (context_map.find(tp->m_param) != context_map.end()) {
                             return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
-                                al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param])));
+                                al, tp->base.base.loc, s2c(al, context_map[tp->m_param])));
                             if( tp_n_dims > 0 ) {
                                 return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
                                     return_type, tp_m_dims, tp_n_dims);

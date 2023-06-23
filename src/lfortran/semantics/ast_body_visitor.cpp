@@ -519,7 +519,6 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x){
-        is_instantiate = true;
         std::string template_name = x.m_name;
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, 0);
@@ -738,7 +737,6 @@ public:
             current_function_dependencies.push_back(al, s2c(al, new_f_name));
         }
 
-        is_instantiate = false;
     }
 
     void check_restriction(std::map<std::string, ASR::ttype_t*> subs,
@@ -2925,7 +2923,6 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
-        is_template = true;
         SymbolTable* old_scope = current_scope;
         ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
@@ -2939,7 +2936,6 @@ public:
             this->visit_program_unit(*x.m_contains[i]);
         }
         current_scope = old_scope;
-        is_template = false;
     }
 };
 

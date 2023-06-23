@@ -747,7 +747,6 @@ public:
     bool is_body_visitor = false;
     bool is_requirement = false;
     bool is_template = false;
-    bool is_instantiate = false;
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
@@ -755,10 +754,7 @@ public:
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     // fields for generics
-    std::vector<ASR::asr_t*> current_requirement_type_parameters;
-    std::map<std::string, ASR::asr_t*> called_requirement;
-
-    std::map<std::string, std::string> current_template_map;
+    std::map<std::string, std::string> context_map;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
@@ -922,14 +918,6 @@ public:
                     v = declare_implicit_variable(loc, var_name, intent);
                 }
             } else {
-                // DONE: fix this ad-hoc solution ==> remove this solution
-                /*
-                if (is_instantiate) {
-                    ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                            1, strlen(s2c(al, var_name)), nullptr, nullptr, 0));
-                    return ASR::make_StringConstant_t(al, loc, s2c(al, var_name), type);
-                }
-                */
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
                     "'" + var_name + "' is undeclared");
