@@ -24,6 +24,7 @@ namespace LCompilers {
             llvm::Type *t = x->getType();
             LCOMPILERS_ASSERT(t->isPointerTy());
             llvm::Type *t2 = t->getContainedType(0);
+            LCOMPILERS_ASSERT(!t2->isPointerTy());
             return builder.CreateGEP(t2, x, idx);
         }
 
