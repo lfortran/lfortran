@@ -8498,6 +8498,11 @@ public:
             dim_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_dim));
             llvm_dim = tmp;
         }
+        bool is_pointer_array = llvm_arg->getType()->getContainedType(0)->isPointerTy();
+        if (is_pointer_array) {
+            tmp = llvm::ConstantInt::get(context, llvm::APInt(4 * 8, 1));
+            return;
+        }
         tmp = arr_descr->get_array_size(llvm_arg, llvm_dim, output_kind, dim_kind);
     }
 
@@ -8523,6 +8528,11 @@ public:
         visit_expr_wrapper(x.m_v);
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_arg1 = tmp;
+        bool is_pointer_array = llvm_arg1->getType()->getContainedType(0)->isPointerTy();
+        if (is_pointer_array) {
+            tmp = llvm::ConstantInt::get(context, llvm::APInt(4 * 8, 1));
+            return;
+        }
         llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(llvm_arg1);
         visit_expr_wrapper(x.m_dim, true);
         llvm::Value* dim_val = tmp;
