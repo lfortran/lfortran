@@ -2,6 +2,195 @@
     (SymbolTable
         1
         {
+            math:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            add_real:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            total:
+                                                (Variable
+                                                    3
+                                                    total
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    3
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    add_real
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 x)
+                                    (Var 3 y)]
+                                    [(=
+                                        (Var 3 total)
+                                        (RealBinOp
+                                            (Var 3 x)
+                                            Add
+                                            (Var 3 y)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 3 total)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            slash_real:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            total:
+                                                (Variable
+                                                    4
+                                                    total
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            y:
+                                                (Variable
+                                                    4
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    slash_real
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        (Real 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 x)
+                                    (Var 4 y)]
+                                    [(=
+                                        (Var 4 total)
+                                        (RealBinOp
+                                            (Var 4 x)
+                                            Div
+                                            (Var 4 y)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 4 total)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    math
+                    []
+                    .false.
+                    .false.
+                ),
             template_travel:
                 (Program
                     (SymbolTable
@@ -12,7 +201,7 @@
                                     22
                                     add_real
                                     2 add_real
-                                    template_travel_math
+                                    math
                                     []
                                     add_real
                                     Public
@@ -22,7 +211,7 @@
                                     22
                                     operations
                                     5 operations
-                                    template_travel_travel
+                                    travel
                                     []
                                     operations
                                     Public
@@ -32,7 +221,7 @@
                                     22
                                     slash_real
                                     2 slash_real
-                                    template_travel_math
+                                    math
                                     []
                                     slash_real
                                     Public
@@ -52,7 +241,7 @@
                                     22
                                     travel_tmpl
                                     5 travel_tmpl
-                                    template_travel_travel
+                                    travel
                                     []
                                     travel_tmpl
                                     Public
@@ -77,7 +266,7 @@
                                     18
                                     add_real
                                     2 add_real
-                                    template_travel_math
+                                    math
                                     []
                                     add_real
                                     Public
@@ -87,7 +276,7 @@
                                     18
                                     operations
                                     5 operations
-                                    template_travel_travel
+                                    travel
                                     []
                                     operations
                                     Public
@@ -97,7 +286,7 @@
                                     18
                                     slash_real
                                     2 slash_real
-                                    template_travel_math
+                                    math
                                     []
                                     slash_real
                                     Public
@@ -676,209 +865,20 @@
                                     18
                                     travel_tmpl
                                     5 travel_tmpl
-                                    template_travel_travel
+                                    travel
                                     []
                                     travel_tmpl
                                     Public
                                 )
                         })
                     template_travel_m
-                    [template_travel_math
-                    template_travel_travel
+                    [math
+                    travel
                     template_travel_m]
                     .false.
                     .false.
                 ),
-            template_travel_math:
-                (Module
-                    (SymbolTable
-                        2
-                        {
-                            add_real:
-                                (Function
-                                    (SymbolTable
-                                        3
-                                        {
-                                            total:
-                                                (Variable
-                                                    3
-                                                    total
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            x:
-                                                (Variable
-                                                    3
-                                                    x
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            y:
-                                                (Variable
-                                                    3
-                                                    y
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    add_real
-                                    (FunctionType
-                                        [(Real 4)
-                                        (Real 4)]
-                                        (Real 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 3 x)
-                                    (Var 3 y)]
-                                    [(=
-                                        (Var 3 total)
-                                        (RealBinOp
-                                            (Var 3 x)
-                                            Add
-                                            (Var 3 y)
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 3 total)
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            slash_real:
-                                (Function
-                                    (SymbolTable
-                                        4
-                                        {
-                                            total:
-                                                (Variable
-                                                    4
-                                                    total
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            x:
-                                                (Variable
-                                                    4
-                                                    x
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            y:
-                                                (Variable
-                                                    4
-                                                    y
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    slash_real
-                                    (FunctionType
-                                        [(Real 4)
-                                        (Real 4)]
-                                        (Real 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 4 x)
-                                    (Var 4 y)]
-                                    [(=
-                                        (Var 4 total)
-                                        (RealBinOp
-                                            (Var 4 x)
-                                            Div
-                                            (Var 4 y)
-                                            (Real 4)
-                                            ()
-                                        )
-                                        ()
-                                    )]
-                                    (Var 4 total)
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                )
-                        })
-                    template_travel_math
-                    []
-                    .false.
-                    .false.
-                ),
-            template_travel_travel:
+            travel:
                 (Module
                     (SymbolTable
                         5
@@ -888,7 +888,7 @@
                                     5
                                     add_real
                                     2 add_real
-                                    template_travel_math
+                                    math
                                     []
                                     add_real
                                     Public
@@ -1332,7 +1332,7 @@
                                     5
                                     slash_real
                                     2 slash_real
-                                    template_travel_math
+                                    math
                                     []
                                     slash_real
                                     Public
@@ -1465,7 +1465,8 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    [d_divided_by_s
+                                                    [d_divided_by_t
+                                                    d_divided_by_s
                                                     avg_s_from_t]
                                                     [(Var 17 d1)
                                                     (Var 17 s1)
@@ -1478,12 +1479,12 @@
                                                             ()
                                                             [((Var 17 d1))
                                                             ((FunctionCall
-                                                                11 d_divided_by_s
+                                                                11 d_divided_by_t
                                                                 ()
                                                                 [((Var 17 d1))
                                                                 ((Var 17 s1))]
                                                                 (TypeParameter
-                                                                    t
+                                                                    s
                                                                 )
                                                                 ()
                                                                 ()
@@ -2124,9 +2125,9 @@
                                     )]
                                 )
                         })
-                    template_travel_travel
-                    [template_travel_math
-                    template_travel_travel]
+                    travel
+                    [math
+                    travel]
                     .false.
                     .false.
                 )
