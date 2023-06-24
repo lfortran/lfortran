@@ -1,0 +1,231 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            entry1:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            dummy:
+                                (Variable
+                                    2
+                                    dummy
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            y:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            y_arg_0:
+                                                (Variable
+                                                    4
+                                                    y_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    y
+                                    (FunctionType
+                                        [(Real 4)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 y_arg_0)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    entry1
+                    []
+                    [(=
+                        (Var 2 dummy)
+                        (Cast
+                            (IntegerConstant 10 (Integer 4))
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                10.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (SubroutineCall
+                        1 x
+                        ()
+                        [((Var 2 dummy))]
+                        ()
+                    )
+                    (SubroutineCall
+                        2 y
+                        ()
+                        [((Var 2 dummy))]
+                        ()
+                    )]
+                ),
+            x:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            dummy:
+                                (Variable
+                                    3
+                                    dummy
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    x
+                    (FunctionType
+                        [(Real 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    []
+                    [(Var 3 dummy)]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "Printed using subroutine call: "
+                            (Character 1 31 ())
+                        )
+                        (Var 3 dummy)]
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 3 dummy)
+                        (RealConstant
+                            5.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (Return)
+                    (Print
+                        ()
+                        [(StringConstant
+                            "Printed using entry statement: "
+                            (Character 1 31 ())
+                        )
+                        (Var 3 dummy)]
+                        ()
+                        ()
+                    )
+                    (Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            y:
+                (Function
+                    (SymbolTable
+                        5
+                        {
+                            dummy:
+                                (Variable
+                                    5
+                                    dummy
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    y
+                    (FunctionType
+                        [(Real 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    []
+                    [(Var 5 dummy)]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "Printed using entry statement: "
+                            (Character 1 31 ())
+                        )
+                        (Var 5 dummy)]
+                        ()
+                        ()
+                    )
+                    (Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

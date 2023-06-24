@@ -1,0 +1,281 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            entry_02:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            dummy:
+                                (Variable
+                                    3
+                                    dummy
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    entry_02
+                    []
+                    [(=
+                        (Var 3 dummy)
+                        (RealConstant
+                            10.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (SubroutineCall
+                        1 x
+                        ()
+                        [((Var 3 dummy))]
+                        ()
+                    )
+                    (=
+                        (Var 3 dummy)
+                        (RealConstant
+                            5.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (SubroutineCall
+                        1 y
+                        ()
+                        [((Var 3 dummy))]
+                        ()
+                    )]
+                ),
+            x:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            dummy:
+                                (Variable
+                                    2
+                                    dummy
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    x
+                    (FunctionType
+                        [(Real 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    []
+                    [(Var 2 dummy)]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "Printed using subroutine call: "
+                            (Character 1 31 ())
+                        )
+                        (Var 2 dummy)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 dummy)
+                                    Sub
+                                    (RealConstant
+                                        10.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 dummy)
+                        (RealConstant
+                            5.000000
+                            (Real 4)
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "Printed using entry statement: "
+                            (Character 1 31 ())
+                        )
+                        (Var 2 dummy)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 dummy)
+                                    Sub
+                                    (RealConstant
+                                        5.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            y:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            dummy:
+                                (Variable
+                                    4
+                                    dummy
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    y
+                    (FunctionType
+                        [(Real 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    []
+                    [(Var 4 dummy)]
+                    [(Print
+                        ()
+                        [(StringConstant
+                            "Printed using entry statement: "
+                            (Character 1 31 ())
+                        )
+                        (Var 4 dummy)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 4 dummy)
+                                    Sub
+                                    (RealConstant
+                                        5.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)
