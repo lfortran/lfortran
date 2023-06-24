@@ -62,10 +62,10 @@ module template_array_02b_m
             integer, intent(in) :: n
             type(t), intent(in) :: a(n)
             type(t) :: r
-            integer :: j
+            integer :: i
             r = zero_t(a(1))
-            do j = 1, size(a)
-                r = plus_t(r, a(j))
+            do i = 1, size(a)
+                r = plus_t(r, a(i))
             end do
         end function
     end template

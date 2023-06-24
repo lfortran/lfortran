@@ -145,10 +145,10 @@
                                                                     Required
                                                                     .false.
                                                                 ),
-                                                            j:
+                                                            i:
                                                                 (Variable
                                                                     14
-                                                                    j
+                                                                    i
                                                                     []
                                                                     Local
                                                                     ()
@@ -231,7 +231,7 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 14 j)
+                                                        ((Var 14 i)
                                                         (IntegerConstant 1 (Integer 4))
                                                         (ArraySize
                                                             (Var 14 a)
@@ -249,7 +249,7 @@
                                                                 ((ArrayItem
                                                                     (Var 14 a)
                                                                     [(()
-                                                                    (Var 14 j)
+                                                                    (Var 14 i)
                                                                     ())]
                                                                     (TypeParameter
                                                                         t
@@ -718,10 +718,10 @@
                                                                     Required
                                                                     .false.
                                                                 ),
-                                                            j:
+                                                            i:
                                                                 (Variable
                                                                     16
-                                                                    j
+                                                                    i
                                                                     []
                                                                     Local
                                                                     ()
@@ -794,7 +794,7 @@
                                                     )
                                                     (DoLoop
                                                         ()
-                                                        ((Var 16 j)
+                                                        ((Var 16 i)
                                                         (IntegerConstant 1 (Integer 4))
                                                         (ArraySize
                                                             (Var 16 a)
@@ -812,7 +812,7 @@
                                                                 ((ArrayItem
                                                                     (Var 16 a)
                                                                     [(()
-                                                                    (Var 16 j)
+                                                                    (Var 16 i)
                                                                     ())]
                                                                     (Integer 4)
                                                                     ColMajor
