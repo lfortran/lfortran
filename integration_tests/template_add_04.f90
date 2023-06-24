@@ -1,4 +1,4 @@
-module template_add_01_m
+module template_add_04_m
   implicit none
   private
   public :: add_t
