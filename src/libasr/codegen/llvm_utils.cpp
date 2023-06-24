@@ -327,6 +327,7 @@ namespace LCompilers {
                 }
                 break ;
             };
+            case ASR::ttypeType::Allocatable:
             case ASR::ttypeType::Character:
             case ASR::ttypeType::CPtr: {
                 LLVM::CreateStore(*builder, src, dest);

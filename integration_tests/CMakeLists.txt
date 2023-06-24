@@ -720,6 +720,7 @@ RUN(NAME string_16 LABELS gfortran) # achar
 RUN(NAME string_19 LABELS gfortran) # achar
 RUN(NAME string_20 LABELS gfortran llvm NOFAST)
 RUN(NAME string_21 LABELS gfortran llvm NOFAST)
+RUN(NAME string_22 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_02 LABELS gfortran llvm)
