@@ -768,6 +768,8 @@ public:
 
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
+    std::vector<std::string> active_entry_points;
+    std::map<std::string, std::vector<AST::stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;

@@ -82,6 +82,64 @@ public:
         from_block = false;
     }
 
+    void copy_stmts(size_t n_body, AST::stmt_t **m_body) {
+        std::vector<std::string> entry_points;
+        for (size_t i=0; i<n_body; i++) {
+            if (m_body[i]->type == AST::stmtType::Entry) {
+                AST::Entry_t* entry = (AST::Entry_t*)m_body[i];
+                entry_points.push_back(std::string(entry->m_name));
+            } else {
+                for (auto sym_name: entry_points) {
+                    entry_point_mapping[sym_name].push_back(m_body[i]);
+                }
+            }
+        }
+        active_entry_points = entry_points;
+    }
+
+    void handle_active_entry_points() {
+        for (auto sym_name: active_entry_points) {
+            SymbolTable* old_scope = current_scope;
+            ASR::symbol_t* sym = current_scope->resolve_symbol(sym_name);
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
+            current_scope = func->m_symtab;
+            Vec<ASR::stmt_t*> body;
+            std::vector<ASR::stmt_t*> stmt_vector;
+            for (auto &x: entry_point_mapping[sym_name]) {
+                this->visit_stmt(*x);
+                ASR::stmt_t* tmp_stmt = nullptr;
+                if (tmp != nullptr) {
+                    tmp_stmt = ASRUtils::STMT(tmp);
+                    if (tmp_stmt->type == ASR::stmtType::SubroutineCall) {
+                        ASR::stmt_t* impl_decl = create_implicit_deallocate_subrout_call(tmp_stmt);
+                        if (impl_decl != nullptr) {
+                            stmt_vector.push_back(impl_decl);
+                        }
+                    }
+                    stmt_vector.push_back(tmp_stmt);
+                } else if (!tmp_vec.empty()) {
+                    for(auto &x: tmp_vec) {
+                        stmt_vector.push_back(ASRUtils::STMT(x));
+                    }
+                    tmp_vec.clear();
+                }
+                tmp = nullptr;
+            }
+            body.reserve(al, func->n_body + stmt_vector.size());
+
+            for (size_t i=0; i<func->n_body; i++) {
+                body.push_back(al, func->m_body[i]);
+            }
+
+            for (auto &x: stmt_vector) {
+                body.push_back(al, x);
+            }
+            func->m_body = body.p;
+            func->n_body = body.size();
+            current_scope = old_scope;
+        }
+    }
+
     // Transforms statements to a list of ASR statements
     // In addition, it also inserts the following nodes if needed:
     //   * ImplicitDeallocate
@@ -1603,6 +1661,90 @@ public:
                     del_syms.p, del_syms.size()));
     }
 
+    void visit_Entry(const AST::Entry_t &x) {
+        in_Subroutine = true;
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
+
+        ASR::accessType s_access = dflt_access;
+        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
+
+        SymbolTable *old_scope = current_scope;
+        SymbolTable *parent_scope = current_scope->parent;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        for( auto& item: old_scope->get_scope() ) {
+            symbol_duplicator.duplicate_symbol(item.second, current_scope);
+        }
+
+        for (size_t i=0; i<x.n_args; i++) {
+            char *arg=x.m_args[i].m_arg;
+            if (arg) {
+                current_procedure_args.push_back(to_lower(arg));
+            } else {
+                throw SemanticError("Alternate returns are not implemented yet",
+                    x.m_args[i].loc);
+            }
+        }
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x.n_args);
+        for (size_t i=0; i<x.n_args; i++) {
+            char *arg=x.m_args[i].m_arg;
+            std::string arg_s = to_lower(arg);
+            if (current_scope->get_symbol(arg_s) == nullptr) {
+                if (compiler_options.implicit_typing) {
+                    ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
+                    if (t == nullptr) {
+                        throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                    }
+                    declare_implicit_variable2(x.base.base.loc, arg_s,
+                        ASRUtils::intent_unspecified, t);
+                } else {
+                    throw SemanticError("Dummy argument '" + arg_s + "' not defined", x.base.base.loc);
+                }
+            }
+            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                var)));
+        }
+
+        current_procedure_abi_type = ASR::abiType::Source;
+
+        std::string sym_name = to_lower(x.m_name);
+
+        SetChar func_deps;
+        func_deps.reserve(al, current_function_dependencies.size());
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
+        ASR::asr_t* tmp_ = ASRUtils::make_Function_t_util(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, to_lower(sym_name)),
+            func_deps.p, func_deps.size(),
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            nullptr,
+            current_procedure_abi_type,
+            s_access, deftype, nullptr,
+            false, false, false, false, false,
+            is_requirement,
+            false, false);
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp_));
+
+        
+        entry_point_mapping[sym_name] = std::vector<AST::stmt_t*>();
+        active_entry_points.push_back(sym_name);
+
+        current_scope = old_scope;
+        current_function_dependencies = current_function_dependencies_copy;
+
+        tmp = nullptr;
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
     // TODO: add SymbolTable::lookup_symbol(), which will automatically return
     // an error
@@ -1629,6 +1771,10 @@ public:
         body.reserve(al, x.n_body);
         format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        copy_stmts(x.n_body, x.m_body);
+        handle_active_entry_points();
+        // clear active_entry_points
+        active_entry_points.clear();
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
         for( auto& itr: current_function_dependencies ) {
@@ -1673,6 +1819,10 @@ public:
         current_function_dependencies.clear(al);
         format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
+        copy_stmts(x.n_body, x.m_body);
+        handle_active_entry_points();
+        // clear active_entry_points
+        active_entry_points.clear();
         SetChar func_deps;
         func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
         for( auto& itr: current_function_dependencies ) {
