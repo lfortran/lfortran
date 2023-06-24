@@ -8715,6 +8715,9 @@ public:
                     LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v));
         visit_expr_wrapper(x.m_v);
         ptr_loads = ptr_loads_copy;
+        if (ASRUtils::is_allocatable(x.m_v)) {
+            tmp = CreateLoad(tmp);
+        }
         llvm::Value* llvm_arg = tmp;
 
         llvm::Value* llvm_dim = nullptr;
@@ -8813,6 +8816,9 @@ public:
                     (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v)));
         visit_expr_wrapper(x.m_v);
         ptr_loads = ptr_loads_copy;
+        if (ASRUtils::is_allocatable(x.m_v)) {
+            tmp = CreateLoad(tmp);
+        }
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
         llvm::Value* dim_val = tmp;
