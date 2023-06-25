@@ -4729,7 +4729,7 @@ public:
             }
         }
         if (!flag) {
-            tmp = builder->CreateLoad(tmp);
+            tmp = CreateLoad(tmp);
         }
         builder->CreateStore(tmp, str);
     }
