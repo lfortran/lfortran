@@ -4715,13 +4715,21 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 0));
         }
-        tmp = builder->CreateCall(fn, {CreateLoad(str), str_val, idx1, idx2, step, lp, rp});
+        bool flag = str->getType()->getContainedType(0)->isPointerTy();
+        llvm::Value *str2 = str;
+        if (flag) {
+            str2 = CreateLoad(str2);
+        }
+        tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
         if (ASR::is_a<ASR::Var_t>(*ss->m_arg)) {
             ASR::Variable_t *asr_target = EXPR2VAR(ss->m_arg);
             if (ASR::is_a<ASR::Allocatable_t>(*asr_target->m_type)) {
                 tmp = lfortran_str_copy(str, tmp);
                 return;
             }
+        }
+        if (!flag) {
+            tmp = builder->CreateLoad(tmp);
         }
         builder->CreateStore(tmp, str);
     }
