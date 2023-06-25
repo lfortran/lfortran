@@ -2097,6 +2097,9 @@ public:
                                 }));
                 }
             }
+            if(sym->type == ASR::symbolType::Function){
+                throw SemanticError("Assignment to subroutine is not allowed", target->base.loc);
+            }
         }
         if( ASRUtils::use_overloaded_assignment(target, value,
             current_scope, asr, al, x.base.base.loc, current_function_dependencies,
