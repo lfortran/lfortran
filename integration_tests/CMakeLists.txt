@@ -330,6 +330,7 @@ RUN(NAME arrays_20 LABELS gfortran llvm)
 RUN(NAME arrays_22 LABELS gfortran llvm)
 RUN(NAME arrays_23 LABELS gfortran llvm wasm NOFAST)
 RUN(NAME arrays_24 LABELS gfortran llvm NOFAST)
+RUN(NAME arrays_26 LABELS gfortran llvm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)

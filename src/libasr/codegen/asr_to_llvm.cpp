@@ -2213,8 +2213,11 @@ public:
         ASR::Variable_t *v = nullptr;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             v = ASRUtils::EXPR2VAR(x.m_v);
-            ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_pointer(v->m_type));
+            ASR::ttype_t* v_m_type =
+                ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(
+                    v->m_type)));
             if( ASR::is_a<ASR::Struct_t>(*v_m_type) ) {
                 ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(v_m_type);
                 current_der_type_name = ASRUtils::symbol_name(
