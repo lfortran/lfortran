@@ -3317,3 +3317,7 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "../integration_tests/data_implied_do_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/subroutine1.f90"
+asr = true
