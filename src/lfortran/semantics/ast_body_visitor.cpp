@@ -1771,8 +1771,10 @@ public:
         body.reserve(al, x.n_body);
         format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
-        copy_stmts(x.n_body, x.m_body);
-        handle_active_entry_points();
+        if (active_entry_points.size() > 0) {
+            copy_stmts(x.n_body, x.m_body);
+            handle_active_entry_points();
+        }
         // clear active_entry_points
         active_entry_points.clear();
         SetChar func_deps;
@@ -1819,8 +1821,10 @@ public:
         current_function_dependencies.clear(al);
         format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
-        copy_stmts(x.n_body, x.m_body);
-        handle_active_entry_points();
+        if (active_entry_points.size() > 0) {
+            copy_stmts(x.n_body, x.m_body);
+            handle_active_entry_points();
+        }
         // clear active_entry_points
         active_entry_points.clear();
         SetChar func_deps;
