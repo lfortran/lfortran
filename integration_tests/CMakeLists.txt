@@ -927,3 +927,4 @@ RUN(NAME save_03 LABELS gfortran llvm)
 
 RUN(NAME entry_01 LABELS gfortran llvm)
 RUN(NAME entry_02 LABELS gfortran llvm)
+RUN(NAME entry_03 LABELS gfortran llvm)
