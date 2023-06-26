@@ -11,7 +11,7 @@ SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c',
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
 
-disable_fast = "no"
+fast_tests = "no"
 
 def run_cmd(cmd, cwd=None):
     print(f"+ {cmd}")
@@ -28,10 +28,10 @@ def run_test(backend):
         run_cmd(f"FC=gfortran cmake" + common,
                 cwd=cwd)
     elif backend == "cpp":
-        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DDISABLE_FAST={disable_fast}" + common,
+        run_cmd(f"FC=lfortran FFLAGS=\"--openmp\" cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests}" + common,
                 cwd=cwd)
     else:
-        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DDISABLE_FAST={disable_fast}" + common,
+        run_cmd(f"FC=lfortran cmake -DLFORTRAN_BACKEND={backend} -DFAST={fast_tests}" + common,
                 cwd=cwd)
     run_cmd(f"make -j{NO_OF_THREADS}", cwd=cwd)
     run_cmd(f"ctest -j{NO_OF_THREADS} --output-on-failure", cwd=cwd)
@@ -72,8 +72,8 @@ def get_args():
     parser.add_argument("-b", "--backends", nargs="*", default=["llvm"], type=str,
                 help="Test the requested backends (%s)" % \
                         ", ".join(SUPPORTED_BACKENDS))
-    parser.add_argument("-nf", "--no_fast", action='store_true',
-                help="Disable --fast testing of integration tests")
+    parser.add_argument("-f", "--fast", action='store_true',
+                help="Run supported tests with --fast")
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
     return parser.parse_args()
@@ -86,14 +86,14 @@ def main():
         return
 
     # Setup
-    global NO_OF_THREADS, disable_fast
+    global NO_OF_THREADS, fast_tests
     os.environ["PATH"] += os.pathsep + LFORTRAN_PATH
     # delete previously created directories (if any)
     for backend in SUPPORTED_BACKENDS:
         run_cmd(f"rm -rf {BASE_DIR}/test-{backend}")
 
     NO_OF_THREADS = args.no_of_threads or NO_OF_THREADS
-    disable_fast = "yes" if args.no_fast else "no"
+    fast_tests = "yes" if args.fast else "no"
     for backend in args.backends:
         test_backend(backend)
 
