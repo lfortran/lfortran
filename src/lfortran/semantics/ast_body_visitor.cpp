@@ -2073,7 +2073,7 @@ public:
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ASR::stmt_t *overloaded_stmt = nullptr;
         bool is_allocatable = false;
-        if (target->type == ASR::exprType::Var) {
+        if (ASR::is_a<ASR::Var_t>(*target)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
             ASR::symbol_t *sym = var->m_v;
             if (do_loop_variables.size() > 0 && std::find(do_loop_variables.begin(), do_loop_variables.end(), sym) != do_loop_variables.end()) {
@@ -2081,7 +2081,7 @@ public:
                 std::string var_name = std::string(v->m_name);
                 throw SemanticError("Assignment to loop variable `" + std::string(to_lower(var_name)) +"` is not allowed", target->base.loc);
             }
-            if (sym->type == ASR::symbolType::Variable) {
+            if (ASR::is_a<ASR::Variable_t>(*sym)){
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
                 is_allocatable = ASR::is_a<ASR::Allocatable_t>(*v->m_type);
                 ASR::intentType intent = v->m_intent;
@@ -2097,7 +2097,7 @@ public:
                                 }));
                 }
             }
-            if(sym->type == ASR::symbolType::Function){
+            if (ASR::is_a<ASR::Function_t>(*sym)){
                 throw SemanticError("Assignment to subroutine is not allowed", target->base.loc);
             }
         }
