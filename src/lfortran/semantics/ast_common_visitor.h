@@ -1521,7 +1521,7 @@ public:
             throw SemanticError("function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`", loc);
         }
     }
-    
+
     bool check_is_external(std::string sym) {
         if (current_scope->asr_owner) {
             external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
@@ -1532,8 +1532,8 @@ public:
     void erase_from_external_mapping(std::string sym) {
         uint64_t hash = get_hash(current_scope->asr_owner);
         external_procedures_mapping[hash].erase(
-            std::remove(external_procedures_mapping[hash].begin(), 
-            external_procedures_mapping[hash].end(), sym), 
+            std::remove(external_procedures_mapping[hash].begin(),
+            external_procedures_mapping[hash].end(), sym),
             external_procedures_mapping[hash].end());
     }
 
@@ -4483,8 +4483,19 @@ public:
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
-            visit_NameUtil(x.m_member, x.n_member - 1,
-                x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+            if (x.n_member ==  1) {
+                if (x.m_member[0].n_args > 0) {
+                    ASR::symbol_t *v1 = current_scope->resolve_symbol(to_lower(x.m_member[0].m_name));
+                    ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v1);
+                    tmp = create_ArrayRef(x.base.base.loc, x.m_member[0].m_args, x.m_member[0].n_args, nullptr, v1, f2);
+                } else {
+                    tmp = resolve_variable(x.base.base.loc, to_lower(x.m_member[0].m_name));
+                }
+                tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(tmp));
+            } else {
+                visit_NameUtil(x.m_member, x.n_member - 1,
+                    x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+            }
             v_expr = ASRUtils::EXPR(tmp);
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
                     to_lower(x.m_member[x.n_member - 1].m_name),
@@ -4589,7 +4600,7 @@ public:
         if (v && !compiler_options.implicit_interface && is_external_procedure) {
             /*
                 Case: ./integration_tests/external_01.f90
-                We have `enorm` declared outside current_scope. Check if it is a function 
+                We have `enorm` declared outside current_scope. Check if it is a function
                 and if it is, then we need to remove template function `enorm` from current scope and external procedures.
             */
             ASR::symbol_t* v2 = current_scope->parent->resolve_symbol(var_name);

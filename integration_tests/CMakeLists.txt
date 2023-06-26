@@ -723,7 +723,7 @@ RUN(NAME string_20 LABELS gfortran llvm NOFAST)
 RUN(NAME string_21 LABELS gfortran llvm NOFAST)
 RUN(NAME string_22 LABELS gfortran llvm)
 RUN(NAME string_23 LABELS gfortran llvm)
-RUN(NAME string_24 LABELS gfortran)
+RUN(NAME string_24 LABELS gfortran llvm)
 
 RUN(NAME nested_01 LABELS gfortran llvm NOFAST)
 RUN(NAME nested_02 LABELS gfortran llvm)
