@@ -216,6 +216,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
 
   release:
     name: Check Release build
@@ -261,6 +262,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
 
   minpack:
     name: Check Minpack Compilation
@@ -442,6 +444,7 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
 
   test_llvm_14:
     name: Test LLVM 14
@@ -483,6 +486,7 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f
 
   test_llvm_15:
     name: Test LLVM 15
@@ -524,6 +528,7 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b llvm llvmImplicit
+            ./run_tests.py -b llvm llvmImplicit -f
 
   gfortran:
     name: Test integration_tests with GFortran
@@ -680,6 +685,7 @@ jobs:
         run: |
             cd integration_tests
             ./run_tests.py -b wasm
+            ./run_tests.py -b wasm -f
 
   test_c_cpp:
     name: Test C/C++ backend
@@ -734,6 +740,7 @@ jobs:
 
             cd integration_tests
             ./run_tests.py -j1 -b cpp c
+            ./run_tests.py -j1 -b cpp c -f
 
   upload_tarball:
     name: Upload Tarball
