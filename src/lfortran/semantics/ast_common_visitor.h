@@ -4527,6 +4527,13 @@ public:
                 LCOMPILERS_ASSERT(v!=nullptr);
             }
         }
+        // if v is a function which has null pointer return type, give error
+        if (ASR::is_a<ASR::Function_t>(*v)){
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
+            if (func->m_return_var == nullptr){
+                throw SemanticError("Subroutine `" + var_name + "` called as a function ", x.base.base.loc);
+            }
+        }
         if (compiler_options.implicit_interface
                 && !is_common_variable
                 && ( ASR::is_a<ASR::Variable_t>(*v) || is_external_procedure )

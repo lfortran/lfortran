@@ -1,0 +1,5 @@
+semantic error: Subroutine `bpe` called as a function 
+ --> tests/errors/subroutine2.f90:3:9
+  |
+3 |     i = bpe()
+  |         ^^^^^ 
