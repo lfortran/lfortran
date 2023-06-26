@@ -1468,14 +1468,23 @@ public:
 
     void create_external_function(std::string sym, Location loc) {
         if (compiler_options.implicit_interface) {
+            bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
             assgnd_access[sym] = ASR::accessType::Public;
             SymbolTable *parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
-            ASR::ttype_t *type;
+            ASR::ttype_t *type = nullptr;
             if (sym_) {
-                type = ASRUtils::symbol_type(sym_);
+                if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                    ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
+                    if (!func_sym->m_return_var) {
+                        is_subroutine = true;
+                    }
+                }
+                if (!is_subroutine) {
+                    type = ASRUtils::symbol_type(sym_);
+                }
             } else if (compiler_options.implicit_typing) {
                 type = implicit_dictionary[std::string(1,sym[0])];
                 if (!type) {
@@ -1492,16 +1501,19 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
-            ASR::asr_t *return_var = ASR::make_Variable_t(al, loc,
-                current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
-                variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
-                false);
-            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-            ASR::expr_t *to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                ASR::down_cast<ASR::symbol_t>(return_var)));
-
+            ASR::asr_t *return_var = nullptr;
+            ASR::expr_t *to_return = nullptr;
+            if (!is_subroutine) {
+                return_var = ASR::make_Variable_t(al, loc,
+                    current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                    variable_dependencies_vec.size(), ASRUtils::intent_return_var,
+                    nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                    ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                    false);
+                current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+                to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    ASR::down_cast<ASR::symbol_t>(return_var)));
+            }
             tmp = ASRUtils::make_Function_t_util(
                 al, loc,
                 /* a_symtab */ current_scope,
