@@ -136,6 +136,9 @@ public:
             }
             func->m_body = body.p;
             func->n_body = body.size();
+
+            func->m_dependencies = current_function_dependencies.p;
+            func->n_dependencies = current_function_dependencies.size();
             current_scope = old_scope;
         }
     }
@@ -1772,8 +1775,11 @@ public:
         format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
         if (active_entry_points.size() > 0) {
+            SetChar current_function_dependencies_copy2 = current_function_dependencies;
+            current_function_dependencies.clear(al);
             copy_stmts(x.n_body, x.m_body);
             handle_active_entry_points();
+            current_function_dependencies = current_function_dependencies_copy2;
         }
         // clear active_entry_points
         active_entry_points.clear();
@@ -1822,8 +1828,11 @@ public:
         format_statements.clear();
         transform_stmts(body, x.n_body, x.m_body);
         if (active_entry_points.size() > 0) {
+            SetChar current_function_dependencies_copy2 = current_function_dependencies;
+            current_function_dependencies.clear(al);
             copy_stmts(x.n_body, x.m_body);
             handle_active_entry_points();
+            current_function_dependencies = current_function_dependencies_copy2;
         }
         // clear active_entry_points
         active_entry_points.clear();
