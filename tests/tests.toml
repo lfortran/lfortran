@@ -2466,6 +2466,10 @@ ast_f90 = true
 asr_implicit_interface_and_typing = true
 
 [[test]]
+filename = "entry2.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
 filename = "../integration_tests/entry_02.f90"
 asr = true
 
