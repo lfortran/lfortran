@@ -3251,6 +3251,10 @@ filename = "external4.f90"
 asr_implicit_interface_and_typing = true
 
 [[test]]
+filename = "external5.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
 filename = "errors/external1.f90"
 asr = true
 
