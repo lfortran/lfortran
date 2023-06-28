@@ -56,16 +56,6 @@
                                     []
                                     ~assign
                                     Public
-                                ),
-                            ~error_handler:
-                                (ExternalSymbol
-                                    7
-                                    ~error_handler
-                                    2 ~error_handler
-                                    subroutines_06_bitset
-                                    []
-                                    ~error_handler
-                                    Public
                                 )
                         })
                     subroutines_06
@@ -212,6 +202,13 @@
                                     ()
                                 ),
                             error_handler:
+                                (GenericProcedure
+                                    2
+                                    error_handler
+                                    [2 error_handler~genericprocedure]
+                                    Public
+                                ),
+                            error_handler~genericprocedure:
                                 (Function
                                     (SymbolTable
                                         6
@@ -297,7 +294,7 @@
                                                     .false.
                                                 )
                                         })
-                                    error_handler
+                                    error_handler~genericprocedure
                                     (FunctionType
                                         [(Character 1 -1 ())
                                         (Integer 4)
@@ -334,136 +331,12 @@
                                     .false.
                                     ()
                                 ),
-                            error_handler~genericprocedure:
-                                (Function
-                                    (SymbolTable
-                                        5
-                                        {
-                                            error:
-                                                (Variable
-                                                    5
-                                                    error
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            message:
-                                                (Variable
-                                                    5
-                                                    message
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            module:
-                                                (Variable
-                                                    5
-                                                    module
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            procedure:
-                                                (Variable
-                                                    5
-                                                    procedure
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Character 1 -1 ())
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                ),
-                                            status:
-                                                (Variable
-                                                    5
-                                                    status
-                                                    []
-                                                    Out
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Optional
-                                                    .false.
-                                                )
-                                        })
-                                    error_handler~genericprocedure
-                                    (FunctionType
-                                        [(Character 1 -1 ())
-                                        (Integer 4)
-                                        (Integer 4)
-                                        (Character 1 -1 ())
-                                        (Character 1 -1 ())]
-                                        ()
-                                        Source
-                                        Interface
-                                        ()
-                                        .false.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 5 message)
-                                    (Var 5 error)
-                                    (Var 5 status)
-                                    (Var 5 module)
-                                    (Var 5 procedure)]
-                                    []
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             ~assign:
                                 (CustomOperator
                                     2
                                     ~assign
                                     [2 assign_large
                                     2 assign_logint8_large]
-                                    Public
-                                ),
-                            ~error_handler:
-                                (GenericProcedure
-                                    2
-                                    ~error_handler
-                                    [2 error_handler~genericprocedure]
                                     Public
                                 )
                         })

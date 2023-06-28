@@ -630,7 +630,7 @@ public:
                 throw SemanticError("Subroutine already defined", tmp->loc);
             }
         }
-        if( sym_name == interface_name ) {
+        if( generic_procedures.find(sym_name) != generic_procedures.end() ) {
             sym_name = sym_name + "~genericprocedure";
         }
 
