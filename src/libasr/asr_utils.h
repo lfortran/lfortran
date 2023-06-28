@@ -2803,7 +2803,6 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
     void replace_Var(ASR::Var_t* x) {
         size_t arg_idx = 0;
         bool idx_found = false;
-        std::string arg_name = ASRUtils::symbol_name(x->m_v);
         // Finds the index of the argument to be used for substitution
         // Basically if we are calling maybe(string, ret_type=character(len=len(s)))
         // where string is a variable in current scope and s is one of the arguments
@@ -2812,10 +2811,8 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
         // maybe(string, ret_type=character(len=len(string)))
         for( size_t j = 0; j < orig_func->n_args && !idx_found; j++ ) {
             if( ASR::is_a<ASR::Var_t>(*(orig_func->m_args[j])) ) {
-                std::string arg_name_2 = std::string(ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(orig_func->m_args[j])->m_v));
                 arg_idx = j;
-                idx_found = arg_name_2 == arg_name;
+                idx_found = ASR::down_cast<ASR::Var_t>(orig_func->m_args[j])->m_v == x->m_v;
             }
         }
         if( idx_found ) {
