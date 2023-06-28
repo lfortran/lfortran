@@ -1402,26 +1402,73 @@ namespace Max {
     static inline ASR::asr_t* create_Max(
         Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
         const std::function<void (const std::string &, const Location &)> err) {
+        bool is_compile_time = true;
         for(size_t i=0; i<100;i++){
             args.erase(nullptr);
         }
+        if (args.size() < 2) {
+            err("Intrinsic max0 must have 2 arguments", loc);
+        }
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
+        ASR::expr_t *arg_value;
         for(size_t i=0;i<args.size();i++){
-            ASR::expr_t *arg_value = ASRUtils::expr_value(args[i]);
+            arg_value = ASRUtils::expr_value(args[i]);
+            if (!arg_value) {
+                is_compile_time = false;
+            }
             arg_values.push_back(al, arg_value);
         }
-        ASR::expr_t *value = eval_Max(al, loc, arg_values);
-        return ASR::make_IntrinsicFunction_t(al, loc,
-            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Max),
-            args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
+        if (is_compile_time) {
+            ASR::expr_t *value = eval_Max(al, loc, arg_values);
+            return ASR::make_IntrinsicFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Max),
+                args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
+        } else {
+            return ASR::make_IntrinsicFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Max),
+                args.p, args.n, 0, ASRUtils::expr_type(args[0]), nullptr);
+        }
     }
 
     static inline ASR::expr_t* instantiate_Max(Allocator &al, const Location &loc,
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
-        Vec<ASR::call_arg_t>& new_args, int64_t overload_id, ASR::expr_t* compile_time_value) {
-        // TODO
-        return nullptr;
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        std::string func_name = "_lcompilers_max0_" + type_to_str_python(arg_types[0]);
+        ASR::ttype_t *return_type = arg_types[0];
+        std::string fn_name = scope->get_unique_name(func_name);
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, new_args.size());
+        ASRBuilder b(al, loc);
+        Vec<ASR::stmt_t*> body; body.reserve(al, args.size());
+        SetChar dep; dep.reserve(al, 1);
+        if (scope->get_symbol(fn_name)) {
+            ASR::symbol_t *s = scope->get_symbol(fn_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var),
+                                compile_time_value);
+        }
+        for (size_t i = 0; i < new_args.size(); i++) {
+            fill_func_arg("x" + std::to_string(i), arg_types[0]);
+        }
+
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+        ASR::expr_t* test;
+        body.push_back(al, Assignment(result, args[0]));
+        for (size_t i = 1; i < args.size(); i++) {
+            test = make_Compare(make_IntegerCompare_t, args[i],
+                        ASR::cmpopType::Gt, result, loc);
+            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+            if_body.push_back(al, Assignment(result, args[i]));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                if_body.p, if_body.n, nullptr, 0)));
+        }
+        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, compile_time_value);
     }
 
 }  // namespace max0
@@ -2691,6 +2738,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
         INTRINSIC_NAME_CASE(Sum)
+        INTRINSIC_NAME_CASE(Max)
         INTRINSIC_NAME_CASE(Product)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
