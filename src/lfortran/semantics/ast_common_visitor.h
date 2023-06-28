@@ -1103,12 +1103,13 @@ public:
                     ASR::expr_t* object = ASRUtils::EXPR(tmp);
                     ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
                     if (ASRUtils::is_array(obj_type)) { // it is an array
+                        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
                         Vec<ASR::expr_t*> body;
                         body.reserve(al, a->n_value);
                         for (size_t j=0; j < a->n_value; j++) {
                             this->visit_expr(*a->m_value[j]);
                             ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), obj_type)) {
+                            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
                                 throw SemanticError("Type mismatch during data initialization",
                                     x.base.base.loc);
                             }
@@ -1773,7 +1774,7 @@ public:
                                 } else {
                                     intent = ASRUtils::intent_local;
                                 }
-                                get_sym = declare_implicit_variable(s.loc, sym, intent);
+                                get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
                             } else {
                                 throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
                             }
