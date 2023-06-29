@@ -2287,12 +2287,10 @@ public:
                 }
             } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_args[i])) {
                 AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(x.m_args[i]);
-                ASR::binopType op;
-                std::string op_name;
+                ASR::binopType op = ASR::Add;
+                std::string op_name = "~add";
                 switch (intrinsic_op->m_op) {
                     case (AST::PLUS):
-                        op = ASR::Add;
-                        op_name = "~add";
                         break;
                     case (AST::MINUS):
                         op = ASR::Sub;
@@ -2307,7 +2305,7 @@ public:
                         op_name = "~div";
                         break;
                     default:
-                        LCOMPILERS_ASSERT(false);
+                        throw SemanticError("Unsupported binary operator", x.m_args[i]->base.loc);
                 }
                 bool is_overloaded = ASRUtils::is_op_overloaded(op, op_name, current_scope);
                 bool found = false;
