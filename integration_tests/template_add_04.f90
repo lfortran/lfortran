@@ -51,8 +51,8 @@ contains
   end subroutine
 end module
 
-program template_add_01
-use template_add_01_m
+program template_add_04
+use template_add_04_m
 implicit none
 
 call test_template()
