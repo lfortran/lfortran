@@ -717,6 +717,8 @@ public:
                 IntrinsicSignature({"mask"}, 1, 2)}},
         // max0 can accept any arbitrary number of arguments 2<=x<=100
         {"max0", {IntrinsicSignature({}, 2, 100)}},
+        // min0 can accept any arbitrary number of arguments 2<=x<=100
+        {"min0", {IntrinsicSignature({}, 2, 100)}},
     };
 
 
