@@ -2386,6 +2386,9 @@ public:
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
             } else {
                 if (!v) {
+                    if (is_template) {
+                      throw SemanticError("Type parameter '" + derived_type_name + "' not required", loc);
+                    }
                     // Placeholder symbol for Struct type
                     // Derived type can be used before its actually defined
                     v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
