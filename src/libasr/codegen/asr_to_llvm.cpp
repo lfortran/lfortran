@@ -135,7 +135,7 @@ class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
 {
 private:
   //! To be used by visit_StructInstanceMember.
-  std::string der_type_name;
+  std::string current_der_type_name;
 
   //! Helpful for debugging while testing LLVM code
   void print_util(llvm::Value* v, std::string fmt_chars, std::string endline="\t") {
@@ -715,7 +715,7 @@ public:
             default:
                 throw CodeGenError("Cannot identify the type of member, '" +
                                     std::string(member->m_name) +
-                                    "' in derived type, '" + der_type_name + "'.",
+                                    "' in derived type, '" + current_der_type_name + "'.",
                                     member->base.base.loc);
         }
         return llvm_mem_type;
@@ -874,16 +874,16 @@ public:
                     default:
                         throw CodeGenError("Cannot identify the type of member, '" +
                                             std::string(member->m_name) +
-                                            "' in derived type, '" + der_type_name + "'.",
+                                            "' in derived type, '" + current_der_type_name + "'.",
                                             member->base.base.loc);
                 }
                 member_types.push_back(mem_type);
-                name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
+                name2memidx[current_der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
         }
-        llvm::StructType* der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
-        name2dertype[der_type_name] = der_type_llvm;
+        llvm::StructType* der_type_llvm = llvm::StructType::create(context, member_types, current_der_type_name);
+        name2dertype[current_der_type_name] = der_type_llvm;
         if( is_pointer ) {
             return der_type_llvm->getPointerTo();
         }
@@ -1826,7 +1826,7 @@ public:
         ASR::ttype_t* member_type_asr = ASRUtils::get_contained_type(member_var->m_type);
         if( ASR::is_a<ASR::Struct_t>(*member_type_asr) ) {
             ASR::Struct_t* d = ASR::down_cast<ASR::Struct_t>(member_type_asr);
-            der_type_name = ASRUtils::symbol_name(d->m_derived_type);
+            current_der_type_name = ASRUtils::symbol_name(d->m_derived_type);
         }
         member_type_asr = member_var->m_type;
         llvm::Type* member_type_llvm = getMemberType(member_type_asr, member_var)->getPointerTo();
@@ -2213,11 +2213,14 @@ public:
         ASR::Variable_t *v = nullptr;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             v = ASRUtils::EXPR2VAR(x.m_v);
-            ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(
-                ASRUtils::type_get_past_pointer(v->m_type));
+            ASR::ttype_t* v_m_type =
+                ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(
+                    v->m_type)));
             if( ASR::is_a<ASR::Struct_t>(*v_m_type) ) {
                 ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(v_m_type);
-                der_type_name = ASRUtils::symbol_name(
+                current_der_type_name = ASRUtils::symbol_name(
                     ASRUtils::symbol_get_past_external(der_type->m_derived_type));
             }
             uint32_t v_h = get_hash((ASR::asr_t*)v);
@@ -2232,7 +2235,7 @@ public:
             this->visit_expr(*x.m_v);
             if( ASR::is_a<ASR::Struct_t>(*ASRUtils::type_get_past_array(x_mv_type)) ) {
                 ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::type_get_past_array(x_mv_type));
-                der_type_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_type->m_derived_type));
+                current_der_type_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_type->m_derived_type));
             }
             ptr_loads = ptr_loads_copy;
             array = tmp;
@@ -2463,7 +2466,7 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        der_type_name = "";
+        current_der_type_name = "";
         ASR::ttype_t* x_m_v_type = ASRUtils::expr_type(x.m_v);
         int64_t ptr_loads_copy = ptr_loads;
         if( ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
@@ -2478,23 +2481,23 @@ public:
             tmp = CreateLoad(llvm_utils->create_gep(tmp, 1));
             if( current_select_type_block_type ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type);
-                der_type_name = current_select_type_block_der_type;
+                current_der_type_name = current_select_type_block_der_type;
             } else {
                 // TODO: Select type by comparing with vtab
             }
         }
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
-        LCOMPILERS_ASSERT(der_type_name.size() != 0);
-        while( name2memidx[der_type_name].find(member_name) == name2memidx[der_type_name].end() ) {
-            if( dertype2parent.find(der_type_name) == dertype2parent.end() ) {
-                throw CodeGenError(der_type_name + " doesn't have any member named " + member_name,
+        LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
+        while( name2memidx[current_der_type_name].find(member_name) == name2memidx[current_der_type_name].end() ) {
+            if( dertype2parent.find(current_der_type_name) == dertype2parent.end() ) {
+                throw CodeGenError(current_der_type_name + " doesn't have any member named " + member_name,
                                     x.base.base.loc);
             }
             tmp = llvm_utils->create_gep(tmp, 0);
-            der_type_name = dertype2parent[der_type_name];
+            current_der_type_name = dertype2parent[current_der_type_name];
         }
-        int member_idx = name2memidx[der_type_name][member_name];
+        int member_idx = name2memidx[current_der_type_name][member_name];
         std::vector<llvm::Value*> idx_vec = {
             llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
             llvm::ConstantInt::get(context, llvm::APInt(32, member_idx))};
@@ -2512,7 +2515,7 @@ public:
         if( member_type->type == ASR::ttypeType::Struct ) {
             ASR::Struct_t* der = (ASR::Struct_t*)(&(member_type->base));
             ASR::StructType_t* der_type = (ASR::StructType_t*)(&(der->m_derived_type->base));
-            der_type_name = std::string(der_type->m_name);
+            current_der_type_name = std::string(der_type->m_name);
             uint32_t h = get_hash((ASR::asr_t*)member);
             if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                 tmp = llvm_symtab[h];
@@ -4712,13 +4715,21 @@ public:
             step = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 0));
         }
-        tmp = builder->CreateCall(fn, {CreateLoad(str), str_val, idx1, idx2, step, lp, rp});
+        bool flag = str->getType()->getContainedType(0)->isPointerTy();
+        llvm::Value *str2 = str;
+        if (flag) {
+            str2 = CreateLoad(str2);
+        }
+        tmp = builder->CreateCall(fn, {str2, str_val, idx1, idx2, step, lp, rp});
         if (ASR::is_a<ASR::Var_t>(*ss->m_arg)) {
             ASR::Variable_t *asr_target = EXPR2VAR(ss->m_arg);
             if (ASR::is_a<ASR::Allocatable_t>(*asr_target->m_type)) {
                 tmp = lfortran_str_copy(str, tmp);
                 return;
             }
+        }
+        if (!flag) {
+            tmp = CreateLoad(tmp);
         }
         builder->CreateStore(tmp, str);
     }
@@ -6451,10 +6462,10 @@ public:
                     case ASR::ttypeType::Class: {
                         if( t2->type == ASR::ttypeType::Struct ) {
                             ASR::Struct_t* d = ASR::down_cast<ASR::Struct_t>(t2);
-                            der_type_name = ASRUtils::symbol_name(d->m_derived_type);
+                            current_der_type_name = ASRUtils::symbol_name(d->m_derived_type);
                         } else if( t2->type == ASR::ttypeType::Class ) {
                             ASR::Class_t* d = ASR::down_cast<ASR::Class_t>(t2);
-                            der_type_name = ASRUtils::symbol_name(d->m_class_type);
+                            current_der_type_name = ASRUtils::symbol_name(d->m_class_type);
                         }
                         fetch_ptr(x);
                         break;
@@ -6468,7 +6479,7 @@ public:
                 ASR::Struct_t* der = ASR::down_cast<ASR::Struct_t>(t2_);
                 ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(
                     ASRUtils::symbol_get_past_external(der->m_derived_type));
-                der_type_name = std::string(der_type->m_name);
+                current_der_type_name = std::string(der_type->m_name);
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                     tmp = llvm_symtab[h];
@@ -6479,7 +6490,7 @@ public:
                 ASR::Union_t* der = ASR::down_cast<ASR::Union_t>(t2_);
                 ASR::UnionType_t* der_type = ASR::down_cast<ASR::UnionType_t>(
                     ASRUtils::symbol_get_past_external(der->m_union_type));
-                der_type_name = std::string(der_type->m_name);
+                current_der_type_name = std::string(der_type->m_name);
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                     tmp = llvm_symtab[h];
@@ -6491,10 +6502,10 @@ public:
                 ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_class_type);
                 if( ASR::is_a<ASR::ClassType_t>(*der_sym) ) {
                     ASR::ClassType_t* der_type = ASR::down_cast<ASR::ClassType_t>(der_sym);
-                    der_type_name = std::string(der_type->m_name);
+                    current_der_type_name = std::string(der_type->m_name);
                 } else if( ASR::is_a<ASR::StructType_t>(*der_sym) ) {
                     ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(der_sym);
-                    der_type_name = std::string(der_type->m_name);
+                    current_der_type_name = std::string(der_type->m_name);
                 }
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {

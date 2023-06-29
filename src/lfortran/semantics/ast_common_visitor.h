@@ -761,6 +761,8 @@ public:
 
     std::vector<std::map<std::string, ASR::ttype_t*>> implicit_stack;
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
+    std::vector<std::string> active_entry_points;
+    std::map<std::string, std::vector<AST::stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
@@ -1094,12 +1096,13 @@ public:
                     ASR::expr_t* object = ASRUtils::EXPR(tmp);
                     ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
                     if (ASRUtils::is_array(obj_type)) { // it is an array
+                        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
                         Vec<ASR::expr_t*> body;
                         body.reserve(al, a->n_value);
                         for (size_t j=0; j < a->n_value; j++) {
                             this->visit_expr(*a->m_value[j]);
                             ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), obj_type)) {
+                            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
                                 throw SemanticError("Type mismatch during data initialization",
                                     x.base.base.loc);
                             }
@@ -1459,14 +1462,23 @@ public:
 
     void create_external_function(std::string sym, Location loc) {
         if (compiler_options.implicit_interface) {
+            bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
             assgnd_access[sym] = ASR::accessType::Public;
             SymbolTable *parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
-            ASR::ttype_t *type;
+            ASR::ttype_t *type = nullptr;
             if (sym_) {
-                type = ASRUtils::symbol_type(sym_);
+                if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                    ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
+                    if (!func_sym->m_return_var) {
+                        is_subroutine = true;
+                    }
+                }
+                if (!is_subroutine) {
+                    type = ASRUtils::symbol_type(sym_);
+                }
             } else if (compiler_options.implicit_typing) {
                 type = implicit_dictionary[std::string(1,sym[0])];
                 if (!type) {
@@ -1483,16 +1495,19 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
-            ASR::asr_t *return_var = ASR::make_Variable_t(al, loc,
-                current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
-                variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
-                false);
-            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-            ASR::expr_t *to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                ASR::down_cast<ASR::symbol_t>(return_var)));
-
+            ASR::asr_t *return_var = nullptr;
+            ASR::expr_t *to_return = nullptr;
+            if (!is_subroutine) {
+                return_var = ASR::make_Variable_t(al, loc,
+                    current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                    variable_dependencies_vec.size(), ASRUtils::intent_return_var,
+                    nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                    ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
+                    false);
+                current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+                to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    ASR::down_cast<ASR::symbol_t>(return_var)));
+            }
             tmp = ASRUtils::make_Function_t_util(
                 al, loc,
                 /* a_symtab */ current_scope,
@@ -1512,7 +1527,7 @@ public:
             throw SemanticError("function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`", loc);
         }
     }
-    
+
     bool check_is_external(std::string sym) {
         if (current_scope->asr_owner) {
             external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
@@ -1523,8 +1538,8 @@ public:
     void erase_from_external_mapping(std::string sym) {
         uint64_t hash = get_hash(current_scope->asr_owner);
         external_procedures_mapping[hash].erase(
-            std::remove(external_procedures_mapping[hash].begin(), 
-            external_procedures_mapping[hash].end(), sym), 
+            std::remove(external_procedures_mapping[hash].begin(),
+            external_procedures_mapping[hash].end(), sym),
             external_procedures_mapping[hash].end());
     }
 
@@ -1752,7 +1767,7 @@ public:
                                 } else {
                                     intent = ASRUtils::intent_local;
                                 }
-                                get_sym = declare_implicit_variable(s.loc, sym, intent);
+                                get_sym = declare_implicit_variable2(s.loc, sym, intent, implicit_dictionary[std::string(1,sym[0])]);
                             } else {
                                 throw SemanticError("Cannot set dimension for undeclared variable", x.base.base.loc);
                             }
@@ -4474,8 +4489,19 @@ public:
         // If this is a type bound procedure (in a class) it won't be in the
         // main symbol table. Need to check n_member.
         if (x.n_member >= 1) {
-            visit_NameUtil(x.m_member, x.n_member - 1,
-                x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+            if (x.n_member ==  1) {
+                if (x.m_member[0].n_args > 0) {
+                    ASR::symbol_t *v1 = current_scope->resolve_symbol(to_lower(x.m_member[0].m_name));
+                    ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v1);
+                    tmp = create_ArrayRef(x.base.base.loc, x.m_member[0].m_args, x.m_member[0].n_args, nullptr, v1, f2);
+                } else {
+                    tmp = resolve_variable(x.base.base.loc, to_lower(x.m_member[0].m_name));
+                }
+                tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(tmp));
+            } else {
+                visit_NameUtil(x.m_member, x.n_member - 1,
+                    x.m_member[x.n_member - 1].m_name, x.base.base.loc);
+            }
             v_expr = ASRUtils::EXPR(tmp);
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
                     to_lower(x.m_member[x.n_member - 1].m_name),
@@ -4505,6 +4531,13 @@ public:
                 create_implicit_interface_function(x, var_name, true, type);
                 v = current_scope->resolve_symbol(var_name);
                 LCOMPILERS_ASSERT(v!=nullptr);
+            }
+        }
+        // if v is a function which has null pointer return type, give error
+        if (ASR::is_a<ASR::Function_t>(*v)){
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v);
+            if (func->m_return_var == nullptr){
+                throw SemanticError("Subroutine `" + var_name + "` called as a function ", x.base.base.loc);
             }
         }
         if (compiler_options.implicit_interface
@@ -4580,7 +4613,7 @@ public:
         if (v && !compiler_options.implicit_interface && is_external_procedure) {
             /*
                 Case: ./integration_tests/external_01.f90
-                We have `enorm` declared outside current_scope. Check if it is a function 
+                We have `enorm` declared outside current_scope. Check if it is a function
                 and if it is, then we need to remove template function `enorm` from current scope and external procedures.
             */
             ASR::symbol_t* v2 = current_scope->parent->resolve_symbol(var_name);

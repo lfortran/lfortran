@@ -6,8 +6,9 @@ program entry1
 end program
 
 subroutine x(dummy)
+    real :: dummy
     print *, "Printed using subroutine call: ", dummy
-    dummy = 5
+    dummy = 5.0
     return
     entry y(dummy)
     print *, "Printed using entry statement: ", dummy
