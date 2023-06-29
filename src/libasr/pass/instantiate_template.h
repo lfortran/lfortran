@@ -16,7 +16,7 @@ namespace LCompilers {
         SymbolTable *current_scope, SymbolTable *template_scope,
        std::string new_sym_name, ASR::symbol_t *sym);
 
-    void pass_instantiate_function_body(Allocator &al,
+    ASR::symbol_t* pass_instantiate_function_body(Allocator &al,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable *template_scope,
