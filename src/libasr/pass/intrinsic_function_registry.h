@@ -212,8 +212,8 @@ class ASRBuilder {
         return EXPR(ASR::make_TupleConstant_t(al, loc, m_ele.p, m_ele.n, type));
     }
 
-    #define make_Compare(Constructor, left, op, right, loc) ASRUtils::EXPR(ASR::Constructor( \
-        al, loc, left, op, right, \
+    #define make_Compare(Constructor, left, op, right) ASRUtils::EXPR(ASR::Constructor( \
+        al, loc, left, ASR::cmpopType::op, right, \
         ASRUtils::TYPE(ASR::make_Logical_t( \
             al, loc, 4)), nullptr)); \
 
@@ -417,7 +417,7 @@ class ASRBuilder {
         for( int i = 1; i <= n_dims; i++ ) {
             ASR::expr_t* current_dim = i32(i);
             ASR::expr_t* test_expr = make_Compare(make_IntegerCompare_t, dim,
-                                        ASR::cmpopType::Eq, current_dim, loc);
+                                        Eq, current_dim);
 
             Vec<ASR::expr_t*> loop_vars;
             std::vector<int> loop_dims;
@@ -844,14 +844,12 @@ namespace Abs {
             ASR::expr_t *negative_x;
             if (is_integer(*arg_types[0])) {
                 ASR::expr_t* zero = make_ConstantWithType(make_IntegerConstant_t, 0, arg_types[0], loc);
-                test = make_Compare(make_IntegerCompare_t, args[0],
-                                    ASR::cmpopType::GtE, zero, loc);
+                test = make_Compare(make_IntegerCompare_t, args[0], GtE, zero);
                 negative_x = EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, args[0],
                     arg_types[0], nullptr));
             } else {
                 ASR::expr_t* zero = make_ConstantWithType(make_RealConstant_t, 0.0, arg_types[0], loc);
-                test = make_Compare(make_RealCompare_t, args[0],
-                                    ASR::cmpopType::GtE, zero, loc);
+                test = make_Compare(make_RealCompare_t, args[0], GtE, zero);
                 negative_x = EXPR(ASR::make_RealUnaryMinus_t(al, loc, args[0],
                     arg_types[0], nullptr));
             }
@@ -1458,8 +1456,7 @@ namespace Max {
         ASR::expr_t* test;
         body.push_back(al, Assignment(result, args[0]));
         for (size_t i = 1; i < args.size(); i++) {
-            test = make_Compare(make_IntegerCompare_t, args[i],
-                        ASR::cmpopType::Gt, result, loc);
+            test = make_Compare(make_IntegerCompare_t, args[i], Gt, result);
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
             if_body.push_back(al, Assignment(result, args[i]));
             body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
