@@ -351,6 +351,8 @@ RUN(NAME arrays_16_func LABELS gfortran llvm NOFAST)
 
 RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
+RUN(NAME arrays_intrin_03 LABELS gfortran llvm NOFAST) # maxval
+RUN(NAME arrays_intrin_04 LABELS gfortran llvm NOFAST) # maxval
 RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm NOFAST)
 RUN(NAME sum_01 LABELS gfortran llvm NOFAST)

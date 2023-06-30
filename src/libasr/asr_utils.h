@@ -115,6 +115,47 @@ static inline ASR::ttype_t *type_get_past_array(ASR::ttype_t *f)
     }
 }
 
+static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
+    if (type == nullptr) {
+        return -1;
+    }
+    switch (type->type) {
+        case ASR::ttypeType::Array: {
+            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Array_t>(type)->m_type);
+        }
+        case ASR::ttypeType::Integer : {
+            return ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::UnsignedInteger : {
+            return ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Real : {
+            return ASR::down_cast<ASR::Real_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Complex: {
+            return ASR::down_cast<ASR::Complex_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Character: {
+            return ASR::down_cast<ASR::Character_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Logical: {
+            return ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Pointer: {
+            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Pointer_t>(type)->m_type);
+        }
+        case ASR::ttypeType::Allocatable: {
+            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
+        }
+        case ASR::ttypeType::Const: {
+            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Const_t>(type)->m_type);
+        }
+        default : {
+            return -1;
+        }
+    }
+}
+
 static inline ASR::Variable_t* EXPR2VAR(const ASR::expr_t *f)
 {
     return ASR::down_cast<ASR::Variable_t>(symbol_get_past_external(
@@ -1394,6 +1435,40 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
     return nullptr;
 }
 
+static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_type) {
+    asr_type = ASRUtils::type_get_past_array(asr_type);
+    int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
+    switch (asr_type->type) {
+        case ASR::ttypeType::Integer: {
+            int64_t val;
+            switch (kind) {
+                case 1: val = std::numeric_limits<int8_t>::min(); break;
+                case 2: val = std::numeric_limits<int16_t>::min(); break;
+                case 4: val = std::numeric_limits<int32_t>::min(); break;
+                case 8: val = std::numeric_limits<int64_t>::min(); break;
+                default:
+                    throw LCompilersException("get_minimum_value_with_given_type: Unsupported integer kind " + std::to_string(kind));
+            }
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, val, asr_type));
+        }
+        case ASR::ttypeType::Real: {
+            std::numeric_limits<float>::lowest();
+            double val;
+            switch (kind) {
+                case 4: val = std::numeric_limits<float>::lowest(); break;
+                case 8: val = std::numeric_limits<double>::lowest(); break;
+                default:
+                    throw LCompilersException("get_minimum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
+            }
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
+        }
+        default: {
+            throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
+        }
+    }
+    return nullptr;
+}
+
 const ASR::intentType intent_local=ASR::intentType::Local; // local variable (not a dummy argument)
 const ASR::intentType intent_in   =ASR::intentType::In; // dummy argument, intent(in)
 const ASR::intentType intent_out  =ASR::intentType::Out; // dummy argument, intent(out)
@@ -1490,47 +1565,6 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                const std::function<void (const std::string &, const Location &)> err);
 
 void set_intrinsic(ASR::symbol_t* sym);
-
-static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
-    if (type == nullptr) {
-        return -1;
-    }
-    switch (type->type) {
-        case ASR::ttypeType::Array: {
-            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Array_t>(type)->m_type);
-        }
-        case ASR::ttypeType::Integer : {
-            return ASR::down_cast<ASR::Integer_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::UnsignedInteger : {
-            return ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Real : {
-            return ASR::down_cast<ASR::Real_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Complex: {
-            return ASR::down_cast<ASR::Complex_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Character: {
-            return ASR::down_cast<ASR::Character_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Logical: {
-            return ASR::down_cast<ASR::Logical_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Pointer: {
-            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Pointer_t>(type)->m_type);
-        }
-        case ASR::ttypeType::Allocatable: {
-            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
-        }
-        case ASR::ttypeType::Const: {
-            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Const_t>(type)->m_type);
-        }
-        default : {
-            return -1;
-        }
-    }
-}
 
 static inline bool is_pointer(ASR::ttype_t *x) {
     return ASR::is_a<ASR::Pointer_t>(*x);

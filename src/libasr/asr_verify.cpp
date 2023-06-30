@@ -533,7 +533,7 @@ public:
         ASR::expr_t* aligned_expr_value = ASRUtils::expr_value(x.m_alignment);
         std::string msg = "Alignment should always evaluate to a constant expressions.";
         require(aligned_expr_value, msg);
-        int64_t alignment_int;
+        int64_t alignment_int = 0;
         require(ASRUtils::extract_value(aligned_expr_value, alignment_int), msg);
         require(alignment_int != 0 && (alignment_int & (alignment_int - 1)) == 0,
                 "Alignment " + std::to_string(alignment_int) +
