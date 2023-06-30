@@ -115,6 +115,47 @@ static inline ASR::ttype_t *type_get_past_array(ASR::ttype_t *f)
     }
 }
 
+static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
+    if (type == nullptr) {
+        return -1;
+    }
+    switch (type->type) {
+        case ASR::ttypeType::Array: {
+            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Array_t>(type)->m_type);
+        }
+        case ASR::ttypeType::Integer : {
+            return ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::UnsignedInteger : {
+            return ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Real : {
+            return ASR::down_cast<ASR::Real_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Complex: {
+            return ASR::down_cast<ASR::Complex_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Character: {
+            return ASR::down_cast<ASR::Character_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Logical: {
+            return ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+        }
+        case ASR::ttypeType::Pointer: {
+            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Pointer_t>(type)->m_type);
+        }
+        case ASR::ttypeType::Allocatable: {
+            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
+        }
+        case ASR::ttypeType::Const: {
+            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Const_t>(type)->m_type);
+        }
+        default : {
+            return -1;
+        }
+    }
+}
+
 static inline ASR::Variable_t* EXPR2VAR(const ASR::expr_t *f)
 {
     return ASR::down_cast<ASR::Variable_t>(symbol_get_past_external(
@@ -1490,47 +1531,6 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                const std::function<void (const std::string &, const Location &)> err);
 
 void set_intrinsic(ASR::symbol_t* sym);
-
-static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
-    if (type == nullptr) {
-        return -1;
-    }
-    switch (type->type) {
-        case ASR::ttypeType::Array: {
-            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Array_t>(type)->m_type);
-        }
-        case ASR::ttypeType::Integer : {
-            return ASR::down_cast<ASR::Integer_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::UnsignedInteger : {
-            return ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Real : {
-            return ASR::down_cast<ASR::Real_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Complex: {
-            return ASR::down_cast<ASR::Complex_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Character: {
-            return ASR::down_cast<ASR::Character_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Logical: {
-            return ASR::down_cast<ASR::Logical_t>(type)->m_kind;
-        }
-        case ASR::ttypeType::Pointer: {
-            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Pointer_t>(type)->m_type);
-        }
-        case ASR::ttypeType::Allocatable: {
-            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
-        }
-        case ASR::ttypeType::Const: {
-            return extract_kind_from_ttype_t(ASR::down_cast<ASR::Const_t>(type)->m_type);
-        }
-        default : {
-            return -1;
-        }
-    }
-}
 
 static inline bool is_pointer(ASR::ttype_t *x) {
     return ASR::is_a<ASR::Pointer_t>(*x);
