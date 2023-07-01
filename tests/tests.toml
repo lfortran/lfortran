@@ -3333,3 +3333,7 @@ asr = true
 [[test]]
 filename = "errors/subroutine2.f90"
 asr = true
+
+[[test]]
+filename = "errors/subroutine3.f90"
+asr = true
