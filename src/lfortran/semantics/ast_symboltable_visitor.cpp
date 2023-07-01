@@ -124,6 +124,20 @@ public:
         }
         global_scope = nullptr;
         tmp = tmp0;
+        if (pre_declared_array_dims.size() > 0) {
+            std::string sym_name = "";
+            for (auto &it: pre_declared_array_dims) {
+                if (it.second == 2) continue;
+                if (sym_name.empty()) {
+                     sym_name += it.first;
+                } else {
+                     sym_name += ", " + it.first;
+                }
+            }
+            if (!sym_name.empty()) {
+                throw SemanticError(sym_name + " is/are used as dimensions but not declared", x.base.base.loc);
+            }
+        }
     }
 
     void visit_Private(const AST::Private_t&) {
@@ -2215,7 +2229,7 @@ public:
             throw SemanticError("Too many parameters passed to the '" +
                 require_name + "'", x.base.base.loc);
         }
-        
+
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {

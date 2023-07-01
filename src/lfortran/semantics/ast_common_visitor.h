@@ -756,6 +756,7 @@ public:
     bool is_Function = false;
     bool in_Subroutine = false;
     bool is_common_variable = false;
+    bool _processing_dimensions = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     // fields for generics
@@ -781,6 +782,11 @@ public:
 
     int32_t enum_init_val;
     bool default_storage_save = false;
+    // The map stores the symbol names of the variables that are declared earlier
+    // for example: integer :: x(n), n
+    // if pre_declared_array_dims[key] = 1 (means it's implicitly typed but not yet declared)
+    // if pre_declared_array_dims[key] = 2 (means it's declared and so safe to use)
+    std::map<std::string, int8_t> pre_declared_array_dims;
 
     // Stores the strings for format statements inside a function
     std::map<int64_t, std::string> format_statements;
@@ -860,6 +866,7 @@ public:
                 }
             }
         }
+
         // Check for the variable in enum symtab, if enum is declared
         bool from_enum = false;
         {
@@ -927,6 +934,20 @@ public:
                     }
                     v = declare_implicit_variable(loc, var_name, intent);
                 }
+            } else if (_processing_dimensions && !v) {
+                // Declare an implicit variable with integer type
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                SetChar variable_dependencies_vec;
+                variable_dependencies_vec.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+                v = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(al, loc,
+                    current_scope, s2c(al, var_name), variable_dependencies_vec.p,
+                    variable_dependencies_vec.size(), ASRUtils::intent_unspecified, nullptr, nullptr,
+                    ASR::storage_typeType::Default, type, nullptr,
+                    current_procedure_abi_type, ASR::Public,
+                    ASR::presenceType::Required, false));
+                pre_declared_array_dims[var_name] = 1;
+                current_scope->add_symbol(var_name, v);
             } else {
                 // DONE: fix this ad-hoc solution ==> remove this solution
                 /*
@@ -950,6 +971,7 @@ public:
         bool is_char_type=false) {
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
+        _processing_dimensions = true;
         dims.reserve(al, n_dim);
         for (size_t i=0; i<n_dim; i++) {
             ASR::dimension_t dim;
@@ -975,6 +997,7 @@ public:
             }
             dims.push_back(al, dim);
         }
+        _processing_dimensions = false;
     }
 
     ASR::accessType get_asr_simple_attr(AST::simple_attributeType simple_attr) {
@@ -1846,6 +1869,10 @@ public:
                         if ( compiler_options.implicit_typing && implicit_dictionary[sym]!=nullptr ) {
                             // sym is implicitly declared
                             is_implicitly_declared = true;
+                        } else if (pre_declared_array_dims.find(sym) != pre_declared_array_dims.end()) {
+                            // sym is implicitly declared
+                            is_implicitly_declared = true;
+                            pre_declared_array_dims[sym] = 2;
                         } else {
                             // re-declaring a global scope variable is allowed
                             // Otherwise raise an error
