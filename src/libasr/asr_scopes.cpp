@@ -1,29 +1,12 @@
 #include <iomanip>
 #include <sstream>
-#include <random>
+
 #include <libasr/asr_scopes.h>
 #include <libasr/asr_utils.h>
 
 namespace LCompilers  {
 
-using LCompilers::CompilerOptions;
-
-std::string get_unique_ID() {
-    static std::random_device dev;
-    static std::mt19937 rng(dev());
-    std::uniform_int_distribution<int> dist(0, 61);
-    const std::string v =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    std::string res;
-    for (int i = 0; i < 22; i++) {
-        res += v[dist(rng)];
-    }
-    return res;
-}
-
-CompilerOptions compiler_options;
-
-std::string lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+std::string lcompilers_unique_ID;
 
 template< typename T >
 std::string hexify(T i)
