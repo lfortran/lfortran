@@ -425,8 +425,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_id, *a_separator, *a_end;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_id = a_separator = a_end = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_id, *a_separator, *a_end, *a_fmt_constant;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_id = a_separator = a_end = a_fmt_constant = nullptr;
         Vec<ASR::expr_t*> a_values_vec;
         a_values_vec.reserve(al, n_values);
 
@@ -505,8 +505,22 @@ public:
                     }
                     a_fmt = ASRUtils::EXPR(tmp);
                     ASR::ttype_t* a_fmt_type = ASRUtils::expr_type(a_fmt);
-                    if (!ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(a_fmt_type))) {
-                            throw SemanticError("`fmt` must be of type Character", loc);
+                    if (a_fmt && ASR::is_a<ASR::IntegerConstant_t>(*a_fmt)) {
+                        ASR::IntegerConstant_t* a_fmt_int = ASR::down_cast<ASR::IntegerConstant_t>(a_fmt);
+                        int64_t label = a_fmt_int->m_n;
+                        if (format_statements.find(label) == format_statements.end()) {
+                            // TODO: make this an error once we can find labels
+                            // below us
+                            diag.semantic_warning_label(
+                                "The label " + std::to_string(label) + " does not point to any format statement",
+                                {a_fmt->base.loc},
+                                "ignored for now"
+                            );
+                        }
+                    a_fmt_type = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, a_fmt->base.loc, 1, format_statements[label].size(), nullptr));
+                    a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                        al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
                     }
                 }
             }
@@ -523,12 +537,30 @@ public:
             this->visit_expr(*m_values[i]);
             a_values_vec.push_back(al, ASRUtils::EXPR(tmp));
         }
-        if( _type == AST::stmtType::Write ) {
-            tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
-                                    a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
-        } else if( _type == AST::stmtType::Read ) {
-            tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
-                                   a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
+        if (a_fmt_constant) {
+            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(
+                        al, loc, -1, 0, nullptr));
+            ASR::expr_t* string_format = ASRUtils::EXPR(ASR::make_StringFormat_t(al, a_fmt->base.loc,
+                a_fmt_constant, a_values_vec.p, a_values_vec.size(), ASR::string_format_kindType::FormatFortran,
+                type, nullptr));
+            Vec<ASR::expr_t*> write_args;
+            write_args.reserve(al, 1);
+            write_args.push_back(al, string_format);
+            if( _type == AST::stmtType::Write ) {
+                tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
+                                        a_iomsg, a_iostat, a_id, write_args.p, write_args.size(), a_separator, a_end);
+            } else if( _type == AST::stmtType::Read ) {
+                tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
+                                    a_iomsg, a_iostat, a_id, write_args.p, write_args.size());
+            }
+        } else {
+            if( _type == AST::stmtType::Write ) {
+                tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_fmt,
+                                        a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end);
+            } else if( _type == AST::stmtType::Read ) {
+                tmp = ASR::make_FileRead_t(al, loc, m_label, a_unit, a_fmt,
+                                    a_iomsg, a_iostat, a_id, a_values_vec.p, a_values_vec.size());
+            }
         }
     }
 
