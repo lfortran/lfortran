@@ -782,7 +782,11 @@ public:
 
     int32_t enum_init_val;
     bool default_storage_save = false;
-    std::map<std::string, bool> pre_declared_array_dims;
+    // The map stores the symbol names of the variables that are declared earlier
+    // for example: integer :: x(n), n
+    // if pre_declared_array_dims[key] = 1 (means it's implicitly typed but not yet declared)
+    // if pre_declared_array_dims[key] = 2 (means it's declared and so safe to use)
+    std::map<std::string, int8_t> pre_declared_array_dims;
 
     // Stores the strings for format statements inside a function
     std::map<int64_t, std::string> format_statements;
@@ -942,7 +946,7 @@ public:
                     ASR::storage_typeType::Default, type, nullptr,
                     current_procedure_abi_type, ASR::Public,
                     ASR::presenceType::Required, false));
-                pre_declared_array_dims[var_name] = true;
+                pre_declared_array_dims[var_name] = 1;
                 current_scope->add_symbol(var_name, v);
             } else {
                 // DONE: fix this ad-hoc solution ==> remove this solution
@@ -1868,7 +1872,7 @@ public:
                         } else if (pre_declared_array_dims.find(sym) != pre_declared_array_dims.end()) {
                             // sym is implicitly declared
                             is_implicitly_declared = true;
-                            pre_declared_array_dims.erase(sym);
+                            pre_declared_array_dims[sym] = 2;
                         } else {
                             // re-declaring a global scope variable is allowed
                             // Otherwise raise an error
