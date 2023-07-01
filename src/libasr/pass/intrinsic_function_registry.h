@@ -1591,8 +1591,7 @@ namespace Min {
         ASR::expr_t* test;
         body.push_back(al, Assignment(result, args[0]));
         for (size_t i = 1; i < args.size(); i++) {
-            test = make_Compare(make_IntegerCompare_t, args[i],
-                        ASR::cmpopType::Lt, result, loc);
+            test = make_Compare(make_IntegerCompare_t, args[i], Lt, result);
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
             if_body.push_back(al, Assignment(result, args[i]));
             body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
