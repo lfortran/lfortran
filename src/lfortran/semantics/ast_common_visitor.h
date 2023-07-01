@@ -3566,6 +3566,15 @@ public:
             size_compiletime = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                                 compile_time_size, type));
         }
+        //if v_Var is a Function, give error
+        if(ASR::is_a<ASR::Var_t>(*v_Var)){
+            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(v_Var);
+            ASR::symbol_t* sym = var->m_v;
+            if(ASR::is_a<ASR::Function_t>(*sym)){
+                throw SemanticError("Argument of `size` must be an array", x.base.base.loc);
+            }
+
+        }
         return ASR::make_ArraySize_t(al, x.base.base.loc, v_Var, dim, type, size_compiletime);
     }
 
