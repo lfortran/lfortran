@@ -2137,7 +2137,8 @@ public:
         if( overloaded_stmt == nullptr ) {
             if ((target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
-                target->type == ASR::exprType::ArraySection) &&
+                target->type == ASR::exprType::ArraySection ||
+                target->type == ASR::exprType::StructInstanceMember) &&
                 !ASRUtils::check_equal_type(target_type, value_type)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
