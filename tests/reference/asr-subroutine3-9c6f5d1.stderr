@@ -1,5 +1,5 @@
 semantic error: Argument of `size` must be an array
- --> tests/errors/subroutine3.f90:8:18
+ --> tests/errors/subroutine3.f90:5:14
   |
-8 |         print *, size(f)
-  |                  ^^^^^^^ 
+5 |     print *, size(f)
+  |              ^^^^^^^ 
