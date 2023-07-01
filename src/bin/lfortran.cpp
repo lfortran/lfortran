@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <filesystem>
-
+#include <random>
 #define CLI11_HAS_FILESYSTEM 0
 #include <bin/CLI11.hpp>
 
@@ -62,6 +62,21 @@ using LCompilers::CompilerOptions;
 enum Backend {
     llvm, c, cpp, x86, wasm
 };
+
+std::string get_unique_ID() {
+    static std::random_device dev;
+    static std::mt19937 rng(dev());
+    std::uniform_int_distribution<int> dist(0, 61);
+    const std::string v =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    std::string res;
+    for (int i = 0; i < 22; i++) {
+        res += v[dist(rng)];
+    }
+    return res;
+}
+
+std::string lcompilers_unique_ID;
 
 std::string read_file(const std::string &filename)
 {
@@ -918,6 +933,8 @@ int compile_to_object_file(const std::string &infile,
     } else {
         e.save_object_file(*(m->m_m), outfile);
     }
+
+    lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
     return 0;
 }
@@ -2080,7 +2097,7 @@ int main(int argc, char *argv[])
                 throw LCompilers::LCompilersException("Unsupported backend.");
             }
         }
-
+       
         if (endswith(arg_file, ".f90")) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
