@@ -2088,51 +2088,83 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
-                    ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
-                    LCOMPILERS_ASSERT(init_expr != nullptr);
-                    value = ASRUtils::expr_value(init_expr);
-                    if ( init_expr ) {
-                        if( ASRUtils::is_value_constant(value) ) {
-                        } else if( ASRUtils::is_value_constant(init_expr) ) {
-                            if (ASR::is_a<ASR::Cast_t>(*init_expr)) {
-                                ASR::Cast_t *cast = ASR::down_cast<ASR::Cast_t>(init_expr);
-                                if (cast->m_arg && ASR::is_a<ASR::ArrayConstant_t>(*cast->m_arg)) {
-                                    ASR::cast_kindType cast_kind = cast->m_kind;
-                                    // TODO: handle other cases
-                                    if (cast_kind == ASR::cast_kindType::IntegerToReal) {
-                                        bool is_int = true;
-                                        ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
-                                        ASR::ttype_t* real_type = cast->m_type;
-                                        Vec<ASR::expr_t*> body;
-                                        body.reserve(al, a->n_args);
-                                        for (size_t i = 0; i < a->n_args; i++) {
-                                            ASR::expr_t *e = a->m_args[i];
-                                            // it will be IntegerConstant_t convert it to RealConstant_t
-                                            if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
-                                                ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
-                                                double val = int_const->m_n;
-                                                ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, int_const->base.base.loc,
-                                                    val, ASRUtils::type_get_past_array(real_type)));
-                                                body.push_back(al, real_const);
-                                            } else {
-                                                is_int = false;
-                                                break;
-                                            }
-                                        }
-                                        if (is_int) {
-                                            ASR::expr_t* array_const = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
-                                            cast->m_value = ASRUtils::expr_value(array_const);
-                                            value = cast->m_value;
-                                        }
-                                    }
-                                }
+                    if (init_type->type == ASR::ttypeType::Integer
+                        && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type == ASR::ttypeType::Character
+                        && s.m_sym == AST::symbolType::Asterisk) {
+                        /*
+                            Case: character :: a*4
+                            Here 4 represents the length of the character, which is an integer.                    
+                        */
+                        value = ASRUtils::expr_value(init_expr);
+                        if (value == nullptr) {
+                            throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
+                                                " must reduce to a compile time constant.",
+                                x.base.base.loc);
+                        }
+                        if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+                            ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(value);
+                            int64_t len = int_const->m_n;
+                            if (ASR::is_a<ASR::Array_t>(*type)) {
+                                // case: character :: a(2)*4
+                                ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
+                                array->m_type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
                             } else {
-                                value = nullptr;
+                                type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
                             }
                         } else {
                             throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
                                                 " must reduce to a compile time constant.",
                                 x.base.base.loc);
+                        }
+                        value = nullptr;
+                        init_expr = nullptr;
+                    } else {
+                        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type);
+                        LCOMPILERS_ASSERT(init_expr != nullptr);
+                        value = ASRUtils::expr_value(init_expr);
+                        if ( init_expr ) {
+                            if( ASRUtils::is_value_constant(value) ) {
+                            } else if( ASRUtils::is_value_constant(init_expr) ) {
+                                if (ASR::is_a<ASR::Cast_t>(*init_expr)) {
+                                    ASR::Cast_t *cast = ASR::down_cast<ASR::Cast_t>(init_expr);
+                                    if (cast->m_arg && ASR::is_a<ASR::ArrayConstant_t>(*cast->m_arg)) {
+                                        ASR::cast_kindType cast_kind = cast->m_kind;
+                                        // TODO: handle other cases
+                                        if (cast_kind == ASR::cast_kindType::IntegerToReal) {
+                                            bool is_int = true;
+                                            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(cast->m_arg);
+                                            ASR::ttype_t* real_type = cast->m_type;
+                                            Vec<ASR::expr_t*> body;
+                                            body.reserve(al, a->n_args);
+                                            for (size_t i = 0; i < a->n_args; i++) {
+                                                ASR::expr_t *e = a->m_args[i];
+                                                // it will be IntegerConstant_t convert it to RealConstant_t
+                                                if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+                                                    ASR::IntegerConstant_t *int_const = ASR::down_cast<ASR::IntegerConstant_t>(e);
+                                                    double val = int_const->m_n;
+                                                    ASR::expr_t *real_const = ASRUtils::EXPR(ASR::make_RealConstant_t(al, int_const->base.base.loc,
+                                                        val, ASRUtils::type_get_past_array(real_type)));
+                                                    body.push_back(al, real_const);
+                                                } else {
+                                                    is_int = false;
+                                                    break;
+                                                }
+                                            }
+                                            if (is_int) {
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                                cast->m_value = ASRUtils::expr_value(array_const);
+                                                value = cast->m_value;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    value = nullptr;
+                                }
+                            } else {
+                                throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
+                                                    " must reduce to a compile time constant.",
+                                    x.base.base.loc);
+                            }
                         }
                     }
                     if (storage_type == ASR::storage_typeType::Parameter) {
