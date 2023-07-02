@@ -25,24 +25,6 @@ You can use helper macros and define your own helper macros to reduce
 the code size.
 */
 
-typedef ASR::expr_t* (*impl_function)(
-    Allocator&, const Location &,
-    SymbolTable*, Vec<ASR::ttype_t*>&,
-    Vec<ASR::call_arg_t>&, int64_t, ASR::expr_t*);
-
-typedef ASR::expr_t* (*eval_intrinsic_function)(
-    Allocator&, const Location &,
-    Vec<ASR::expr_t*>&);
-
-typedef ASR::asr_t* (*create_intrinsic_function)(
-    Allocator&, const Location&,
-    Vec<ASR::expr_t*>&,
-    const std::function<void (const std::string &, const Location &)>);
-
-typedef void (*verify_function)(
-    const ASR::IntrinsicFunction_t&,
-    diag::Diagnostics&);
-
 enum class IntrinsicFunctions : int64_t {
     Sin,
     Cos,
@@ -71,6 +53,60 @@ enum class IntrinsicFunctions : int64_t {
     // ...
 };
 
+#define INTRINSIC_NAME_CASE(X)                                         \
+    case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : {   \
+        return #X;                                                     \
+    }
+
+inline std::string get_intrinsic_name(int x) {
+    switch (x) {
+        INTRINSIC_NAME_CASE(Sin)
+        INTRINSIC_NAME_CASE(Cos)
+        INTRINSIC_NAME_CASE(Tan)
+        INTRINSIC_NAME_CASE(Asin)
+        INTRINSIC_NAME_CASE(Acos)
+        INTRINSIC_NAME_CASE(Atan)
+        INTRINSIC_NAME_CASE(Sinh)
+        INTRINSIC_NAME_CASE(Cosh)
+        INTRINSIC_NAME_CASE(Tanh)
+        INTRINSIC_NAME_CASE(Gamma)
+        INTRINSIC_NAME_CASE(LogGamma)
+        INTRINSIC_NAME_CASE(Abs)
+        INTRINSIC_NAME_CASE(Exp)
+        INTRINSIC_NAME_CASE(Exp2)
+        INTRINSIC_NAME_CASE(Expm1)
+        INTRINSIC_NAME_CASE(Any)
+        INTRINSIC_NAME_CASE(ListIndex)
+        INTRINSIC_NAME_CASE(Partition)
+        INTRINSIC_NAME_CASE(ListReverse)
+        INTRINSIC_NAME_CASE(Sum)
+        INTRINSIC_NAME_CASE(Max)
+        INTRINSIC_NAME_CASE(Min)
+        INTRINSIC_NAME_CASE(Product)
+        INTRINSIC_NAME_CASE(MaxVal)
+        default : {
+            throw LCompilersException("pickle: intrinsic_id not implemented");
+        }
+    }
+}
+
+typedef ASR::expr_t* (*impl_function)(
+    Allocator&, const Location &,
+    SymbolTable*, Vec<ASR::ttype_t*>&,
+    Vec<ASR::call_arg_t>&, int64_t, ASR::expr_t*);
+
+typedef ASR::expr_t* (*eval_intrinsic_function)(
+    Allocator&, const Location &,
+    Vec<ASR::expr_t*>&);
+
+typedef ASR::asr_t* (*create_intrinsic_function)(
+    Allocator&, const Location&,
+    Vec<ASR::expr_t*>&,
+    const std::function<void (const std::string &, const Location &)>);
+
+typedef void (*verify_function)(
+    const ASR::IntrinsicFunction_t&,
+    diag::Diagnostics&);
 
 class ASRBuilder {
     private:
@@ -3328,43 +3364,6 @@ namespace IntrinsicFunctionRegistry {
     }
 
 } // namespace IntrinsicFunctionRegistry
-
-#define INTRINSIC_NAME_CASE(X)                                         \
-    case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : {   \
-        return #X;                                                     \
-    }
-
-inline std::string get_intrinsic_name(int x) {
-    switch (x) {
-        INTRINSIC_NAME_CASE(Sin)
-        INTRINSIC_NAME_CASE(Cos)
-        INTRINSIC_NAME_CASE(Tan)
-        INTRINSIC_NAME_CASE(Asin)
-        INTRINSIC_NAME_CASE(Acos)
-        INTRINSIC_NAME_CASE(Atan)
-        INTRINSIC_NAME_CASE(Sinh)
-        INTRINSIC_NAME_CASE(Cosh)
-        INTRINSIC_NAME_CASE(Tanh)
-        INTRINSIC_NAME_CASE(Gamma)
-        INTRINSIC_NAME_CASE(LogGamma)
-        INTRINSIC_NAME_CASE(Abs)
-        INTRINSIC_NAME_CASE(Exp)
-        INTRINSIC_NAME_CASE(Exp2)
-        INTRINSIC_NAME_CASE(Expm1)
-        INTRINSIC_NAME_CASE(Any)
-        INTRINSIC_NAME_CASE(ListIndex)
-        INTRINSIC_NAME_CASE(Partition)
-        INTRINSIC_NAME_CASE(ListReverse)
-        INTRINSIC_NAME_CASE(Sum)
-        INTRINSIC_NAME_CASE(Max)
-        INTRINSIC_NAME_CASE(Min)
-        INTRINSIC_NAME_CASE(Product)
-        INTRINSIC_NAME_CASE(MaxVal)
-        default : {
-            throw LCompilersException("pickle: intrinsic_id not implemented");
-        }
-    }
-}
 
 /************************* Intrinsic Impure Function **************************/
 enum class IntrinsicImpureFunctions : int64_t {
