@@ -492,7 +492,7 @@ public:
                 if (!ASR::is_a<ASR::Character_t>(*ASRUtils::type_get_past_pointer(a_status_type))) {
                         throw SemanticError("`status` must be of type Character", loc);
                 }
-            } else if( m_arg_str == std::string("fmt") ) {
+            } else if( to_lower(m_arg_str) == std::string("fmt")  ) {
                 if( a_fmt != nullptr ) {
                     throw SemanticError(R"""(Duplicate value of `fmt` found, it has already been specified via arguments or keyword arguments)""",
                                         loc);
