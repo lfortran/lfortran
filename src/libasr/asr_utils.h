@@ -2046,7 +2046,6 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
     while (*p != '\0') {
         if (*p == '_') {
             p++;
-            std::string kind = std::string(p);
             int ikind = std::atoi(p);
             if (ikind == 0) {
                 // Not an integer, return a string
