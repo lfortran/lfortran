@@ -54,7 +54,7 @@
     #include <emscripten/emscripten.h>
 #endif
 
-std::string lcompilers_unique_ID;
+extern std::string lcompilers_unique_ID;
 
 namespace {
 

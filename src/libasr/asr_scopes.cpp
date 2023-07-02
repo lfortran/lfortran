@@ -4,7 +4,7 @@
 #include <libasr/asr_scopes.h>
 #include <libasr/asr_utils.h>
 
-extern std::string lcompilers_unique_ID;
+std::string lcompilers_unique_ID;
 
 namespace LCompilers  {
 
