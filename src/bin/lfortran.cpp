@@ -2097,7 +2097,7 @@ int main(int argc, char *argv[])
                 throw LCompilers::LCompilersException("Unsupported backend.");
             }
         }
-       
+
         if (endswith(arg_file, ".f90")) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
