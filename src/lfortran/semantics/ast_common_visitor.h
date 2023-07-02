@@ -5441,7 +5441,7 @@ public:
         char* s_kind;
         int r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
         if (r_kind == 0) {
-            std::string var_name = s_kind;
+            std::string var_name = to_lower(s_kind);
             ASR::symbol_t *v = current_scope->resolve_symbol(var_name);
             if (v) {
                 const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
