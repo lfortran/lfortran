@@ -1,0 +1,5 @@
+warning: Possible integer division instead of floating point division
+  --> tests/../integration_tests/doloop_02.f90:19:14
+   |
+19 |     if (a /= 100*101/2) error stop
+   |              ^^^^^^^ ^ help: Check the operands and ensure at least one of them is a floating point number to obtain the desired result
