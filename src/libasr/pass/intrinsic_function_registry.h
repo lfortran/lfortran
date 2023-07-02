@@ -1590,12 +1590,24 @@ namespace Min {
 
         ASR::expr_t* test;
         body.push_back(al, Assignment(result, args[0]));
-        for (size_t i = 1; i < args.size(); i++) {
-            test = make_Compare(make_IntegerCompare_t, args[i], Lt, result);
-            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-            if_body.push_back(al, Assignment(result, args[i]));
-            body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-                if_body.p, if_body.n, nullptr, 0)));
+        if (return_type->type == ASR::ttypeType::Integer) {
+            for (size_t i = 1; i < args.size(); i++) {
+                test = make_Compare(make_IntegerCompare_t, args[i], Lt, result);
+                Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+                if_body.push_back(al, Assignment(result, args[i]));
+                body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                    if_body.p, if_body.n, nullptr, 0)));
+            }
+        } else if (return_type->type == ASR::ttypeType::Real) {
+            for (size_t i = 1; i < args.size(); i++) {
+                test = make_Compare(make_RealCompare_t, args[i], Lt, result);
+                Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+                if_body.push_back(al, Assignment(result, args[i]));
+                body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                    if_body.p, if_body.n, nullptr, 0)));
+            }
+        } else {
+            throw LCompilersException("Arguments to min0 must be of real or integer type");
         }
         ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
             body, result, Source, Implementation, nullptr);
@@ -3238,6 +3250,8 @@ namespace IntrinsicFunctionRegistry {
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
+                {"min", {&Min::create_Min, &Min::eval_Min}},
+
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {

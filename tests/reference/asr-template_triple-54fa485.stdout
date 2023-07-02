@@ -220,26 +220,6 @@
                                     (SymbolTable
                                         6
                                         {
-                                            min:
-                                                (ExternalSymbol
-                                                    6
-                                                    min
-                                                    30 min
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    min
-                                                    Private
-                                                ),
-                                            min@imin:
-                                                (ExternalSymbol
-                                                    6
-                                                    min@imin
-                                                    30 imin
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    imin
-                                                    Private
-                                                ),
                                             result:
                                                 (Variable
                                                     6
@@ -304,18 +284,17 @@
                                         .false.
                                         .false.
                                     )
-                                    [min@imin]
+                                    []
                                     [(Var 6 x)
                                     (Var 6 y)]
                                     [(=
                                         (Var 6 result)
-                                        (FunctionCall
-                                            6 min@imin
-                                            6 min
-                                            [((Var 6 x))
-                                            ((Var 6 y))]
+                                        (IntrinsicFunction
+                                            Min
+                                            [(Var 6 x)
+                                            (Var 6 y)]
+                                            0
                                             (Integer 4)
-                                            ()
                                             ()
                                         )
                                         ()
@@ -729,26 +708,6 @@
                                     (SymbolTable
                                         14
                                         {
-                                            min:
-                                                (ExternalSymbol
-                                                    14
-                                                    min
-                                                    30 min
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    min
-                                                    Private
-                                                ),
-                                            min@smin:
-                                                (ExternalSymbol
-                                                    14
-                                                    min@smin
-                                                    30 smin
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    smin
-                                                    Private
-                                                ),
                                             result:
                                                 (Variable
                                                     14
@@ -813,18 +772,17 @@
                                         .false.
                                         .false.
                                     )
-                                    [min@smin]
+                                    []
                                     [(Var 14 x)
                                     (Var 14 y)]
                                     [(=
                                         (Var 14 result)
-                                        (FunctionCall
-                                            14 min@smin
-                                            14 min
-                                            [((Var 14 x))
-                                            ((Var 14 y))]
+                                        (IntrinsicFunction
+                                            Min
+                                            [(Var 14 x)
+                                            (Var 14 y)]
+                                            0
                                             (Real 4)
-                                            ()
                                             ()
                                         )
                                         ()
