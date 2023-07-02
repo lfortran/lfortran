@@ -67,6 +67,7 @@ enum class IntrinsicFunctions : int64_t {
     Product,
     Max,
     MaxVal,
+    Min,
     // ...
 };
 
@@ -1491,6 +1492,118 @@ namespace Max {
 
 }  // namespace max0
 
+namespace Min {
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args > 1, "ASR Verify: Call to min0 must have at least two arguments",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) ||
+            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
+             "ASR Verify: Arguments to min0 must be of real or integer type",
+            x.base.base.loc, diagnostics);
+        for(size_t i=0;i<x.n_args;i++){
+            ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[i])) &&
+                                            ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
+                                        (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[i])) &&
+                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))),
+            "ASR Verify: All arguments must be of the same type",
+            x.base.base.loc, diagnostics);
+        }
+    }
+
+    static ASR::expr_t *eval_Min(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
+        if (ASR::is_a<ASR::Real_t>(*arg_type)) {
+            double min_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            for (size_t i = 1; i < args.size(); i++) {
+                double val = ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r;
+                min_val = std::fmin(min_val, val);
+            }
+            return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, min_val, arg_type));
+        } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            int64_t min_val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            for (size_t i = 1; i < args.size(); i++) {
+                int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n;
+                min_val = std::fmin(min_val, val);
+            }
+            return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, min_val, arg_type));
+        } else {
+            return nullptr;
+        }
+    }
+
+    static inline ASR::asr_t* create_Min(
+        Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        bool is_compile_time = true;
+        for(size_t i=0; i<100;i++){
+            args.erase(nullptr);
+        }
+        if (args.size() < 2) {
+            err("Intrinsic min0 must have 2 arguments", loc);
+        }
+        Vec<ASR::expr_t*> arg_values;
+        arg_values.reserve(al, args.size());
+        ASR::expr_t *arg_value;
+        for(size_t i=0;i<args.size();i++){
+            arg_value = ASRUtils::expr_value(args[i]);
+            if (!arg_value) {
+                is_compile_time = false;
+            }
+            arg_values.push_back(al, arg_value);
+        }
+        if (is_compile_time) {
+            ASR::expr_t *value = eval_Min(al, loc, arg_values);
+            return ASR::make_IntrinsicFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Min),
+                args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
+        } else {
+            return ASR::make_IntrinsicFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Min),
+                args.p, args.n, 0, ASRUtils::expr_type(args[0]), nullptr);
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Min(Allocator &al, const Location &loc,
+        SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+        Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        std::string func_name = "_lcompilers_min0_" + type_to_str_python(arg_types[0]);
+        ASR::ttype_t *return_type = arg_types[0];
+        std::string fn_name = scope->get_unique_name(func_name);
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, new_args.size());
+        ASRBuilder b(al, loc);
+        Vec<ASR::stmt_t*> body; body.reserve(al, args.size());
+        SetChar dep; dep.reserve(al, 1);
+        if (scope->get_symbol(fn_name)) {
+            ASR::symbol_t *s = scope->get_symbol(fn_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var),
+                                compile_time_value);
+        }
+        for (size_t i = 0; i < new_args.size(); i++) {
+            fill_func_arg("x" + std::to_string(i), arg_types[0]);
+        }
+
+        auto result = declare(fn_name, return_type, ReturnVar);
+
+        ASR::expr_t* test;
+        body.push_back(al, Assignment(result, args[0]));
+        for (size_t i = 1; i < args.size(); i++) {
+            test = make_Compare(make_IntegerCompare_t, args[i], Lt, result);
+            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+            if_body.push_back(al, Assignment(result, args[i]));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                if_body.p, if_body.n, nullptr, 0)));
+        }
+        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, compile_time_value);
+    }
+
+}  // namespace min0
 
 namespace Sum {
 
@@ -3047,6 +3160,8 @@ namespace IntrinsicFunctionRegistry {
             {&Max::instantiate_Max, &Max::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxVal),
             {&MaxVal::instantiate_MaxVal, &MaxVal::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Min),
+            {&Min::instantiate_Min, &Min::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -3093,6 +3208,8 @@ namespace IntrinsicFunctionRegistry {
             "max"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxVal),
             "maxval"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Min),
+            "min"},
     };
 
 
@@ -3120,6 +3237,7 @@ namespace IntrinsicFunctionRegistry {
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
+                {"min0", {&Min::create_Min, &Min::eval_Min}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
@@ -3225,6 +3343,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(ListReverse)
         INTRINSIC_NAME_CASE(Sum)
         INTRINSIC_NAME_CASE(Max)
+        INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Product)
         INTRINSIC_NAME_CASE(MaxVal)
         default : {
@@ -3295,6 +3414,7 @@ inline std::string get_impure_intrinsic_name(int x) {
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEnd)
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEor)
         INTRINSIC_NAME_CASE(Max)
+        INTRINSIC_NAME_CASE(Min)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
