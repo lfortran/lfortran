@@ -1469,11 +1469,25 @@ public:
                         x.base.base.loc);
                 } else {
                     for (auto &expr: common_block_dictionary[common_block_name].second) {
-                        ASR::Variable_t* var_ = ASRUtils::EXPR2VAR(expr);
+                        ASR::Variable_t* var_ = nullptr;
+                        if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
+                            var_ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                        } else {
+                            var_ = ASRUtils::EXPR2VAR(expr);
+                        }
                         s = x.m_syms[i];
                         AST::expr_t* expr_ = s.m_initializer;
                         this->visit_expr(*expr_);
-                        ASR::Variable_t* var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                        ASR::Variable_t* var__ = nullptr;
+                        if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
+                            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
+                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(array_item->m_v);
+                            var__ = ASR::down_cast<ASR::Variable_t>(var->m_v);
+                        } else {
+                            var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
+                        }
                         if (!ASRUtils::check_equal_type(var_->m_type, var__->m_type)) {
                             throw SemanticError("The order of variables in common block must be same in all programs",
                                 x.base.base.loc);
