@@ -4,9 +4,9 @@
 #include <libasr/asr_scopes.h>
 #include <libasr/asr_utils.h>
 
-namespace LCompilers  {
+extern std::string lcompilers_unique_ID;
 
-std::string lcompilers_unique_ID;
+namespace LCompilers  {
 
 template< typename T >
 std::string hexify(T i)

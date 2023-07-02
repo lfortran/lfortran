@@ -54,6 +54,8 @@
     #include <emscripten/emscripten.h>
 #endif
 
+std::string lcompilers_unique_ID;
+
 namespace {
 
 using LCompilers::endswith;
@@ -75,8 +77,6 @@ std::string get_unique_ID() {
     }
     return res;
 }
-
-std::string lcompilers_unique_ID;
 
 std::string read_file(const std::string &filename)
 {
@@ -933,8 +933,6 @@ int compile_to_object_file(const std::string &infile,
     } else {
         e.save_object_file(*(m->m_m), outfile);
     }
-
-    lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
 
     return 0;
 }
@@ -1885,6 +1883,8 @@ int main(int argc, char *argv[])
         app.get_formatter()->column_width(25);
         app.require_subcommand(0, 1);
         CLI11_PARSE(app, argc, argv);
+        lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+
 
         if (arg_version) {
             std::string version = LFORTRAN_VERSION;
