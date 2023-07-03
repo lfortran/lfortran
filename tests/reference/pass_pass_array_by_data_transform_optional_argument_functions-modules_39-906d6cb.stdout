@@ -120,17 +120,29 @@
                                             ()
                                             ()
                                         ))
-                                        ((ArrayConstant
-                                            [(StringConstant
-                                                "*"
-                                                (Character 1 1 ())
-                                            )]
+                                        ((ArrayPhysicalCast
+                                            (ArrayConstant
+                                                [(StringConstant
+                                                    "*"
+                                                    (Character 1 1 ())
+                                                )]
+                                                (Array
+                                                    (Character 1 1 ())
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
+                                            FixedSizeArray
+                                            PointerToDataArray
                                             (Array
                                                 (Character 1 1 ())
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 1 (Integer 4)))]
+                                                PointerToDataArray
                                             )
-                                            ColMajor
+                                            ()
                                         ))
                                         ((IntegerConstant 1 (Integer 4)))
                                         ((IntegerConstant 1 (Integer 4)))]
@@ -201,6 +213,7 @@
                                                         (Character 1 -1 ())
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -232,6 +245,7 @@
                                             (Character 1 -1 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         ()
                                         Source
@@ -305,6 +319,7 @@
                                                         (Character 1 -1 ())
                                                         [((Var 9 __1filedata)
                                                         (Var 9 __2filedata))]
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     Source
@@ -334,9 +349,20 @@
                                         [(Character 1 -1 ())
                                         (Array
                                             (Character 1 -1 ())
-                                            [(()
-                                            ())]
-                                        )]
+                                            [((FunctionParam
+                                                2
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (FunctionParam
+                                                3
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            PointerToDataArray
+                                        )
+                                        (Integer 4)
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation
@@ -517,8 +543,11 @@
                                         [(Character 1 -1 ())
                                         (Character 1 -1 ())
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Character 1 -1 ())
-                                        (Character 1 -1 ())]
+                                        (Logical 4)
+                                        (Character 1 -1 ())
+                                        (Logical 4)]
                                         (Allocatable
                                             (Character 1 -2 ())
                                         )

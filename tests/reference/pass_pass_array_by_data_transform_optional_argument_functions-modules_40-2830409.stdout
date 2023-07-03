@@ -88,6 +88,7 @@
                                                                             )
                                                                             [(()
                                                                             ())]
+                                                                            DescriptorArray
                                                                         )
                                                                     )
                                                                     ()
@@ -126,6 +127,7 @@
                                                                 )
                                                                 [(()
                                                                 ())]
+                                                                DescriptorArray
                                                             )
                                                         )]
                                                         ()
@@ -235,6 +237,7 @@
                                                                             )
                                                                             [(()
                                                                             ())]
+                                                                            DescriptorArray
                                                                         )
                                                                     )
                                                                     ()
@@ -253,9 +256,11 @@
                                                                 )
                                                                 [(()
                                                                 ())]
+                                                                DescriptorArray
                                                             )
                                                         )
-                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        (Logical 4)]
                                                         ()
                                                         Source
                                                         Implementation

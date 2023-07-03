@@ -52,6 +52,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -74,6 +75,7 @@
                                         (IntegerConstant 3 (Integer 4)))
                                         ((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -136,6 +138,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 1 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )
@@ -156,8 +159,9 @@
                             (IntegerConstant 1 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -179,8 +183,9 @@
                             (IntegerConstant 1 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -202,8 +207,9 @@
                             (IntegerConstant 1 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -233,8 +239,9 @@
                             (IntegerConstant 2 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -256,8 +263,9 @@
                             (IntegerConstant 2 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -279,8 +287,9 @@
                             (IntegerConstant 2 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -302,8 +311,9 @@
                             (IntegerConstant 2 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -331,8 +341,9 @@
                             (IntegerConstant 2 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -360,8 +371,9 @@
                             (IntegerConstant 2 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 10 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -398,10 +410,9 @@
                             ())]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -438,10 +449,11 @@
                             (IntegerConstant 1 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())
+                                (()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -472,10 +484,11 @@
                             (IntegerConstant 1 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())
+                                (()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -506,10 +519,11 @@
                             (IntegerConstant 1 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())
+                                (()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -528,10 +542,11 @@
                             (IntegerConstant 1 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())
+                                (()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -556,10 +571,9 @@
                             ())]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -584,10 +598,9 @@
                             (IntegerConstant 2 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -618,10 +631,11 @@
                             (IntegerConstant 2 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())
+                                (()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -664,10 +678,11 @@
                             (IntegerConstant 4 (Integer 4)))]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())
+                                (()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]
@@ -698,10 +713,9 @@
                             ())]
                             (Array
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))
-                                ((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 3 (Integer 4)))]
+                                [(()
+                                ())]
+                                DescriptorArray
                             )
                             ()
                         )]

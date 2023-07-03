@@ -21,6 +21,7 @@
                                             (Character 1 5 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -43,6 +44,7 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -65,6 +67,7 @@
                                             (Logical 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -94,6 +97,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 0 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )
@@ -117,6 +121,7 @@
                                 (Logical 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 0 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )
@@ -140,6 +145,7 @@
                                 (Character 1 1 ())
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 0 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )

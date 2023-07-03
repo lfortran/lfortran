@@ -143,6 +143,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -162,6 +163,7 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Integer 4)
                                         (Character 1 -1 ())]
@@ -326,6 +328,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -345,6 +348,7 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Integer 4)
                                         (Character 1 -1 ())]

@@ -42,6 +42,7 @@
                                                             (Character 1 -1 ())
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -64,6 +65,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -80,6 +82,7 @@
                                                 (Character 1 -1 ())
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )]
                                         ()
@@ -180,6 +183,7 @@
                                                         (Character 1 1 ())
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 0 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ColMajor
                                                 )
@@ -214,6 +218,7 @@
                                                     (Character 1 1 ())
                                                     [((IntegerConstant 1 (Integer 4))
                                                     (IntegerConstant 0 (Integer 4)))]
+                                                    FixedSizeArray
                                                 )
                                                 ColMajor
                                             )
@@ -265,6 +270,7 @@
                                             (Character 1 5 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()

@@ -281,6 +281,7 @@
                                         (Var 2 e))
                                         ((IntegerConstant 1 (Integer 4))
                                         (Var 2 e))]
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
@@ -301,6 +302,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (Var 2 e))]
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
