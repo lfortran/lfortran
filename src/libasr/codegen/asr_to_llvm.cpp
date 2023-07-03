@@ -6353,36 +6353,71 @@ public:
     }
 
     llvm::Function* get_read_function(ASR::ttype_t *type) {
-        if (ASR::is_a<ASR::Integer_t>(*type)) {
-            std::string runtime_func_name = "_lfortran_read_int32";
-            llvm::Function *fn = module->getFunction(runtime_func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context)->getPointerTo(),
-                            llvm::Type::getInt32Ty(context)
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        type = ASRUtils::type_get_past_allocatable(type);
+        llvm::Function *fn = nullptr;
+        switch (type->type) {
+            case (ASR::ttypeType::Integer): {
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
+                if (a_kind != 4) {
+                    throw CodeGenError("Read Integer function not implemented for integer kind: "
+                                        + std::to_string(a_kind));
+                }
+                std::string runtime_func_name = "_lfortran_read_int32";
+                fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                                llvm::Type::getInt32Ty(context)->getPointerTo(),
+                                llvm::Type::getInt32Ty(context)
+                            }, false);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                }
+                break;
             }
-            return fn;
-        } else if (ASR::is_a<ASR::Character_t>(*type)) {
-            std::string runtime_func_name = "_lfortran_read_char";
-            llvm::Function *fn = module->getFunction(runtime_func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {
-                            character_type->getPointerTo(),
-                            llvm::Type::getInt32Ty(context)
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, *module);
+            case (ASR::ttypeType::Character): {
+                std::string runtime_func_name = "_lfortran_read_char";
+                fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                                character_type->getPointerTo(),
+                                llvm::Type::getInt32Ty(context)
+                            }, false);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                }
+                break;
             }
-            return fn;
-        } else {
-            std::string s_type = ASRUtils::type_to_str(type);
-            throw CodeGenError("Read function not implemented for: " + s_type);
+            case (ASR::ttypeType::Real): {
+                std::string runtime_func_name;
+                llvm::Type *type_arg;
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
+                if (a_kind == 4) {
+                    runtime_func_name = "_lfortran_read_float";
+                    type_arg = llvm::Type::getFloatTy(context);
+                } else {
+                    runtime_func_name = "_lfortran_read_double";
+                    type_arg = llvm::Type::getDoubleTy(context);
+                }
+                fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                                type_arg->getPointerTo(),
+                                llvm::Type::getInt32Ty(context)
+                            }, false);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                }
+                break;
+            }
+            default: {
+                std::string s_type = ASRUtils::type_to_str(type);
+                throw CodeGenError("Read function not implemented for: " + s_type);
+            }
         }
+        return fn;
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
