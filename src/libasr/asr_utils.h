@@ -494,6 +494,9 @@ static inline std::string logicalbinop_to_str_python(const ASR::logicalbinopType
 
 static inline ASR::expr_t* expr_value(ASR::expr_t *f)
 {
+    if (f == nullptr) {
+        return nullptr;
+    }
     return ASR::expr_value0(f);
 }
 
