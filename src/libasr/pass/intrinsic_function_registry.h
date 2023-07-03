@@ -50,6 +50,7 @@ enum class IntrinsicFunctions : int64_t {
     Max,
     MaxVal,
     Min,
+    MinVal,
     // ...
 };
 
@@ -84,6 +85,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Product)
         INTRINSIC_NAME_CASE(MaxVal)
+        INTRINSIC_NAME_CASE(MinVal)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -350,6 +352,26 @@ class ASRBuilder {
             }
             case ASR::ttypeType::Real: {
                 test_condition = make_Compare(make_RealCompare_t, left, Gt, right);
+                break;
+            }
+            default: {
+                throw LCompilersException("Expression type, " +
+                    std::to_string(left->type) + " not yet supported");
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, test_condition, left, right, ASRUtils::expr_type(left), value));
+    }
+
+    ASR::expr_t* ElementalMin(ASR::expr_t* left, ASR::expr_t* right,
+        const Location& loc, ASR::expr_t* value=nullptr) {
+        ASR::expr_t* test_condition = nullptr;
+        switch (ASRUtils::expr_type(left)->type) {
+            case ASR::ttypeType::Integer: {
+                test_condition = make_Compare(make_IntegerCompare_t, left, Lt, right);
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                test_condition = make_Compare(make_RealCompare_t, left, Lt, right);
                 break;
             }
             default: {
@@ -2240,6 +2262,34 @@ static inline ASR::expr_t* instantiate_MaxVal(Allocator &al, const Location &loc
 
 } // namespace MaxVal
 
+namespace MinVal {
+
+static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+    ArrIntrinsic::verify_args(x, diagnostics, ASRUtils::IntrinsicFunctions::MinVal, &ArrIntrinsic::verify_array_int_real);
+}
+
+static inline ASR::expr_t *eval_MinVal(Allocator & /*al*/,
+    const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_MinVal(
+    Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, err, ASRUtils::IntrinsicFunctions::MinVal);
+}
+
+static inline ASR::expr_t* instantiate_MinVal(Allocator &al, const Location &loc,
+    SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+    Vec<ASR::call_arg_t>& new_args, int64_t overload_id,
+    ASR::expr_t* compile_time_value) {
+    return ArrIntrinsic::instantiate_ArrIntrinsic(al, loc, scope, arg_types, new_args,
+        overload_id, compile_time_value, ASRUtils::IntrinsicFunctions::MinVal,
+        &ASRUtils::get_maximum_value_with_given_type, &ASRUtils::ASRBuilder::ElementalMin);
+}
+
+} // namespace MinVal
+
 namespace Partition {
 
     static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -2407,6 +2457,8 @@ namespace IntrinsicFunctionRegistry {
             {&MaxVal::instantiate_MaxVal, &MaxVal::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Min),
             {&Min::instantiate_Min, &Min::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinVal),
+            {&MinVal::instantiate_MinVal, &MinVal::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -2455,6 +2507,8 @@ namespace IntrinsicFunctionRegistry {
             "maxval"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Min),
             "min"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinVal),
+            "minval"},
     };
 
 
@@ -2484,6 +2538,7 @@ namespace IntrinsicFunctionRegistry {
                 {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
+                {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
 
     };
 
@@ -2520,7 +2575,8 @@ namespace IntrinsicFunctionRegistry {
         if( id == ASRUtils::IntrinsicFunctions::Any ||
             id == ASRUtils::IntrinsicFunctions::Sum ||
             id == ASRUtils::IntrinsicFunctions::Product ||
-            id == ASRUtils::IntrinsicFunctions::MaxVal) {
+            id == ASRUtils::IntrinsicFunctions::MaxVal ||
+            id == ASRUtils::IntrinsicFunctions::MinVal) {
             return 1;
         } else {
             LCOMPILERS_ASSERT(false);
