@@ -300,6 +300,7 @@
                                                         (Character 1 1 ())
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -332,6 +333,7 @@
                                             (Character 1 1 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         (Allocatable
                                             (Character 1 -2 ())

@@ -647,6 +647,11 @@ R"(#include <stdio.h>
         current_scope = current_scope_copy;
     }
 
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+        src = "";
+        this->visit_expr(*x.m_arg);
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(

@@ -263,7 +263,8 @@ public:
             if( x_m_args_i ) {
                 call_arg_var = PassUtils::create_auxiliary_variable_for_expr(x_m_args_i, arg_name, al, current_scope, assign_stmt);
             } else {
-                call_arg_var = PassUtils::create_auxiliary_variable(func_margs_i->base.loc, arg_name, al, current_scope, ASRUtils::expr_type(func_margs_i));
+                call_arg_var = PassUtils::create_auxiliary_variable(func_margs_i->base.loc, arg_name, al, current_scope,
+                    ASRUtils::duplicate_type(al, ASRUtils::expr_type(func_margs_i)));
                 return_var = call_arg_var;
             }
             if( assign_stmt ) {

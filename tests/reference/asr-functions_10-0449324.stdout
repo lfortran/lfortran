@@ -34,6 +34,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -54,6 +55,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -74,6 +76,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -104,16 +107,19 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         (Integer 4)
                                         Source
@@ -155,6 +161,7 @@
                                                         (Real 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -175,6 +182,7 @@
                                                         (Real 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -195,6 +203,7 @@
                                                         (Real 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -225,16 +234,19 @@
                                             (Real 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Real 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Real 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         (Real 4)
                                         Source
@@ -276,6 +288,7 @@
                                                         (Real 8)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -296,6 +309,7 @@
                                                         (Real 8)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -316,6 +330,7 @@
                                                         (Real 8)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -346,16 +361,19 @@
                                             (Real 8)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Real 8)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Real 8)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         (Real 8)
                                         Source
@@ -403,6 +421,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -423,6 +442,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -443,6 +463,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -463,6 +484,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -483,6 +505,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -503,6 +526,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -578,8 +602,30 @@
                         [(FunctionCall
                             6 mergegp@mergei32
                             6 mergegp
-                            [((Var 6 a1))
-                            ((Var 6 b1))
+                            [((ArrayPhysicalCast
+                                (Var 6 a1)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 b1)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
                             (())]
                             (Integer 4)
                             ()
@@ -593,9 +639,42 @@
                         [(FunctionCall
                             6 mergegp@mergei32
                             6 mergegp
-                            [((Var 6 a1))
-                            ((Var 6 b1))
-                            ((Var 6 m1))]
+                            [((ArrayPhysicalCast
+                                (Var 6 a1)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 b1)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 m1)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))]
                             (Integer 4)
                             ()
                             ()
@@ -608,9 +687,42 @@
                         [(FunctionCall
                             6 mergegp@mergei32
                             6 mergegp
-                            [((Var 6 a1))
-                            ((Var 6 b1))
-                            ((Var 6 m1))]
+                            [((ArrayPhysicalCast
+                                (Var 6 a1)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 b1)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 m1)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 4 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))]
                             (Integer 4)
                             ()
                             ()
@@ -623,8 +735,30 @@
                         [(FunctionCall
                             6 mergegp@merger32
                             6 mergegp
-                            [((Var 6 a2))
-                            ((Var 6 b2))
+                            [((ArrayPhysicalCast
+                                (Var 6 a2)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 b2)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
                             (())]
                             (Real 4)
                             ()
@@ -638,9 +772,42 @@
                         [(FunctionCall
                             6 mergegp@merger32
                             6 mergegp
-                            [((Var 6 a2))
-                            ((Var 6 b2))
-                            ((Var 6 m2))]
+                            [((ArrayPhysicalCast
+                                (Var 6 a2)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 b2)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 m2)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))]
                             (Real 4)
                             ()
                             ()
@@ -653,9 +820,42 @@
                         [(FunctionCall
                             6 mergegp@merger32
                             6 mergegp
-                            [((Var 6 a2))
-                            ((Var 6 b2))
-                            ((Var 6 m2))]
+                            [((ArrayPhysicalCast
+                                (Var 6 a2)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 b2)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 6 m2)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 5 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))]
                             (Real 4)
                             ()
                             ()

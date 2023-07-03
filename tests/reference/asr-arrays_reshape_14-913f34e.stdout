@@ -27,6 +27,7 @@
                                                         (IntegerConstant 16 (Integer 4)))
                                                         ((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 16 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -47,6 +48,7 @@
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 256 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -71,6 +73,7 @@
                                                         (IntegerConstant 16 (Integer 4)))
                                                         ((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 16 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -91,6 +94,7 @@
                                                         (Real 8)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -191,6 +195,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 2 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -211,6 +216,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 3 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -225,6 +231,7 @@
                                             (Real 8)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         ()
                                         Source
@@ -370,11 +377,23 @@
                                         (Var 4 a)
                                         (ArrayReshape
                                             (Var 4 b)
-                                            (Var 4 newshape)
+                                            (ArrayPhysicalCast
+                                                (Var 4 newshape)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            )
                                             (Array
                                                 (Real 8)
                                                 [(()
                                                 ())]
+                                                FixedSizeArray
                                             )
                                             ()
                                         )
@@ -518,11 +537,23 @@
                                         (Var 4 c)
                                         (ArrayReshape
                                             (Var 4 d)
-                                            (Var 4 newshape1)
+                                            (ArrayPhysicalCast
+                                                (Var 4 newshape1)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 3 (Integer 4)))]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            )
                                             (Array
                                                 (Real 8)
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                             ()
                                         )
@@ -676,6 +707,7 @@
                                                         ())
                                                         (()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -696,6 +728,7 @@
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 256 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -720,6 +753,7 @@
                                                         (IntegerConstant 16 (Integer 4)))
                                                         ((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 16 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -740,6 +774,7 @@
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 4096 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -840,6 +875,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 1 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -860,6 +896,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 1 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -876,6 +913,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         ()
                                         Source
@@ -923,11 +961,23 @@
                                         (Var 3 b)
                                         (ArrayReshape
                                             (Var 3 a)
-                                            (Var 3 newshape)
+                                            (ArrayPhysicalCast
+                                                (Var 3 newshape)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            )
                                             (Array
                                                 (Real 8)
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                             ()
                                         )
@@ -1152,11 +1202,23 @@
                                         (Var 3 d)
                                         (ArrayReshape
                                             (Var 3 c)
-                                            (Var 3 newshape1)
+                                            (ArrayPhysicalCast
+                                                (Var 3 newshape1)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 1 (Integer 4)))]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            )
                                             (Array
                                                 (Real 8)
                                                 [(()
                                                 ())]
+                                                FixedSizeArray
                                             )
                                             ()
                                         )
@@ -1353,6 +1415,7 @@
                                                         (IntegerConstant 16 (Integer 4)))
                                                         ((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 16 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -1373,6 +1436,7 @@
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 4096 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -1532,7 +1596,20 @@
                                     (SubroutineCall
                                         2 test_nd_to_1d
                                         ()
-                                        [((Var 5 a))]
+                                        [((ArrayPhysicalCast
+                                            (Var 5 a)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Real 8)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 16 (Integer 4)))
+                                                ((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 16 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))]
                                         ()
                                     )
                                     (DoLoop
@@ -1670,7 +1747,18 @@
                                     (SubroutineCall
                                         2 test_1d_to_nd
                                         ()
-                                        [((Var 5 d))]
+                                        [((ArrayPhysicalCast
+                                            (Var 5 d)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Real 8)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 4096 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))]
                                         ()
                                     )]
                                     ()

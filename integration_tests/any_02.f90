@@ -10,7 +10,7 @@ program any_02
     c = a == b
 
     c6 = any(a == b, 1)
-    print *, c6
+    print *, "c6", c6
     do i = lbound(c6, 1), ubound(c6, 1)
         do j = lbound(c6, 2), ubound(c6, 2)
             if (.not. c6(i, j)) error stop
@@ -19,7 +19,7 @@ program any_02
 
 
     c5 = any(c, 2)
-    print *, c5
+    print *, "c5", c5
     do j = lbound(c5, 2), ubound(c5, 2)
         if (.not. c5(1, j)) error stop
     end do
@@ -28,7 +28,7 @@ program any_02
     end do
 
     c4 = any(c, 3)
-    print *, c4
+    print *, "c4", c4
     do j = lbound(c4, 2), ubound(c4, 2)
         if (.not. c4(1, j)) error stop
     end do
@@ -37,19 +37,19 @@ program any_02
     end do
 
     c3 = any(any(c, dim=1), 1)
-    print *, c3
+    print *, "c3", c3
     do i = lbound(c3, 1), ubound(c3, 1)
         if (.not. c3(i)) error stop
     end do
 
     c2 = any(any(c, 1), 2)
-    print *, c2
+    print *, "c2", c2
     do i = lbound(c2, 1), ubound(c2, 1)
         if (.not. c2(i)) error stop
     end do
 
     c1 = any(any(c, 2), dim=2)
-    print *, c1
+    print *, "c1", c1
     if (.not. c1(1)) error stop
     if (c1(2)) error stop
 

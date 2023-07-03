@@ -54,6 +54,7 @@
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 5 (Integer 4)))]
+                                            FixedSizeArray
                                         )
                                         ColMajor
                                     )
@@ -82,6 +83,7 @@
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 5 (Integer 4)))]
+                                            FixedSizeArray
                                         )
                                         ColMajor
                                     )
@@ -90,6 +92,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -161,6 +164,7 @@
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 5 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )

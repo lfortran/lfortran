@@ -25,6 +25,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -45,6 +46,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -59,11 +61,13 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         ()
                                         Source
@@ -103,6 +107,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -123,6 +128,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -141,8 +147,30 @@
                     (SubroutineCall
                         2 f
                         ()
-                        [((Var 2 x))
-                        ((Var 2 y))]
+                        [((ArrayPhysicalCast
+                            (Var 2 x)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))
+                        ((ArrayPhysicalCast
+                            (Var 2 y)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))]
                         ()
                     )
                     (Print

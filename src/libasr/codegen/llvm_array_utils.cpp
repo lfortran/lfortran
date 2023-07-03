@@ -91,8 +91,7 @@ namespace LCompilers {
         bool SimpleCMODescriptor::is_array(ASR::ttype_t* asr_type) {
             std::string asr_type_code = ASRUtils::get_type_code(
                 ASRUtils::type_get_past_allocatable(asr_type), false, false);
-            return (tkr2array.find(asr_type_code) != tkr2array.end() &&
-                    ASRUtils::is_array(asr_type));
+            return ASRUtils::is_array(asr_type);
         }
 
         llvm::Value* SimpleCMODescriptor::
@@ -541,7 +540,7 @@ namespace LCompilers {
             // bool check_for_bounds = is_explicit_shape(v);
             bool check_for_bounds = false;
             llvm::Value* idx = nullptr;
-            if( data_only ) {
+            if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds);
                 if( is_fixed_size ) {
@@ -769,8 +768,7 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::copy_array_data_only(llvm::Value* src, llvm::Value* dest,
-            llvm::Module* module, ASR::ttype_t* asr_data_type, llvm::Value* num_elements) {
-            llvm::Type* llvm_data_type = tkr2array[ASRUtils::get_type_code(asr_data_type, false, false)].second;
+            llvm::Module* module, llvm::Type* llvm_data_type, llvm::Value* num_elements) {
             llvm::DataLayout data_layout(module);
             uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
             llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));

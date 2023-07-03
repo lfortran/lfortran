@@ -181,6 +181,7 @@
                                                                         )
                                                                         [(()
                                                                         ())]
+                                                                        DescriptorArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -197,6 +198,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )]
                                                         (TypeParameter
                                                             t

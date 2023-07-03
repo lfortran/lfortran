@@ -57,6 +57,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 5 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -213,6 +214,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 5 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ()
                         )
@@ -228,6 +230,7 @@
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 5 (Integer 4)))]
+                                    FixedSizeArray
                                 )
                                 ()
                             )
@@ -256,6 +259,7 @@
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 5 (Integer 4)))]
+                                    FixedSizeArray
                                 )
                                 ()
                             )
@@ -314,6 +318,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                 )
@@ -344,6 +349,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                 )
@@ -374,6 +380,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                 )
@@ -404,6 +411,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                 )
@@ -434,6 +442,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                 )
@@ -488,6 +497,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 5 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ()
                         )
@@ -499,6 +509,7 @@
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 5 (Integer 4)))]
+                                    FixedSizeArray
                                 )
                                 ()
                             )

@@ -226,6 +226,7 @@
                                         )
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -356,7 +357,20 @@
                         (FunctionCall
                             8 fnv_1a_string_t
                             ()
-                            [((Var 8 string_var))
+                            [((ArrayPhysicalCast
+                                (Var 8 string_var)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Struct
+                                        8 string_t
+                                    )
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
                             ((IntegerConstant 2166136261 (Integer 8)))]
                             (Integer 8)
                             ()
@@ -369,7 +383,20 @@
                         (FunctionCall
                             8 fnv_1a_string_t
                             ()
-                            [((Var 8 string_var))
+                            [((ArrayPhysicalCast
+                                (Var 8 string_var)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Struct
+                                        8 string_t
+                                    )
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
                             (())]
                             (Integer 8)
                             ()
@@ -402,7 +429,20 @@
                         (FunctionCall
                             8 string_cat
                             ()
-                            [((Var 8 string_var))
+                            [((ArrayPhysicalCast
+                                (Var 8 string_var)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Struct
+                                        8 string_t
+                                    )
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
                             ((StringConstant
                                 ":"
                                 (Character 1 1 ())
@@ -464,7 +504,20 @@
                         (FunctionCall
                             8 string_cat
                             ()
-                            [((Var 8 string_var))
+                            [((ArrayPhysicalCast
+                                (Var 8 string_var)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Struct
+                                        8 string_t
+                                    )
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
                             (())]
                             (Allocatable
                                 (Character 1 -2 ())
@@ -818,6 +871,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -850,6 +904,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Integer 8)]
                                         (Integer 8)
@@ -1406,6 +1461,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -1422,6 +1478,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Character 1 -1 ())]
                                         (Allocatable

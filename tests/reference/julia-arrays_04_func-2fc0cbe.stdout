@@ -26,7 +26,7 @@ function main()
     a[1] = Float32(3)
     a[2] = Float32(2)
     a[3] = Float32(1)
-    b = sum(a)
+    b = sum(Float32(b))
     if abs(Float32(b - Float32(6))) >   1.00000000000000008e-05
         println(Base.stderr, "ERROR STOP")
         exit(1)

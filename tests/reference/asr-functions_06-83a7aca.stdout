@@ -93,6 +93,7 @@
                                     (Integer 4)
                                     ()
                                 ))]
+                                PointerToDataArray
                             )
                             ()
                             ()
@@ -114,6 +115,7 @@
                                     (Integer 4)
                                     ()
                                 ))]
+                                PointerToDataArray
                             )
                             ()
                             ()
@@ -165,6 +167,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     Source
@@ -204,6 +207,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
+                                            PointerToDataArray
                                         )
                                         Source
                                         Implementation
@@ -285,6 +289,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     Source
@@ -324,6 +329,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
+                                            PointerToDataArray
                                         )
                                         Source
                                         Implementation

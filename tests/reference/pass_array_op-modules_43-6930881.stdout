@@ -35,6 +35,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -115,6 +116,7 @@
                                                         (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -148,6 +150,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -169,6 +172,7 @@
                                                         (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -192,6 +196,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -210,6 +215,7 @@
                                                 )
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )]
                                         ()
@@ -356,6 +362,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
+                                                        PointerToDataArray
                                                     )
                                                 )
                                                 ()
@@ -384,6 +391,7 @@
                                                             (Logical 4)
                                                             [((IntegerConstant 1 (Integer 4))
                                                             (IntegerConstant 10 (Integer 4)))]
+                                                            FixedSizeArray
                                                         )
                                                         ()
                                                     )
@@ -401,6 +409,7 @@
                                                                         (Logical 4)
                                                                         [((IntegerConstant 1 (Integer 4))
                                                                         (IntegerConstant 10 (Integer 4)))]
+                                                                        FixedSizeArray
                                                                     )
                                                                     ()
                                                                 )
@@ -408,6 +417,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
+                                                            PointerToDataArray
                                                         )
                                                     )
                                                     ()
@@ -419,6 +429,7 @@
                                                         )
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 2 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                 )
                                                 ColMajor

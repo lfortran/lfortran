@@ -20,6 +20,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -56,6 +57,7 @@
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -96,6 +98,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -116,6 +119,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -286,9 +290,42 @@
                         (FunctionCall
                             2 merge@merger32
                             2 merge
-                            [((Var 2 tsource))
-                            ((Var 2 fsource))
-                            ((Var 2 mask))]
+                            [((ArrayPhysicalCast
+                                (Var 2 tsource)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 2 fsource)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 2 mask)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))]
                             (Real 4)
                             ()
                             ()

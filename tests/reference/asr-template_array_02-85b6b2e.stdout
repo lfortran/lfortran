@@ -138,6 +138,7 @@
                                                                         )
                                                                         [(()
                                                                         ())]
+                                                                        DescriptorArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -188,6 +189,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )]
                                                         (TypeParameter
                                                             t
@@ -480,6 +482,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -526,6 +529,7 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         (Integer 4)
                                         Source
@@ -808,6 +812,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -894,7 +899,18 @@
                                         (FunctionCall
                                             7 mysum_integer
                                             ()
-                                            [((Var 15 a))]
+                                            [((ArrayPhysicalCast
+                                                (Var 15 a)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 10 (Integer 4)))]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))]
                                             (Integer 4)
                                             ()
                                             ()

@@ -30,6 +30,7 @@
                                             (Logical 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
                                         )
                                         ColMajor
                                     )
@@ -50,6 +51,7 @@
                                             (Logical 4)
                                             [((IntegerConstant 1 (Integer 4))
                                             (IntegerConstant 3 (Integer 4)))]
+                                            FixedSizeArray
                                         )
                                         ColMajor
                                     )
@@ -58,6 +60,7 @@
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -85,6 +88,7 @@
                                                 (Logical 4)
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 2 (Integer 4)))]
+                                                FixedSizeArray
                                             )
                                             ColMajor
                                         )
@@ -126,6 +130,7 @@
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 2 (Integer 4)))]
+                                    FixedSizeArray
                                 )
                                 ColMajor
                             )
@@ -150,6 +155,7 @@
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
                                 )
                                 ColMajor
                             )
@@ -174,6 +180,7 @@
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 1 (Integer 4)))]
+                                    FixedSizeArray
                                 )
                                 ColMajor
                             )
@@ -224,6 +231,7 @@
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 2 (Integer 4)))]
+                                    FixedSizeArray
                                 )
                                 ColMajor
                             )

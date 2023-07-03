@@ -88,11 +88,14 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
 
         void transform_functions_with_optional_arguments(ASR::Function_t* s) {
             Vec<ASR::expr_t*> new_args;
+            Vec<ASR::ttype_t*> new_arg_types;
+            new_arg_types.reserve(al, s->n_args);
             new_args.reserve(al, s->n_args);
             ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, s->base.base.loc, 4));
             for( size_t i = 0; i < s->n_args; i++ ) {
                 ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(s->m_args[i])->m_v;
                 new_args.push_back(al, s->m_args[i]);
+                new_arg_types.push_back(al, ASRUtils::get_FunctionType(*s)->m_arg_types[i]);
                 if( is_presence_optional(arg_sym) ) {
                     std::string presence_bit_arg_name = "is_" + std::string(ASRUtils::symbol_name(arg_sym)) + "_present_";
                     presence_bit_arg_name = s->m_symtab->get_unique_name(presence_bit_arg_name);
@@ -100,8 +103,13 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
                                                         arg_sym->base.loc, presence_bit_arg_name,
                                                         al, s->m_symtab, logical_type, ASR::intentType::In);
                     new_args.push_back(al, presence_bit_arg);
+                    new_arg_types.push_back(al, logical_type);
                 }
             }
+
+            ASR::FunctionType_t* function_type = ASRUtils::get_FunctionType(*s);
+            function_type->m_arg_types = new_arg_types.p;
+            function_type->n_arg_types = new_arg_types.size();
             s->m_args = new_args.p;
             s->n_args = new_args.size();
             ReplacePresentCallsVisitor present_replacer(al, s);
@@ -334,7 +342,7 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
         if( !fill_new_args(new_args, al, *x, current_scope) ) {
             return ;
         }
-        *current_expr = ASRUtils::EXPR(ASR::make_FunctionCall_t(al,
+        *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
                             new_args.p, new_args.size(), x->m_type, x->m_value,
                             x->m_dt));
@@ -376,7 +384,7 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
             if( !fill_new_args(new_args, al, x, current_scope) ) {
                 return ;
             }
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al,
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
                                     x.base.base.loc, x.m_name, x.m_original_name,
                                     new_args.p, new_args.size(), x.m_dt)));
         }

@@ -457,6 +457,10 @@ public:
                     " but isn't found in its dependency list.");
         }
 
+        require(ASRUtils::get_FunctionType(x)->n_arg_types == x.n_args,
+            "Number of argument types in FunctionType must be exactly same as "
+            "number of arguments in the function");
+
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
         function_dependencies = function_dependencies_copy;
@@ -828,6 +832,15 @@ public:
                 visit_expr(*(x.m_args[i].m_value));
             }
         }
+    }
+
+    void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_ArrayPhysicalCast(x);
+        require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
+            "Destination physical type conflicts with the physical type of target");
+        require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
+            "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
+            + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {

@@ -349,6 +349,7 @@
                                                     )
                                                     [(()
                                                     ())]
+                                                    DescriptorArray
                                                 )
                                             )
                                             ()
@@ -375,6 +376,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                 )
                                                 ()
@@ -447,6 +449,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()

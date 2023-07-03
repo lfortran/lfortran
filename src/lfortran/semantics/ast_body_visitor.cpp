@@ -984,7 +984,7 @@ public:
             throw SemanticError("Only a pointer variable can be associated with another variable.", x.base.base.loc);
         }
         if( ASRUtils::types_equal(target_type, value_type) ) {
-            tmp = ASR::make_Associate_t(al, x.base.base.loc, target, value);
+            tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
         }
     }
 
@@ -1023,7 +1023,7 @@ public:
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
             ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, v->loc, ASR::down_cast<ASR::symbol_t>(v)));
             if( create_associate_stmt ) {
-                ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASR::make_Associate_t(al, tmp_expr->base.loc, target_var, tmp_expr));
+                ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, tmp_expr->base.loc, target_var, tmp_expr));
                 body.push_back(al, associate_stmt);
             } else {
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, tmp_expr->base.loc, target_var, tmp_expr, nullptr));
@@ -1430,7 +1430,7 @@ public:
                     Vec<ASR::stmt_t*> class_stmt_body;
                     class_stmt_body.reserve(al, class_stmt->n_body);
                     if( assoc_sym ) {
-                        class_stmt_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                        class_stmt_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
                             class_stmt->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             class_stmt->base.base.loc, assoc_sym)), m_selector)) );
                     }
@@ -1473,7 +1473,7 @@ public:
                     Vec<ASR::stmt_t*> type_stmt_name_body;
                     type_stmt_name_body.reserve(al, type_stmt_name->n_body);
                     if( assoc_sym ) {
-                        type_stmt_name_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                        type_stmt_name_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
                             type_stmt_name->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             type_stmt_name->base.base.loc, assoc_sym)), m_selector)) );
                     }
@@ -1503,7 +1503,7 @@ public:
                         selector_type = determine_type(type_stmt_type->base.base.loc,
                                                        assoc_variable_name,
                                                        type_stmt_type->m_vartype, false, false, m_dims,
-                                                       type_declaration);
+                                                       type_declaration, ASR::abiType::Source);
                         SetChar assoc_deps;
                         assoc_deps.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, assoc_deps, selector_type);
@@ -1514,7 +1514,7 @@ public:
                     Vec<ASR::stmt_t*> type_stmt_type_body;
                     type_stmt_type_body.reserve(al, type_stmt_type->n_body);
                     if( assoc_sym ) {
-                        type_stmt_type_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                        type_stmt_type_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
                             type_stmt_type->base.base.loc, ASRUtils::EXPR(ASR::make_Var_t(al,
                             type_stmt_type->base.base.loc, assoc_sym)), m_selector)) );
                     }
@@ -2589,7 +2589,7 @@ public:
         if( f ) {
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
         }
-        tmp = ASR::make_SubroutineCall_t(al, x.base.base.loc,
+        tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, args.p, args.size(), v_expr);
     }
 

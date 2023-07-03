@@ -116,6 +116,7 @@
                                         (Real 8)
                                         [(()
                                         ())]
+                                        DescriptorArray
                                     )
                                     ()
                                     Source
@@ -136,6 +137,7 @@
                                         (Real 8)
                                         [(()
                                         ())]
+                                        DescriptorArray
                                     )
                                     ()
                                     Source
@@ -156,6 +158,7 @@
                                         (Real 8)
                                         [(()
                                         ())]
+                                        DescriptorArray
                                     )
                                     ()
                                     Source
@@ -170,16 +173,19 @@
                             (Real 8)
                             [(()
                             ())]
+                            DescriptorArray
                         )
                         (Array
                             (Real 8)
                             [(()
                             ())]
+                            DescriptorArray
                         )
                         (Array
                             (Real 8)
                             [(()
                             ())]
+                            DescriptorArray
                         )]
                         (Integer 4)
                         Source
