@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            real_dp:
+            real_dp_01:
                 (Program
                     (SymbolTable
                         2
@@ -56,7 +56,7 @@
                                     .false.
                                 )
                         })
-                    real_dp
+                    real_dp_01
                     []
                     [(=
                         (Var 2 zero)
