@@ -942,10 +942,8 @@ public:
                                 // TODO: if current_requirement_type_parameters can be replaced with
                                 // std::vector<ASR::ttype_t*> then use duplicate instead
                                 type = ASRUtils::TYPE(ASR::make_TypeParameter_t(al, x.base.base.loc, param->m_param));
-                                if( param_n_dims > 0 ) {
-                                    type = ASRUtils::make_Array_t_util(al, x.base.base.loc, type,
-                                                param_m_dims, param_n_dims);
-                                }
+                                type = ASRUtils::make_Array_t_util(al, x.base.base.loc, type,
+                                    param_m_dims, param_n_dims);
                             }
                         }
                     } else if (is_template) {
@@ -2314,10 +2312,8 @@ public:
                     current_template_map[tp->m_param] = name;
                     t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
                         tp->base.base.loc, s2c(al, name)));
-                    if( tp_n_dims > 0 ) {
-                        t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
-                            t, tp_m_dims, tp_n_dims);
-                    }
+                    t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
+                        t, tp_m_dims, tp_n_dims);
                 }
                 ASR::asr_t* new_v = ASR::make_Variable_t(al, v->base.base.loc,
                     current_scope, s2c(al, name), v->m_dependencies,
@@ -2347,10 +2343,8 @@ public:
                         if (current_template_map.find(tp->m_param) != current_template_map.end()) {
                             param_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
                                 al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param])));
-                            if( tp_n_dims > 0 ) {
-                                param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
-                                    param_type, tp_m_dims, tp_n_dims);
-                            }
+                            param_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
+                                param_type, tp_m_dims, tp_n_dims);
                         }
                     }
 
@@ -2394,10 +2388,8 @@ public:
                         if (current_template_map.find(tp->m_param) != current_template_map.end()) {
                             return_type = ASRUtils::TYPE(ASR::make_TypeParameter_t(
                                 al, tp->base.base.loc, s2c(al, current_template_map[tp->m_param])));
-                            if( tp_n_dims > 0 ) {
-                                return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
-                                    return_type, tp_m_dims, tp_n_dims);
-                            }
+                            return_type = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
+                                return_type, tp_m_dims, tp_n_dims);
                         }
                     }
                     SetChar variable_dependencies_vec;

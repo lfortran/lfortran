@@ -333,7 +333,7 @@ class ASRBuilder {
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
                       ASR::ttype_t* return_type) {
-        return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+        return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                 s, s, args.p, args.size(), return_type, nullptr, nullptr));
     }
 
@@ -341,13 +341,13 @@ class ASRBuilder {
                       ASR::ttype_t* return_type) {
         Vec<ASR::call_arg_t> args_; args_.reserve(al, 2);
         visit_expr_list(al, args, args_);
-        return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+        return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                 s, s, args_.p, args_.size(), return_type, nullptr, nullptr));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
                       ASR::ttype_t* return_type, ASR::expr_t* value) {
-        return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+        return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                 s, s, args.p, args.size(), return_type, value, nullptr));
     }
 
@@ -551,7 +551,7 @@ static inline ASR::asr_t* create_UnaryFunction(Allocator& al, const Location& lo
         value = eval_function(al, loc, arg_values);
     }
 
-    return ASR::make_IntrinsicFunction_t(al, loc, intrinsic_id,
+    return ASRUtils::make_IntrinsicFunction_t_util(al, loc, intrinsic_id,
         args.p, args.n, overload_id, type, value);
 }
 
@@ -1034,7 +1034,7 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
     }
     ASR::expr_t* compile_time_value = eval_list_index(al, loc, arg_values);
     ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-    return ASR::make_IntrinsicFunction_t(al, loc,
+    return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListIndex),
             args.p, args.size(), 0, to_type, compile_time_value);
 }
@@ -1074,7 +1074,7 @@ static inline ASR::asr_t* create_ListReverse(Allocator& al, const Location& loc,
     }
     ASR::expr_t* compile_time_value = eval_list_reverse(al, loc, arg_values);
     return ASR::make_Expr_t(al, loc,
-            ASRUtils::EXPR(ASR::make_IntrinsicFunction_t(al, loc,
+            ASRUtils::EXPR(ASRUtils::make_IntrinsicFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListReverse),
             args.p, args.size(), 0, nullptr, compile_time_value)));
 }
@@ -1212,7 +1212,7 @@ static inline ASR::asr_t* create_Any(
         any_args.push_back(al, axis);
     }
 
-    return ASR::make_IntrinsicFunction_t(al, loc,
+    return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
         static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
         any_args.p, any_args.n, overload_id, logical_return_type, value);
 }
@@ -1818,7 +1818,7 @@ static inline ASR::asr_t* create_Sum(
         sum_args.push_back(al, arg3);
     }
 
-    return ASR::make_IntrinsicFunction_t(al, loc,
+    return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
         static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sum),
         sum_args.p, sum_args.n, overload_id, return_type, value);
 }
@@ -2282,7 +2282,7 @@ static inline ASR::asr_t* create_Product(
         product_args.push_back(al, arg3);
     }
 
-    return ASR::make_IntrinsicFunction_t(al, loc,
+    return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
         static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Product),
         product_args.p, product_args.n, overload_id, return_type, value);
 }
@@ -3082,7 +3082,7 @@ namespace Partition {
             value = eval_Partition(al, loc, s_str, s_sep);
         }
 
-        return ASR::make_IntrinsicFunction_t(al, loc,
+        return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Partition),
             e_args.p, e_args.n, 0, return_type, value);
     }

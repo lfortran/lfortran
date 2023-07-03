@@ -409,10 +409,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             case ASR::exprType::IntegerCompare: {
                 ASR::ttype_t* logical_type_t = ASRUtils::TYPE(
                     ASR::make_Logical_t(al, loc, 4));
-                if( result_dims.size() > 0 ) {
-                    logical_type_t = ASRUtils::make_Array_t_util(al, loc,
-                        logical_type_t, result_dims.p, result_dims.size());
-                }
+                logical_type_t = ASRUtils::make_Array_t_util(al, loc,
+                    logical_type_t, result_dims.p, result_dims.size());
                 return logical_type_t;
             }
             default: {
@@ -486,7 +484,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             result_counter, "_array_section_pointer_", loc,
             x_m_type, al, current_scope);
         result_counter += 1;
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(
             al, loc, array_section_pointer, *current_expr)));
         *current_expr = array_section_pointer;
     }
@@ -985,7 +983,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             Vec<ASR::dimension_t> empty_dim;
             empty_dim.reserve(al, 1);
             ASR::ttype_t* dim_less_type = ASRUtils::duplicate_type(al, x->m_type, &empty_dim);
-            ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASR::make_IntrinsicFunction_t(al, loc,
+            ASR::expr_t* op_el_wise = ASRUtils::EXPR(ASRUtils::make_IntrinsicFunction_t_util(al, loc,
                 x->m_intrinsic_id, ref_args.p, ref_args.size(), x->m_overload_id,
                 dim_less_type, nullptr));
             ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
@@ -1038,6 +1036,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(v_sym);
                     is_allocatable = ASR::is_a<ASR::Allocatable_t>(*v->m_type);
                     if( is_allocatable ) {
+                        result_var_type = ASRUtils::duplicate_type_with_empty_dims(al, result_var_type);
                         result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
                             al, loc, ASRUtils::type_get_past_allocatable(result_var_type)));
                     }
@@ -1067,7 +1066,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             result_arg.loc = result_var->base.loc;
             result_arg.m_value = *current_expr;
             s_args.push_back(al, result_arg);
-            ASR::stmt_t* subrout_call = ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+            ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
                                             x->m_name, nullptr, s_args.p, s_args.size(), nullptr));
             pass_result.push_back(al, subrout_call);
 
@@ -1177,7 +1176,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 empty_dim.reserve(al, 1);
                 ASR::ttype_t* dim_less_type = ASRUtils::duplicate_type(al, x->m_type, &empty_dim);
                 ASR::expr_t* op_el_wise = nullptr;
-                op_el_wise = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                op_el_wise = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
                                 x->m_name, x->m_original_name, ref_args.p, ref_args.size(), dim_less_type,
                                 nullptr, x->m_dt));
                 ASR::expr_t* res = PassUtils::create_array_ref(result_var, idx_vars, al);
