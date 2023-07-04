@@ -128,6 +128,20 @@ public:
         }
         global_scope = nullptr;
         tmp = tmp0;
+        if (pre_declared_array_dims.size() > 0) {
+            std::string sym_name = "";
+            for (auto &it: pre_declared_array_dims) {
+                if (it.second == 2) continue;
+                if (sym_name.empty()) {
+                     sym_name += it.first;
+                } else {
+                     sym_name += ", " + it.first;
+                }
+            }
+            if (!sym_name.empty()) {
+                throw SemanticError(sym_name + " is/are used as dimensions but not declared", x.base.base.loc);
+            }
+        }
     }
 
     void visit_Private(const AST::Private_t&) {
@@ -2137,7 +2151,7 @@ public:
             throw SemanticError("Too many parameters passed to the '" +
                 require_name + "'", x.base.base.loc);
         }
-        
+
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -2538,10 +2552,8 @@ public:
                     context_map[tp->m_param] = name;
                     t = ASRUtils::TYPE(ASR::make_TypeParameter_t(al,
                         tp->base.base.loc, s2c(al, name)));
-                    if( tp_n_dims > 0 ) {
-                        t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
-                            t, tp_m_dims, tp_n_dims);
-                    }
+                    t = ASRUtils::make_Array_t_util(al, tp->base.base.loc,
+                        t, tp_m_dims, tp_n_dims);
                 }
                 ASR::asr_t* new_v = ASR::make_Variable_t(al, v->base.base.loc,
                     current_scope, s2c(al, name), v->m_dependencies,

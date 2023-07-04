@@ -6,4 +6,3 @@ integer, parameter :: B(5) = [1, 3, 10, 2, 5]
 print *, A
 print *, B
 end
-

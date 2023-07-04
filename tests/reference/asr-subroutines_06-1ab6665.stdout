@@ -158,6 +158,7 @@
                                                         (Logical 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -189,6 +190,7 @@
                                             (Logical 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         ()
                                         Source

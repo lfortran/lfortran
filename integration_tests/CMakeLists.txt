@@ -332,6 +332,7 @@ RUN(NAME arrays_22 LABELS gfortran llvm)
 RUN(NAME arrays_23 LABELS gfortran llvm wasm NOFAST)
 RUN(NAME arrays_24 LABELS gfortran llvm NOFAST)
 RUN(NAME arrays_26 LABELS gfortran llvm)
+RUN(NAME arrays_27 LABELS gfortran llvm)
 
 # GFortran
 RUN(NAME arrays_02 LABELS gfortran)
@@ -351,6 +352,8 @@ RUN(NAME arrays_16_func LABELS gfortran llvm NOFAST)
 
 RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
+RUN(NAME arrays_intrin_03 LABELS gfortran llvm NOFAST) # maxval
+RUN(NAME arrays_intrin_04 LABELS gfortran llvm NOFAST) # maxval
 RUN(NAME any_01 LABELS gfortran)
 RUN(NAME any_02 LABELS gfortran llvm NOFAST)
 RUN(NAME sum_01 LABELS gfortran llvm NOFAST)
@@ -439,9 +442,11 @@ RUN(NAME intrinsics_48 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_49 LABELS gfortran llvm)
 RUN(NAME intrinsics_50 LABELS gfortran llvm NOFAST)
 RUN(NAME intrinsics_51 LABELS gfortran llvm NOFAST)
-RUN(NAME intrinsics_52 LABELS gfortran llvm) # min0, max0
+RUN(NAME intrinsics_52 LABELS gfortran llvm) #max0, min0
 RUN(NAME intrinsics_53 LABELS gfortran llvm NOFAST) # repeat
+RUN(NAME intrinsics_54 LABELS gfortran llvm) #max0
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
+RUN(NAME intrinsics_55 LABELS gfortran llvm NOFAST) #min
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -689,7 +694,8 @@ RUN(NAME associate_08 LABELS gfortran)
 RUN(NAME associate_09 LABELS gfortran llvm NOFAST)
 RUN(NAME associate_10 LABELS gfortran llvm NOFAST)
 
-RUN(NAME real_dp LABELS gfortran llvm wasm)
+RUN(NAME real_dp_01 LABELS gfortran llvm wasm)
+RUN(NAME real_dp_02 LABELS gfortran llvm wasm)
 RUN(NAME bin_op_real_dp LABELS gfortran llvm)
 RUN(NAME const_real_dp LABELS gfortran llvm wasm)
 RUN(NAME real_dp_param LABELS gfortran llvm wasm)
@@ -872,6 +878,7 @@ RUN(NAME implicit_deallocate_01 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm NOFAST)
 RUN(NAME write_02 LABELS gfortran llvm NOFAST)
+RUN(NAME write_03 LABELS gfortran llvmImplicit NOFAST)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm)
 
@@ -917,6 +924,9 @@ RUN(NAME common_06 LABELS gfortran llvm llvmImplicit)
 RUN(NAME common_07 LABELS gfortran llvmImplicit)
 RUN(NAME common_08 LABELS gfortran llvmImplicit)
 RUN(NAME common_09 LABELS gfortran llvm)
+RUN(NAME common_10 LABELS gfortran llvm)
+RUN(NAME common_11 LABELS gfortran llvm)
+
 
 RUN(NAME statement_01 LABELS gfortran llvmImplicit)
 RUN(NAME statement_02 LABELS gfortran llvmImplicit)
@@ -934,3 +944,5 @@ RUN(NAME save_03 LABELS gfortran llvm)
 RUN(NAME entry_01 LABELS gfortran llvm)
 RUN(NAME entry_02 LABELS gfortran llvm)
 RUN(NAME entry_03 LABELS gfortran llvm)
+
+RUN(NAME character_01 LABELS gfortran llvm)

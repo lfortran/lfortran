@@ -24,6 +24,7 @@
                                         (IntegerConstant 7 (Integer 4)))
                                         ((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 7 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -50,6 +51,7 @@
                                         (IntegerConstant 4 (Integer 4)))
                                         ((IntegerConstant 4 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -72,6 +74,7 @@
                                         (IntegerConstant 5 (Integer 4)))
                                         ((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 7 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -92,6 +95,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source

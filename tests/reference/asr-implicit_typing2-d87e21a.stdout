@@ -20,6 +20,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (Var 2 n))]
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
@@ -40,6 +41,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (Var 2 n))]
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
@@ -109,6 +111,7 @@
                                 (Integer 4)
                                 ()
                             ))]
+                            PointerToDataArray
                         )]
                         ()
                         Source
@@ -168,6 +171,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))]
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
@@ -188,6 +192,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (Var 3 n))]
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
@@ -273,6 +278,7 @@
                                 (Integer 4)
                                 ()
                             ))]
+                            PointerToDataArray
                         )]
                         (Integer 4)
                         Source

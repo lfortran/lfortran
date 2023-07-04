@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <filesystem>
-
+#include <random>
 #define CLI11_HAS_FILESYSTEM 0
 #include <bin/CLI11.hpp>
 
@@ -54,6 +54,8 @@
     #include <emscripten/emscripten.h>
 #endif
 
+extern std::string lcompilers_unique_ID;
+
 namespace {
 
 using LCompilers::endswith;
@@ -62,6 +64,19 @@ using LCompilers::CompilerOptions;
 enum Backend {
     llvm, c, cpp, x86, wasm
 };
+
+std::string get_unique_ID() {
+    static std::random_device dev;
+    static std::mt19937 rng(dev());
+    std::uniform_int_distribution<int> dist(0, 61);
+    const std::string v =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    std::string res;
+    for (int i = 0; i < 22; i++) {
+        res += v[dist(rng)];
+    }
+    return res;
+}
 
 std::string read_file(const std::string &filename)
 {
@@ -1868,6 +1883,8 @@ int main(int argc, char *argv[])
         app.get_formatter()->column_width(25);
         app.require_subcommand(0, 1);
         CLI11_PARSE(app, argc, argv);
+        lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+
 
         if (arg_version) {
             std::string version = LFORTRAN_VERSION;

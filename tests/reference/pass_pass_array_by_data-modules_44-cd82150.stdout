@@ -109,6 +109,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -179,6 +180,7 @@
                                                 (Character 1 80 ())
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 2 (Integer 4)))]
+                                                FixedSizeArray
                                             )
                                             ColMajor
                                         )
@@ -195,7 +197,20 @@
                                             )
                                             ()
                                         ))
-                                        ((Var 8 littlefile))
+                                        ((ArrayPhysicalCast
+                                            (Var 8 littlefile)
+                                            DescriptorArray
+                                            PointerToDataArray
+                                            (Allocatable
+                                                (Array
+                                                    (Character 1 -2 ())
+                                                    [(()
+                                                    ())]
+                                                    PointerToDataArray
+                                                )
+                                            )
+                                            ()
+                                        ))
                                         ((ArrayBound
                                             (Var 8 littlefile)
                                             (IntegerConstant 1 (Integer 4))
@@ -337,6 +352,7 @@
                                                         (Character 1 -1 ())
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -368,6 +384,7 @@
                                             (Character 1 -1 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         ()
                                         Source
@@ -441,6 +458,7 @@
                                                         (Character 1 -1 ())
                                                         [((Var 10 __1data)
                                                         (Var 10 __2data))]
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     Source
@@ -470,9 +488,20 @@
                                         [(Character 1 -1 ())
                                         (Array
                                             (Character 1 -1 ())
-                                            [(()
-                                            ())]
-                                        )]
+                                            [((FunctionParam
+                                                2
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (FunctionParam
+                                                3
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            PointerToDataArray
+                                        )
+                                        (Integer 4)
+                                        (Integer 4)]
                                         ()
                                         Source
                                         Implementation

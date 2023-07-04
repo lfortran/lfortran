@@ -4,6 +4,8 @@
 #include <libasr/asr_scopes.h>
 #include <libasr/asr_utils.h>
 
+std::string lcompilers_unique_ID;
+
 namespace LCompilers  {
 
 template< typename T >
@@ -81,7 +83,7 @@ ASR::symbol_t *SymbolTable::find_scoped_symbol(const std::string &name,
 }
 
 std::string SymbolTable::get_unique_name(const std::string &name) {
-    std::string unique_name = name;
+    std::string unique_name = name + lcompilers_unique_ID;
     int counter = 1;
     while (scope.find(unique_name) != scope.end()) {
         unique_name = name + std::to_string(counter);

@@ -2,14 +2,8 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3),
             tomlf_structure_vector:
                 (Module
                     (SymbolTable
@@ -197,6 +191,7 @@
                                                                 )
                                                                 [(()
                                                                 ())]
+                                                                DescriptorArray
                                                             )
                                                         )
                                                         ()
@@ -231,6 +226,7 @@
                                                                     )
                                                                     [(()
                                                                     ())]
+                                                                    DescriptorArray
                                                                 )
                                                             )
                                                             ()
@@ -257,6 +253,7 @@
                                                                     )
                                                                     [(()
                                                                     ())]
+                                                                    DescriptorArray
                                                                 )
                                                             )
                                                             ()
@@ -308,26 +305,6 @@
                                                     []
                                                     n
                                                     Public
-                                                ),
-                                            min:
-                                                (ExternalSymbol
-                                                    12
-                                                    min
-                                                    41 min
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    min
-                                                    Private
-                                                ),
-                                            min@imin:
-                                                (ExternalSymbol
-                                                    12
-                                                    min@imin
-                                                    41 imin
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    imin
-                                                    Private
                                                 ),
                                             n:
                                                 (Variable
@@ -391,8 +368,7 @@
                                         .false.
                                         .false.
                                     )
-                                    [present
-                                    min@imin]
+                                    [present]
                                     [(Var 12 self)
                                     (Var 12 n)]
                                     [(=
@@ -425,18 +401,18 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                 )
                                                 ()
                                             )
                                             [((IntegerConstant 1 (Integer 4))
-                                            (FunctionCall
-                                                12 min@imin
-                                                12 min
-                                                [((IntegerConstant 1 (Integer 4)))
-                                                ((Var 12 n))]
+                                            (IntrinsicFunction
+                                                Min
+                                                [(IntegerConstant 1 (Integer 4))
+                                                (Var 12 n)]
+                                                0
                                                 (Integer 4)
-                                                ()
                                                 ()
                                             ))]
                                             ()
@@ -520,6 +496,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -559,8 +536,7 @@
                         })
                     tomlf_structure_vector
                     [tomlf_type_value
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_math2]
+                    lfortran_intrinsic_builtin]
                     .false.
                     .false.
                 ),
@@ -759,8 +735,8 @@
                                 )
                         })
                     tomlf_type_keyval
-                    [lfortran_intrinsic_builtin
-                    tomlf_type_value]
+                    [tomlf_type_value
+                    lfortran_intrinsic_builtin]
                     .false.
                     .false.
                 ),

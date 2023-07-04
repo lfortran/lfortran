@@ -1,4 +1,4 @@
-program real_dp
+program real_dp_01
 
     real(4) :: zero
     real(8) :: v

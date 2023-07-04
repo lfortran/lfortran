@@ -150,54 +150,23 @@
                                     []
                                     imax_6args
                                     Private
-                                ),
-                            min:
-                                (ExternalSymbol
-                                    2
-                                    min
-                                    4 min
-                                    lfortran_intrinsic_math2
-                                    []
-                                    min
-                                    Private
-                                ),
-                            min@imin:
-                                (ExternalSymbol
-                                    2
-                                    min@imin
-                                    4 imin
-                                    lfortran_intrinsic_math2
-                                    []
-                                    imin
-                                    Private
-                                ),
-                            min@imin_6args:
-                                (ExternalSymbol
-                                    2
-                                    min@imin_6args
-                                    4 imin_6args
-                                    lfortran_intrinsic_math2
-                                    []
-                                    imin_6args
-                                    Private
                                 )
                         })
                     debug
                     []
                     [(If
                         (IntegerCompare
-                            (FunctionCall
-                                2 min@imin_6args
-                                2 min
-                                [((Var 2 a))
-                                ((Var 2 b))
-                                ((Var 2 c))
-                                ((Var 2 d))
-                                ((Var 2 e))
-                                ((Var 2 f))]
+                            (IntrinsicFunction
+                                Min
+                                [(Var 2 a)
+                                (Var 2 b)
+                                (Var 2 c)
+                                (Var 2 d)
+                                (Var 2 e)
+                                (Var 2 f)]
+                                0
                                 (Integer 4)
-                                ()
-                                ()
+                                (IntegerConstant -40 (Integer 4))
                             )
                             NotEq
                             (IntegerUnaryMinus
@@ -206,7 +175,10 @@
                                 (IntegerConstant -40 (Integer 4))
                             )
                             (Logical 4)
-                            ()
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
                         )
                         [(ErrorStop
                             ()
@@ -264,14 +236,13 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 min@imin
-                                2 min
-                                [((Var 2 a))
-                                ((Var 2 b))]
+                            (IntrinsicFunction
+                                Min
+                                [(Var 2 a)
+                                (Var 2 b)]
+                                0
                                 (Integer 4)
                                 (IntegerConstant -20 (Integer 4))
-                                ()
                             )
                             NotEq
                             (IntegerUnaryMinus

@@ -21,6 +21,7 @@
                                             (Character 1 1 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -61,6 +62,7 @@
                                             (Character 1 40 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()

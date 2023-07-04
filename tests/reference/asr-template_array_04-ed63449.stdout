@@ -105,6 +105,7 @@
                                                                         )
                                                                         [(()
                                                                         ())]
+                                                                        DescriptorArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -153,6 +154,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )]
                                                         ()
                                                         Source
@@ -466,6 +468,7 @@
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 5 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -491,6 +494,7 @@
                                                                         (Integer 4)
                                                                         [(()
                                                                         ())]
+                                                                        DescriptorArray
                                                                     )
                                                                     ()
                                                                     Source
@@ -537,6 +541,7 @@
                                                             (Integer 4)
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )]
                                                         ()
                                                         Source
@@ -649,6 +654,7 @@
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 5 (Integer 4)))]
+                                                FixedSizeArray
                                             )
                                             ColMajor
                                         )
@@ -657,7 +663,18 @@
                                     (SubroutineCall
                                         7 ireverse
                                         ()
-                                        [((Var 7 a))]
+                                        [((ArrayPhysicalCast
+                                            (Var 7 a)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 5 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))]
                                         ()
                                     )
                                     (Print

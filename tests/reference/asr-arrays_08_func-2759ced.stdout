@@ -25,6 +25,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -45,6 +46,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -75,11 +77,13 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         ()
                                         Source
@@ -184,6 +188,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -204,6 +209,7 @@
                                                         (Integer 4)
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -250,11 +256,13 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         (Logical 4)
                                         Source
@@ -342,6 +350,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -362,6 +371,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -400,8 +410,30 @@
                     (SubroutineCall
                         2 copy_from_to
                         ()
-                        [((Var 2 x))
-                        ((Var 2 y))]
+                        [((ArrayPhysicalCast
+                            (Var 2 x)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))
+                        ((ArrayPhysicalCast
+                            (Var 2 y)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))]
                         ()
                     )
                     (=
@@ -409,8 +441,30 @@
                         (FunctionCall
                             2 verify
                             ()
-                            [((Var 2 x))
-                            ((Var 2 y))]
+                            [((ArrayPhysicalCast
+                                (Var 2 x)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((ArrayPhysicalCast
+                                (Var 2 y)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 10 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))]
                             (Logical 4)
                             ()
                             ()

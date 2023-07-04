@@ -1681,7 +1681,7 @@ llvm = true
 wat = true
 
 [[test]]
-filename = "../integration_tests/real_dp.f90"
+filename = "../integration_tests/real_dp_01.f90"
 asr = true
 llvm = true
 
@@ -3345,4 +3345,8 @@ asr = true
 
 [[test]]
 filename = "errors/subroutine2.f90"
+asr = true
+
+[[test]]
+filename = "errors/subroutine3.f90"
 asr = true

@@ -153,6 +153,7 @@
                                                                     )
                                                                     [((IntegerConstant 1 (Integer 4))
                                                                     (IntegerConstant 2 (Integer 4)))]
+                                                                    FixedSizeArray
                                                                 )
                                                             )
                                                             ColMajor
@@ -176,6 +177,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -249,6 +251,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -299,6 +302,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Struct
                                             2 fpm_model_t
@@ -502,6 +506,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()

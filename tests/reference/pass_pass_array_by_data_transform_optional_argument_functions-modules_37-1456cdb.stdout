@@ -153,6 +153,7 @@
                                                                     )
                                                                     [((IntegerConstant 1 (Integer 4))
                                                                     (IntegerConstant 2 (Integer 4)))]
+                                                                    FixedSizeArray
                                                                 )
                                                             )
                                                             ColMajor
@@ -176,6 +177,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -249,6 +251,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -299,6 +302,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Struct
                                             2 fpm_model_t
@@ -512,6 +516,7 @@
                                                                     )
                                                                     [((IntegerConstant 1 (Integer 4))
                                                                     (IntegerConstant 2 (Integer 4)))]
+                                                                    FixedSizeArray
                                                                 )
                                                             )
                                                             ColMajor
@@ -535,6 +540,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -609,6 +615,7 @@
                                                         )
                                                         [((Var 13 __1targets)
                                                         (Var 13 __2targets))]
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     Source
@@ -657,9 +664,20 @@
                                             (Struct
                                                 2 build_target_ptr
                                             )
-                                            [(()
-                                            ())]
+                                            [((FunctionParam
+                                                1
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (FunctionParam
+                                                2
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            PointerToDataArray
                                         )
+                                        (Integer 4)
+                                        (Integer 4)
                                         (Struct
                                             2 fpm_model_t
                                         )
@@ -864,6 +882,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -894,7 +913,22 @@
                                     [(SubroutineCall
                                         2 build_package_targets
                                         2 build_package_targets
-                                        [((Var 10 targets))
+                                        [((ArrayPhysicalCast
+                                            (Var 10 targets)
+                                            DescriptorArray
+                                            PointerToDataArray
+                                            (Allocatable
+                                                (Array
+                                                    (Struct
+                                                        2 build_target_ptr
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    PointerToDataArray
+                                                )
+                                            )
+                                            ()
+                                        ))
                                         ((ArrayBound
                                             (Var 10 targets)
                                             (IntegerConstant 1 (Integer 4))
