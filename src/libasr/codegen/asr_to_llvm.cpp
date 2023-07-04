@@ -1427,7 +1427,7 @@ public:
             } else {
                 ASR::ttype_t* asr_data_type = ASRUtils::duplicate_type_without_dims(al,
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
-                    llvm::Type* llvm_data_type = get_type_from_ttype_t_util(asr_data_type);
+                llvm::Type* llvm_data_type = get_type_from_ttype_t_util(asr_data_type);
                 fill_malloc_array_details(x_arr, llvm_data_type, curr_arg.m_dims, curr_arg.n_dims);
             }
         }
@@ -3305,14 +3305,28 @@ public:
                     LLVM::CreateStore(*builder, tmp, ptr_member);
                 }
             }
-            if( ASRUtils::is_array(symbol_type) &&
-                (v && !ASR::is_a<ASR::Allocatable_t>(*v->m_type)) ) {
-                // Assume that struct member array is not allocatable
+            if( ASRUtils::is_array(symbol_type) && v) {
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(symbol_type, m_dims);
-                bool is_data_only = (ASRUtils::extract_physical_type(symbol_type) == ASR::array_physical_typeType::PointerToDataArray ||
-                                     ASRUtils::extract_physical_type(symbol_type) == ASR::array_physical_typeType::FixedSizeArray);
-                fill_array_details_(ptr_member, nullptr, m_dims, n_dims, false, true, false, symbol_type, is_data_only);
+                ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(symbol_type);
+                bool is_data_only = (phy_type == ASR::array_physical_typeType::PointerToDataArray ||
+                                     phy_type == ASR::array_physical_typeType::FixedSizeArray);
+                if (phy_type == ASR::array_physical_typeType::DescriptorArray) {
+                    int n_dims = 0, a_kind=4;
+                    ASR::dimension_t* m_dims = nullptr;
+                    bool is_array_type = false;
+                    bool is_malloc_array_type = false;
+                    bool is_list = false;
+                    get_type_from_ttype_t(v->m_type,
+                                v->m_type_declaration, v->m_storage, is_array_type,
+                                is_malloc_array_type, is_list, m_dims, n_dims, a_kind);
+                    llvm::Type* type_ = get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_allocatable(v->m_type), v->m_abi);
+                    fill_array_details_(ptr_member, type_, m_dims, n_dims,
+                             is_malloc_array_type, is_array_type, is_list, v->m_type);
+                } else {
+                    fill_array_details_(ptr_member, nullptr, m_dims, n_dims, false, true, false, symbol_type, is_data_only);
+                }
             } else if( ASR::is_a<ASR::Struct_t>(*symbol_type) ) {
                 allocate_array_members_of_struct(ptr_member, symbol_type);
             }
@@ -8715,6 +8729,10 @@ public:
                     LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v));
         visit_expr_wrapper(x.m_v);
         ptr_loads = ptr_loads_copy;
+        bool is_pointer_array = tmp->getType()->getContainedType(0)->isPointerTy();
+        if (is_pointer_array) {
+            tmp = CreateLoad(tmp);
+        }
         llvm::Value* llvm_arg = tmp;
 
         llvm::Value* llvm_dim = nullptr;
@@ -8813,6 +8831,10 @@ public:
                     (LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v)));
         visit_expr_wrapper(x.m_v);
         ptr_loads = ptr_loads_copy;
+        bool is_pointer_array = tmp->getType()->getContainedType(0)->isPointerTy();
+        if (is_pointer_array) {
+            tmp = CreateLoad(tmp);
+        }
         llvm::Value* llvm_arg1 = tmp;
         visit_expr_wrapper(x.m_dim, true);
         llvm::Value* dim_val = tmp;
