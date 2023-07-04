@@ -946,3 +946,5 @@ RUN(NAME entry_02 LABELS gfortran llvm)
 RUN(NAME entry_03 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm)
+
+RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
