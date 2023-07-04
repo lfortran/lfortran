@@ -1,5 +1,5 @@
 LCOMPILERS_ASSERT failed: $DIR/src/libasr/asr_utils.h
-function Call_t_body(), line number 3855 at
+function Call_t_body(), line number 3855 at 
 ASRUtils::check_equal_type(arg_type, orig_arg_type)
 ERROR MESSAGE:
 Internal Compiler Error: Unhandled exception
