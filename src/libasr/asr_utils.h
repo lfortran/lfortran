@@ -1483,7 +1483,6 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         case ASR::ttypeType::Real: {
-            std::numeric_limits<float>::lowest();
             double val;
             switch (kind) {
                 case 4: val = std::numeric_limits<float>::lowest(); break;
@@ -1517,7 +1516,6 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         case ASR::ttypeType::Real: {
-            std::numeric_limits<float>::lowest();
             double val;
             switch (kind) {
                 case 4: val = std::numeric_limits<float>::max(); break;
