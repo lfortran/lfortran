@@ -4,8 +4,8 @@ program arrays_intrin_05
     integer(8) :: x(3, 5), xminval, xminval1(5), correct1(5), correct2(5)
     logical :: modx(3, 5)
 
-    correct1 = (/2_8, 3_8, 4_8, 5_8, 6_8/)
-    correct2 = (/3_8, 3_8, 5_8, 5_8, 7_8/)
+    correct1 = [2_8, 3_8, 4_8, 5_8, 6_8]
+    correct2 = [3_8, 3_8, 5_8, 5_8, 7_8]
 
     do i = lbound(x, 1), ubound(x, 1)
         do j = lbound(x, 2), ubound(x, 2)
