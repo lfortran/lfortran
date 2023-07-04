@@ -2844,6 +2844,8 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
+        is_template = true;
+
         SymbolTable* old_scope = current_scope;
         ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
@@ -2857,6 +2859,8 @@ public:
             this->visit_program_unit(*x.m_contains[i]);
         }
         current_scope = old_scope;
+
+        is_template = false;
     }
 };
 

@@ -1,75 +1,12 @@
-LCOMPILERS_ASSERT failed: $DIR/src/libasr/asr_utils.h
-function Call_t_body(), line number 3855 at 
-ASRUtils::check_equal_type(arg_type, orig_arg_type)
-ERROR MESSAGE:
-Internal Compiler Error: Unhandled exception
-Traceback (most recent call last):
-[2m  Binary file "[0m[1m[35m$DIR/src/bin/lfortran[39m[0m[2m", in _start()[0m
-[2m  Binary file "[0m[1m[35m/lib/x86_64-linux-gnu/libc.so.6[39m[0m[2m", in __libc_start_main()[0m
-[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 2029, in ??[0m
-    return emit_asr(arg_file, lfortran_pass_manager,
-[2m  File "[0m[1m[35m$DIR/src/bin/lfortran.cpp[39m[0m[2m", line 653, in ??[0m
-    r = fe.get_asr2(input, lm, diagnostics);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 251, in LCompilers::FortranEvaluator::get_asr2(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, LCompilers::LocationManager&, LCompilers::diag::Diagnostics&)[0m
-    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/fortran_evaluator.cpp[39m[0m[2m", line 273, in LCompilers::FortranEvaluator::get_asr3(LCompilers::LFortran::AST::TranslationUnit_t&, LCompilers::diag::Diagnostics&)[0m
-    compiler_options.symtab_only, compiler_options);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_to_asr.cpp[39m[0m[2m", line 107, in LCompilers::LFortran::ast_to_asr(Allocator&, LCompilers::LFortran::AST::TranslationUnit_t&, LCompilers::diag::Diagnostics&, LCompilers::SymbolTable*, bool, LCompilers::CompilerOptions&)[0m
-    instantiate_types, instantiate_symbols);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 2878, in LCompilers::LFortran::body_visitor(Allocator&, LCompilers::LFortran::AST::TranslationUnit_t&, LCompilers::diag::Diagnostics&, LCompilers::ASR::asr_t*, LCompilers::CompilerOptions&, std::map<unsigned long, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::ttype_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::ttype_t*> > >, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::ttype_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::ttype_t*> > > > > >&, std::map<unsigned long, LCompilers::ASR::symbol_t*, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, LCompilers::ASR::symbol_t*> > >&, std::map<unsigned long, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >, std::less<unsigned long>, std::allocator<std::pair<unsigned long const, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > > > >&, std::map<unsigned int, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::ttype_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::ttype_t*> > >, std::less<unsigned int>, std::allocator<std::pair<unsigned int const, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::ttype_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::ttype_t*> > > > > >&, std::map<unsigned int, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::symbol_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::symbol_t*> > >, std::less<unsigned int>, std::allocator<std::pair<unsigned int const, std::map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, LCompilers::ASR::symbol_t*, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, LCompilers::ASR::symbol_t*> > > > > >&)[0m
-    b.visit_TranslationUnit(ast);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 197, in LCompilers::LFortran::BodyVisitor::visit_TranslationUnit(LCompilers::LFortran::AST::TranslationUnit_t const&)[0m
-    visit_ast(*x.m_items[i]);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4768, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::BodyVisitor>::visit_ast(LCompilers::LFortran::AST::ast_t const&)[0m
-    void visit_ast(const ast_t &b) { visit_ast_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4726, in ??[0m
-    case astType::mod: { v.visit_mod((const mod_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4771, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::BodyVisitor>::visit_mod(LCompilers::LFortran::AST::mod_t const&)[0m
-    void visit_mod(const mod_t &b) { visit_mod_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4366, in ??[0m
-    case modType::Module: { v.visit_Module((const Module_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 1307, in LCompilers::LFortran::BodyVisitor::visit_Module(LCompilers::LFortran::AST::Module_t const&)[0m
-    visit_unit_decl2(*x.m_decl[i]);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4782, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::BodyVisitor>::visit_unit_decl2(LCompilers::LFortran::AST::unit_decl2_t const&)[0m
-    void visit_unit_decl2(const unit_decl2_t &b) { visit_unit_decl2_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4398, in ??[0m
-    case unit_decl2Type::Template: { v.visit_Template((const Template_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 2857, in LCompilers::LFortran::BodyVisitor::visit_Template(LCompilers::LFortran::AST::Template_t const&)[0m
-    this->visit_program_unit(*x.m_contains[i]);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4776, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::BodyVisitor>::visit_program_unit(LCompilers::LFortran::AST::program_unit_t const&)[0m
-    void visit_program_unit(const program_unit_t &b) { visit_program_unit_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4379, in ??[0m
-    case program_unitType::Function: { v.visit_Function((const Function_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 1581, in LCompilers::LFortran::BodyVisitor::visit_Function(LCompilers::LFortran::AST::Function_t const&)[0m
-    transform_stmts(body, x.n_body, x.m_body);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 168, in LCompilers::LFortran::BodyVisitor::transform_stmts(LCompilers::Vec<LCompilers::ASR::stmt_t*>&, unsigned long, LCompilers::LFortran::AST::stmt_t**)[0m
-    this->visit_stmt(*m_body[i]);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4813, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::BodyVisitor>::visit_stmt(LCompilers::LFortran::AST::stmt_t const&)[0m
-    void visit_stmt(const stmt_t &b) { visit_stmt_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4470, in ??[0m
-    case stmtType::Assignment: { v.visit_Assignment((const Assignment_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_body_visitor.cpp[39m[0m[2m", line 1833, in LCompilers::LFortran::BodyVisitor::visit_Assignment(LCompilers::LFortran::AST::Assignment_t const&)[0m
-    this->visit_expr(*x.m_value);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4864, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::BodyVisitor>::visit_expr(LCompilers::LFortran::AST::expr_t const&)[0m
-    void visit_expr(const expr_t &b) { visit_expr_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4532, in ??[0m
-    case exprType::FuncCallOrArray: { v.visit_FuncCallOrArray((const FuncCallOrArray_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_common_visitor.h[39m[0m[2m", line 4793, in LCompilers::LFortran::CommonVisitor<LCompilers::LFortran::BodyVisitor>::visit_FuncCallOrArray(LCompilers::LFortran::AST::FuncCallOrArray_t const&)[0m
-    visit_expr_list(x.m_args, x.n_args, args);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_common_visitor.h[39m[0m[2m", line 5532, in LCompilers::LFortran::CommonVisitor<LCompilers::LFortran::BodyVisitor>::visit_expr_list(LCompilers::LFortran::AST::fnarg_t*, unsigned long, LCompilers::Vec<LCompilers::ASR::call_arg_t>&)[0m
-    this->visit_expr(*ast_list[i].m_end);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4864, in LCompilers::LFortran::AST::BaseVisitor<LCompilers::LFortran::BodyVisitor>::visit_expr(LCompilers::LFortran::AST::expr_t const&)[0m
-    void visit_expr(const expr_t &b) { visit_expr_t(b, self()); }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/ast.h[39m[0m[2m", line 4532, in ??[0m
-    case exprType::FuncCallOrArray: { v.visit_FuncCallOrArray((const FuncCallOrArray_t &)x); return; }
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_common_visitor.h[39m[0m[2m", line 4895, in LCompilers::LFortran::CommonVisitor<LCompilers::LFortran::BodyVisitor>::visit_FuncCallOrArray(LCompilers::LFortran::AST::FuncCallOrArray_t const&)[0m
-    tmp = create_FunctionCallWithASTNode(x, v, args);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_common_visitor.h[39m[0m[2m", line 3294, in LCompilers::LFortran::CommonVisitor<LCompilers::LFortran::BodyVisitor>::create_FunctionCallWithASTNode(LCompilers::LFortran::AST::FuncCallOrArray_t const&, LCompilers::ASR::symbol_t*, LCompilers::Vec<LCompilers::ASR::call_arg_t>&)[0m
-    return create_Function(x.base.base.loc, args, v);
-[2m  File "[0m[1m[35m$DIR/src/lfortran/semantics/ast_common_visitor.h[39m[0m[2m", line 3254, in LCompilers::LFortran::CommonVisitor<LCompilers::LFortran::BodyVisitor>::create_Function(LCompilers::Location const&, LCompilers::Vec<LCompilers::ASR::call_arg_t>&, LCompilers::ASR::symbol_t*)[0m
-    return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-[2m  File "[0m[1m[35m$DIR/src/libasr/asr_utils.h[39m[0m[2m", line 3888, in ??[0m
-    Call_t_body(al, a_name, a_args, n_args, a_dt);
-[2m  File "[0m[1m[35m$DIR/src/libasr/asr_utils.h[39m[0m[2m", line 3855, in ??[0m
-    LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type),
-LCompilersException: Type encoding not implemented for 18
+semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
+  --> tests/errors/template_error_01.f90:75:55
+   |
+75 |             avg = avg_S_from_T(d1, D_divided_by_T(d1, s1), d2, D_divided_by_S(d2, s2))
+   |                                                       ^^ type 't' expected, but 's' provided
+   |
+45 |            pure function D_divided_by_T(n, d) result(quotient)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+50 |    
+   | ...^ function definition has parameter type 't'
