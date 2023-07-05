@@ -50,6 +50,7 @@ enum class IntrinsicFunctions : int64_t {
     Product,
     Max,
     MaxVal,
+    MaxLoc,
     Min,
     MinVal,
     Merge,
@@ -104,6 +105,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Min)
         INTRINSIC_NAME_CASE(Product)
         INTRINSIC_NAME_CASE(MaxVal)
+        INTRINSIC_NAME_CASE(MaxLoc)
         INTRINSIC_NAME_CASE(MinVal)
         INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Sign)
@@ -271,6 +273,11 @@ class ASRBuilder {
         ASR::cmpopType::LtE, y, logical, nullptr))
     #define iGtE(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,              \
         ASR::cmpopType::GtE, y, logical, nullptr))
+    #define iGt(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
+        ASR::cmpopType::Gt, y, logical, nullptr))
+
+    #define ArraySize(x, dim) EXPR(make_ArraySize_t_util(al, loc, x, dim,       \
+        int32, nullptr))
 
     #define fGtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
         ASR::cmpopType::GtE, y, logical, nullptr))
@@ -2490,6 +2497,61 @@ static inline ASR::expr_t* instantiate_MaxVal(Allocator &al, const Location &loc
 
 } // namespace MaxVal
 
+namespace MaxLoc {
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x,
+            diag::Diagnostics& diagnostics) {
+        ArrIntrinsic::verify_args(x, diagnostics, ASRUtils::IntrinsicFunctions::MaxLoc,
+            &ArrIntrinsic::verify_array_int_real);
+    }
+
+    static inline ASR::expr_t *eval_MaxLoc(Allocator & /*al*/,
+            const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+        // TODO
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_MaxLoc(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, err,
+            ASRUtils::IntrinsicFunctions::MaxLoc);
+    }
+
+    static inline ASR::expr_t* instantiate_MaxLoc(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, Vec<ASR::call_arg_t>& m_args,
+            int64_t overload_id, ASR::expr_t* compile_time_value) {
+        declare_basic_variables("_lcompilers_maxloc")
+        ASR::ttype_t* return_type = int32;
+        fill_func_arg("array", arg_types[0]);
+        auto result = declare("result", return_type, ReturnVar);
+        body.push_back(al, Assignment(result, i32(0)));
+        if (overload_id == 0) {
+            // TODO Support 2 dim array
+            auto i = declare("i", int32, Local);
+            body.push_back(al, Assignment(i, i32(0)));
+            Vec<ASR::expr_t *> idx_vars; idx_vars.reserve(al, 1);
+            idx_vars.push_back(al, i);
+            ASR::expr_t* i_value = PassUtils::create_array_ref(args[0], idx_vars, al);
+            idx_vars.p = nullptr; idx_vars.n = 0; idx_vars.reserve(al, 1);
+            idx_vars.push_back(al, result);
+            ASR::expr_t* i_max = PassUtils::create_array_ref(args[0], idx_vars, al);
+            body.push_back(al, b.While(iLt(i, ArraySize(args[0], i32(1))), {
+                Assignment(i, iAdd(i, i32(1))),
+                b.If(iGt(i_value, i_max), {Assignment(result, i)}, {})
+            }));
+            body.push_back(al, Return());
+        } else {
+            // TODO
+        }
+
+        ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, fn_sym);
+        return b.Call(fn_sym, m_args, return_type, compile_time_value);
+    }
+} // namespace MaxLoc
+
 namespace MinVal {
 
 static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -3045,6 +3107,8 @@ namespace IntrinsicFunctionRegistry {
             {&Max::instantiate_Max, &Max::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxVal),
             {&MaxVal::instantiate_MaxVal, &MaxVal::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxLoc),
+            {&MaxLoc::instantiate_MaxLoc, &MaxLoc::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Min),
             {&Min::instantiate_Min, &Min::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinVal),
@@ -3201,6 +3265,7 @@ namespace IntrinsicFunctionRegistry {
                 {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
+                {"maxloc", {&MaxLoc::create_MaxLoc, &MaxLoc::eval_MaxLoc}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
@@ -3362,8 +3427,6 @@ inline std::string get_impure_intrinsic_name(int x) {
     switch (x) {
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEnd)
         IMPURE_INTRINSIC_NAME_CASE(IsIostatEor)
-        INTRINSIC_NAME_CASE(Max)
-        INTRINSIC_NAME_CASE(Min)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
