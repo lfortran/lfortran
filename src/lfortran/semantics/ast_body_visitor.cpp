@@ -825,7 +825,7 @@ public:
               throw SemanticError("Only functions can be instantiated", x.base.base.loc);
             }
             std::string new_f_name = to_lower(use_symbol->m_local_rename);
-            pass_instantiate_generic_function(al, subs, restriction_subs, current_scope,
+            pass_instantiate_template(al, subs, restriction_subs, current_scope,
                 temp->m_symtab, new_f_name, s);
             current_function_dependencies.erase(ASRUtils::symbol_name(s));
             current_function_dependencies.push_back(al, s2c(al, new_f_name));
