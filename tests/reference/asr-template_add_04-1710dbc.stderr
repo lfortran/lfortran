@@ -1,5 +1,0 @@
-semantic error: Module 'template_add_01_m' not declared in the current source and the modfile was not found
-  --> tests/../integration_tests/template_add_04.f90:55:1
-   |
-55 | use template_add_01_m
-   | ^^^^^^^^^^^^^^^^^^^^^ 
