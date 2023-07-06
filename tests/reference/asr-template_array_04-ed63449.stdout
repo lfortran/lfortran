@@ -5,11 +5,11 @@
             main:
                 (Program
                     (SymbolTable
-                        8
+                        9
                         {
                             default_behavior:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     default_behavior
                                     2 default_behavior
                                     reverse_m
@@ -19,7 +19,7 @@
                                 ),
                             reverse_tmpl:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     reverse_tmpl
                                     2 reverse_tmpl
                                     reverse_m
@@ -29,7 +29,7 @@
                                 ),
                             test_reverse:
                                 (ExternalSymbol
-                                    8
+                                    9
                                     test_reverse
                                     2 test_reverse
                                     reverse_m
@@ -41,7 +41,7 @@
                     main
                     [reverse_m]
                     [(SubroutineCall
-                        8 test_reverse
+                        9 test_reverse
                         ()
                         []
                         ()
@@ -52,99 +52,6 @@
                     (SymbolTable
                         2
                         {
-                            __asr_generic_swap:
-                                (Function
-                                    (SymbolTable
-                                        10
-                                        {
-                                            tmp:
-                                                (Variable
-                                                    10
-                                                    tmp
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            x:
-                                                (Variable
-                                                    10
-                                                    x
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            y:
-                                                (Variable
-                                                    10
-                                                    y
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    __asr_generic_swap
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 10 x)
-                                    (Var 10 y)]
-                                    [(=
-                                        (Var 10 tmp)
-                                        (Var 10 x)
-                                        ()
-                                    )
-                                    (=
-                                        (Var 10 x)
-                                        (Var 10 y)
-                                        ()
-                                    )
-                                    (=
-                                        (Var 10 y)
-                                        (Var 10 tmp)
-                                        ()
-                                    )]
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             default_behavior:
                                 (Requirement
                                     (SymbolTable
@@ -172,155 +79,6 @@
                                     default_behavior
                                     [t]
                                     []
-                                ),
-                            ireverse:
-                                (Function
-                                    (SymbolTable
-                                        9
-                                        {
-                                            arr:
-                                                (Variable
-                                                    9
-                                                    arr
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Integer 4)
-                                                        [(()
-                                                        ())]
-                                                        DescriptorArray
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            i:
-                                                (Variable
-                                                    9
-                                                    i
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
-                                            j:
-                                                (Variable
-                                                    9
-                                                    j
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    ireverse
-                                    (FunctionType
-                                        [(Array
-                                            (Integer 4)
-                                            [(()
-                                            ())]
-                                            DescriptorArray
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    [__asr_generic_swap]
-                                    [(Var 9 arr)]
-                                    [(DoLoop
-                                        ()
-                                        ((Var 9 i)
-                                        (IntegerConstant 1 (Integer 4))
-                                        (IntegerBinOp
-                                            (ArraySize
-                                                (Var 9 arr)
-                                                ()
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            Div
-                                            (IntegerConstant 2 (Integer 4))
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        ())
-                                        [(=
-                                            (Var 9 j)
-                                            (IntegerBinOp
-                                                (IntegerBinOp
-                                                    (ArraySize
-                                                        (Var 9 arr)
-                                                        ()
-                                                        (Integer 4)
-                                                        ()
-                                                    )
-                                                    Add
-                                                    (IntegerConstant 1 (Integer 4))
-                                                    (Integer 4)
-                                                    ()
-                                                )
-                                                Sub
-                                                (Var 9 i)
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            ()
-                                        )
-                                        (SubroutineCall
-                                            2 __asr_generic_swap
-                                            ()
-                                            [((ArrayItem
-                                                (Var 9 arr)
-                                                [(()
-                                                (Var 9 i)
-                                                ())]
-                                                (Integer 4)
-                                                ColMajor
-                                                ()
-                                            ))
-                                            ((ArrayItem
-                                                (Var 9 arr)
-                                                [(()
-                                                (Var 9 j)
-                                                ())]
-                                                (Integer 4)
-                                                ColMajor
-                                                ()
-                                            ))]
-                                            ()
-                                        )]
-                                    )]
-                                    ()
-                                    Public
-                                    .false.
-                                    .false.
-                                    ()
                                 ),
                             reverse_tmpl:
                                 (Template
@@ -618,6 +376,85 @@
                                     (SymbolTable
                                         7
                                         {
+                                            __asr_generic_swap:
+                                                (Function
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            tmp:
+                                                                (Variable
+                                                                    10
+                                                                    tmp
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    10
+                                                                    x
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    10
+                                                                    y
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    __asr_generic_swap
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 10 x)
+                                                    (Var 10 y)]
+                                                    []
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             a:
                                                 (Variable
                                                     7
@@ -638,6 +475,155 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                ),
+                                            ireverse:
+                                                (Function
+                                                    (SymbolTable
+                                                        8
+                                                        {
+                                                            arr:
+                                                                (Variable
+                                                                    8
+                                                                    arr
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            i:
+                                                                (Variable
+                                                                    8
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            j:
+                                                                (Variable
+                                                                    8
+                                                                    j
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    ireverse
+                                                    (FunctionType
+                                                        [(Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    [__asr_generic_swap]
+                                                    [(Var 8 arr)]
+                                                    [(DoLoop
+                                                        ()
+                                                        ((Var 8 i)
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (IntegerBinOp
+                                                            (ArraySize
+                                                                (Var 8 arr)
+                                                                ()
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Div
+                                                            (IntegerConstant 2 (Integer 4))
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ())
+                                                        [(=
+                                                            (Var 8 j)
+                                                            (IntegerBinOp
+                                                                (IntegerBinOp
+                                                                    (ArraySize
+                                                                        (Var 8 arr)
+                                                                        ()
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    Add
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Sub
+                                                                (Var 8 i)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )
+                                                        (SubroutineCall
+                                                            7 __asr_generic_swap
+                                                            ()
+                                                            [((ArrayItem
+                                                                (Var 8 arr)
+                                                                [(()
+                                                                (Var 8 i)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))
+                                                            ((ArrayItem
+                                                                (Var 8 arr)
+                                                                [(()
+                                                                (Var 8 j)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            ))]
+                                                            ()
+                                                        )]
+                                                    )]
+                                                    ()
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                 )
                                         })
                                     test_reverse
@@ -675,7 +661,7 @@
                                         ()
                                     )
                                     (SubroutineCall
-                                        2 ireverse
+                                        7 ireverse
                                         ()
                                         [((ArrayPhysicalCast
                                             (Var 7 a)
