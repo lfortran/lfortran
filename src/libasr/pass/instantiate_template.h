@@ -1,7 +1,8 @@
-#ifndef LFORTRAN_PASS_TEMPLATE_VISITOR_H
-#define LFORTRAN_PASS_TEMPLATE_VISITOR_H
+#ifndef LIBASR_PASS_INSTANTIATE_TEMPLATE_H
+#define LIBASR_PASS_INSTANTIATE_TEMPLATE_H
 
 #include <libasr/asr.h>
+#include <libasr/utils.h>
 
 namespace LCompilers {
 
@@ -23,4 +24,4 @@ namespace LCompilers {
         ASR::Function_t *new_f, ASR::Function_t *f);
 } // namespace LCompilers
 
-#endif // LFORTRAN_PASS_TEMPLATE_VISITOR_H
+#endif // LIBASR_PASS_INSTANTIATE_TEMPLATE_H
