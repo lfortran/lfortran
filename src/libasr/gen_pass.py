@@ -15,7 +15,6 @@ passes = [
         ("implied_do_loops", "replace"),
         ("init_expr", "replace"),
         ("inline_function_calls", ""),
-        ("instantiate_template", ""),
         ("intrinsic_function", "replace"),
         ("loop_unroll", ""),
         ("loop_vectorise", ""),
@@ -46,18 +45,6 @@ for pass_name, prefix in passes:
     name_up = name.upper()
     if prefix != "":
         prefix += "_"
-    arguments = r"""Allocator &al, ASR::TranslationUnit_t &unit,
-                                const PassOptions &pass_options"""
-    return_type = "void"
-    if pass_name == "instantiate_template":
-        arguments = r"""Allocator &al,
-        std::map<std::string, ASR::ttype_t*> subs, std::map<std::string, ASR::symbol_t*> rt_subs,
-        SymbolTable *current_scope, SymbolTable *template_scope,
-        std::string new_func_name, ASR::symbol_t *sym"""
-        return_type = "ASR::symbol_t*"
-
-
-
     header = rf"""#ifndef LIBASR_PASS_{name_up}_H
 #define LIBASR_PASS_{name_up}_H
 
@@ -66,7 +53,8 @@ for pass_name, prefix in passes:
 
 namespace LCompilers {{
 
-    {return_type} pass_{prefix}{name}({arguments});
+    void pass_{prefix}{name}(Allocator &al, ASR::TranslationUnit_t &unit,
+                                const PassOptions &pass_options);
 
 }} // namespace LCompilers
 
