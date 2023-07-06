@@ -1483,7 +1483,6 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, val, asr_type));
         }
         case ASR::ttypeType::Real: {
-            std::numeric_limits<float>::lowest();
             double val;
             switch (kind) {
                 case 4: val = std::numeric_limits<float>::lowest(); break;
@@ -1495,6 +1494,39 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
         }
         default: {
             throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
+        }
+    }
+    return nullptr;
+}
+
+static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_type) {
+    asr_type = ASRUtils::type_get_past_array(asr_type);
+    int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
+    switch (asr_type->type) {
+        case ASR::ttypeType::Integer: {
+            int64_t val;
+            switch (kind) {
+                case 1: val = std::numeric_limits<int8_t>::max(); break;
+                case 2: val = std::numeric_limits<int16_t>::max(); break;
+                case 4: val = std::numeric_limits<int32_t>::max(); break;
+                case 8: val = std::numeric_limits<int64_t>::max(); break;
+                default:
+                    throw LCompilersException("get_maximum_value_with_given_type: Unsupported integer kind " + std::to_string(kind));
+            }
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, val, asr_type));
+        }
+        case ASR::ttypeType::Real: {
+            double val;
+            switch (kind) {
+                case 4: val = std::numeric_limits<float>::max(); break;
+                case 8: val = std::numeric_limits<double>::max(); break;
+                default:
+                    throw LCompilersException("get_maximum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
+            }
+            return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
+        }
+        default: {
+            throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
         }
     }
     return nullptr;
