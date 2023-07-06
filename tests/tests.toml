@@ -3358,3 +3358,7 @@ asr = true
 [[test]]
 filename = "errors/subroutine3.f90"
 asr = true
+
+[[test]]
+filename = "warnings/integer_div.f90"
+asr = true

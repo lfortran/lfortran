@@ -1,0 +1,5 @@
+warning: Possible integer division instead of floating point division
+ --> tests/fixed_form/intrinsic_implicit.f:6:18
+  |
+6 |       b = max0(1,2/2,1)
+  |                  ^ ^ help: Check the operands and ensure at least one of them is a floating point number to obtain the desired result

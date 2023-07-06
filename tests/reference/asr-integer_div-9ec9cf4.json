@@ -1,0 +1,13 @@
+{
+    "basename": "asr-integer_div-9ec9cf4",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/integer_div.f90",
+    "infile_hash": "5edabb35d74c6238322518d32ec21e4e47769dfca313245a7a72ca8c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-integer_div-9ec9cf4.stdout",
+    "stdout_hash": "b600adf1ec9c381ca528d34f1600d246056a65454439253ff3d390ae",
+    "stderr": "asr-integer_div-9ec9cf4.stderr",
+    "stderr_hash": "5c75e02736c567845c9028f1d91ad881203ff781cdf5d1f6ce63da8f",
+    "returncode": 0
+}

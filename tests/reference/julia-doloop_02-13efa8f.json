@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "julia-doloop_02-13efa8f.stdout",
     "stdout_hash": "5b604b185db4645137879631e1fee5d8c404f0a2182d0f8a7e0e0df8",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "julia-doloop_02-13efa8f.stderr",
+    "stderr_hash": "3d322af162137fe90270647306d41374678de4780692a6ef628fc024",
     "returncode": 0
 }

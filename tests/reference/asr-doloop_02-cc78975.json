@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "asr-doloop_02-cc78975.stdout",
     "stdout_hash": "2c19c77e2e3373eeeddfb36edec300c991f41fb9ae13e40d54a3d196",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "asr-doloop_02-cc78975.stderr",
+    "stderr_hash": "3d322af162137fe90270647306d41374678de4780692a6ef628fc024",
     "returncode": 0
 }

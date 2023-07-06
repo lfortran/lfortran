@@ -5093,9 +5093,15 @@ public:
                     case (ASR::Mul):
                         result = left_value * right_value;
                         break;
-                    case (ASR::Div):
+                    case (ASR::Div): {
+                        diag.semantic_warning_label(
+                            "Possible integer division instead of floating point division",
+                            {left->base.loc, right->base.loc},
+                            "help: Check the operands and ensure at least one of them is a floating point number to obtain the desired result"
+                        );
                         result = left_value / right_value;
                         break;
+                    }
                     case (ASR::Pow):
                         result = std::pow(left_value, right_value);
                         break;

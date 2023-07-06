@@ -1,0 +1,11 @@
+warning: Possible integer division instead of floating point division
+  --> tests/../integration_tests/types_05.f90:10:5
+   |
+10 | r = 1/2
+   |     ^ ^ help: Check the operands and ensure at least one of them is a floating point number to obtain the desired result
+
+warning: Possible integer division instead of floating point division
+  --> tests/../integration_tests/types_05.f90:18:5
+   |
+18 | i = 1/2
+   |     ^ ^ help: Check the operands and ensure at least one of them is a floating point number to obtain the desired result

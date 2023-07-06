@@ -1,0 +1,5 @@
+warning: Possible integer division instead of floating point division
+ --> tests/warnings/integer_div.f90:3:9
+  |
+3 |     x = 8/7
+  |         ^ ^ help: Check the operands and ensure at least one of them is a floating point number to obtain the desired result
