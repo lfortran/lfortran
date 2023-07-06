@@ -1,0 +1,5 @@
+semantic error: Type parameter 'g' not required
+  --> tests/errors/template_error_06.f90:16:11
+   |
+16 |           type(g) :: fst
+   |           ^^^^^^^^^^^^^^ 

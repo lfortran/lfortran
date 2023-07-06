@@ -21,23 +21,23 @@
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
-#include <libasr/pass/do_loops.h>
-#include <libasr/pass/for_all.h>
-#include <libasr/pass/global_stmts.h>
-#include <libasr/pass/implied_do_loops.h>
-#include <libasr/pass/array_op.h>
-#include <libasr/pass/class_constructor.h>
-#include <libasr/pass/arr_slice.h>
-#include <libasr/pass/print_arr.h>
-#include <libasr/pass/where.h>
+#include <libasr/pass/replace_do_loops.h>
+#include <libasr/pass/replace_for_all.h>
+#include <libasr/pass/wrap_global_stmts.h>
+#include <libasr/pass/replace_implied_do_loops.h>
+#include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/replace_class_constructor.h>
+#include <libasr/pass/replace_arr_slice.h>
+#include <libasr/pass/replace_print_arr.h>
+#include <libasr/pass/replace_where.h>
 #include <libasr/pass/unused_functions.h>
-#include <libasr/pass/flip_sign.h>
-#include <libasr/pass/div_to_mul.h>
-#include <libasr/pass/fma.h>
+#include <libasr/pass/replace_flip_sign.h>
+#include <libasr/pass/replace_div_to_mul.h>
+#include <libasr/pass/replace_fma.h>
 #include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
-#include <libasr/pass/sign_from_value.h>
+#include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
@@ -1846,6 +1846,7 @@ int main(int argc, char *argv[])
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
+        app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting");
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");

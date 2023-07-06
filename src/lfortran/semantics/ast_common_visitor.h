@@ -755,19 +755,12 @@ public:
     bool is_body_visitor = false;
     bool is_requirement = false;
     bool is_template = false;
-    bool is_instantiate = false;
     bool is_current_procedure_templated = false;
     bool is_Function = false;
     bool in_Subroutine = false;
     bool is_common_variable = false;
     bool _processing_dimensions = false;
     Vec<ASR::stmt_t*> *current_body = nullptr;
-
-    // fields for generics
-    std::vector<ASR::asr_t*> current_requirement_type_parameters;
-    std::map<std::string, ASR::asr_t*> called_requirement;
-
-    std::map<std::string, std::string> current_template_map;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
@@ -795,15 +788,23 @@ public:
     // Stores the strings for format statements inside a function
     std::map<int64_t, std::string> format_statements;
 
+    // fields for generics
+    std::map<std::string, std::string> context_map;
+    std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types;
+    std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
+
     CommonVisitor(Allocator &al, SymbolTable *symbol_table,
             diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
             std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
             std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
-            std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping)
+            std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+            std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+            std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols)
         : diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           common_variables_hash{common_variables_hash}, external_procedures_mapping{external_procedures_mapping},
-          current_variable_type_{nullptr} {
+          current_variable_type_{nullptr},
+          instantiate_types{instantiate_types}, instantiate_symbols{instantiate_symbols} {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
     }
@@ -953,14 +954,6 @@ public:
                 pre_declared_array_dims[var_name] = 1;
                 current_scope->add_symbol(var_name, v);
             } else {
-                // DONE: fix this ad-hoc solution ==> remove this solution
-                /*
-                if (is_instantiate) {
-                    ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                            1, strlen(s2c(al, var_name)), nullptr, nullptr, 0));
-                    return ASR::make_StringConstant_t(al, loc, s2c(al, var_name), type);
-                }
-                */
                 diag.semantic_error_label("Variable '" + var_name
                     + "' is not declared", {loc},
                     "'" + var_name + "' is undeclared");
@@ -2470,6 +2463,9 @@ public:
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
             } else {
                 if (!v) {
+                    if (is_template) {
+                      throw SemanticError("Type parameter '" + derived_type_name + "' not required", loc);
+                    }
                     // Placeholder symbol for Struct type
                     // Derived type can be used before its actually defined
                     v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
