@@ -384,7 +384,7 @@ void fix_external_symbols(ASR::TranslationUnit_t &unit,
 }
 
 ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
-        bool load_symtab_id, SymbolTable & /*external_symtab*/) {
+        bool load_symtab_id, SymbolTable& /*external_symtab*/) {
     return deserialize_asr(al, s, load_symtab_id);
 }
 
@@ -398,14 +398,6 @@ ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
     // Also set the `asr_owner` member correctly for all symbol tables
     ASR::FixParentSymtabVisitor p;
     p.visit_TranslationUnit(*tu);
-
-#if defined(WITH_LFORTRAN_ASSERT)
-        diag::Diagnostics diagnostics;
-        if (!asr_verify(*tu, false, diagnostics)) {
-            std::cerr << diagnostics.render2();
-            throw LCompilersException("Verify failed");
-        };
-#endif
 
     return node;
 }

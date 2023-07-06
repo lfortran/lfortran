@@ -32,11 +32,6 @@ interface mod
     module procedure i8mod, i16mod, imod, i64mod, smod, dmod
 end interface
 
-! TODO: Implement merge in IntrinsicFunction
-interface merge
-    module procedure mergei8, mergei16, mergei32, mergei64, merger32, merger64, mergez32, mergez64, mergechar, mergelogical
-end interface
-
 interface min
     module procedure imin, imin8, imin16, imin64, smin, dmin, dmin1, imin_6args
 end interface
@@ -472,76 +467,6 @@ elemental real(dp) function dphuge(x) result(r)
 real(dp), intent(in) :: x
 r = 1.7976931348623157d308
 ! r = 2**1024 * (1 - 2**-53)
-end function
-
-function mergei8(tsource, fsource, mask) result(r)
-    integer(i8), intent(in) :: tsource(:)
-    integer(i8), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    integer(i8) :: r
-end function
-
-function mergei16(tsource, fsource, mask) result(r)
-    integer(i16), intent(in) :: tsource(:)
-    integer(i16), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    integer(i16) :: r
-end function
-
-function mergei32(tsource, fsource, mask) result(r)
-    integer(i32), intent(in) :: tsource(:)
-    integer(i32), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    integer(i32) :: r
-end function
-
-function mergei64(tsource, fsource, mask) result(r)
-    integer(i64), intent(in) :: tsource(:)
-    integer(i64), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    integer(i64) :: r
-end function
-
-function merger32(tsource, fsource, mask) result(r)
-    real(sp), intent(in) :: tsource(:)
-    real(sp), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    real(sp) :: r
-end function
-
-function merger64(tsource, fsource, mask) result(r)
-    real(dp), intent(in) :: tsource(:)
-    real(dp), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    real(dp) :: r
-end function
-
-function mergechar(tsource, fsource, mask) result(r)
-    character(len=*), intent(in) :: tsource(:)
-    character(len=*), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    character(len=len(tsource(0))) :: r
-end function
-
-function mergelogical(tsource, fsource, mask) result(r)
-    logical, intent(in) :: tsource(:)
-    logical, intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    logical :: r
-end function
-
-function mergez32(tsource, fsource, mask) result(r)
-    complex(sp), intent(in) :: tsource(:)
-    complex(sp), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    complex(sp) :: r
-end function
-
-function mergez64(tsource, fsource, mask) result(r)
-    complex(dp), intent(in) :: tsource(:)
-    complex(dp), intent(in) :: fsource(:)
-    logical, intent(in) :: mask(:)
-    complex(dp) :: r
 end function
 
 end module

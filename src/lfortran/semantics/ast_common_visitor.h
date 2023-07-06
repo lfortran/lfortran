@@ -358,6 +358,11 @@ public:
                 al, x.base.base.loc, result, type));
         }
 
+        if( (ASRUtils::is_allocatable(left) && ASRUtils::is_array(ASRUtils::expr_type(left)))
+            || (ASRUtils::is_allocatable(right) && ASRUtils::is_array(ASRUtils::expr_type(right))) ) {
+            type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc,
+                ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(type))));
+        }
         asr = ASR::make_StringCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
     }
     if (overloaded != nullptr) {
@@ -720,6 +725,7 @@ public:
         // min0 can accept any arbitrary number of arguments 2<=x<=100
         {"min0", {IntrinsicSignature({}, 2, 100)}},
         {"min", {IntrinsicSignature({}, 2, 100)}},
+        {"merge", {IntrinsicSignature({}, 3, 3)}}
 
     };
 
