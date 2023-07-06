@@ -11,13 +11,13 @@ namespace LCompilers {
      *        contain any type parameters and restrictions. No type checking
      *        is executed here
      */
-    ASR::symbol_t* pass_instantiate_symbol(Allocator &al,
+    void pass_instantiate_symbol(Allocator &al,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable *template_scope,
        std::string new_sym_name, ASR::symbol_t *sym);
 
-    ASR::symbol_t* pass_instantiate_function_body(Allocator &al,
+    void pass_instantiate_function_body(Allocator &al,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable *template_scope,

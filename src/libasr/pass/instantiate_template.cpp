@@ -513,7 +513,7 @@ public:
 
 };
 
-ASR::symbol_t* pass_instantiate_symbol(Allocator &al,
+void pass_instantiate_symbol(Allocator &al,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable* template_scope,
@@ -521,17 +521,17 @@ ASR::symbol_t* pass_instantiate_symbol(Allocator &al,
     ASR::symbol_t* sym2 = ASRUtils::symbol_get_past_external(sym);
     SymbolInstantiator t(al, type_subs, symbol_subs,
         current_scope, template_scope, new_sym_name);
-    return t.instantiate_symbol(sym2);
+    t.instantiate_symbol(sym2);
 }
 
-ASR::symbol_t* pass_instantiate_function_body(Allocator &al,
+void pass_instantiate_function_body(Allocator &al,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable *template_scope,
         ASR::Function_t *new_f, ASR::Function_t *f) {
     SymbolInstantiator t(al, type_subs, symbol_subs,
         current_scope, template_scope, new_f->m_name);
-    return t.instantiate_body(new_f, f);
+    t.instantiate_body(new_f, f);
 }
 
 } // namespace LCompilers

@@ -2462,7 +2462,8 @@ public:
             } else {
                 if (!v) {
                     if (is_template) {
-                      throw SemanticError("Type parameter '" + derived_type_name + "' not required", loc);
+                      throw SemanticError("Type parameter '" + derived_type_name + "' is not specified " 
+                                          "in any requirements", loc);
                     }
                     // Placeholder symbol for Struct type
                     // Derived type can be used before its actually defined
