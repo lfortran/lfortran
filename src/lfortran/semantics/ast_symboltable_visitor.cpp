@@ -2444,8 +2444,11 @@ public:
                                     x.base.base.loc);
             }
             std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-            pass_instantiate_symbol(al, type_subs, symbol_subs, current_scope,
-                temp->m_symtab, new_sym_name, s);
+            //pass_instantiate_symbol(al, type_subs, symbol_subs, current_scope,
+            //    temp->m_symtab, new_sym_name, s);
+            pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
+                current_scope, temp->m_symtab, new_sym_name, s);
+            context_map[generic_name] = new_sym_name;
         }
 
         instantiate_types[x.base.base.loc.first] = type_subs;

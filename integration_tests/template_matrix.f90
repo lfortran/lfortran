@@ -35,23 +35,23 @@ module template_matrix_m
     end function
 
 
-    elemental function matmul_matrix(m_x, m_y) result(m_z)
-      type(matrix), intent(in) :: m_x, m_y
-      type(matrix) :: m_z
-
-      type(t) :: tmp
-      integer :: i, j, k
-
-      do i= 1,n
-        do j= 1,n
-          tmp = m_x%elements(i,1)*m_y%elements(1,j)
-          do k = 2, n
-              tmp = plus(tmp, times(m_x%elements(i,k),m_y%elements(k,j)))
-          end do
-          m_z%elements(i,j) = tmp
-        end do
-      end do
-    end function
+    !elemental function matmul_matrix(m_x, m_y) result(m_z)
+    !  type(matrix), intent(in) :: m_x, m_y
+    !  type(matrix) :: m_z
+!
+    !  type(t) :: tmp
+    !  integer :: i, j, k
+!
+    !  do i= 1,n
+    !    do j= 1,n
+    !      tmp = m_x%elements(i,1)*m_y%elements(1,j)
+    !      do k = 2, n
+    !          tmp = plus(tmp, times(m_x%elements(i,k),m_y%elements(k,j)))
+    !      end do
+    !      m_z%elements(i,j) = tmp
+    !    end do
+    !  end do
+    !end function
 
   end template
 
@@ -71,8 +71,10 @@ contains
 
   subroutine test_template()
     integer, parameter :: m = 10
+    ! have matrix mapped to integer_matrix
     instantiate matrix_t(integer, plus_integer, mult_integer, m), &
-      only: plus_integer_matrix => plus_matrix
+      only: integer_matrix => matrix, &
+            integer_plus_matrix => plus_matrix
   end subroutine
 
 end module

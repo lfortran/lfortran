@@ -12,6 +12,7 @@ namespace LCompilers {
      *        is executed here
      */
     ASR::symbol_t* pass_instantiate_symbol(Allocator &al,
+        std::map<std::string, std::string> context_map,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable *template_scope,

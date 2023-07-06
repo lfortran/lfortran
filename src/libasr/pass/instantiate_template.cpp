@@ -13,6 +13,7 @@ public:
     SymbolTable *func_scope;            // the instantiate scope
     SymbolTable *current_scope;         // the new function scope
     SymbolTable *template_scope;        // the template scope, where the environment is
+    std::map<std::string, std::string> context_map;
     std::map<std::string, ASR::ttype_t*> type_subs;
     std::map<std::string, ASR::symbol_t*> symbol_subs;
     std::string new_sym_name;
@@ -24,6 +25,19 @@ public:
         BaseExprStmtDuplicator(al),
         func_scope{func_scope},
         template_scope{template_scope},
+        type_subs{type_subs},
+        symbol_subs{symbol_subs},
+        new_sym_name{new_sym_name}
+        {}
+
+    SymbolInstantiator(Allocator &al, std::map<std::string, std::string> context_map,
+            std::map<std::string, ASR::ttype_t*> type_subs,
+            std::map<std::string, ASR::symbol_t*> symbol_subs, SymbolTable *func_scope,
+            SymbolTable *template_scope, std::string new_sym_name):
+        BaseExprStmtDuplicator(al),
+        func_scope{func_scope},
+        template_scope{template_scope},
+        context_map{context_map},
         type_subs{type_subs},
         symbol_subs{symbol_subs},
         new_sym_name{new_sym_name}
@@ -371,17 +385,17 @@ public:
     }
 
 
-    ASR::ttype_t* substitute_type(ASR::ttype_t *param_type) {
-        if (ASR::is_a<ASR::List_t>(*param_type)) {
-            ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(param_type);
-            return ASRUtils::TYPE(ASR::make_List_t(al, param_type->base.loc,
+    ASR::ttype_t* substitute_type(ASR::ttype_t *t) {
+        if (ASR::is_a<ASR::List_t>(*t)) {
+            ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(t);
+            return ASRUtils::TYPE(ASR::make_List_t(al, t->base.loc,
                 substitute_type(tlist->m_type)));
         }
-        ASR::ttype_t* param_type_ = ASRUtils::type_get_past_array(param_type);
+        ASR::ttype_t* ttype = ASRUtils::type_get_past_array(t);
         ASR::dimension_t* m_dims = nullptr;
-        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(param_type, m_dims);
-        if (ASR::is_a<ASR::TypeParameter_t>(*param_type_)) {
-            ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(param_type_);
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t, m_dims);
+        if (ASR::is_a<ASR::TypeParameter_t>(*ttype)) {
+            ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
             Vec<ASR::dimension_t> new_dims;
             new_dims.reserve(al, n_dims);
             for (size_t i = 0; i < n_dims; i++) {
@@ -420,8 +434,17 @@ public:
                     t_, new_dims.p, new_dims.size());
             }
             return t_;
+        } else if (ASR::is_a<ASR::Struct_t>(*ttype)) {
+            ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(ttype);
+            std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
+            if (context_map.find(struct_name) != context_map.end()) {
+                std::string new_struct_name = context_map[struct_name];
+                ASR::symbol_t *sym = func_scope->resolve_symbol(new_struct_name);
+                return ASRUtils::TYPE(
+                    ASR::make_Struct_t(al, s->base.base.loc, sym));
+            }
         }
-        return param_type;
+        return t;
     }
 
     ASR::asr_t* make_BinOp_helper(ASR::expr_t *left, ASR::expr_t *right,
@@ -514,12 +537,13 @@ public:
 };
 
 ASR::symbol_t* pass_instantiate_symbol(Allocator &al,
+        std::map<std::string, std::string> context_map,
         std::map<std::string, ASR::ttype_t*> type_subs,
         std::map<std::string, ASR::symbol_t*> symbol_subs,
         SymbolTable *current_scope, SymbolTable* template_scope,
         std::string new_sym_name, ASR::symbol_t *sym) {
     ASR::symbol_t* sym2 = ASRUtils::symbol_get_past_external(sym);
-    SymbolInstantiator t(al, type_subs, symbol_subs,
+    SymbolInstantiator t(al, context_map, type_subs, symbol_subs,
         current_scope, template_scope, new_sym_name);
     return t.instantiate_symbol(sym2);
 }
