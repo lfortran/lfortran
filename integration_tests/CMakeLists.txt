@@ -356,8 +356,6 @@ RUN(NAME arrays_intrin_01 LABELS gfortran) # minval, maxval
 RUN(NAME arrays_intrin_02 LABELS gfortran) # all, any
 RUN(NAME arrays_intrin_03 LABELS gfortran llvm) # maxval
 RUN(NAME arrays_intrin_04 LABELS gfortran llvm) # maxval
-RUN(NAME arrays_intrin_03 LABELS gfortran llvm NOFAST) # maxval
-RUN(NAME arrays_intrin_04 LABELS gfortran llvm NOFAST) # maxval
 RUN(NAME arrays_intrin_05 LABELS gfortran llvm NOFAST) # minval
 RUN(NAME arrays_intrin_06 LABELS gfortran llvm NOFAST) # minval
 RUN(NAME any_01 LABELS gfortran)
