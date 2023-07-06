@@ -2147,9 +2147,9 @@ public:
 
         ASR::Requirement_t *req = ASR::down_cast<ASR::Requirement_t>(req0);
 
-        if (x.n_namelist > req->n_args) {
-            throw SemanticError("Too many parameters passed to the '" +
-                require_name + "'", x.base.base.loc);
+        if (x.n_namelist != req->n_args) {
+            throw SemanticError("The number of parameters passed to '" +
+                require_name + "' is not correct", x.base.base.loc);
         }
 
         SetChar args;
