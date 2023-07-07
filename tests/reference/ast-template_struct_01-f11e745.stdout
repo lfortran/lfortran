@@ -128,7 +128,124 @@
                 )]
                 []
             )]
-            []
+            [(Function
+                get_fst
+                [(p)]
+                []
+                r
+                ()
+                (TriviaNode
+                    []
+                    [(EndOfLine)
+                    (EndOfLine)]
+                )
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        tuple
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(p
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        t
+                        None
+                    )
+                    []
+                    [(r
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )]
+                [(=
+                    0
+                    r
+                    fst [(p
+                    [])]
+                    ()
+                )]
+                []
+            )
+            (Function
+                get_snd
+                [(p)]
+                []
+                r
+                ()
+                (TriviaNode
+                    []
+                    [(EndOfLine)
+                    (EndOfLine)]
+                )
+                []
+                []
+                []
+                [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        tuple
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(p
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        t
+                        None
+                    )
+                    []
+                    [(r
+                    []
+                    []
+                    ()
+                    None
+                    ())]
+                    ()
+                )]
+                [(=
+                    0
+                    r
+                    snd [(p
+                    [])]
+                    ()
+                )]
+                []
+            )]
         )]
         [(Subroutine
             test_template
@@ -152,6 +269,14 @@
                 [(UseSymbol
                     tuple
                     int_tuple
+                )
+                (UseSymbol
+                    get_fst
+                    get_int_fst
+                )
+                (UseSymbol
+                    get_snd
+                    get_int_snd
                 )]
             )
             (Declaration
@@ -178,11 +303,47 @@
                 1
                 ()
             )
+            (Print
+                0
+                ()
+                [(String
+                    "First element: "
+                )
+                (FuncCallOrArray
+                    get_int_fst
+                    []
+                    [(()
+                    t
+                    ()
+                    0)]
+                    []
+                    []
+                )]
+                ()
+            )
             (=
                 0
                 snd [(t
                 [])]
                 2
+                ()
+            )
+            (Print
+                0
+                ()
+                [(String
+                    "Second element: "
+                )
+                (FuncCallOrArray
+                    get_int_snd
+                    []
+                    [(()
+                    t
+                    ()
+                    0)]
+                    []
+                    []
+                )]
                 ()
             )]
             []
@@ -211,7 +372,18 @@
             )
         )]
         []
-        []
+        [(SubroutineCall
+            0
+            test_template
+            []
+            []
+            []
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
+        )]
         []
     )]
 )

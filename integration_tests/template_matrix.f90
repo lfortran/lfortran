@@ -30,7 +30,7 @@ module template_matrix_m
 
     elemental function plus_matrix(m_x, m_y) result(m_z)
       type(matrix), intent(in) :: m_x, m_y
-      type(matrix) :: m_z
+      type(matrix) :: m_z   
       m_z%elements = plus(m_x%elements, m_y%elements)
     end function
 
@@ -70,11 +70,14 @@ contains
   end function
 
   subroutine test_template()
-    integer, parameter :: m = 10
-    ! have matrix mapped to integer_matrix
-    instantiate matrix_t(integer, plus_integer, mult_integer, m), &
+    integer, parameter :: n = 2
+    instantiate matrix_t(integer, plus_integer, mult_integer, n), &
       only: integer_matrix => matrix, &
             integer_plus_matrix => plus_matrix
+    type(integer_matrix) :: m1, m2, m3
+    m1%elements = [[1,0],[0,1]]
+    m2%elements = [[1,2],[2,1]]
+    print *, m1%elements
   end subroutine
 
 end module
@@ -83,5 +86,7 @@ program template_matrix
 use template_matrix_m
 
 implicit none
+
+call test_template()
 
 end program template_matrix

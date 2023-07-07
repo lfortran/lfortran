@@ -2,11 +2,11 @@
     "basename": "ast-template_struct_01-f11e745",
     "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_struct_01.f90",
-    "infile_hash": "3ad0106ebd26c8e129d86a72b47ac2fea18eb85b04674b40ff22782f",
+    "infile_hash": "4bc9de56c11022887ffc3b05c045f134736ae9fd21a33bc2f564cf02",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-template_struct_01-f11e745.stdout",
-    "stdout_hash": "522edfcfc50dc907e2fa60c341480a29a48064a89034f3eaab70e4e4",
+    "stdout_hash": "b45c642c2d1b9fabeb2b552060d2be40abd86803356cd8a9a1a0598f",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
