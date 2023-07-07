@@ -630,13 +630,14 @@ public:
             AST::UseSymbol_t* use_symbol = AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
             std::string generic_name = to_lower(use_symbol->m_remote_sym);
             ASR::symbol_t *s = temp->m_symtab->resolve_symbol(generic_name);
+            std::string new_s_name = to_lower(use_symbol->m_local_rename);
             if (ASR::is_a<ASR::Function_t>(*s)) {
-                std::string new_s_name = to_lower(use_symbol->m_local_rename);
                 ASR::Function_t *new_f = ASR::down_cast<ASR::Function_t>(
                     current_scope->resolve_symbol(new_s_name));
-                pass_instantiate_function_body(al, type_subs, symbol_subs, current_scope,
+                pass_instantiate_function_body(al, context_map, type_subs, symbol_subs, current_scope,
                     temp->m_symtab, new_f, ASR::down_cast<ASR::Function_t>(s));
-            } 
+            }
+            context_map[generic_name] = new_s_name;
         }
     }
 
