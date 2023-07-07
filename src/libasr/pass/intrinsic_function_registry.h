@@ -2043,7 +2043,8 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al, const Locatio
     int64_t id_array = 0, id_array_dim = 1, id_array_mask = 2;
     int64_t id_array_dim_mask = 3;
 
-    ASR::ttype_t* arg_type = arg_types[0];
+    ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
+        ASRUtils::type_get_past_pointer(arg_types[0]));
     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
     int rank = ASRUtils::extract_n_dims_from_ttype(arg_type);
     std::string new_name = intrinsic_func_name + "_" + std::to_string(kind) +
