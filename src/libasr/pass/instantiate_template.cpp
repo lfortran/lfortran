@@ -384,67 +384,81 @@ public:
             x->m_original_name, args.p, args.size(), dt);
     }
 
+    /*
+    ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
+        ASR::expr_t *v = duplicate_expr(x->m_v);
+        ASR::ttype_t *t = substitute_type(x->m_type);
 
-    ASR::ttype_t* substitute_type(ASR::ttype_t *t) {
-        if (ASR::is_a<ASR::List_t>(*t)) {
-            ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(t);
-            return ASRUtils::TYPE(ASR::make_List_t(al, t->base.loc,
-                substitute_type(tlist->m_type)));
+        return ASR::make_StructInstanceMember_t(al, x->base.base.loc,
+            v, nullptr, t, nullptr);
+    }
+    */
+
+    ASR::ttype_t* substitute_type(ASR::ttype_t *ttype) {
+        switch (ttype->type) {
+            case (ASR::ttypeType::TypeParameter) : {
+                ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
+                ASR::ttype_t *t = type_subs[param->m_param];
+                switch (t->type) {
+                    case ASR::ttypeType::Integer: {
+                        ASR::Integer_t* tnew = ASR::down_cast<ASR::Integer_t>(t);
+                        t = ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc, tnew->m_kind));
+                        break;
+                    }
+                    case ASR::ttypeType::Real: {
+                        ASR::Real_t* tnew = ASR::down_cast<ASR::Real_t>(t);
+                        t = ASRUtils::TYPE(ASR::make_Real_t(al, t->base.loc, tnew->m_kind));
+                        break;
+                    }
+                    case ASR::ttypeType::Character: {
+                        ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
+                        t = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
+                                    tnew->m_kind, tnew->m_len, tnew->m_len_expr));
+                        break;
+                    }
+                    default: {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                }
+                return t;
+            }
+            case (ASR::ttypeType::List) : {
+                ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);
+                return ASRUtils::TYPE(ASR::make_List_t(al, ttype->base.loc,
+                    substitute_type(tlist->m_type))); 
+            }
+            case (ASR::ttypeType::Struct) : {
+                ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(ttype);
+                std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
+                if (context_map.find(struct_name) != context_map.end()) {
+                    std::string new_struct_name = context_map[struct_name];
+                    ASR::symbol_t *sym = func_scope->resolve_symbol(new_struct_name);
+                    return ASRUtils::TYPE(
+                        ASR::make_Struct_t(al, s->base.base.loc, sym));
+                } else {
+                    return ttype;
+                }
+            }
+            case (ASR::ttypeType::Array) : {
+                ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
+                ASR::ttype_t *t = substitute_type(a->m_type);
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ttype, m_dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.reserve(al, n_dims);
+                for (size_t i = 0; i < n_dims; i++) {
+                    ASR::dimension_t old_dim = m_dims[i];
+                    ASR::dimension_t new_dim;
+                    new_dim.loc = old_dim.loc;
+                    new_dim.m_start = duplicate_expr(old_dim.m_start);
+                    new_dim.m_length = duplicate_expr(old_dim.m_length);
+                    new_dims.push_back(al, new_dim);
+                }
+                return ASRUtils::make_Array_t_util(al, t->base.loc,
+                    t, new_dims.p, new_dims.size());
+            }
+            default : return ttype;
         }
-        ASR::ttype_t* ttype = ASRUtils::type_get_past_array(t);
-        ASR::dimension_t* m_dims = nullptr;
-        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t, m_dims);
-        if (ASR::is_a<ASR::TypeParameter_t>(*ttype)) {
-            ASR::TypeParameter_t *param = ASR::down_cast<ASR::TypeParameter_t>(ttype);
-            Vec<ASR::dimension_t> new_dims;
-            new_dims.reserve(al, n_dims);
-            for (size_t i = 0; i < n_dims; i++) {
-                ASR::dimension_t old_dim = m_dims[i];
-                ASR::dimension_t new_dim;
-                new_dim.loc = old_dim.loc;
-                new_dim.m_start = duplicate_expr(old_dim.m_start);
-                new_dim.m_length = duplicate_expr(old_dim.m_length);
-                new_dims.push_back(al, new_dim);
-            }
-            ASR::ttype_t *t = ASRUtils::type_get_past_array(type_subs[param->m_param]);
-            ASR::ttype_t *t_ = nullptr;
-            switch (t->type) {
-                case ASR::ttypeType::Integer: {
-                    ASR::Integer_t* tnew = ASR::down_cast<ASR::Integer_t>(t);
-                    t_ = ASRUtils::TYPE(ASR::make_Integer_t(al, t->base.loc, tnew->m_kind));
-                    break;
-                }
-                case ASR::ttypeType::Real: {
-                    ASR::Real_t* tnew = ASR::down_cast<ASR::Real_t>(t);
-                    t_ = ASRUtils::TYPE(ASR::make_Real_t(al, t->base.loc, tnew->m_kind));
-                    break;
-                }
-                case ASR::ttypeType::Character: {
-                    ASR::Character_t* tnew = ASR::down_cast<ASR::Character_t>(t);
-                    t_ = ASRUtils::TYPE(ASR::make_Character_t(al, t->base.loc,
-                                tnew->m_kind, tnew->m_len, tnew->m_len_expr));
-                    break;
-                }
-                default: {
-                    return type_subs[param->m_param];
-                }
-            }
-            if( new_dims.size() > 0 ) {
-                t_ = ASRUtils::make_Array_t_util(al, t->base.loc,
-                    t_, new_dims.p, new_dims.size());
-            }
-            return t_;
-        } else if (ASR::is_a<ASR::Struct_t>(*ttype)) {
-            ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(ttype);
-            std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
-            if (context_map.find(struct_name) != context_map.end()) {
-                std::string new_struct_name = context_map[struct_name];
-                ASR::symbol_t *sym = func_scope->resolve_symbol(new_struct_name);
-                return ASRUtils::TYPE(
-                    ASR::make_Struct_t(al, s->base.base.loc, sym));
-            }
-        }
-        return t;
     }
 
     ASR::asr_t* make_BinOp_helper(ASR::expr_t *left, ASR::expr_t *right,
