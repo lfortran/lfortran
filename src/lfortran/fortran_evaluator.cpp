@@ -192,7 +192,8 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
     if (compiler_options.c_preprocessor) {
         // Preprocessor
         LFortran::CPreprocessor cpp(compiler_options);
-        tmp = cpp.run(code_orig, lm, cpp.macro_definitions);
+        std::string code_without_comments = LFortran::remove_cpp_comments(code_orig);
+        tmp = cpp.run(code_without_comments, lm, cpp.macro_definitions);
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
