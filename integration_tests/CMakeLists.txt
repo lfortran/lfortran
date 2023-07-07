@@ -101,6 +101,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
 				${extra_args} --implicit-typing --implicit-interface -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicitArgument")
+            execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
+				${extra_args} --implicit-argument-casting -o ${name})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${extra_args})
@@ -954,3 +958,5 @@ RUN(NAME entry_03 LABELS gfortran llvm)
 RUN(NAME character_01 LABELS gfortran llvm)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
+
+RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
