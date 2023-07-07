@@ -15,6 +15,132 @@
                     (SymbolTable
                         8
                         {
+                            1_string_t_s:
+                                (ExternalSymbol
+                                    8
+                                    1_string_t_s
+                                    3 s
+                                    string_t
+                                    []
+                                    s
+                                    Public
+                                ),
+                            cat_str_alloc:
+                                (Variable
+                                    8
+                                    cat_str_alloc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Character 1 -2 ())
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            char_str:
+                                (Variable
+                                    8
+                                    char_str
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Character 1 40 ())
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            char_str_alloc:
+                                (Variable
+                                    8
+                                    char_str_alloc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Character 1 -2 ())
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            char_str_hash1:
+                                (Variable
+                                    8
+                                    char_str_hash1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            char_str_hash2:
+                                (Variable
+                                    8
+                                    char_str_hash2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            char_str_hash3:
+                                (Variable
+                                    8
+                                    char_str_hash3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            char_str_hash4:
+                                (Variable
+                                    8
+                                    char_str_hash4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             fnv_1a:
                                 (ExternalSymbol
                                     8
@@ -24,6 +150,16 @@
                                     []
                                     fnv_1a
                                     Public
+                                ),
+                            fnv_1a@fnv_1a_char:
+                                (ExternalSymbol
+                                    8
+                                    fnv_1a@fnv_1a_char
+                                    2 fnv_1a_char
+                                    modules_48_fpm_strings
+                                    []
+                                    fnv_1a_char
+                                    Private
                                 ),
                             fnv_1a_char:
                                 (ExternalSymbol
@@ -74,18 +210,374 @@
                                     []
                                     string_t
                                     Public
+                                ),
+                            string_var:
+                                (Variable
+                                    8
+                                    string_var
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Struct
+                                            8 string_t
+                                        )
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
                                 )
                         })
                     modules_48
                     [modules_48_fpm_strings]
-                    [(Print
+                    [(Allocate
+                        [((Var 8 char_str_alloc)
+                        []
+                        (IntegerConstant 40 (Integer 4))
+                        ())]
                         ()
-                        [(StringConstant
-                            "running modules_48"
-                            (Character 1 18 ())
+                        ()
+                        ()
+                    )
+                    (=
+                        (Var 8 char_str_alloc)
+                        (StringConstant
+                            "runningmodules_48_1"
+                            (Character 1 19 ())
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (ArrayItem
+                                (Var 8 string_var)
+                                [(()
+                                (IntegerConstant 1 (Integer 4))
+                                ())]
+                                (Struct
+                                    8 string_t
+                                )
+                                ColMajor
+                                ()
+                            )
+                            8 1_string_t_s
+                            (Allocatable
+                                (Character 1 -2 ())
+                            )
+                            ()
+                        )
+                        (Var 8 char_str_alloc)
+                        ()
+                    )
+                    (=
+                        (Var 8 char_str)
+                        (StringConstant
+                            "runningmodules_48_2"
+                            (Character 1 19 ())
+                        )
+                        ()
+                    )
+                    (=
+                        (StructInstanceMember
+                            (ArrayItem
+                                (Var 8 string_var)
+                                [(()
+                                (IntegerConstant 2 (Integer 4))
+                                ())]
+                                (Struct
+                                    8 string_t
+                                )
+                                ColMajor
+                                ()
+                            )
+                            8 1_string_t_s
+                            (Allocatable
+                                (Character 1 -2 ())
+                            )
+                            ()
+                        )
+                        (Var 8 char_str)
+                        ()
+                    )
+                    (=
+                        (Var 8 char_str_hash1)
+                        (FunctionCall
+                            8 fnv_1a@fnv_1a_char
+                            8 fnv_1a
+                            [((Var 8 char_str))
+                            ((IntegerConstant 2166136261 (Integer 8)))]
+                            (Integer 8)
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 8 char_str_hash2)
+                        (FunctionCall
+                            8 fnv_1a@fnv_1a_char
+                            8 fnv_1a
+                            [((Var 8 char_str))
+                            (())]
+                            (Integer 8)
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 8 char_str_hash1)
+                        (Var 8 char_str_hash2)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 8 char_str_hash1)
+                            NotEq
+                            (Var 8 char_str_hash2)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 8 char_str_hash3)
+                        (FunctionCall
+                            8 fnv_1a_string_t
+                            ()
+                            [((ArrayPhysicalCast
+                                (Var 8 string_var)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Struct
+                                        8 string_t
+                                    )
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((IntegerConstant 2166136261 (Integer 8)))]
+                            (Integer 8)
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (=
+                        (Var 8 char_str_hash4)
+                        (FunctionCall
+                            8 fnv_1a_string_t
+                            ()
+                            [((ArrayPhysicalCast
+                                (Var 8 string_var)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Struct
+                                        8 string_t
+                                    )
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            (())]
+                            (Integer 8)
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 8 char_str_hash3)
+                        (Var 8 char_str_hash4)]
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 8 char_str_hash3)
+                            NotEq
+                            (Var 8 char_str_hash4)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 8 cat_str_alloc)
+                        (FunctionCall
+                            8 string_cat
+                            ()
+                            [((ArrayPhysicalCast
+                                (Var 8 string_var)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Struct
+                                        8 string_t
+                                    )
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            ((StringConstant
+                                ":"
+                                (Character 1 1 ())
+                            ))]
+                            (Allocatable
+                                (Character 1 -2 ())
+                            )
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 8 cat_str_alloc)
+                        (FunctionCall
+                            8 is_fortran_name
+                            ()
+                            [((Var 8 cat_str_alloc))]
+                            (Logical 4)
+                            ()
+                            ()
                         )]
                         ()
                         ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 8 cat_str_alloc)
+                            NotEq
+                            (StringConstant
+                                "runningmodules_48_1:runningmodules_48_2"
+                                (Character 1 39 ())
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (FunctionCall
+                            8 is_fortran_name
+                            ()
+                            [((Var 8 cat_str_alloc))]
+                            (Logical 4)
+                            ()
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 8 cat_str_alloc)
+                        (FunctionCall
+                            8 string_cat
+                            ()
+                            [((ArrayPhysicalCast
+                                (Var 8 string_var)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Struct
+                                        8 string_t
+                                    )
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))
+                            (())]
+                            (Allocatable
+                                (Character 1 -2 ())
+                            )
+                            ()
+                            ()
+                        )
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(Var 8 cat_str_alloc)
+                        (FunctionCall
+                            8 is_fortran_name
+                            ()
+                            [((Var 8 cat_str_alloc))]
+                            (Logical 4)
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (If
+                        (StringCompare
+                            (Var 8 cat_str_alloc)
+                            NotEq
+                            (StringConstant
+                                "runningmodules_48_1runningmodules_48_2"
+                                (Character 1 38 ())
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (LogicalNot
+                            (FunctionCall
+                                8 is_fortran_name
+                                ()
+                                [((Var 8 cat_str_alloc))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ImplicitDeallocate
+                        [(Var 8 cat_str_alloc)
+                        (Var 8 char_str_alloc)]
                     )]
                 ),
             modules_48_fpm_strings:
@@ -206,16 +698,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            len:
-                                                (ExternalSymbol
-                                                    4
-                                                    len
-                                                    10 len
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    len
-                                                    Private
-                                                ),
                                             present:
                                                 (ExternalSymbol
                                                     4
@@ -259,7 +741,6 @@
                                         .false.
                                     )
                                     [present
-                                    len
                                     ieor@ieor64]
                                     [(Var 4 input)
                                     (Var 4 seed)]
@@ -287,13 +768,9 @@
                                         ()
                                         ((Var 4 i)
                                         (IntegerConstant 1 (Integer 4))
-                                        (FunctionCall
-                                            4 len
-                                            ()
-                                            [((Var 4 input))
-                                            (())]
+                                        (StringLen
+                                            (Var 4 input)
                                             (Integer 4)
-                                            ()
                                             ()
                                         )
                                         ())
@@ -394,6 +871,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -426,6 +904,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Integer 8)]
                                         (Integer 8)
@@ -460,7 +939,9 @@
                                                     ()
                                                 )
                                                 5 1_string_t_s
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))
                                             ((Var 5 seed))]
@@ -499,7 +980,9 @@
                                                         ()
                                                     )
                                                     5 1_string_t_s
-                                                    (Character 1 -2 ())
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                 ))
                                                 ((Var 5 hash))]
@@ -590,16 +1073,6 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            len:
-                                                (ExternalSymbol
-                                                    6
-                                                    len
-                                                    10 len
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    len
-                                                    Private
                                                 ),
                                             len_trim:
                                                 (ExternalSymbol
@@ -742,7 +1215,6 @@
                                     )
                                     [len_trim
                                     trim
-                                    len
                                     verify_kind4]
                                     [(Var 6 line)]
                                     [(=
@@ -766,13 +1238,9 @@
                                     )
                                     (If
                                         (IntegerCompare
-                                            (FunctionCall
-                                                6 len
-                                                ()
-                                                [((Var 6 name))
-                                                (())]
+                                            (StringLen
+                                                (Var 6 name)
                                                 (Integer 4)
-                                                ()
                                                 ()
                                             )
                                             NotEq
@@ -852,13 +1320,9 @@
                                                 )
                                                 And
                                                 (IntegerCompare
-                                                    (FunctionCall
-                                                        6 len
-                                                        ()
-                                                        [((Var 6 name))
-                                                        (())]
+                                                    (StringLen
+                                                        (Var 6 name)
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     )
                                                     LtE
@@ -997,6 +1461,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -1013,6 +1478,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Character 1 -1 ())]
                                         (Allocatable
@@ -1093,7 +1559,9 @@
                                                 ()
                                             )
                                             7 1_string_t_s
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         ()
@@ -1131,7 +1599,9 @@
                                                         ()
                                                     )
                                                     7 1_string_t_s
-                                                    (Character 1 -2 ())
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                 )
                                                 (Character 1 -6 ())

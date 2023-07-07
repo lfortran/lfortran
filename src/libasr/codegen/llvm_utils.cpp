@@ -24,6 +24,7 @@ namespace LCompilers {
             llvm::Type *t = x->getType();
             LCOMPILERS_ASSERT(t->isPointerTy());
             llvm::Type *t2 = t->getContainedType(0);
+            LCOMPILERS_ASSERT(!t2->isPointerTy());
             return builder.CreateGEP(t2, x, idx);
         }
 
@@ -326,6 +327,7 @@ namespace LCompilers {
                 }
                 break ;
             };
+            case ASR::ttypeType::Allocatable:
             case ASR::ttypeType::Character:
             case ASR::ttypeType::CPtr: {
                 LLVM::CreateStore(*builder, src, dest);

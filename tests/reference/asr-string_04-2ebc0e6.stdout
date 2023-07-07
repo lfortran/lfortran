@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             string_04:
                 (Program
                     (SymbolTable
@@ -23,6 +21,7 @@
                                             (Character 1 1 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -30,16 +29,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            len:
-                                (ExternalSymbol
-                                    2
-                                    len
-                                    4 len
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    len
-                                    Private
                                 ),
                             str:
                                 (Variable
@@ -73,6 +62,7 @@
                                             (Character 1 40 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -87,7 +77,9 @@
                     [(Allocate
                         [((Var 2 user_data)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4)))])]
+                        (IntegerConstant 3 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -143,7 +135,9 @@
                     (Allocate
                         [((Var 2 greetings)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 5 (Integer 4)))])]
+                        (IntegerConstant 5 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -272,7 +266,9 @@
                     )
                     (Allocate
                         [((Var 2 str)
-                        [])]
+                        []
+                        (IntegerConstant 8 (Integer 4))
+                        ())]
                         ()
                         ()
                         ()
@@ -287,10 +283,8 @@
                     )
                     (If
                         (IntegerCompare
-                            (FunctionCall
-                                2 len
-                                ()
-                                [((StringSection
+                            (StringLen
+                                (StringSection
                                     (Var 2 str)
                                     (IntegerBinOp
                                         (IntegerConstant 2 (Integer 4))
@@ -303,10 +297,8 @@
                                     (IntegerConstant 1 (Integer 4))
                                     (Character 1 -1 ())
                                     ()
-                                ))
-                                (())]
+                                )
                                 (Integer 4)
-                                ()
                                 ()
                             )
                             NotEq

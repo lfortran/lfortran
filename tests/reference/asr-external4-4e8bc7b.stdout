@@ -1,0 +1,278 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            dqc25s:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            centr:
+                                (Variable
+                                    2
+                                    centr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            dlog:
+                                (ExternalSymbol
+                                    2
+                                    dlog
+                                    7 dlog
+                                    lfortran_intrinsic_math
+                                    []
+                                    dlog
+                                    Private
+                                ),
+                            dqk15w:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            
+                                        })
+                                    dqk15w
+                                    (FunctionType
+                                        [(FunctionType
+                                            []
+                                            (Real 8)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 2 f)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            centr:
+                                                (Variable
+                                                    5
+                                                    centr
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            f_arg_0:
+                                                (Variable
+                                                    5
+                                                    f_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            f_return_var_name:
+                                                (Variable
+                                                    5
+                                                    f_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            hlgth:
+                                                (Variable
+                                                    5
+                                                    hlgth
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        [(Real 4)]
+                                        (Real 8)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 f_arg_0)]
+                                    []
+                                    (Var 5 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            hlgth:
+                                (Variable
+                                    2
+                                    hlgth
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    dqc25s
+                    (FunctionType
+                        [(FunctionType
+                            []
+                            (Real 8)
+                            BindC
+                            Interface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    [dqk15w
+                    f
+                    dlog]
+                    [(Var 2 f)]
+                    [(SubroutineCall
+                        2 dqk15w
+                        ()
+                        [((Var 2 f))]
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            2 f
+                            ()
+                            [((RealBinOp
+                                (Var 2 hlgth)
+                                Add
+                                (Var 2 centr)
+                                (Real 4)
+                                ()
+                            ))]
+                            (Real 8)
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            2 dlog
+                            ()
+                            [((RealConstant
+                                2.000000
+                                (Real 8)
+                            ))]
+                            (Real 8)
+                            (RealConstant
+                                0.693147
+                                (Real 8)
+                            )
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math:
+                (IntrinsicModule lfortran_intrinsic_math)
+        })
+    []
+)

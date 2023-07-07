@@ -15,7 +15,7 @@ function main()
     for i ∈ 1:length(x)
         x[i] = i
     end
-    s = mysum(x)
+    s = mysum(Int32(s))
     println(s)
     if s ≠ 55
         println(Base.stderr, "ERROR STOP")

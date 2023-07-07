@@ -474,16 +474,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            len:
-                                                (ExternalSymbol
-                                                    3
-                                                    len
-                                                    9 len
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    len
-                                                    Private
-                                                ),
                                             len_trim:
                                                 (ExternalSymbol
                                                     3
@@ -1156,7 +1146,6 @@
                                         .false.
                                     )
                                     [present
-                                    len
                                     print_generic
                                     len_trim
                                     trim]
@@ -1186,13 +1175,9 @@
                                         (=
                                             (Var 3 increment)
                                             (IntegerBinOp
-                                                (FunctionCall
-                                                    3 len
-                                                    ()
-                                                    [((Var 3 sep_local))
-                                                    (())]
+                                                (StringLen
+                                                    (Var 3 sep_local)
                                                     (Integer 4)
-                                                    ()
                                                     ()
                                                 )
                                                 Add

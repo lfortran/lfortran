@@ -68,6 +68,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 8 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -100,7 +101,18 @@
                         [((Var 2 date))
                         ((Var 2 time))
                         ((Var 2 zone))
-                        ((Var 2 values))]
+                        ((ArrayPhysicalCast
+                            (Var 2 values)
+                            FixedSizeArray
+                            PointerToDataArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 8 (Integer 4)))]
+                                PointerToDataArray
+                            )
+                            ()
+                        ))]
                         ()
                     )
                     (SubroutineCall
@@ -127,26 +139,49 @@
                         [(())
                         (())
                         (())
-                        ((Var 2 values))]
+                        ((ArrayPhysicalCast
+                            (Var 2 values)
+                            FixedSizeArray
+                            PointerToDataArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 8 (Integer 4)))]
+                                PointerToDataArray
+                            )
+                            ()
+                        ))]
                         ()
                     )
                     (Print
-                        (StringConstant
-                            "(a,2x,a,2x,a)"
-                            (Character 1 13 ())
-                        )
-                        [(Var 2 date)
-                        (Var 2 time)
-                        (Var 2 zone)]
+                        ()
+                        [(StringFormat
+                            (StringConstant
+                                "(a,2x,a,2x,a)"
+                                (Character 1 13 ())
+                            )
+                            [(Var 2 date)
+                            (Var 2 time)
+                            (Var 2 zone)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )
                     (Print
-                        (StringConstant
-                            "(8i5)"
-                            (Character 1 5 ())
-                        )
-                        [(Var 2 values)]
+                        ()
+                        [(StringFormat
+                            (StringConstant
+                                "(8i5)"
+                                (Character 1 5 ())
+                            )
+                            [(Var 2 values)]
+                            FormatFortran
+                            (Character -1 0 ())
+                            ()
+                        )]
                         ()
                         ()
                     )]

@@ -131,6 +131,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -160,14 +161,18 @@
                     [modules_45_fpm_manifest_profile]
                     [(Allocate
                         [((Var 7 profile_name)
-                        [])]
+                        []
+                        (IntegerConstant 40 (Integer 4))
+                        ())]
                         ()
                         ()
                         ()
                     )
                     (Allocate
                         [((Var 7 compiler_name)
-                        [])]
+                        []
+                        (IntegerConstant 40 (Integer 4))
+                        ())]
                         ()
                         ()
                         ()
@@ -175,7 +180,9 @@
                     (Allocate
                         [((Var 7 profiles)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 5 (Integer 4)))])]
+                        (IntegerConstant 5 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -348,6 +355,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -524,6 +532,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -581,6 +590,7 @@
                                                 )
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )
                                         (Integer 4)
@@ -731,6 +741,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -852,6 +863,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                         (Logical 4)]
                                         (Struct
@@ -959,6 +971,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()

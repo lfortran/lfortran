@@ -107,7 +107,9 @@
                                         (StructInstanceMember
                                             (Var 17 self)
                                             17 1_git_target_t_url
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (Var 17 url)
@@ -117,7 +119,9 @@
                                         (StructInstanceMember
                                             (Var 17 self)
                                             17 1_git_target_t_object
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (Var 17 branch)
@@ -342,6 +346,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -414,6 +419,7 @@
                                                 )
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )
                                         (Struct
@@ -540,8 +546,10 @@
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_dependency_config_t_git
-                                            (Struct
-                                                8 git_target_t
+                                            (Allocatable
+                                                (Struct
+                                                    8 git_target_t
+                                                )
                                             )
                                             ()
                                         )
@@ -658,6 +666,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -873,12 +882,15 @@
                                         [((StructInstanceMember
                                             (Var 6 self)
                                             6 1_executable_config_t_dependency
-                                            (Array
-                                                (Struct
-                                                    4 dependency_config_t
+                                            (Allocatable
+                                                (Array
+                                                    (Struct
+                                                        4 dependency_config_t
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
                                                 )
-                                                [(()
-                                                ())]
                                             )
                                             ()
                                         ))

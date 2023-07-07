@@ -109,6 +109,7 @@
                                                             (Character 1 -2 ())
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -157,7 +158,9 @@
                                     [(Allocate
                                         [((Var 8 littlefile)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 2 (Integer 4)))])]
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -177,6 +180,7 @@
                                                 (Character 1 80 ())
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 2 (Integer 4)))]
+                                                FixedSizeArray
                                             )
                                             ColMajor
                                         )
@@ -188,7 +192,9 @@
                                         [((StructInstanceMember
                                             (Var 8 settings)
                                             8 1_fpm_new_settings_name
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         ))
                                         ((Var 8 littlefile))]
@@ -310,6 +316,7 @@
                                                         (Character 1 -1 ())
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -341,6 +348,7 @@
                                             (Character 1 -1 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         ()
                                         Source

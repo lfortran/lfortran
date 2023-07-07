@@ -35,6 +35,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -59,7 +60,9 @@
                     [(Allocate
                         [((Var 5 sources)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 1 (Integer 4)))])]
+                        (IntegerConstant 1 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -110,6 +113,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -131,6 +135,7 @@
                                                         (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                     Source
@@ -154,6 +159,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -172,6 +178,7 @@
                                                 )
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )]
                                         ()
@@ -190,7 +197,9 @@
                                     [(Allocate
                                         [((Var 4 dir_sources)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))])]
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -218,6 +227,7 @@
                                                         (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 10 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                     ()
                                                 )
@@ -235,6 +245,7 @@
                                                                     (Logical 4)
                                                                     [((IntegerConstant 1 (Integer 4))
                                                                     (IntegerConstant 10 (Integer 4)))]
+                                                                    FixedSizeArray
                                                                 )
                                                                 ()
                                                             )
@@ -242,6 +253,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
+                                                        PointerToDataArray
                                                     )
                                                 )
                                                 ()
@@ -251,7 +263,9 @@
                                         [(Allocate
                                             [((Var 4 sources)
                                             [((IntegerConstant 1 (Integer 4))
-                                            (IntegerConstant 2 (Integer 4)))])]
+                                            (IntegerConstant 2 (Integer 4)))]
+                                            ()
+                                            ())]
                                             ()
                                             ()
                                             ()
@@ -268,6 +282,7 @@
                                                             (Logical 4)
                                                             [((IntegerConstant 1 (Integer 4))
                                                             (IntegerConstant 10 (Integer 4)))]
+                                                            FixedSizeArray
                                                         )
                                                         ()
                                                     )
@@ -285,6 +300,7 @@
                                                                         (Logical 4)
                                                                         [((IntegerConstant 1 (Integer 4))
                                                                         (IntegerConstant 10 (Integer 4)))]
+                                                                        FixedSizeArray
                                                                     )
                                                                     ()
                                                                 )
@@ -292,6 +308,7 @@
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
+                                                            PointerToDataArray
                                                         )
                                                     )
                                                     ()
@@ -303,6 +320,7 @@
                                                         )
                                                         [((IntegerConstant 1 (Integer 4))
                                                         (IntegerConstant 2 (Integer 4)))]
+                                                        FixedSizeArray
                                                     )
                                                 )
                                                 ColMajor

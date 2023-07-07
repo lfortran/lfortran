@@ -25,6 +25,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -51,6 +52,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -77,6 +79,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -293,6 +296,7 @@
                                                             ())
                                                             (()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -409,6 +413,7 @@
                                                 ())
                                                 (()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )
                                         (Integer 4)]
@@ -713,21 +718,27 @@
                         ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim2))
                         ((IntegerConstant 1 (Integer 4))
-                        (Var 2 dim3))])
+                        (Var 2 dim3))]
+                        ()
+                        ())
                         ((Var 2 b)
                         [((IntegerConstant 1 (Integer 4))
                         (Var 2 dim1))
                         ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim2))
                         ((IntegerConstant 1 (Integer 4))
-                        (Var 2 dim3))])
+                        (Var 2 dim3))]
+                        ()
+                        ())
                         ((Var 2 c)
                         [((IntegerConstant 1 (Integer 4))
                         (Var 2 dim1))
                         ((IntegerConstant 1 (Integer 4))
                         (Var 2 dim2))
                         ((IntegerConstant 1 (Integer 4))
-                        (Var 2 dim3))])]
+                        (Var 2 dim3))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -861,6 +872,7 @@
                                 ())
                                 (()
                                 ())]
+                                DescriptorArray
                             )
                             ()
                         )
@@ -887,6 +899,7 @@
                                 ())
                                 (()
                                 ())]
+                                DescriptorArray
                             )
                             ()
                         )
@@ -913,6 +926,7 @@
                                 ())
                                 (()
                                 ())]
+                                DescriptorArray
                             )
                             ()
                         )
@@ -939,6 +953,7 @@
                                 ())
                                 (()
                                 ())]
+                                DescriptorArray
                             )
                             ()
                         )

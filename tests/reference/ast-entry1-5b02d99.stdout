@@ -64,7 +64,23 @@
         []
         []
         []
-        []
+        [(Declaration
+            (AttrType
+                TypeReal
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(dummy
+            []
+            []
+            ()
+            None
+            ())]
+            ()
+        )]
         [(Print
             0
             ()
@@ -77,7 +93,7 @@
         (=
             0
             dummy
-            5
+            (Real "5.0")
             ()
         )
         (Return

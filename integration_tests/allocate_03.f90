@@ -10,6 +10,7 @@ implicit none
     c(1, 1, 1) = 3
     call h(c)
     r = g(c)
+    if( c(1, 1, 1) /= 8 ) error stop
     print *, c(1, 1, 1)
 
 contains
@@ -24,17 +25,20 @@ function g(x) result(r)
     integer, allocatable :: x(:, :, :)
     integer :: r
     print *, x(1, 1, 1)
+    if( x(1, 1, 1) /= 8 ) error stop
     call f(x)
     print *, x(1, 1, 1)
+    if( x(1, 1, 1) /= 99 ) error stop
     x(1, 1, 1) = 8
     r = 0
 end function
 
 subroutine h(c)
     integer, allocatable, intent(out) :: c(:, :, :)
-    print *, c(1, 1, 1)
+    if( allocated(c) ) error stop
     call f(c)
     print *, c(1, 1, 1)
+    if( c(1, 1, 1) /= 99 ) error stop
     c(1, 1, 1) = 8
 end subroutine
 

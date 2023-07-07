@@ -113,9 +113,10 @@
                                     ()
                                     Default
                                     (Array
-                                        (Real 4)
+                                        (Real 8)
                                         [(()
                                         ())]
+                                        DescriptorArray
                                     )
                                     ()
                                     Source
@@ -133,9 +134,10 @@
                                     ()
                                     Default
                                     (Array
-                                        (Real 4)
+                                        (Real 8)
                                         [(()
                                         ())]
+                                        DescriptorArray
                                     )
                                     ()
                                     Source
@@ -153,9 +155,10 @@
                                     ()
                                     Default
                                     (Array
-                                        (Real 4)
+                                        (Real 8)
                                         [(()
                                         ())]
+                                        DescriptorArray
                                     )
                                     ()
                                     Source
@@ -167,19 +170,22 @@
                     idd_random_transf
                     (FunctionType
                         [(Array
-                            (Real 4)
+                            (Real 8)
                             [(()
                             ())]
+                            DescriptorArray
                         )
                         (Array
-                            (Real 4)
+                            (Real 8)
                             [(()
                             ())]
+                            DescriptorArray
                         )
                         (Array
-                            (Real 4)
+                            (Real 8)
                             [(()
                             ())]
+                            DescriptorArray
                         )]
                         (Integer 4)
                         Source
@@ -204,7 +210,7 @@
                                 [(()
                                 (IntegerConstant 1 (Integer 4))
                                 ())]
-                                (Real 4)
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
@@ -222,7 +228,7 @@
                                 [(()
                                 (IntegerConstant 2 (Integer 4))
                                 ())]
-                                (Real 4)
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
@@ -240,7 +246,7 @@
                                 [(()
                                 (IntegerConstant 3 (Integer 4))
                                 ())]
-                                (Real 4)
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
@@ -258,7 +264,7 @@
                                 [(()
                                 (IntegerConstant 4 (Integer 4))
                                 ())]
-                                (Real 4)
+                                (Real 8)
                                 ColMajor
                                 ()
                             )
@@ -276,7 +282,7 @@
                                 [(()
                                 (IntegerConstant 5 (Integer 4))
                                 ())]
-                                (Real 4)
+                                (Real 8)
                                 ColMajor
                                 ()
                             )

@@ -1,0 +1,5 @@
+semantic error: Assignment to subroutine is not allowed
+ --> tests/errors/subroutine1.f90:5:9
+  |
+5 |         bpe = 1
+  |         ^^^ 

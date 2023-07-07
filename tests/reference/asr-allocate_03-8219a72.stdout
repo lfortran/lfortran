@@ -25,6 +25,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -56,6 +57,7 @@
                                                             ())
                                                             (()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -76,6 +78,7 @@
                                                 ())
                                                 (()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )]
                                         ()
@@ -98,7 +101,9 @@
                                         ((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 3 (Integer 4)))
                                         ((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 3 (Integer 4)))])]
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -167,6 +172,7 @@
                                                             ())
                                                             (()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -187,6 +193,7 @@
                                                 ())
                                                 (()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )]
                                         (Integer 4)
@@ -222,6 +229,33 @@
                                         ()
                                         ()
                                     )
+                                    (If
+                                        (IntegerCompare
+                                            (ArrayItem
+                                                (Var 4 x)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 8 (Integer 4))
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
                                     (ImplicitDeallocate
                                         [(Var 4 x)]
                                     )
@@ -250,6 +284,33 @@
                                         )]
                                         ()
                                         ()
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (ArrayItem
+                                                (Var 4 x)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 99 (Integer 4))
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
                                     )
                                     (=
                                         (ArrayItem
@@ -286,6 +347,16 @@
                                     (SymbolTable
                                         5
                                         {
+                                            allocated:
+                                                (ExternalSymbol
+                                                    5
+                                                    allocated
+                                                    7 allocated
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    allocated
+                                                    Private
+                                                ),
                                             c:
                                                 (Variable
                                                     5
@@ -304,6 +375,7 @@
                                                             ())
                                                             (()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -324,6 +396,7 @@
                                                 ())
                                                 (()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )]
                                         ()
@@ -337,27 +410,22 @@
                                         .false.
                                         .false.
                                     )
-                                    [f]
+                                    [allocated
+                                    f]
                                     [(Var 5 c)]
-                                    [(Print
-                                        ()
-                                        [(ArrayItem
-                                            (Var 5 c)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4))
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4))
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4))
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                    [(If
+                                        (FunctionCall
+                                            5 allocated
+                                            ()
+                                            [((Var 5 c))]
+                                            (Logical 4)
+                                            ()
+                                            ()
+                                        )
+                                        [(ErrorStop
                                             ()
                                         )]
-                                        ()
-                                        ()
+                                        []
                                     )
                                     (ImplicitDeallocate
                                         [(Var 5 c)]
@@ -387,6 +455,33 @@
                                         )]
                                         ()
                                         ()
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (ArrayItem
+                                                (Var 5 c)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4))
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 99 (Integer 4))
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
                                     )
                                     (=
                                         (ArrayItem
@@ -460,7 +555,9 @@
                         ((IntegerConstant 1 (Integer 4))
                         (IntegerConstant 3 (Integer 4)))
                         ((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4)))])]
+                        (IntegerConstant 3 (Integer 4)))]
+                        ()
+                        ())]
                         (Var 2 stat)
                         ()
                         ()
@@ -518,6 +615,33 @@
                         )
                         ()
                     )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 1 (Integer 4))
+                                ())
+                                (()
+                                (IntegerConstant 1 (Integer 4))
+                                ())
+                                (()
+                                (IntegerConstant 1 (Integer 4))
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 8 (Integer 4))
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (Print
                         ()
                         [(ArrayItem
@@ -541,7 +665,9 @@
                     (ImplicitDeallocate
                         [(Var 2 c)]
                     )]
-                )
+                ),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin)
         })
     []
 )

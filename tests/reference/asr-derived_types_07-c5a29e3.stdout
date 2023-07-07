@@ -2,14 +2,8 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3),
             tomlf_structure_vector:
                 (Module
                     (SymbolTable
@@ -190,18 +184,23 @@
                                                     (StructInstanceMember
                                                         (Var 13 self)
                                                         13 1_toml_vector_lst
-                                                        (Array
-                                                            (Struct
-                                                                9 toml_node
+                                                        (Allocatable
+                                                            (Array
+                                                                (Struct
+                                                                    9 toml_node
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
-                                                            [(()
-                                                            ())]
                                                         )
                                                         ()
                                                     )
                                                     13 1_toml_node_val
-                                                    (Class
-                                                        9 toml_value
+                                                    (Allocatable
+                                                        (Class
+                                                            9 toml_value
+                                                        )
                                                     )
                                                     ()
                                                 ))]
@@ -220,18 +219,23 @@
                                                         (StructInstanceMember
                                                             (Var 13 self)
                                                             13 1_toml_vector_lst
-                                                            (Array
-                                                                (Struct
-                                                                    9 toml_node
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Struct
+                                                                        9 toml_node
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
-                                                                [(()
-                                                                ())]
                                                             )
                                                             ()
                                                         )
                                                         13 1_toml_node_val
-                                                        (Class
-                                                            9 toml_value
+                                                        (Allocatable
+                                                            (Class
+                                                                9 toml_value
+                                                            )
                                                         )
                                                         ()
                                                     )
@@ -242,18 +246,23 @@
                                                         (StructInstanceMember
                                                             (Var 13 self)
                                                             13 1_toml_vector_lst
-                                                            (Array
-                                                                (Struct
-                                                                    9 toml_node
+                                                            (Allocatable
+                                                                (Array
+                                                                    (Struct
+                                                                        9 toml_node
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
-                                                                [(()
-                                                                ())]
                                                             )
                                                             ()
                                                         )
                                                         13 1_toml_node_val
-                                                        (Class
-                                                            9 toml_value
+                                                        (Allocatable
+                                                            (Class
+                                                                9 toml_value
+                                                            )
                                                         )
                                                         ()
                                                     )
@@ -296,26 +305,6 @@
                                                     []
                                                     n
                                                     Public
-                                                ),
-                                            min:
-                                                (ExternalSymbol
-                                                    12
-                                                    min
-                                                    41 min
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    min
-                                                    Private
-                                                ),
-                                            min@imin:
-                                                (ExternalSymbol
-                                                    12
-                                                    min@imin
-                                                    41 imin
-                                                    lfortran_intrinsic_math2
-                                                    []
-                                                    imin
-                                                    Private
                                                 ),
                                             n:
                                                 (Variable
@@ -379,8 +368,7 @@
                                         .false.
                                         .false.
                                     )
-                                    [present
-                                    min@imin]
+                                    [present]
                                     [(Var 12 self)
                                     (Var 12 n)]
                                     [(=
@@ -406,25 +394,29 @@
                                             [((StructInstanceMember
                                                 (Var 12 self)
                                                 12 1_toml_vector_lst
-                                                (Array
-                                                    (Struct
-                                                        9 toml_node
+                                                (Allocatable
+                                                    (Array
+                                                        (Struct
+                                                            9 toml_node
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
                                                     )
-                                                    [(()
-                                                    ())]
                                                 )
                                                 ()
                                             )
                                             [((IntegerConstant 1 (Integer 4))
-                                            (FunctionCall
-                                                12 min@imin
-                                                12 min
-                                                [((IntegerConstant 1 (Integer 4)))
-                                                ((Var 12 n))]
+                                            (IntrinsicFunction
+                                                Min
+                                                [(IntegerConstant 1 (Integer 4))
+                                                (Var 12 n)]
+                                                0
                                                 (Integer 4)
                                                 ()
-                                                ()
-                                            ))])]
+                                            ))]
+                                            ()
+                                            ())]
                                             ()
                                             ()
                                             ()
@@ -504,6 +496,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -543,8 +536,7 @@
                         })
                     tomlf_structure_vector
                     [tomlf_type_value
-                    lfortran_intrinsic_builtin
-                    lfortran_intrinsic_math2]
+                    lfortran_intrinsic_builtin]
                     .false.
                     .false.
                 ),
@@ -632,7 +624,9 @@
                                             [((StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -643,7 +637,9 @@
                                             [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_value_key
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             )]
                                         )]
@@ -656,7 +652,9 @@
                                             [((StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -667,7 +665,9 @@
                                             [(StructInstanceMember
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             )]
                                         )]
@@ -735,8 +735,8 @@
                                 )
                         })
                     tomlf_type_keyval
-                    [lfortran_intrinsic_builtin
-                    tomlf_type_value]
+                    [tomlf_type_value
+                    lfortran_intrinsic_builtin]
                     .false.
                     .false.
                 ),
@@ -897,7 +897,9 @@
                                             [((StructInstanceMember
                                                 (Var 5 self)
                                                 5 1_toml_value_key
-                                                (Character 1 -2 ())
+                                                (Allocatable
+                                                    (Character 1 -2 ())
+                                                )
                                                 ()
                                             ))]
                                             (Logical 4)
@@ -912,7 +914,9 @@
                                                 (StructInstanceMember
                                                     (Var 5 self)
                                                     5 1_toml_value_key
-                                                    (Character 1 -2 ())
+                                                    (Allocatable
+                                                        (Character 1 -2 ())
+                                                    )
                                                     ()
                                                 )
                                                 (Logical 4)

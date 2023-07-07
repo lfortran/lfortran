@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-real_dp_01-e53c6fb",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/real_dp_01.f90",
+    "infile_hash": "96dcdc6844b049f189b110b997c4e4f840afa6ff1cd1da7e03f80d79",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-real_dp_01-e53c6fb.stdout",
+    "stdout_hash": "a5c17746ba02017413baaca29a2704c7d62f3be5ae368d8b6b3ee1fd",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

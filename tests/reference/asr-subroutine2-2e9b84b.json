@@ -1,0 +1,13 @@
+{
+    "basename": "asr-subroutine2-2e9b84b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/subroutine2.f90",
+    "infile_hash": "8d668071a906445fe0fbdca2d363b4a71347144c0a1c6c63893bd3b6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-subroutine2-2e9b84b.stderr",
+    "stderr_hash": "a4f18a794df01c4e3aab136af3c47a843279365ca216267dcd8833bb",
+    "returncode": 2
+}

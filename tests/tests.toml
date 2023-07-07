@@ -25,6 +25,10 @@ filename = "../integration_tests/template_add_03.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_add_04.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_nested.f90"
 ast = true
 asr = true
@@ -56,6 +60,20 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_array_04.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_01.f90"
+asr = true
+ast = true
+
+[[test]]
+filename = "../integration_tests/template_struct_01.f90"
+asr = true
+ast = true
+
+[[test]]
+filename = "../integration_tests/template_struct_01.f90"
 asr = true
 
 [[test]]
@@ -284,6 +302,10 @@ asr = true
 
 [[test]]
 filename = "errors/template_error_05.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_06.f90"
 asr = true
 
 [[test]]
@@ -952,6 +974,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/arrays_21.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/arrays_25.f90"
+llvm = true
 
 [[test]]
 filename = "../integration_tests/types_01.f90"
@@ -1667,7 +1693,7 @@ llvm = true
 wat = true
 
 [[test]]
-filename = "../integration_tests/real_dp.f90"
+filename = "../integration_tests/real_dp_01.f90"
 asr = true
 llvm = true
 
@@ -2462,6 +2488,15 @@ ast_f90 = true
 filename = "entry1.f90"
 ast = true
 ast_f90 = true
+asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "entry2.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "../integration_tests/entry_02.f90"
+asr = true
 
 [[test]]
 filename = "issue532.f90"
@@ -3089,6 +3124,14 @@ filename = "save1.f90"
 asr = true
 
 [[test]]
+filename = "save2.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/save_03.f90"
+asr = true
+
+[[test]]
 filename = "allow_implicit_interface3.f90"
 asr_implicit_interface = true
 
@@ -3232,6 +3275,18 @@ asr_implicit_interface_and_typing = true
 filename = "external3.f90"
 asr_implicit_interface_and_typing = true
 
+[[test]]
+filename = "external4.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "external5.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "errors/external1.f90"
+asr = true
+
 # Parser
 
 [[test]]
@@ -3282,7 +3337,7 @@ ast = true
 
 [[test]]
 filename = "external1.f90"
-asr = true
+asr_implicit_interface_and_typing = true
 
 [[test]]
 filename = "errors/implicit_typing4.f90"
@@ -3291,3 +3346,19 @@ asr_implicit_typing = true
 [[test]]
 filename = "external2.f90"
 asr_implicit_interface_and_typing = true
+
+[[test]]
+filename = "../integration_tests/data_implied_do_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/subroutine1.f90"
+asr = true
+
+[[test]]
+filename = "errors/subroutine2.f90"
+asr = true
+
+[[test]]
+filename = "errors/subroutine3.f90"
+asr = true

@@ -10,9 +10,9 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
-#include <libasr/pass/class_constructor.h>
-#include <libasr/pass/array_op.h>
-#include <libasr/pass/subroutine_from_function.h>
+#include <libasr/pass/replace_class_constructor.h>
+#include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/create_subroutine_from_function.h>
 
 #include <map>
 #include <utility>
@@ -282,7 +282,7 @@ public:
             use_ref = use_ref && !is_array;
             if (ASRUtils::is_integer(*v_m_type)) {
                 headers.insert("inttypes.h");
-                ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(v_m_type);
+                ASR::Integer_t *t = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_allocatable(v_m_type));
                 std::string type_name = "int" + std::to_string(t->m_kind * 8) + "_t";
                 if( is_array ) {
                     bool is_fixed_size = true;
@@ -299,13 +299,17 @@ public:
                         if( !force_declare ) {
                             force_declare_name = std::string(v.m_name);
                         }
+                        bool is_module_var = ASR::is_a<ASR::Module_t>(
+                                *ASR::down_cast<ASR::symbol_t>(v.m_parent_symtab->asr_owner));
                         generate_array_decl(sub, force_declare_name, type_name, dims,
                                             encoded_type_name, m_dims, n_dims,
                                             use_ref, dummy,
                                             (v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
-                                            !is_struct_type_member) || force_declare,
+                                            v.m_intent != ASRUtils::intent_unspecified &&
+                                            !is_struct_type_member &&
+                                            !is_module_var) || force_declare,
                                             is_fixed_size, false, v.m_abi);
                     }
                 } else {
@@ -343,6 +347,7 @@ public:
                                             (v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
+                                            v.m_intent != ASRUtils::intent_unspecified &&
                                             !is_struct_type_member) || force_declare,
                                             is_fixed_size, false, v.m_abi);
                     }
@@ -381,6 +386,7 @@ public:
                                             (v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
+                                            v.m_intent != ASRUtils::intent_unspecified &&
                                             !is_struct_type_member) || force_declare, is_fixed_size);
                     }
                 } else {
@@ -419,6 +425,7 @@ public:
                                             (v.m_intent != ASRUtils::intent_in &&
                                             v.m_intent != ASRUtils::intent_inout &&
                                             v.m_intent != ASRUtils::intent_out &&
+                                            v.m_intent != ASRUtils::intent_unspecified &&
                                             !is_struct_type_member) || force_declare, is_fixed_size);
                     }
                 } else {
@@ -591,9 +598,13 @@ public:
                     }
                 }
                 if( init_expr ) {
-                    this->visit_expr(*init_expr);
-                    std::string init = src;
-                    sub += " = " + init;
+                    if (is_c && ASR::is_a<ASR::StringChr_t>(*init_expr)) {
+                        // TODO: Not supported yet
+                    } else {
+                        this->visit_expr(*init_expr);
+                        std::string init = src;
+                        sub += " = " + init;
+                    }
                 }
             }
         }
@@ -779,6 +790,12 @@ R"(
     }
 
     void visit_Module(const ASR::Module_t &x) {
+        if (startswith(x.m_name, "lfortran_intrinsic_")) {
+            intrinsic_module = true;
+        } else {
+            intrinsic_module = false;
+        }
+
         std::string unit_src = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -824,6 +841,7 @@ R"(
             unit_src += src;
         }
         src = unit_src;
+        intrinsic_module = false;
     }
 
     void visit_Program(const ASR::Program_t &x) {

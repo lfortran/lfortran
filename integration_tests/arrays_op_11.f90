@@ -5,13 +5,14 @@ program main
 
     print *, solution()
     z = solution()
+    print *, z
     call compare_solutions(z)
 
 contains
 
     subroutine compare_solutions(x)
-        real,dimension(:),intent(in) :: x
-        real,dimension(size(x)) :: diff
+        real, dimension(:), intent(in) :: x
+        real, dimension(size(x)) :: diff
 
         diff = solution() - x
 

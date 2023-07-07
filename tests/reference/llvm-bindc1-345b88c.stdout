@@ -6,6 +6,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_set_argv(i32 %0, i8** %1)
   %p = alloca void*, align 8
   %x = alloca i32*, align 8
+  store i32* null, i32** %x, align 8
   %2 = load i32*, i32** %x, align 8
   %3 = bitcast i32* %2 to void*
   store void* %3, void** %p, align 8

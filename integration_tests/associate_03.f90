@@ -1,10 +1,10 @@
 program associate_03
     implicit none
-    
+
     integer, pointer :: p1
     integer, target :: t1 = 2, t2 = 1
     integer :: i
-    
+
     print *, t1, t2
     ! Runtime pointer association
     if (t1 > t2) then
@@ -17,6 +17,5 @@ program associate_03
     !if (p1 == t2) error stop
     i = p1
     if (i == t2) error stop
-    
+
 end program
-    

@@ -29,6 +29,20 @@ namespace LCompilers {
         builder.CreateCall(fn_printf, args);
     }
 
+    static inline llvm::Value* string_format_fortran(llvm::LLVMContext &context, llvm::Module &module,
+        llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
+    {
+        llvm::Function *fn_printf = module.getFunction("_lcompilers_string_format_fortran");
+        if (!fn_printf) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt8PtrTy(context),
+                    {llvm::Type::getInt8PtrTy(context)}, true);
+            fn_printf = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", &module);
+        }
+        return builder.CreateCall(fn_printf, args);
+    }
+
     static inline void print_error(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
     {
@@ -97,6 +111,10 @@ namespace LCompilers {
                    ASR::is_a<ASR::Struct_t>(*asr_type) ||
                    ASR::is_a<ASR::Class_t>(*asr_type)||
                    ASR::is_a<ASR::Dict_t>(*asr_type);
+        }
+        static inline bool is_llvm_pointer(const ASR::ttype_t& asr_type) {
+            return ( ASR::is_a<ASR::Pointer_t>(asr_type) ||
+                   ASR::is_a<ASR::Allocatable_t>(asr_type) );
         }
     }
 

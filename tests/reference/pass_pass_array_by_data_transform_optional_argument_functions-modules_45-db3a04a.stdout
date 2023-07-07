@@ -131,6 +131,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -160,14 +161,18 @@
                     [modules_45_fpm_manifest_profile]
                     [(Allocate
                         [((Var 7 profile_name)
-                        [])]
+                        []
+                        (IntegerConstant 40 (Integer 4))
+                        ())]
                         ()
                         ()
                         ()
                     )
                     (Allocate
                         [((Var 7 compiler_name)
-                        [])]
+                        []
+                        (IntegerConstant 40 (Integer 4))
+                        ())]
                         ()
                         ()
                         ()
@@ -175,7 +180,9 @@
                     (Allocate
                         [((Var 7 profiles)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 5 (Integer 4)))])]
+                        (IntegerConstant 5 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -348,6 +355,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -524,6 +532,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -581,6 +590,7 @@
                                                 )
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )
                                         (Integer 4)
@@ -641,7 +651,22 @@
                                                 .true.
                                                 (Logical 4)
                                             ))
-                                            ((Var 6 file_scope_flags))
+                                            ((ArrayPhysicalCast
+                                                (Var 6 file_scope_flags)
+                                                DescriptorArray
+                                                PointerToDataArray
+                                                (Allocatable
+                                                    (Array
+                                                        (Struct
+                                                            2 file_scope_flag
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        PointerToDataArray
+                                                    )
+                                                )
+                                                ()
+                                            ))
                                             ((LogicalConstant
                                                 .true.
                                                 (Logical 4)
@@ -776,6 +801,7 @@
                                                         )
                                                         [(()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -984,16 +1010,23 @@
                                         (Character 1 -1 ())
                                         (Integer 4)
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Array
                                             (Struct
                                                 2 file_scope_flag
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
+                                        (Logical 4)
+                                        (Logical 4)
                                         (Logical 4)]
                                         (Struct
                                             2 profile_config_t
@@ -1132,6 +1165,7 @@
                                                         )
                                                         [((Var 8 __1file_scope_flags)
                                                         (Var 8 __2file_scope_flags))]
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     Source
@@ -1372,16 +1406,35 @@
                                         (Character 1 -1 ())
                                         (Integer 4)
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Character 1 -1 ())
+                                        (Logical 4)
                                         (Array
                                             (Struct
                                                 2 file_scope_flag
                                             )
-                                            [(()
-                                            ())]
+                                            [((FunctionParam
+                                                8
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (FunctionParam
+                                                9
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            PointerToDataArray
                                         )
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Logical 4)
+                                        (Logical 4)
                                         (Logical 4)]
                                         (Struct
                                             2 profile_config_t
@@ -1498,6 +1551,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()

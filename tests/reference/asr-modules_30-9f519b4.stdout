@@ -101,7 +101,9 @@
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_name
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (Var 9 name)
@@ -111,7 +113,9 @@
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_source_dir
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (StringConstant
@@ -124,7 +128,9 @@
                                         (StructInstanceMember
                                             (Var 9 self)
                                             9 1_executable_config_main
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         )
                                         (StringConstant
@@ -336,17 +342,22 @@
                                         [((StructInstanceMember
                                             (Var 10 package)
                                             10 1_package_config_t_executable
-                                            (Array
-                                                (Struct
-                                                    10 1_executable_config
+                                            (Allocatable
+                                                (Array
+                                                    (Struct
+                                                        10 1_executable_config
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
                                                 )
-                                                [(()
-                                                ())]
                                             )
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))])]
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -358,12 +369,15 @@
                                             (StructInstanceMember
                                                 (Var 10 package)
                                                 10 1_package_config_t_executable
-                                                (Array
-                                                    (Struct
-                                                        10 1_executable_config
+                                                (Allocatable
+                                                    (Array
+                                                        (Struct
+                                                            10 1_executable_config
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
                                                     )
-                                                    [(()
-                                                    ())]
                                                 )
                                                 ()
                                             )
@@ -379,7 +393,9 @@
                                         ((StructInstanceMember
                                             (Var 10 package)
                                             10 1_package_config_t_name
-                                            (Character 1 -2 ())
+                                            (Allocatable
+                                                (Character 1 -2 ())
+                                            )
                                             ()
                                         ))]
                                         ()
@@ -433,6 +449,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()

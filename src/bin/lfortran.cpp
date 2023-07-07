@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <filesystem>
-
+#include <random>
 #define CLI11_HAS_FILESYSTEM 0
 #include <bin/CLI11.hpp>
 
@@ -21,23 +21,23 @@
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
-#include <libasr/pass/do_loops.h>
-#include <libasr/pass/for_all.h>
-#include <libasr/pass/global_stmts.h>
-#include <libasr/pass/implied_do_loops.h>
-#include <libasr/pass/array_op.h>
-#include <libasr/pass/class_constructor.h>
-#include <libasr/pass/arr_slice.h>
-#include <libasr/pass/print_arr.h>
-#include <libasr/pass/where.h>
+#include <libasr/pass/replace_do_loops.h>
+#include <libasr/pass/replace_for_all.h>
+#include <libasr/pass/wrap_global_stmts.h>
+#include <libasr/pass/replace_implied_do_loops.h>
+#include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/replace_class_constructor.h>
+#include <libasr/pass/replace_arr_slice.h>
+#include <libasr/pass/replace_print_arr.h>
+#include <libasr/pass/replace_where.h>
 #include <libasr/pass/unused_functions.h>
-#include <libasr/pass/flip_sign.h>
-#include <libasr/pass/div_to_mul.h>
-#include <libasr/pass/fma.h>
+#include <libasr/pass/replace_flip_sign.h>
+#include <libasr/pass/replace_div_to_mul.h>
+#include <libasr/pass/replace_fma.h>
 #include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
-#include <libasr/pass/sign_from_value.h>
+#include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/modfile.h>
@@ -54,6 +54,8 @@
     #include <emscripten/emscripten.h>
 #endif
 
+extern std::string lcompilers_unique_ID;
+
 namespace {
 
 using LCompilers::endswith;
@@ -62,6 +64,19 @@ using LCompilers::CompilerOptions;
 enum Backend {
     llvm, c, cpp, x86, wasm
 };
+
+std::string get_unique_ID() {
+    static std::random_device dev;
+    static std::mt19937 rng(dev());
+    std::uniform_int_distribution<int> dist(0, 61);
+    const std::string v =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    std::string res;
+    for (int i = 0; i < 22; i++) {
+        res += v[dist(rng)];
+    }
+    return res;
+}
 
 std::string read_file(const std::string &filename)
 {
@@ -1831,6 +1846,7 @@ int main(int argc, char *argv[])
         app.add_flag("--print-targets", print_targets, "Print the registered targets");
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
+        app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting");
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.verbose, "Print debugging statements");
@@ -1868,6 +1884,8 @@ int main(int argc, char *argv[])
         app.get_formatter()->column_width(25);
         app.require_subcommand(0, 1);
         CLI11_PARSE(app, argc, argv);
+        lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+
 
         if (arg_version) {
             std::string version = LFORTRAN_VERSION;

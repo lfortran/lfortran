@@ -21,6 +21,7 @@
                                             (Character 1 5 ())
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -43,6 +44,7 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -65,6 +67,7 @@
                                             (Logical 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -79,7 +82,9 @@
                     [(Allocate
                         [((Var 2 list_integer)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 0 (Integer 4)))])]
+                        (IntegerConstant 0 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -92,6 +97,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 0 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )
@@ -100,7 +106,9 @@
                     (Allocate
                         [((Var 2 list_logical)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 0 (Integer 4)))])]
+                        (IntegerConstant 0 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -113,6 +121,7 @@
                                 (Logical 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 0 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )
@@ -121,7 +130,9 @@
                     (Allocate
                         [((Var 2 list_character)
                         [((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 0 (Integer 4)))])]
+                        (IntegerConstant 0 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -134,6 +145,7 @@
                                 (Character 1 1 ())
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 0 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )

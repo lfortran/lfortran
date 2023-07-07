@@ -23,6 +23,7 @@
                                             )
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -262,7 +263,9 @@
                                                     (Allocate
                                                         [((Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
                                                         [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 1 (Integer 4)))])]
+                                                        (IntegerConstant 1 (Integer 4)))]
+                                                        ()
+                                                        ())]
                                                         ()
                                                         ()
                                                         ()
@@ -357,6 +360,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -385,7 +389,9 @@
                                     [(Allocate
                                         [((Var 5 modules_used)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 1 (Integer 4)))])]
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()

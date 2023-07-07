@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-define void @find_fit(void (float*)* %expr) {
+define void @find_fit(void ([1 x float]*)* %expr) {
 .entry:
   br label %return
 
@@ -9,9 +9,9 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-declare void @expr(float*)
+declare void @expr([1 x float]*)
 
-define void @expression(float* %y) {
+define void @expression([1 x float]* %y) {
 .entry:
   br label %return
 
@@ -22,7 +22,7 @@ return:                                           ; preds = %.entry
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_set_argv(i32 %0, i8** %1)
-  call void @find_fit(void (float*)* @expression)
+  call void @find_fit(void ([1 x float]*)* @expression)
   ret i32 0
 }
 

@@ -108,6 +108,7 @@
                                         )
                                         [(()
                                         ())]
+                                        DescriptorArray
                                     )
                                 )
                                 ()
@@ -186,6 +187,7 @@
                                                                         )
                                                                         [(()
                                                                         ())]
+                                                                        DescriptorArray
                                                                     )
                                                                 )
                                                                 ()
@@ -261,17 +263,22 @@
                                         [((StructInstanceMember
                                             (Var 5 type_1)
                                             5 1_t_2_type_2
-                                            (Array
-                                                (Struct
-                                                    2 t_1
+                                            (Pointer
+                                                (Array
+                                                    (Struct
+                                                        2 t_1
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
                                                 )
-                                                [(()
-                                                ())]
                                             )
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4)))])]
+                                        (IntegerConstant 0 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -372,6 +379,7 @@
                                                                         )
                                                                         [(()
                                                                         ())]
+                                                                        DescriptorArray
                                                                     )
                                                                 )
                                                                 ()
@@ -400,6 +408,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -418,6 +427,7 @@
                                                 )
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )]
                                         ()
@@ -435,19 +445,34 @@
                                     [(Var 6 progress)]
                                     [(Allocate
                                         [((StructInstanceMember
-                                            (Var 6 progress)
-                                            6 1_t_2_type_2
-                                            (Array
-                                                (Struct
-                                                    2 t_1
-                                                )
+                                            (ArrayItem
+                                                (Var 6 progress)
                                                 [(()
+                                                (IntegerConstant 0 (Integer 4))
                                                 ())]
+                                                (Class
+                                                    2 t_2
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            6 1_t_2_type_2
+                                            (Pointer
+                                                (Array
+                                                    (Struct
+                                                        2 t_1
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
                                             )
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4))
-                                        (IntegerConstant 0 (Integer 4)))])]
+                                        (IntegerConstant 0 (Integer 4)))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -514,6 +539,7 @@
                                                             )
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()

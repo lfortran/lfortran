@@ -1,5 +1,9 @@
-semantic error: Variable 'n' is not declared
- --> tests/implicit8.f90:4:14
+semantic error: m, n is/are used as dimensions but not declared
+ --> tests/implicit8.f90:1:1 - 6:13
   |
-4 | integer :: X(n), Y(m)
-  |              ^ 'n' is undeclared
+1 |    integer function a(n,m)
+  |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+6 |    end function
+  | ...^^^^^^^^^^^^^ 

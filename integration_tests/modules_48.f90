@@ -56,15 +56,16 @@ function is_fortran_name(line) result (lout)
     character(len=*), intent(in) :: line
     character(len=:), allocatable :: name
     logical :: lout
-        name = trim(line)
-        if( len(name) /= 0 ) then
-            lout = .true. &
-             & .and. verify(name(1:1), lower//upper) == 0 &
-             & .and. verify(name, allowed) == 0 &
-             & .and. len(name) <= 63
-        else
-            lout = .false.
-        end if
+
+    name = trim(line)
+    if( len(name) /= 0 ) then
+        lout = .true. &
+            & .and. verify(name(1:1), lower//upper) == 0 &
+            & .and. verify(name, allowed) == 0 &
+            & .and. len(name) <= 63
+    else
+        lout = .false.
+    end if
 end function is_fortran_name
 
 function string_cat(strings, delim) result(cat)
@@ -101,6 +102,37 @@ program modules_48
 use modules_48_fpm_strings
 implicit none
 
-print *, "running modules_48"
+character(len=40) :: char_str
+character(len=:), allocatable :: char_str_alloc, cat_str_alloc
+integer(8) :: char_str_hash1, char_str_hash2
+integer(8) :: char_str_hash3, char_str_hash4
+type(string_t) :: string_var(2)
+
+allocate(character(len=40) :: char_str_alloc)
+
+char_str_alloc = "runningmodules_48_1"
+string_var(1)%s = char_str_alloc
+char_str = "runningmodules_48_2"
+string_var(2)%s = char_str
+
+char_str_hash1 = fnv_1a(char_str, 2166136261_8)
+char_str_hash2 = fnv_1a(char_str)
+print *, char_str_hash1, char_str_hash2
+if( char_str_hash1 /= char_str_hash2 ) error stop
+
+char_str_hash3 = fnv_1a_string_t(string_var, 2166136261_8)
+char_str_hash4 = fnv_1a_string_t(string_var)
+print *, char_str_hash3, char_str_hash4
+if( char_str_hash3 /= char_str_hash4 ) error stop
+
+cat_str_alloc = string_cat(string_var, ":")
+print *, cat_str_alloc, is_fortran_name(cat_str_alloc)
+if( cat_str_alloc /= "runningmodules_48_1:runningmodules_48_2" ) error stop
+if( is_fortran_name(cat_str_alloc) ) error stop
+
+cat_str_alloc = string_cat(string_var)
+print *, cat_str_alloc, is_fortran_name(cat_str_alloc)
+if( cat_str_alloc /= "runningmodules_48_1runningmodules_48_2" ) error stop
+if( .not. is_fortran_name(cat_str_alloc) ) error stop
 
 end program

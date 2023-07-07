@@ -15,6 +15,7 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 1, i32* %idx, align 4
   %queries = alloca void*, align 8
   %x = alloca i16*, align 8
+  store i16* null, i16** %x, align 8
   %y = alloca i16, align 2
   %2 = load void*, void** %queries, align 8
   %3 = bitcast void* %2 to i16*

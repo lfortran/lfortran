@@ -21,6 +21,7 @@
                                             (Integer 4)
                                             [(()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -45,6 +46,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -71,6 +73,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -197,6 +200,7 @@
                                                         ())
                                                         (()
                                                         ())]
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                     Source
@@ -279,6 +283,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )]
                                         (Complex 4)
                                         Source
@@ -410,6 +415,7 @@
                                                             (Integer 4)
                                                             [(()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -434,6 +440,7 @@
                                                             ())
                                                             (()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -460,6 +467,7 @@
                                                             ())
                                                             (()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -486,6 +494,7 @@
                                                             ())
                                                             (()
                                                             ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -550,6 +559,7 @@
                                                 (Integer 4)
                                                 [(()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )
                                         (Allocatable
@@ -559,6 +569,7 @@
                                                 ())
                                                 (()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )
                                         (Allocatable
@@ -570,6 +581,7 @@
                                                 ())
                                                 (()
                                                 ())]
+                                                DescriptorArray
                                             )
                                         )]
                                         ()
@@ -684,7 +696,9 @@
                                             (IntegerConstant 1 (Integer 4))
                                             (Integer 4)
                                             ()
-                                        ))])]
+                                        ))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -786,7 +800,9 @@
                                             (IntegerConstant 1 (Integer 4))
                                             (Integer 4)
                                             ()
-                                        ))])]
+                                        ))]
+                                        ()
+                                        ())]
                                         ()
                                         ()
                                         ()
@@ -985,7 +1001,9 @@
                             (IntegerConstant 1 (Integer 4))
                             (Integer 4)
                             ()
-                        ))])]
+                        ))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()
@@ -1031,7 +1049,9 @@
                             (IntegerConstant 1 (Integer 4))
                             (Integer 4)
                             ()
-                        ))])]
+                        ))]
+                        ()
+                        ())]
                         (Var 2 ierr)
                         ()
                         ()

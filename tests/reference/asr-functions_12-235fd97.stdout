@@ -32,16 +32,6 @@
                                                     i32huge
                                                     Private
                                                 ),
-                                            len:
-                                                (ExternalSymbol
-                                                    3
-                                                    len
-                                                    5 len
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    len
-                                                    Private
-                                                ),
                                             r:
                                                 (Variable
                                                     3
@@ -93,13 +83,9 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (FunctionCall
-                                                        3 len
-                                                        ()
-                                                        [((Var 3 string))
-                                                        (())]
+                                                    (Character 1 -3 (StringLen
+                                                        (Var 3 string)
                                                         (Integer 4)
-                                                        ()
                                                         ()
                                                     ))
                                                     ()
@@ -146,19 +132,7 @@
                                     decodebase
                                     (FunctionType
                                         [(Character 1 -1 ())]
-                                        (Character 1 -3 (FunctionCall
-                                            3 len
-                                            ()
-                                            [((FunctionParam
-                                                0
-                                                (Character 1 -1 ())
-                                                ()
-                                            ))
-                                            (())]
-                                            (Integer 4)
-                                            ()
-                                            ()
-                                        ))
+                                        (Logical 4)
                                         Source
                                         Implementation
                                         ()
@@ -169,8 +143,7 @@
                                         .false.
                                         .false.
                                     )
-                                    [huge@i32huge
-                                    len]
+                                    [huge@i32huge]
                                     [(Var 3 string)]
                                     []
                                     (Var 3 r)

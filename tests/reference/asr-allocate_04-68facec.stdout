@@ -25,6 +25,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -110,14 +111,18 @@
                     []
                     [(Allocate
                         [((Var 2 string)
-                        [])]
+                        []
+                        (IntegerConstant 8 (Integer 4))
+                        ())]
                         ()
                         ()
                         ()
                     )
                     (Allocate
                         [((Var 2 message)
-                        [])]
+                        []
+                        (IntegerConstant 20 (Integer 4))
+                        ())]
                         ()
                         ()
                         ()
@@ -129,7 +134,9 @@
                         ((IntegerConstant 1 (Integer 4))
                         (IntegerConstant 3 (Integer 4)))
                         ((IntegerConstant 1 (Integer 4))
-                        (IntegerConstant 3 (Integer 4)))])]
+                        (IntegerConstant 3 (Integer 4)))]
+                        ()
+                        ())]
                         ()
                         ()
                         ()

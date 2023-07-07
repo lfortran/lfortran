@@ -37,6 +37,16 @@
                                     c_loc
                                     Public
                                 ),
+                            c_null_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_null_ptr
+                                    4 c_null_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_null_ptr
+                                    Public
+                                ),
                             c_ptr:
                                 (ExternalSymbol
                                     2
@@ -92,6 +102,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -107,6 +118,26 @@
                                     Local
                                     ()
                                     ()
+                                    Default
+                                    (CPtr)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            queries2:
+                                (Variable
+                                    2
+                                    queries2
+                                    []
+                                    Local
+                                    (PointerNullConstant
+                                        (CPtr)
+                                    )
+                                    (PointerNullConstant
+                                        (CPtr)
+                                    )
                                     Default
                                     (CPtr)
                                     ()
@@ -131,6 +162,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -154,6 +186,7 @@
                                         (IntegerConstant 3 (Integer 4)))
                                         ((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -177,6 +210,7 @@
                                             ())
                                             (()
                                             ())]
+                                            DescriptorArray
                                         )
                                     )
                                     ()
@@ -200,6 +234,7 @@
                                         (IntegerConstant 3 (Integer 4)))
                                         ((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 4 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -238,11 +273,37 @@
                     )
                     (=>
                         (Var 2 x)
-                        (Var 2 xv)
+                        (ArrayPhysicalCast
+                            (Var 2 xv)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Integer 2)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 4 (Integer 4)))]
+                                DescriptorArray
+                            )
+                            ()
+                        )
                     )
                     (=>
                         (Var 2 y)
-                        (Var 2 yv)
+                        (ArrayPhysicalCast
+                            (Var 2 yv)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Integer 2)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 4 (Integer 4)))]
+                                DescriptorArray
+                            )
+                            ()
+                        )
                     )
                     (DoLoop
                         ()
@@ -405,6 +466,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 2 (Integer 4)))]
+                                FixedSizeArray
                             )
                             ColMajor
                         )
@@ -556,6 +618,25 @@
                             ()
                         )]
                         []
+                    )
+                    (If
+                        (PointerAssociated
+                            (Var 2 queries2)
+                            ()
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 queries)
+                        (PointerNullConstant
+                            (CPtr)
+                        )
+                        ()
                     )]
                 ),
             iso_c_binding:

@@ -20,6 +20,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -56,32 +57,13 @@
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
                                     .false.
-                                ),
-                            merge:
-                                (ExternalSymbol
-                                    2
-                                    merge
-                                    4 merge
-                                    lfortran_intrinsic_math2
-                                    []
-                                    merge
-                                    Private
-                                ),
-                            merge@merger32:
-                                (ExternalSymbol
-                                    2
-                                    merge@merger32
-                                    4 merger32
-                                    lfortran_intrinsic_math2
-                                    []
-                                    merger32
-                                    Private
                                 ),
                             result:
                                 (Variable
@@ -96,6 +78,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -116,6 +99,7 @@
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (IntegerConstant 6 (Integer 4)))]
+                                        FixedSizeArray
                                     )
                                     ()
                                     Source
@@ -283,14 +267,18 @@
                     )
                     (=
                         (Var 2 result)
-                        (FunctionCall
-                            2 merge@merger32
-                            2 merge
-                            [((Var 2 tsource))
-                            ((Var 2 fsource))
-                            ((Var 2 mask))]
-                            (Real 4)
-                            ()
+                        (IntrinsicFunction
+                            Merge
+                            [(Var 2 tsource)
+                            (Var 2 fsource)
+                            (Var 2 mask)]
+                            0
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 6 (Integer 4)))]
+                                FixedSizeArray
+                            )
                             ()
                         )
                         ()
@@ -301,15 +289,7 @@
                         ()
                         ()
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3)
+                )
         })
     []
 )

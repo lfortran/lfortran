@@ -41,6 +41,7 @@
                                                         (Complex 4)
                                                         [(()
                                                         ())]
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     BindC
@@ -77,6 +78,7 @@
                                                         (Complex 4)
                                                         [(()
                                                         ())]
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     BindC
@@ -155,12 +157,14 @@
                                             (Complex 4)
                                             [(()
                                             ())]
+                                            PointerToDataArray
                                         )
                                         (Integer 4)
                                         (Array
                                             (Complex 4)
                                             [(()
                                             ())]
+                                            PointerToDataArray
                                         )
                                         (Complex 4)
                                         (Complex 4)
@@ -285,6 +289,7 @@
                                         (Complex 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (Var 2 m))]
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
@@ -305,6 +310,7 @@
                                         (Complex 4)
                                         [((IntegerConstant 1 (Integer 4))
                                         (Var 2 n))]
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
