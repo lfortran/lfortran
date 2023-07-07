@@ -357,6 +357,12 @@ jobs:
             FC=$(pwd)/../src/bin/lfortran cmake .
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-asr --no-indent --no-color main.f90
+            git clean -fdx
+            git checkout -t origin/lf3
+            git checkout e5ce0676705d6bd12621f55496d73388a7a3e787
+            FC=$(pwd)/../src/bin/lfortran cmake .
+            make fastgpt
+            $(pwd)/../src/bin/lfortran --show-llvm main.f90
 
 
   fpm:
