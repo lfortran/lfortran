@@ -434,6 +434,11 @@ public:
                                     tnew->m_kind, tnew->m_len, tnew->m_len_expr));
                         break;
                     }
+                    case ASR::ttypeType::Complex: {
+                        ASR::Complex_t* tnew = ASR::down_cast<ASR::Complex_t>(t);
+                        t = ASRUtils::TYPE(ASR::make_Complex_t(al, t->base.loc, tnew->m_kind));
+                        break;
+                    }
                     default: {
                         LCOMPILERS_ASSERT(false);
                     }
