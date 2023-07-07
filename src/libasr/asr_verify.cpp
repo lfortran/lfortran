@@ -836,6 +836,8 @@ public:
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayPhysicalCast(x);
+        require(x.m_new != x.m_old, "ArrayPhysicalCast is redundant, "
+            "the old physical type and new physical type must be different.");
         require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
             "Destination physical type conflicts with the physical type of target");
         require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),

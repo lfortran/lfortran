@@ -557,14 +557,17 @@ public:
     inline void fill_malloc_array_details(llvm::Value* arr, llvm::Type* llvm_data_type,
                                           ASR::dimension_t* m_dims, int n_dims) {
         std::vector<std::pair<llvm::Value*, llvm::Value*>> llvm_dims;
+        int ptr_loads_copy = ptr_loads;
+        ptr_loads = 2;
         for( int r = 0; r < n_dims; r++ ) {
             ASR::dimension_t m_dim = m_dims[r];
-            visit_expr(*(m_dim.m_start));
+            visit_expr_wrapper(m_dim.m_start, true);
             llvm::Value* start = tmp;
-            visit_expr(*(m_dim.m_length));
+            visit_expr_wrapper(m_dim.m_length, true);
             llvm::Value* end = tmp;
             llvm_dims.push_back(std::make_pair(start, end));
         }
+        ptr_loads = ptr_loads_copy;
         arr_descr->fill_malloc_array_details(arr, llvm_data_type,
             n_dims, llvm_dims, module.get());
     }
@@ -2303,6 +2306,8 @@ public:
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
                 for( size_t idim = 0; idim < x.n_args; idim++ ) {
                     this->visit_expr_wrapper(m_dims[idim].m_start, true);
                     llvm::Value* dim_start = tmp;
@@ -2311,6 +2316,7 @@ public:
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
                 }
+                ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
             bool is_polymorphic = current_select_type_block_type != nullptr;
@@ -7806,8 +7812,7 @@ public:
                         } else {
                             if( orig_arg &&
                                 !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
-                                LLVM::is_llvm_pointer(*arg->m_type) &&
-                                !ASRUtils::is_character(*arg->m_type) ) {
+                                LLVM::is_llvm_pointer(*arg->m_type) ) {
                                 tmp = LLVM::CreateLoad(*builder, tmp);
                             }
                         }

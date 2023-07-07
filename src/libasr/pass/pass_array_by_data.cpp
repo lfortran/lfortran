@@ -309,10 +309,6 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
         }
     }
 
-    void replace_BlockCall(ASR::BlockCall_t* x) {
-        edit_symbol_pointer(m)
-    }
-
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         edit_symbol_pointer(name)
         ASR::BaseExprReplacer<EditProcedureReplacer>::replace_FunctionCall(x);
@@ -340,6 +336,12 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         edit_symbol_reference(name)
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t& x) {
+        ASR::BlockCall_t& xx = const_cast<ASR::BlockCall_t&>(x);
+        edit_symbol_reference(m)
+        ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_BlockCall(x);
     }
 
 };
