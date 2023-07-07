@@ -131,26 +131,6 @@
                                     Required
                                     .false.
                                 ),
-                            merge:
-                                (ExternalSymbol
-                                    2
-                                    merge
-                                    4 merge
-                                    lfortran_intrinsic_math2
-                                    []
-                                    merge
-                                    Private
-                                ),
-                            merge@merger64:
-                                (ExternalSymbol
-                                    2
-                                    merge@merger64
-                                    4 merger64
-                                    lfortran_intrinsic_math2
-                                    []
-                                    merger64
-                                    Private
-                                ),
                             real_mask:
                                 (Variable
                                     2
@@ -690,53 +670,20 @@
                     )
                     (=
                         (Var 2 ar1)
-                        (FunctionCall
-                            2 merge@merger64
-                            2 merge
-                            [((ArrayPhysicalCast
-                                (Var 2 tsource)
+                        (IntrinsicFunction
+                            Merge
+                            [(Var 2 tsource)
+                            (Var 2 fsource)
+                            (Var 2 mask)]
+                            0
+                            (Array
+                                (Real 8)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 2 (Integer 4)))
+                                ((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 3 (Integer 4)))]
                                 FixedSizeArray
-                                DescriptorArray
-                                (Array
-                                    (Real 8)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))
-                                    ((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
-                                    DescriptorArray
-                                )
-                                ()
-                            ))
-                            ((ArrayPhysicalCast
-                                (Var 2 fsource)
-                                FixedSizeArray
-                                DescriptorArray
-                                (Array
-                                    (Real 8)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))
-                                    ((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
-                                    DescriptorArray
-                                )
-                                ()
-                            ))
-                            ((ArrayPhysicalCast
-                                (Var 2 mask)
-                                FixedSizeArray
-                                DescriptorArray
-                                (Array
-                                    (Logical 4)
-                                    [((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 2 (Integer 4)))
-                                    ((IntegerConstant 1 (Integer 4))
-                                    (IntegerConstant 3 (Integer 4)))]
-                                    DescriptorArray
-                                )
-                                ()
-                            ))]
-                            (Real 8)
-                            ()
+                            )
                             ()
                         )
                         ()
@@ -830,15 +777,7 @@
                         ()
                         ()
                     )]
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math2:
-                (IntrinsicModule lfortran_intrinsic_math2),
-            lfortran_intrinsic_math3:
-                (IntrinsicModule lfortran_intrinsic_math3)
+                )
         })
     []
 )

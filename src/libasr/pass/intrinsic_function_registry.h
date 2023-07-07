@@ -51,6 +51,7 @@ enum class IntrinsicFunctions : int64_t {
     MaxVal,
     Min,
     MinVal,
+    Merge,
     // ...
 };
 
@@ -86,6 +87,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Product)
         INTRINSIC_NAME_CASE(MaxVal)
         INTRINSIC_NAME_CASE(MinVal)
+        INTRINSIC_NAME_CASE(Merge)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -2404,6 +2406,168 @@ namespace Partition {
     }
 } // namespace Partition
 
+namespace Merge {
+
+    static inline ASR::expr_t* eval_Merge(
+        Allocator &/*al*/, const Location &/*loc*/, Vec<ASR::expr_t*>& args) {
+        LCOMPILERS_ASSERT(args.size() == 3);
+        ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
+        if( ASRUtils::is_array(ASRUtils::expr_type(mask)) ) {
+            return nullptr;
+        }
+
+        bool mask_value = false;
+        if( ASRUtils::is_value_constant(mask, mask_value) ) {
+            if( mask_value ) {
+                return tsource;
+            } else {
+                return fsource;
+            }
+        }
+        return nullptr;
+    }
+
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+        const Location& loc = x.base.base.loc;
+        ASR::expr_t *tsource = x.m_args[0], *fsource = x.m_args[1], *mask = x.m_args[2];
+        ASR::ttype_t *tsource_type = ASRUtils::expr_type(tsource);
+        ASR::ttype_t *fsource_type = ASRUtils::expr_type(fsource);
+        ASR::ttype_t *mask_type = ASRUtils::expr_type(mask);
+        int tsource_ndims, fsource_ndims;
+        ASR::dimension_t *tsource_mdims = nullptr, *fsource_mdims = nullptr;
+        tsource_ndims = ASRUtils::extract_dimensions_from_ttype(tsource_type, tsource_mdims);
+        fsource_ndims = ASRUtils::extract_dimensions_from_ttype(fsource_type, fsource_mdims);
+        if( tsource_ndims > 0 && fsource_ndims > 0 ) {
+            ASRUtils::require_impl(tsource_ndims == fsource_ndims,
+                "All arguments of `merge` should be of same rank and dimensions", loc, diagnostics);
+
+            if( ASRUtils::extract_physical_type(tsource_type) == ASR::array_physical_typeType::FixedSizeArray &&
+                ASRUtils::extract_physical_type(fsource_type) == ASR::array_physical_typeType::FixedSizeArray ) {
+                ASRUtils::require_impl(ASRUtils::get_fixed_size_of_array(tsource_mdims, tsource_ndims) ==
+                    ASRUtils::get_fixed_size_of_array(fsource_mdims, fsource_ndims),
+                    "`tsource` and `fsource` arguments should have matching size", loc, diagnostics);
+            }
+        }
+
+        ASRUtils::require_impl(ASRUtils::check_equal_type(tsource_type, fsource_type),
+            "`tsource` and `fsource` arguments to `merge` should be of same type, found " +
+            ASRUtils::get_type_code(tsource_type) + ", " +
+            ASRUtils::get_type_code(fsource_type), loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_logical(*mask_type),
+            "`mask` argument to `merge` should be of logical type, found " +
+                ASRUtils::get_type_code(mask_type), loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_Merge(Allocator& al, const Location& loc,
+        Vec<ASR::expr_t*>& args,
+        const std::function<void (const std::string &, const Location &)> err) {
+        if( args.size() != 3 ) {
+            err("`merge` intrinsic accepts 3 positional arguments, found " +
+                std::to_string(args.size()), loc);
+        }
+
+        ASR::expr_t *tsource = args[0], *fsource = args[1], *mask = args[2];
+        ASR::ttype_t *tsource_type = ASRUtils::expr_type(tsource);
+        ASR::ttype_t *fsource_type = ASRUtils::expr_type(fsource);
+        ASR::ttype_t *mask_type = ASRUtils::expr_type(mask);
+        ASR::ttype_t* result_type = tsource_type;
+        int tsource_ndims, fsource_ndims, mask_ndims;
+        ASR::dimension_t *tsource_mdims = nullptr, *fsource_mdims = nullptr, *mask_mdims = nullptr;
+        tsource_ndims = ASRUtils::extract_dimensions_from_ttype(tsource_type, tsource_mdims);
+        fsource_ndims = ASRUtils::extract_dimensions_from_ttype(fsource_type, fsource_mdims);
+        mask_ndims = ASRUtils::extract_dimensions_from_ttype(mask_type, mask_mdims);
+        if( tsource_ndims > 0 && fsource_ndims > 0 ) {
+            if( tsource_ndims != fsource_ndims ) {
+                err("All arguments of `merge` should be of same rank and dimensions", loc);
+            }
+
+            if( ASRUtils::extract_physical_type(tsource_type) == ASR::array_physical_typeType::FixedSizeArray &&
+                ASRUtils::extract_physical_type(fsource_type) == ASR::array_physical_typeType::FixedSizeArray &&
+                ASRUtils::get_fixed_size_of_array(tsource_mdims, tsource_ndims) !=
+                    ASRUtils::get_fixed_size_of_array(fsource_mdims, fsource_ndims) ) {
+                err("`tsource` and `fsource` arguments should have matching size", loc);
+            }
+        } else {
+            if( tsource_ndims > 0 && fsource_ndims == 0 ) {
+                result_type = tsource_type;
+            } else if( tsource_ndims == 0 && fsource_ndims > 0 ) {
+                result_type = fsource_type;
+            } else if( tsource_ndims == 0 && fsource_ndims == 0 && mask_ndims > 0 ) {
+                Vec<ASR::dimension_t> mask_mdims_vec;
+                mask_mdims_vec.from_pointer_n(mask_mdims, mask_ndims);
+                result_type = ASRUtils::duplicate_type(al, tsource_type, &mask_mdims_vec,
+                    ASRUtils::extract_physical_type(mask_type), true);
+                if( ASR::is_a<ASR::Allocatable_t>(*mask_type) ) {
+                    result_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, result_type));
+                }
+            }
+        }
+        if( !ASRUtils::check_equal_type(tsource_type, fsource_type) ) {
+            err("`tsource` and `fsource` arguments to `merge` should be of same type, found " +
+                ASRUtils::get_type_code(tsource_type) + ", " +
+                ASRUtils::get_type_code(fsource_type), loc);
+        }
+        if( !ASRUtils::is_logical(*mask_type) ) {
+            err("`mask` argument to `merge` should be of logical type, found " +
+                ASRUtils::get_type_code(mask_type), loc);
+        }
+
+        return ASR::make_IntrinsicFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Merge),
+            args.p, args.size(), 0, result_type, nullptr);
+    }
+
+    static inline ASR::expr_t* instantiate_Merge(Allocator &al,
+        const Location &loc, SymbolTable *scope,
+        Vec<ASR::ttype_t*>& arg_types, Vec<ASR::call_arg_t>& new_args,
+        int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        LCOMPILERS_ASSERT(arg_types.size() == 3);
+
+        // Array inputs should be elementalised in array_op pass already
+        LCOMPILERS_ASSERT( !ASRUtils::is_array(arg_types[2]) );
+        ASR::ttype_t *tsource_type = ASRUtils::duplicate_type(al, arg_types[0]);
+        ASR::ttype_t *fsource_type = ASRUtils::duplicate_type(al, arg_types[1]);
+        ASR::ttype_t *mask_type = ASRUtils::duplicate_type(al, arg_types[2]);
+        if( ASR::is_a<ASR::Character_t>(*tsource_type) ) {
+            ASR::Character_t* tsource_char = ASR::down_cast<ASR::Character_t>(tsource_type);
+            ASR::Character_t* fsource_char = ASR::down_cast<ASR::Character_t>(fsource_type);
+            tsource_char->m_len_expr = nullptr; fsource_char->m_len_expr = nullptr;
+            tsource_char->m_len = -2; fsource_char->m_len = -2;
+        }
+        std::string new_name = "_lcompilers_merge_" + get_type_code(tsource_type);
+
+        declare_basic_variables(new_name);
+        if (scope->get_symbol(new_name)) {
+            ASR::symbol_t *s = scope->get_symbol(new_name);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+            return b.Call(s, new_args, expr_type(f->m_return_var), compile_time_value);
+        }
+
+        auto tsource_arg = declare("tsource", tsource_type, In);
+        args.push_back(al, tsource_arg);
+        auto fsource_arg = declare("fsource", fsource_type, In);
+        args.push_back(al, fsource_arg);
+        auto mask_arg = declare("mask", mask_type, In);
+        args.push_back(al, mask_arg);
+        // TODO: In case of Character type, set len of ReturnVar to len(tsource) expression
+        auto result = declare("merge", tsource_type, ReturnVar);
+
+        {
+            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+            if_body.push_back(al, Assignment(result, tsource_arg));
+            Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
+            else_body.push_back(al, Assignment(result, fsource_arg));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, mask_arg,
+                if_body.p, if_body.n, else_body.p, else_body.n)));
+        }
+
+        ASR::symbol_t *new_symbol = make_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.Call(new_symbol, new_args, tsource_type, compile_time_value);
+    }
+}
+
 
 namespace IntrinsicFunctionRegistry {
 
@@ -2459,6 +2623,8 @@ namespace IntrinsicFunctionRegistry {
             {&Min::instantiate_Min, &Min::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinVal),
             {&MinVal::instantiate_MinVal, &MinVal::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Merge),
+            {&Merge::instantiate_Merge, &Merge::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -2509,6 +2675,8 @@ namespace IntrinsicFunctionRegistry {
             "min"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinVal),
             "minval"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Merge),
+            "merge"},
     };
 
 
@@ -2539,6 +2707,7 @@ namespace IntrinsicFunctionRegistry {
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
+                {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
 
     };
 
@@ -2559,7 +2728,8 @@ namespace IntrinsicFunctionRegistry {
                  id_ == ASRUtils::IntrinsicFunctions::Sin ||
                  id_ == ASRUtils::IntrinsicFunctions::Exp ||
                  id_ == ASRUtils::IntrinsicFunctions::Exp2 ||
-                 id_ == ASRUtils::IntrinsicFunctions::Expm1 );
+                 id_ == ASRUtils::IntrinsicFunctions::Expm1 ||
+                 id_ == ASRUtils::IntrinsicFunctions::Merge );
     }
 
     /*

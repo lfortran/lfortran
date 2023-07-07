@@ -236,6 +236,11 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_vars_helper(x);
     }
 
+    void replace_ComplexConstructor(ASR::ComplexConstructor_t* x) {
+        LCOMPILERS_ASSERT( !ASRUtils::is_array(x->m_type) );
+        replace_vars_helper(x);
+    }
+
     template <typename LOOP_BODY>
     void create_do_loop(const Location& loc, int result_rank,
         Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& loop_vars,
@@ -307,6 +312,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_Constant(x);
     }
 
+    void replace_StringConstant(ASR::StringConstant_t* x) {
+        replace_Constant(x);
+    }
+
     void replace_RealConstant(ASR::RealConstant_t* x) {
         replace_Constant(x);
     }
@@ -372,7 +381,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 return ASRUtils::EXPR(ASR::make_LogicalCompare_t(
                             al, loc, left, (ASR::cmpopType)x->m_op,
                             right, x_m_type, nullptr));
-
+            case ASR::exprType::StringCompare:
+                return ASRUtils::EXPR(ASR::make_StringCompare_t(
+                            al, loc, left, (ASR::cmpopType)x->m_op,
+                            right, x_m_type, nullptr));
             default:
                 throw LCompilersException("The desired operation is not supported yet for arrays.");
         }
@@ -594,7 +606,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
 
             if( result_var == nullptr ) {
                 bool allocate = false;
-                ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(left),
+                ASR::ttype_t* result_var_type = get_result_type(x->m_type,
                     left_dims, rank_left, loc, x->class_type, allocate);
                 if( allocate ) {
                     result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -644,7 +656,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             }
             if( result_var == nullptr ) {
                 bool allocate = false;
-                ASR::ttype_t* result_var_type = get_result_type(ASRUtils::expr_type(arr_expr),
+                ASR::ttype_t* result_var_type = get_result_type(x->m_type,
                     arr_expr_dims, arr_expr_n_dims, loc, x->class_type, allocate);
                 if( allocate ) {
                     result_var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -898,6 +910,10 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         replace_ArrayOpCommon<ASR::LogicalCompare_t>(x, "_logical_comp_op_res");
     }
 
+    void replace_StringCompare(ASR::StringCompare_t* x) {
+        replace_ArrayOpCommon<ASR::StringCompare_t>(x, "_string_comp_op_res");
+    }
+
     void replace_IntrinsicFunction(ASR::IntrinsicFunction_t* x) {
         if( !ASRUtils::IntrinsicFunctionRegistry::is_elemental(x->m_intrinsic_id) ) {
             return ;
@@ -918,7 +934,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         ASR::expr_t* result_var_copy = result_var;
         bool is_all_rank_0 = true;
         std::vector<ASR::expr_t*> operands;
-        ASR::expr_t* operand = nullptr;
+        ASR::expr_t *operand = nullptr, *first_array_operand = nullptr;
         int common_rank = 0;
         bool are_all_rank_same = true;
         for( size_t iarg = 0; iarg < x->n_args; iarg++ ) {
@@ -930,6 +946,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             current_expr = current_expr_copy_9;
             operands.push_back(operand);
             int rank_operand = PassUtils::get_rank(operand);
+            if( rank_operand > 0 && first_array_operand == nullptr ) {
+                first_array_operand = operand;
+            }
             if( common_rank == 0 ) {
                 common_rank = rank_operand;
             }
@@ -950,12 +969,12 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         result_var = result_var_copy;
         if( result_var == nullptr ) {
             result_var = PassUtils::create_var(result_counter, res_prefix,
-                            loc, operand, al, current_scope);
+                            loc, x->m_type, al, current_scope);
             result_counter += 1;
-            operand = operands[0];
+            operand = first_array_operand;
             ASR::dimension_t* m_dims;
             int n_dims = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::expr_type(operand), m_dims);
+                ASRUtils::expr_type(first_array_operand), m_dims);
             allocate_result_var(operand, m_dims, n_dims);
         }
         *current_expr = result_var;
