@@ -3915,6 +3915,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                             ASR::dimension_t dim_;
                             dim_.m_start = nullptr;
                             dim_.m_length = nullptr;
+                            dim_.loc = arg->base.loc;
                             dim.push_back(al, dim_);
                             arg_array_t = (ASR::Array_t*) ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
                             dim.p, dim.size(), ASR::array_physical_typeType::DescriptorArray);
@@ -3957,6 +3958,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::dimension_t dim_;
                         dim_.m_start = one;
                         dim_.m_length = one;
+                        dim_.loc = arg->base.loc;
                         dim.push_back(al, dim_);
 
                         ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
@@ -3972,6 +3974,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::dimension_t dims_;
                         dims_.m_start = nullptr;
                         dims_.m_length = nullptr;
+                        dim_.loc = arg->base.loc;
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
