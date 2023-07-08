@@ -2503,6 +2503,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                                                     b2->m_union_type));
                 return a2_type == b2_type;
             }
+            case (ASR::ttypeType::TypeParameter) : {
+                ASR::TypeParameter_t* left_tp = ASR::down_cast<ASR::TypeParameter_t>(a);
+                ASR::TypeParameter_t* right_tp = ASR::down_cast<ASR::TypeParameter_t>(b);
+                std::string left_param = left_tp->m_param;
+                std::string right_param = right_tp->m_param;
+                return left_param.compare(right_param) == 0;
+            }
             default : return false;
         }
     } else if( a->type == ASR::ttypeType::Struct &&
@@ -2612,12 +2619,6 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
             }
         }
         return result;
-    } else if (ASR::is_a<ASR::TypeParameter_t>(*x) && ASR::is_a<ASR::TypeParameter_t>(*y)) {
-        ASR::TypeParameter_t* left_tp = ASR::down_cast<ASR::TypeParameter_t>(x);
-        ASR::TypeParameter_t* right_tp = ASR::down_cast<ASR::TypeParameter_t>(y);
-        std::string left_param = left_tp->m_param;
-        std::string right_param = right_tp->m_param;
-        return left_param.compare(right_param) == 0;
     } else if (ASR::is_a<ASR::FunctionType_t>(*x) && ASR::is_a<ASR::FunctionType_t>(*y)) {
         ASR::FunctionType_t* left_ft = ASR::down_cast<ASR::FunctionType_t>(x);
         ASR::FunctionType_t* right_ft = ASR::down_cast<ASR::FunctionType_t>(y);
