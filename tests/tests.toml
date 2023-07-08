@@ -3358,3 +3358,7 @@ asr = true
 [[test]]
 filename = "errors/subroutine3.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/implicit_argument_casting_01.f90"
+asr_implicit_argument_casting = true

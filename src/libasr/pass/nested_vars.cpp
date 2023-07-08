@@ -403,7 +403,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             visit_expr(*x.m_dt);
         }
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt);
+        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
+            nullptr, false);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
@@ -423,7 +424,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         }
 
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
-        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt);
+        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
+            nullptr, false);
     }
 
 };

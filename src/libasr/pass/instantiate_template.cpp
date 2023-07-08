@@ -367,7 +367,7 @@ public:
         }
         dependencies.push_back(al, ASRUtils::symbol_name(name));
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name /* change this */,
-            x->m_original_name, args.p, args.size(), dt);
+            x->m_original_name, args.p, args.size(), dt, nullptr, false);
     }
 
 

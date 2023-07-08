@@ -2309,8 +2309,13 @@ public:
         if( f ) {
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr);
         }
+        ASR::stmt_t* cast_stmt = nullptr;
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
-                final_sym, original_sym, args.p, args.size(), v_expr);
+                final_sym, original_sym, args.p, args.size(), v_expr, &cast_stmt, compiler_options.implicit_argument_casting);
+
+        if (cast_stmt != nullptr) {
+            current_body->push_back(al, cast_stmt);
+        }
     }
 
     // Changes argument `sub_name` to the new symbol from the current symbol
