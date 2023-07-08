@@ -3887,7 +3887,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             !(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(arg_type)) ||
               ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(orig_arg_type))) &&
             a_dt == nullptr ) {
-            if (!ASRUtils::check_equal_type(arg_type, orig_arg_type) && implicit_argument_casting) {
+            if (implicit_argument_casting && !ASRUtils::check_equal_type(arg_type, orig_arg_type)) {
                 if (ASR::is_a<ASR::Function_t>(*a_name_)) {
                     // get current_scope
                     SymbolTable* current_scope = nullptr;
