@@ -28,6 +28,42 @@
                                     Required
                                     .false.
                                 ),
+                            dp:
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 kind
+                                        ()
+                                        [((RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        ))]
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
+                                        ()
+                                    )
+                                    (IntegerConstant 8 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            kind:
+                                (ExternalSymbol
+                                    2
+                                    kind
+                                    4 kind
+                                    lfortran_intrinsic_kind
+                                    []
+                                    kind
+                                    Private
+                                ),
                             n:
                                 (Variable
                                     2
@@ -69,7 +105,7 @@
                         .false.
                         .false.
                     )
-                    []
+                    [kind]
                     [(Var 2 n)
                     (Var 2 a)]
                     [(=
@@ -79,354 +115,72 @@
                             (Real 8)
                         )
                         ()
-                    )
-                    (Return)]
+                    )]
                     ()
                     Public
                     .false.
                     .false.
                     ()
                 ),
-            idzp_svd:
-                (Function
-                    (SymbolTable
-                        3
-                        {
-                            c_f_pointer:
-                                (ExternalSymbol
-                                    3
-                                    c_f_pointer
-                                    5 c_f_pointer
-                                    lfortran_intrinsic_iso_c_binding
-                                    []
-                                    c_f_pointer
-                                    Public
-                                ),
-                            c_loc:
-                                (ExternalSymbol
-                                    3
-                                    c_loc
-                                    5 c_loc
-                                    lfortran_intrinsic_iso_c_binding
-                                    []
-                                    c_loc
-                                    Public
-                                ),
-                            eps:
-                                (Variable
-                                    3
-                                    eps
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 8)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            i:
-                                (Variable
-                                    3
-                                    i
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            isi:
-                                (Variable
-                                    3
-                                    isi
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            ls:
-                                (Variable
-                                    3
-                                    ls
-                                    []
-                                    Unspecified
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            real:
-                                (ExternalSymbol
-                                    3
-                                    real
-                                    13 real
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    real
-                                    Private
-                                ),
-                            w:
-                                (Variable
-                                    3
-                                    w
-                                    []
-                                    Unspecified
-                                    ()
-                                    ()
-                                    Default
-                                    (Array
-                                        (Complex 8)
-                                        [(()
-                                        ())]
-                                        DescriptorArray
-                                    )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            w_cast:
-                                (Variable
-                                    3
-                                    w_cast
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Pointer
-                                        (Array
-                                            (Real 8)
-                                            [(()
-                                            ())]
-                                            DescriptorArray
-                                        )
-                                    )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-                        })
-                    idzp_svd
-                    (FunctionType
-                        [(Integer 4)
-                        (Array
-                            (Complex 8)
-                            [(()
-                            ())]
-                            DescriptorArray
-                        )]
-                        ()
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    [idz_realcomp]
-                    [(Var 3 ls)
-                    (Var 3 w)]
-                    [(=
-                        (Var 3 isi)
-                        (IntegerConstant 1 (Integer 4))
-                        ()
-                    )
-                    (=
-                        (Var 3 ls)
-                        (IntegerConstant 5 (Integer 4))
-                        ()
-                    )
-                    (CPtrToPointer
-                        (PointerToCPtr
-                            (GetPointer
-                                (ArrayItem
-                                    (Var 3 w)
-                                    [(()
-                                    (Var 3 isi)
-                                    ())]
-                                    (Complex 8)
-                                    ColMajor
-                                    ()
-                                )
-                                (Pointer
-                                    (Complex 8)
-                                )
-                                ()
-                            )
-                            (CPtr)
-                            ()
-                        )
-                        (Var 3 w_cast)
-                        (ArrayConstant
-                            [(IntegerConstant 1000 (Integer 4))]
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4))
-                                (IntegerConstant 1 (Integer 4)))]
-                                FixedSizeArray
-                            )
-                            ColMajor
-                        )
-                        ()
-                    )
-                    (SubroutineCall
-                        1 idz_realcomp
-                        ()
-                        [((Var 3 ls))
-                        ((ArrayPhysicalCast
-                            (Var 3 w_cast)
-                            DescriptorArray
-                            PointerToDataArray
-                            (Pointer
-                                (Array
-                                    (Real 8)
-                                    [(()
-                                    ())]
-                                    PointerToDataArray
-                                )
-                            )
-                            ()
-                        ))]
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(ArrayItem
-                            (Var 3 w)
-                            [(()
-                            (Var 3 isi)
-                            ())]
-                            (Complex 8)
-                            ColMajor
-                            ()
-                        )]
-                        ()
-                        ()
-                    )
-                    (If
-                        (RealCompare
-                            (IntrinsicFunction
-                                Abs
-                                [(RealBinOp
-                                    (Cast
-                                        (ArrayItem
-                                            (Var 3 w)
-                                            [(()
-                                            (Var 3 isi)
-                                            ())]
-                                            (Complex 8)
-                                            ColMajor
-                                            ()
-                                        )
-                                        ComplexToReal
-                                        (Real 4)
-                                        ()
-                                    )
-                                    Sub
-                                    (Cast
-                                        (RealConstant
-                                            12.500000
-                                            (Real 8)
-                                        )
-                                        RealToReal
-                                        (Real 4)
-                                        (RealConstant
-                                            12.500000
-                                            (Real 4)
-                                        )
-                                    )
-                                    (Real 4)
-                                    ()
-                                )]
-                                0
-                                (Real 4)
-                                ()
-                            )
-                            Gt
-                            (RealConstant
-                                0.000000
-                                (Real 4)
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )
-                    (Return)]
-                    ()
-                    Public
-                    .false.
-                    .false.
-                    ()
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
             lfortran_intrinsic_builtin:
                 (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_kind:
+                (IntrinsicModule lfortran_intrinsic_kind),
             main:
                 (Program
                     (SymbolTable
-                        10
+                        12
                         {
+                            dp:
+                                (Variable
+                                    12
+                                    dp
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        12 kind
+                                        ()
+                                        [((RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        ))]
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
+                                        ()
+                                    )
+                                    (IntegerConstant 8 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             idzp_svd:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        13
                                         {
-                                            c_f_pointer:
-                                                (ExternalSymbol
-                                                    11
-                                                    c_f_pointer
-                                                    5 c_f_pointer
-                                                    lfortran_intrinsic_iso_c_binding
+                                            isi:
+                                                (Variable
+                                                    13
+                                                    isi
                                                     []
-                                                    c_f_pointer
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
                                                     Public
-                                                ),
-                                            c_loc:
-                                                (ExternalSymbol
-                                                    11
-                                                    c_loc
-                                                    5 c_loc
-                                                    lfortran_intrinsic_iso_c_binding
-                                                    []
-                                                    c_loc
-                                                    Public
+                                                    Required
+                                                    .false.
                                                 ),
                                             ls:
                                                 (Variable
-                                                    11
+                                                    13
                                                     ls
                                                     []
                                                     Unspecified
@@ -440,9 +194,19 @@
                                                     Required
                                                     .false.
                                                 ),
+                                            real:
+                                                (ExternalSymbol
+                                                    13
+                                                    real
+                                                    15 real
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    real
+                                                    Private
+                                                ),
                                             w:
                                                 (Variable
-                                                    11
+                                                    13
                                                     w
                                                     []
                                                     Unspecified
@@ -454,6 +218,29 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            w_cast:
+                                                (Variable
+                                                    13
+                                                    w_cast
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (Real 8)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
                                                     )
                                                     ()
                                                     Source
@@ -473,7 +260,7 @@
                                         )]
                                         ()
                                         Source
-                                        Interface
+                                        Implementation
                                         ()
                                         .false.
                                         .false.
@@ -482,19 +269,158 @@
                                         .false.
                                         .false.
                                     )
-                                    []
-                                    [(Var 11 ls)
-                                    (Var 11 w)]
-                                    []
+                                    [idz_realcomp]
+                                    [(Var 13 ls)
+                                    (Var 13 w)]
+                                    [(=
+                                        (Var 13 isi)
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (CPtrToPointer
+                                        (PointerToCPtr
+                                            (GetPointer
+                                                (ArrayItem
+                                                    (Var 13 w)
+                                                    [(()
+                                                    (Var 13 isi)
+                                                    ())]
+                                                    (Complex 8)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Pointer
+                                                    (Complex 8)
+                                                )
+                                                ()
+                                            )
+                                            (CPtr)
+                                            ()
+                                        )
+                                        (Var 13 w_cast)
+                                        (ArrayConstant
+                                            [(IntegerConstant 1000 (Integer 4))]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        1 idz_realcomp
+                                        ()
+                                        [((IntegerBinOp
+                                            (Var 13 ls)
+                                            Mul
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Integer 4)
+                                            ()
+                                        ))
+                                        ((ArrayPhysicalCast
+                                            (Var 13 w_cast)
+                                            DescriptorArray
+                                            PointerToDataArray
+                                            (Pointer
+                                                (Array
+                                                    (Real 8)
+                                                    [(()
+                                                    ())]
+                                                    PointerToDataArray
+                                                )
+                                            )
+                                            ()
+                                        ))]
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(ArrayItem
+                                            (Var 13 w)
+                                            [(()
+                                            (Var 13 isi)
+                                            ())]
+                                            (Complex 8)
+                                            ColMajor
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        (RealCompare
+                                            (IntrinsicFunction
+                                                Abs
+                                                [(RealBinOp
+                                                    (Cast
+                                                        (ArrayItem
+                                                            (Var 13 w)
+                                                            [(()
+                                                            (Var 13 isi)
+                                                            ())]
+                                                            (Complex 8)
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        ComplexToReal
+                                                        (Real 8)
+                                                        ()
+                                                    )
+                                                    Sub
+                                                    (RealConstant
+                                                        12.500000
+                                                        (Real 8)
+                                                    )
+                                                    (Real 8)
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 8)
+                                                ()
+                                            )
+                                            Gt
+                                            (Cast
+                                                (RealConstant
+                                                    0.000000
+                                                    (Real 4)
+                                                )
+                                                RealToReal
+                                                (Real 8)
+                                                (RealConstant
+                                                    0.000000
+                                                    (Real 8)
+                                                )
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
+                            kind:
+                                (ExternalSymbol
+                                    12
+                                    kind
+                                    4 kind
+                                    lfortran_intrinsic_kind
+                                    []
+                                    kind
+                                    Private
+                                ),
                             w:
                                 (Variable
-                                    10
+                                    12
                                     w
                                     []
                                     Local
@@ -515,13 +441,13 @@
                                 )
                         })
                     main
-                    [iso_c_binding]
+                    [lfortran_intrinsic_kind]
                     [(SubroutineCall
-                        10 idzp_svd
+                        12 idzp_svd
                         ()
                         [((IntegerConstant 5 (Integer 4)))
                         ((ArrayPhysicalCast
-                            (Var 10 w)
+                            (Var 12 w)
                             FixedSizeArray
                             DescriptorArray
                             (Array
