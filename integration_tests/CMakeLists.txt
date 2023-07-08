@@ -961,3 +961,5 @@ RUN(NAME character_01 LABELS gfortran llvm)
 RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
 
 RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
+
+RUN(NAME arrayitem_01 LABELS gfortran llvm)
