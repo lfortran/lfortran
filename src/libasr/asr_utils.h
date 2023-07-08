@@ -3852,7 +3852,7 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
 }
 
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
-    ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt = nullptr, bool implicit_argument_casting = false) {
+    ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting) {
     bool is_method = a_dt != nullptr;
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
     ASR::FunctionType_t* func_type = nullptr;
@@ -4025,7 +4025,7 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
     ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt) {
 
-    Call_t_body(al, a_name, a_args, n_args, a_dt);
+    Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false);
 
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
             a_args, n_args, a_type, a_value, a_dt);
