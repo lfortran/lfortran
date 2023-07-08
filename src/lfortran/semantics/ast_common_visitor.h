@@ -1709,14 +1709,45 @@ public:
                                 std::string sym = to_lower(s.m_name);
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPrivate) {
-                                    assgnd_access[sym] = ASR::accessType::Private;
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        assgnd_access[sym] = ASR::accessType::Private;
+                                    } else {
+                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            v->m_access = ASR::accessType::Private;
+                                        } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                                            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
+                                            f->m_access = ASR::accessType::Private;
+                                        }
+                                    }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPublic || sa->m_attr == AST::simple_attributeType
                                                 ::AttrParameter) {
-                                    assgnd_access[sym] = ASR::accessType::Public;
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        assgnd_access[sym] = ASR::accessType::Public;
+                                    } else {
+                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                                v->m_access = ASR::accessType::Public;
+                                            } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                                                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
+                                                f->m_access = ASR::accessType::Public;
+                                            }
+                                    }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
-                                    assgnd_presence[sym] = ASR::presenceType::Optional;
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        assgnd_presence[sym] = ASR::presenceType::Optional;
+                                    } else {
+                                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                            ASRUtils::symbol_get_past_external(sym_));
+                                        v->m_presence = ASR::presenceType::Optional;
+                                    }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
                                     // Ignore Intrinsic attribute
