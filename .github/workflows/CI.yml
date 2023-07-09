@@ -604,6 +604,19 @@ jobs:
 
             done
 
+            cd ..
+            rm -rf scipy/
+            git clone https://github.com/pranavchiku/scipy.git
+            cd scipy
+            git checkout -t origin/scipy1
+            git checkout a70f11a305edd024cb9a0e5048257eb0f51e29e1
+            find . -name "*.f" > files.txt
+            files=$(<files.txt)
+            for file in $files; do
+                ../src/bin/lfortran --fixed-form --implicit-typing --implicit-interface --implicit-argument-casting --show-asr $file > $file.f90
+            done
+
+
 
   test_without_llvm:
     name: Test without LLVM Backend
