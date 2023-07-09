@@ -1782,12 +1782,7 @@ public:
                 throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
             }
         } else {
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                auto v = ASR::down_cast<ASR::Variable_t>(sym);
-                type = v->m_type;
-            } else {
-                throw SemanticError("Statement function needs to be declared.", x.base.base.loc);
-            }
+            type = ASRUtils::symbol_type(sym);
         }
 
         // Assign where to_return

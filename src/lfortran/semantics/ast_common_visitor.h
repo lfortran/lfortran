@@ -1072,7 +1072,7 @@ public:
             }
 
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
-                member_sym, target_var->m_type, nullptr);
+                member_sym, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)), nullptr);
 
             return new_target;
         } else {
@@ -1493,6 +1493,21 @@ public:
                         } else {
                             uint64_t hash = get_hash((ASR::asr_t*) var__);
                             common_variables_hash[hash] = common_block_struct_sym;
+                        }
+                        if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+                            /*
+                                Update type of original symbol
+                                case:
+                                program main
+                                double precision x
+                                common /a/ x(10)
+                                end program
+                            */
+                            ASR::symbol_t* var_sym = current_scope->get_symbol(s2c(al, var_->m_name));
+                            if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
+                                var->m_type = var_->m_type;
+                            }
                         }
                         i++;
                     }
