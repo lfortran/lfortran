@@ -1,0 +1,5 @@
+ASR verify pass error: ASR verify: ASR Verify: All arguments must be of the same type
+ --> tests/errors/sign_intrinsic.f90:6:15
+  |
+6 |     signval = sign(x, y)
+  |               ^^^^^^^^^^ failed here
