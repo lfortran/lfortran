@@ -1512,6 +1512,31 @@ public:
             false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp_));
 
+        for (auto &item: current_scope->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(current_scope->resolve_symbol(item.first));
+                update_duplicated_nodes(al, func->m_symtab);
+            } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(current_scope->resolve_symbol(item.first));
+                ASR::ttype_t* var_type = var->m_type;
+                if (var_type->type == ASR::ttypeType::Array) {
+                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(var_type);
+                    for (size_t i = 0; i < arr_type->n_dims; i++) {
+                        ASR::dimension_t dim = arr_type->m_dims[i];
+                        ASR::expr_t* dim_length = dim.m_length;
+                        if (ASR::is_a<ASR::Var_t>(*dim_length)) {
+                            ASR::Var_t* dim_length_var = ASR::down_cast<ASR::Var_t>(dim_length);
+                            ASR::symbol_t* dim_length_sym = dim_length_var->m_v;
+                            std::string dim_length_sym_name = ASRUtils::symbol_name(dim_length_sym);
+                            ASR::symbol_t* dim_length_sym_in_scope = current_scope->resolve_symbol(dim_length_sym_name);
+                            if (dim_length_sym_in_scope) {
+                                dim_length_var->m_v = dim_length_sym_in_scope;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
         entry_point_mapping[sym_name] = std::vector<AST::stmt_t*>();
         active_entry_points.push_back(sym_name);
@@ -1520,6 +1545,78 @@ public:
         current_function_dependencies = current_function_dependencies_copy;
 
         tmp = nullptr;
+    }
+
+    void update_duplicated_nodes(Allocator &al, SymbolTable *current_scope) {
+        class UpdateDuplicatedNodes : public PassUtils::PassVisitor<UpdateDuplicatedNodes>
+        {
+            public:
+            SymbolTable* scope = current_scope;
+            SymbolTable* correct_scope = nullptr;
+            UpdateDuplicatedNodes(Allocator &al) : PassVisitor(al, nullptr) {}
+
+            void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                ASR::FunctionCall_t* func_call = (ASR::FunctionCall_t*)(&x);
+                if (scope->counter == correct_scope->counter) {
+                    std::string func_call_name = ASRUtils::symbol_name(func_call->m_name);
+                    ASR::symbol_t* sym = correct_scope->resolve_symbol(func_call_name);
+                    if (sym) {
+                        func_call->m_name = correct_scope->resolve_symbol(func_call_name);
+                    }
+                    std::string func_call_origin_name = ASRUtils::symbol_name(func_call->m_original_name);
+                    sym = correct_scope->resolve_symbol(func_call_origin_name);
+                    if (sym) {
+                        func_call->m_original_name = correct_scope->resolve_symbol(func_call_origin_name);
+                    }
+                }
+                for (size_t i=0; i<x.n_args; i++) {
+                    this->visit_call_arg(x.m_args[i]);
+                }
+                this->visit_ttype(*x.m_type);
+                if (x.m_value) {
+                    this->visit_expr(*x.m_value);
+                }
+                if (x.m_dt) {
+                    this->visit_expr(*x.m_dt);
+                }
+            }
+
+            void visit_Var(const ASR::Var_t& x) {
+                if (scope && scope->counter == correct_scope->counter) {
+                    ASR::Var_t* var = (ASR::Var_t*)(&x);
+                    ASR::symbol_t* sym = var->m_v;
+                    std::string sym_name = ASRUtils::symbol_name(sym);
+
+                    ASR::symbol_t* sym_in_scope = scope->resolve_symbol(sym_name);
+                    var->m_v = sym_in_scope;
+                }
+            }
+
+            void visit_Function(const ASR::Function_t& x) {
+                ASR::Function_t* func = (ASR::Function_t*)(&x);
+                SymbolTable* parent_scope = scope;
+                scope = func->m_symtab;
+                if (func->m_symtab->counter == correct_scope->counter) {
+                    for (size_t i = 0; i < func->n_body; i++) {
+                        this->visit_stmt(*func->m_body[i]);
+                    }
+                    if (func->m_return_var) {
+                        this->visit_expr(*func->m_return_var);
+                    }
+                }
+                scope = parent_scope;
+                for (auto &item: func->m_symtab->get_scope()) {
+                    this->visit_symbol(*item.second);
+                }
+            }
+        };
+        
+        UpdateDuplicatedNodes v(al);
+        v.correct_scope = current_scope;
+        SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
+        ASR::asr_t* asr_ = tu_symtab->asr_owner;
+        ASR::TranslationUnit_t* tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr_);
+        v.visit_TranslationUnit(*tu);
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
