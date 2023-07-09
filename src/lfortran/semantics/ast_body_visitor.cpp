@@ -104,45 +104,60 @@ public:
         for (auto sym_name: active_entry_points) {
             SymbolTable* old_scope = current_scope;
             ASR::symbol_t* sym = current_scope->resolve_symbol(sym_name);
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
-            current_scope = func->m_symtab;
-            Vec<ASR::stmt_t*> body;
-            std::vector<ASR::stmt_t*> stmt_vector;
-            for (auto &x: entry_point_mapping[sym_name]) {
-                this->visit_stmt(*x);
-                ASR::stmt_t* tmp_stmt = nullptr;
-                if (tmp != nullptr) {
-                    tmp_stmt = ASRUtils::STMT(tmp);
-                    if (tmp_stmt->type == ASR::stmtType::SubroutineCall) {
-                        ASR::stmt_t* impl_decl = create_implicit_deallocate_subrout_call(tmp_stmt);
-                        if (impl_decl != nullptr) {
-                            stmt_vector.push_back(impl_decl);
+            /*
+                If sym is not a function, it means sym is specifying type of return variable of entry point
+                Case:
+                double precision function mvndfn()
+                double precision mvndnt
+                return
+                entry mvndnt()
+                end
+            */
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                // we have to find the function symbol
+                sym = current_scope->parent->resolve_symbol(sym_name);
+            }
+            if (ASR::is_a<ASR::Function_t>(*sym)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
+                current_scope = func->m_symtab;
+                Vec<ASR::stmt_t*> body;
+                std::vector<ASR::stmt_t*> stmt_vector;
+                for (auto &x: entry_point_mapping[sym_name]) {
+                    this->visit_stmt(*x);
+                    ASR::stmt_t* tmp_stmt = nullptr;
+                    if (tmp != nullptr) {
+                        tmp_stmt = ASRUtils::STMT(tmp);
+                        if (tmp_stmt->type == ASR::stmtType::SubroutineCall) {
+                            ASR::stmt_t* impl_decl = create_implicit_deallocate_subrout_call(tmp_stmt);
+                            if (impl_decl != nullptr) {
+                                stmt_vector.push_back(impl_decl);
+                            }
                         }
+                        stmt_vector.push_back(tmp_stmt);
+                    } else if (!tmp_vec.empty()) {
+                        for(auto &x: tmp_vec) {
+                            stmt_vector.push_back(ASRUtils::STMT(x));
+                        }
+                        tmp_vec.clear();
                     }
-                    stmt_vector.push_back(tmp_stmt);
-                } else if (!tmp_vec.empty()) {
-                    for(auto &x: tmp_vec) {
-                        stmt_vector.push_back(ASRUtils::STMT(x));
-                    }
-                    tmp_vec.clear();
+                    tmp = nullptr;
                 }
-                tmp = nullptr;
-            }
-            body.reserve(al, func->n_body + stmt_vector.size());
+                body.reserve(al, func->n_body + stmt_vector.size());
 
-            for (size_t i=0; i<func->n_body; i++) {
-                body.push_back(al, func->m_body[i]);
-            }
+                for (size_t i=0; i<func->n_body; i++) {
+                    body.push_back(al, func->m_body[i]);
+                }
 
-            for (auto &x: stmt_vector) {
-                body.push_back(al, x);
-            }
-            func->m_body = body.p;
-            func->n_body = body.size();
+                for (auto &x: stmt_vector) {
+                    body.push_back(al, x);
+                }
+                func->m_body = body.p;
+                func->n_body = body.size();
 
-            func->m_dependencies = current_function_dependencies.p;
-            func->n_dependencies = current_function_dependencies.size();
-            current_scope = old_scope;
+                func->m_dependencies = current_function_dependencies.p;
+                func->n_dependencies = current_function_dependencies.size();
+                current_scope = old_scope;
+            }
         }
     }
 
@@ -1433,7 +1448,6 @@ public:
         for( auto& item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
         }
-
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             if (arg) {
@@ -1474,6 +1488,13 @@ public:
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
         }
+
+        ASR::symbol_t* return_var = current_scope->resolve_symbol(sym_name);
+        ASR::expr_t* return_var_expr = nullptr;
+        if (return_var) {
+            return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, return_var));
+        }
+
         ASR::asr_t* tmp_ = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -1483,7 +1504,7 @@ public:
             /* n_args */ args.size(),
             /* a_body */ nullptr,
             /* n_body */ 0,
-            nullptr,
+            return_var_expr,
             current_procedure_abi_type,
             s_access, deftype, nullptr,
             false, false, false, false, false,
