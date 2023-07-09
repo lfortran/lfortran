@@ -1025,14 +1025,13 @@ namespace Sign {
             ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
              "ASR Verify: Arguments to sign must be of real or integer type",
             x.base.base.loc, diagnostics);
-        for(size_t i=0;i<x.n_args;i++){
-            ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[i])) &&
-                                            ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0]))) ||
-                                        (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[i])) &&
-                                         ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0]))),
-            "ASR Verify: All arguments must be of the same type",
-            x.base.base.loc, diagnostics);
-        }
+        ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) &&
+                                        ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[1]))) ||
+                                    (ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])) &&
+                                        ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[1]))),
+        "ASR Verify: All arguments must be of the same type",
+        x.base.base.loc, diagnostics);
+        
     }
 
     static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
@@ -1059,27 +1058,10 @@ namespace Sign {
             } else {
                 return make_ConstantWithType(make_IntegerConstant_t, -iv1, t1, loc);
             }
-        } else if (ASRUtils::is_integer(*t1) && ASRUtils::is_real(*t2)) {
-            int64_t rv1 = ASR::down_cast<ASR::IntegerConstant_t>(arg1)->m_n;
-            double rv2 = ASR::down_cast<ASR::RealConstant_t>(arg2)->m_r;
-            if (rv2 >= 0) {
-                return make_ConstantWithType(make_RealConstant_t, rv1, t1, loc);
-            } else {
-                return make_ConstantWithType(make_RealConstant_t, -rv1, t1, loc);
-            }
-        } else if (ASRUtils::is_real(*t1) && ASRUtils::is_integer(*t2)) {
-            double iv1 = ASR::down_cast<ASR::RealConstant_t>(arg1)->m_r;
-            int64_t iv2 = ASR::down_cast<ASR::IntegerConstant_t>(arg2)->m_n;
-            if (iv2 >= 0) {
-                return make_ConstantWithType(make_IntegerConstant_t, iv1, t1, loc);
-            } else {
-                return make_ConstantWithType(make_IntegerConstant_t, -iv1, t1, loc);
-            }
         } else {
             return nullptr;
         }
     }
-
 
     static inline ASR::asr_t* create_Sign(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
@@ -1146,36 +1128,75 @@ namespace Sign {
             * end if
         */
 
-        ASR::expr_t* negative_x = EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, args[0], arg_types[0], nullptr));
+        ASR::expr_t* negative_x;
         ASR::expr_t *test;
-        test = make_Compare(make_IntegerCompare_t, args[1], Gt, 0);
-        Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+        
+        if (ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
+            ASR::expr_t* zero = make_ConstantWithType(make_RealConstant_t, 0, arg_types[0], loc);
+            negative_x = EXPR(ASR::make_RealUnaryMinus_t(al, loc, args[0], arg_types[0], nullptr));
+            test = make_Compare(make_RealCompare_t, args[1], Gt, zero);
+            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
 
-        ASR::expr_t* test2;
-        test2 = make_Compare(make_IntegerCompare_t, args[0], Gt, 0);
-        Vec<ASR::stmt_t *> if_body2; if_body2.reserve(al, 1);
-        if_body2.push_back(al, Assignment(result, args[0]));
-        Vec<ASR::stmt_t *> else_body2; else_body2.reserve(al, 1);
-        else_body2.push_back(al, Assignment(result, negative_x));
+            ASR::expr_t* test2;
+            test2 = make_Compare(make_RealCompare_t, args[0], Gt, zero);
+            Vec<ASR::stmt_t *> if_body2; if_body2.reserve(al, 1);
+            if_body2.push_back(al, Assignment(result, args[0]));
+            Vec<ASR::stmt_t *> else_body2; else_body2.reserve(al, 1);
+            else_body2.push_back(al, Assignment(result, negative_x));
 
-        if_body.push_back(al, STMT(ASR::make_If_t(al, loc, test2,
-            if_body2.p, if_body2.n, else_body2.p, else_body2.n)));
+            if_body.push_back(al, STMT(ASR::make_If_t(al, loc, test2,
+                if_body2.p, if_body2.n, else_body2.p, else_body2.n)));
 
-        Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
+            Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
 
-        ASR::expr_t* test3;
-        test3 = make_Compare(make_IntegerCompare_t, args[0], Gt, 0);
-        Vec<ASR::stmt_t *> if_body3; if_body3.reserve(al, 1);
-        if_body3.push_back(al, Assignment(result, negative_x));
-        Vec<ASR::stmt_t *> else_body3; else_body3.reserve(al, 1);
-        else_body3.push_back(al, Assignment(result, args[0]));
+            ASR::expr_t* test3;
+            test3 = make_Compare(make_RealCompare_t, args[0], Gt, zero);
+            Vec<ASR::stmt_t *> if_body3; if_body3.reserve(al, 1);
+            if_body3.push_back(al, Assignment(result, negative_x));
+            Vec<ASR::stmt_t *> else_body3; else_body3.reserve(al, 1);
+            else_body3.push_back(al, Assignment(result, args[0]));
 
 
-        else_body.push_back(al, STMT(ASR::make_If_t(al, loc, test3,
-            if_body3.p, if_body3.n, else_body3.p, else_body3.n)));
+            else_body.push_back(al, STMT(ASR::make_If_t(al, loc, test3,
+                if_body3.p, if_body3.n, else_body3.p, else_body3.n)));
 
-        body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-            if_body.p, if_body.n, else_body.p, else_body.n)));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                if_body.p, if_body.n, else_body.p, else_body.n)));
+        } else {
+            ASR::expr_t* zero = make_ConstantWithType(make_IntegerConstant_t, 0, arg_types[0], loc);
+            negative_x = EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, args[0], arg_types[0], nullptr));
+            test = make_Compare(make_IntegerCompare_t, args[1], Gt, zero);
+            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+
+            ASR::expr_t* test2;
+            test2 = make_Compare(make_IntegerCompare_t, args[0], Gt, zero);
+            Vec<ASR::stmt_t *> if_body2; if_body2.reserve(al, 1);
+            if_body2.push_back(al, Assignment(result, args[0]));
+            Vec<ASR::stmt_t *> else_body2; else_body2.reserve(al, 1);
+            else_body2.push_back(al, Assignment(result, negative_x));
+
+            if_body.push_back(al, STMT(ASR::make_If_t(al, loc, test2,
+                if_body2.p, if_body2.n, else_body2.p, else_body2.n)));
+
+            Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
+
+            ASR::expr_t* test3;
+            test3 = make_Compare(make_IntegerCompare_t, args[0], Gt, zero);
+            Vec<ASR::stmt_t *> if_body3; if_body3.reserve(al, 1);
+            if_body3.push_back(al, Assignment(result, negative_x));
+            Vec<ASR::stmt_t *> else_body3; else_body3.reserve(al, 1);
+            else_body3.push_back(al, Assignment(result, args[0]));
+
+
+            else_body.push_back(al, STMT(ASR::make_If_t(al, loc, test3,
+                if_body3.p, if_body3.n, else_body3.p, else_body3.n)));
+
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                if_body.p, if_body.n, else_body.p, else_body.n)));
+            }
+       
+        
+        
 
         ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
             body, result, Source, Implementation, nullptr);
