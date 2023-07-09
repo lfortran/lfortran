@@ -2495,6 +2495,10 @@ filename = "../integration_tests/entry_02.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/entry_05.f90"
+asr = true
+
+[[test]]
 filename = "issue532.f90"
 asr = true
 llvm = true
