@@ -1494,7 +1494,7 @@ public:
                             uint64_t hash = get_hash((ASR::asr_t*) var__);
                             common_variables_hash[hash] = common_block_struct_sym;
                         }
-                        if (ASRUtils::is_array(var_->m_type)) {
+                        if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
                             /*
                                 Update type of original symbol
                                 case:
