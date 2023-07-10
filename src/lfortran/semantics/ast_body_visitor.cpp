@@ -1537,7 +1537,7 @@ public:
                 }
             }
         }
-        
+
         entry_point_mapping[sym_name] = std::vector<AST::stmt_t*>();
         active_entry_points.push_back(sym_name);
 
@@ -1610,7 +1610,7 @@ public:
                 }
             }
         };
-        
+
         UpdateDuplicatedNodes v(al);
         v.correct_scope = current_scope;
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
@@ -2013,6 +2013,7 @@ public:
                                                 ASRUtils::expr_type(ac->m_args[i]),
                                                 ASRUtils::type_get_past_allocatable(target_type));
                     }
+                    LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                 } else {
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         value_type, target_type);
@@ -2034,6 +2035,7 @@ public:
                             throw SemanticAbort();
                         }
                     }
+                    LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                 } else {
                     diag.semantic_error_label(
                         "Type mismatch in assignment, the types must be compatible",
@@ -2053,14 +2055,24 @@ public:
             alloc_arg.m_len_expr = nullptr;
             alloc_arg.m_type = nullptr;
             alloc_arg.m_a = target;
-            alloc_arg.n_dims = ASRUtils::extract_dimensions_from_ttype(
-                ac->m_type, alloc_arg.m_dims);
+            alloc_arg.n_dims = ASRUtils::extract_n_dims_from_ttype(ac->m_type);
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, alloc_arg.n_dims);
+            ASR::dimension_t dim;
+            dim.loc = x.base.base.loc;
+            dim.m_length = make_ConstantWithKind(make_IntegerConstant_t,
+                make_Integer_t, ac->n_args, 4, dim.loc);
+            dim.m_start = make_ConstantWithKind(make_IntegerConstant_t,
+                make_Integer_t, 1, 4, dim.loc);
+            dims.push_back(al, dim);
+            alloc_arg.m_dims = dims.p;
             vec_alloc.push_back(al, alloc_arg);
             tmp_vec.push_back(ASR::make_Allocate_t(al, ac->base.base.loc,
                 vec_alloc.p, 1, nullptr, nullptr, nullptr));
             tmp_vec.push_back(ASR::make_Assignment_t(al, x.base.base.loc, target,
                 value, overloaded_stmt));
             tmp = nullptr;
+            LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
             return;
         }
 
@@ -2074,6 +2086,11 @@ public:
         handle_intrinsic_node_args<AST::SubroutineCall_t>(
             x, args, kwarg_names, 2, 3, std::string("c_f_ptr"));
         ASR::expr_t *cptr = args[0], *fptr = args[1], *shape = args[2];
+        if( shape && ASR::is_a<ASR::ArrayConstant_t>(*shape) ) {
+            ASR::ttype_t* array_constant_type = ASRUtils::expr_type(shape);
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(array_constant_type);
+            array_t->m_physical_type = ASR::array_physical_typeType::PointerToDataArray;
+        }
         ASR::ttype_t* fptr_type = ASRUtils::expr_type(fptr);
         bool is_fptr_array = ASRUtils::is_array(fptr_type);
         bool is_ptr = ASR::is_a<ASR::Pointer_t>(*fptr_type);
@@ -2119,8 +2136,20 @@ public:
                             ASR::make_Integer_t(al, x.base.base.loc, 4)))));
                 }
                 if( success ) {
-                    lower_bounds = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al,
-                        x.base.base.loc, lbs.p, lbs.size(), ASRUtils::expr_type(lbs[0]),
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, 1);
+                    ASR::dimension_t dim;
+                    dim.loc = x.base.base.loc;
+                    dim.m_length = make_ConstantWithKind(make_IntegerConstant_t,
+                        make_Integer_t, target_n_dims, 4, dim.loc);
+                    dim.m_start = make_ConstantWithKind(make_IntegerConstant_t,
+                        make_Integer_t, 0, 4, dim.loc);
+                    dims.push_back(al, dim);
+                    ASR::ttype_t* type = ASRUtils::make_Array_t_util(al, dim.loc,
+                        ASRUtils::expr_type(lbs[0]), dims.p, dims.size(), ASR::abiType::Source,
+                        false, ASR::array_physical_typeType::PointerToDataArray, true);
+                    lower_bounds = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al,
+                        x.base.base.loc, lbs.p, lbs.size(), type,
                         ASR::arraystorageType::RowMajor));
                 }
             }

@@ -1115,7 +1115,7 @@ public:
         tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
-            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, parent_sym);
+            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
             parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         is_derived_type = false;
@@ -2538,7 +2538,7 @@ public:
                 throw SemanticError(msg, loc);
             }
         }
-        symbol_subs[f_name] = sym_arg;      
+        symbol_subs[f_name] = sym_arg;
     }
 
     // TODO: give proper location to each symbol

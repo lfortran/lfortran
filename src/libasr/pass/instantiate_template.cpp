@@ -230,7 +230,7 @@ public:
             nullptr, 0,
             data_member_names.p, data_member_names.size(),
             x->m_abi, x->m_access, x->m_is_packed, x->m_is_abstract,
-            m_alignment, nullptr);
+            nullptr, 0, m_alignment, nullptr);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_sym_name, t);
@@ -402,9 +402,9 @@ public:
 
             ASR::symbol_t* new_sym = current_scope->resolve_symbol(new_m_name);
             ASR::symbol_t* member_sym = ASRUtils::symbol_symtab(new_sym)->resolve_symbol(member_name);
-            
+
             new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, x->base.base.loc, current_scope, s2c(al, new_x_name), member_sym, 
+                al, x->base.base.loc, current_scope, s2c(al, new_x_name), member_sym,
                 s2c(al, new_m_name), nullptr, 0, s2c(al, member_name), x->m_access));
             current_scope->add_symbol(new_x_name, new_x);
             return new_x;
@@ -448,7 +448,7 @@ public:
             case (ASR::ttypeType::List) : {
                 ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(ttype);
                 return ASRUtils::TYPE(ASR::make_List_t(al, ttype->base.loc,
-                    substitute_type(tlist->m_type))); 
+                    substitute_type(tlist->m_type)));
             }
             case (ASR::ttypeType::Struct) : {
                 ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(ttype);

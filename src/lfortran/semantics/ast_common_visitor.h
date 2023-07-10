@@ -1164,7 +1164,7 @@ public:
                         dim.m_length = x_n_args;
                         dims.push_back(al, dim);
                         obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
-                        tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
+                        tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
                             body.size(), obj_type, ASR::arraystorageType::ColMajor);
                         ASR::Variable_t* v2 = nullptr;
                         if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
@@ -1346,8 +1346,10 @@ public:
 
             // create a struct
             SymbolTable* struct_scope = al.make_new<SymbolTable>(current_scope);
-            ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_StructType_t(al, loc, struct_scope, s2c(al,common_block_name),
-                                            nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, nullptr, nullptr));
+            ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_StructType_t(
+                al, loc, struct_scope, s2c(al,common_block_name),
+                nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false,
+                nullptr, 0, nullptr, nullptr));
             current_scope->add_symbol(common_block_name, struct_symbol);
 
             // create a struct instance
@@ -2215,7 +2217,7 @@ public:
                                                 }
                                             }
                                             if (is_int) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2246,7 +2248,7 @@ public:
                                 }
                                 body.push_back(al, a_m_args);
                             }
-                            value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al,
+                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al,
                                 a->base.base.loc, body.p, body.size(),
                                 a->m_type, a->m_storage_format));
                         }
@@ -2550,7 +2552,8 @@ public:
                 current_scope = al.make_new<SymbolTable>(parent_scope);
                 ASR::asr_t* dtype = ASR::make_StructType_t(al, loc, current_scope,
                                                 s2c(al, to_lower(derived_type_name)), nullptr, 0, nullptr, 0,
-                                                ASR::abiType::Source, dflt_access, false, true, nullptr, nullptr);
+                                                ASR::abiType::Source, dflt_access, false, true,
+                                                nullptr, 0, nullptr, nullptr);
                 v = ASR::down_cast<ASR::symbol_t>(dtype);
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;
@@ -2886,7 +2889,7 @@ public:
         dim.m_length = x_n_args;
         dims.push_back(al, dim);
         type = ASRUtils::duplicate_type(al, type, &dims);
-        tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
+        tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
             body.size(), type, ASR::arraystorageType::ColMajor);
     }
 
@@ -4394,8 +4397,8 @@ public:
         ASR::expr_t *v_Var = args[0];
         if( !ASR::is_a<ASR::GetPointer_t>(*v_Var) &&
             !ASRUtils::is_pointer(ASRUtils::expr_type(v_Var)) ) {
-            ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
-                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var))));
+            ASR::ttype_t* ptr_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc,
+                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var)));
             v_Var = ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc,
                             v_Var, ptr_type, nullptr));
         }

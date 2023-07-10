@@ -86,7 +86,7 @@ symbol
         bool loaded_from_mod, bool intrinsic)
     | Function(symbol_table symtab, identifier name, ttype function_signature,
         identifier* dependencies, expr* args, stmt* body, expr? return_var,
-        access access, bool deterministic, bool side_effect_free,  string? c_header)
+        access access, bool deterministic, bool side_effect_free,  string? module_file)
     | GenericProcedure(symbol_table parent_symtab, identifier name,
         symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name,
@@ -96,12 +96,12 @@ symbol
         identifier original_name, access access)
     | StructType(symbol_table symtab, identifier name, identifier* dependencies,
         identifier* members, abi abi, access access, bool is_packed, bool is_abstract,
-        expr? alignment, symbol? parent)
+        call_arg* initializers, expr? alignment, symbol? parent)
     | EnumType(symbol_table symtab, identifier name, identifier* dependencies,
         identifier* members, abi abi, access access, enumtype enum_value_type,
         ttype type, symbol? parent)
     | UnionType(symbol_table symtab, identifier name, identifier* dependencies,
-        identifier* members, abi abi, access access, symbol? parent)
+        identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
         intent intent, expr? symbolic_value, expr? value, storage_type storage,
         ttype type, symbol? type_declaration,
@@ -141,6 +141,12 @@ presence = Required | Optional
 -- An interface that uses `iso_c_binding` and `bind(c)` is represented using
 -- abi=BindC.
 
+-- abi=BindPython: the symbol's implementation is
+-- stored in text format in the user source code file.
+-- The symbol is executed using the CPython interpreter.
+-- LPython manages the conversion of arguments to be passed to such symbols
+-- and also converts the return values from such symbols.
+
 -- abi=Interactive: the symbol's implementation has been provided by the
 -- previous REPL execution (e.g., if LLVM backend is used for the interactive
 -- mode, the previous execution generated machine code for this symbol's
@@ -157,6 +163,7 @@ abi                   -- External     ABI
     | LFortranModule  --   Yes        LFortran
     | GFortranModule  --   Yes        GFortran
     | BindC           --   Yes        C
+    | BindPython      --   Yes        Python
     | Interactive     --   Yes        Unspecified
     | Intrinsic       --   Yes        Unspecified
 
@@ -247,6 +254,7 @@ expr
     | IntegerBinOp(expr left, binop op, expr right, ttype type, expr? value)
     | UnsignedIntegerConstant(int n, ttype type)
     | UnsignedIntegerUnaryMinus(expr arg, ttype type, expr? value)
+    | UnsignedIntegerBitNot(expr arg, ttype type, expr? value)
     | UnsignedIntegerCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | UnsignedIntegerBinOp(expr left, binop op, expr right, ttype type, expr? value)
     | RealConstant(float r, ttype type)
@@ -274,6 +282,7 @@ expr
     | TupleConstant(expr* elements, ttype type)
     | TupleLen(expr arg, ttype type, expr value)
     | TupleCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | TupleConcat(expr left, expr right, ttype type, expr? value)
 
     | StringConstant(string s, ttype type)
     | StringConcat(expr left, expr right, ttype type, expr? value)
@@ -287,6 +296,7 @@ expr
     | StringFormat(expr fmt, expr* args, string_format_kind kind, ttype type, expr? value)
 
     | CPtrCompare(expr left, cmpop op, expr right, ttype type, expr? value)
+    | SymbolicCompare(expr left, cmpop op, expr right, ttype type, expr? value)
 
     | DictConstant(expr* keys, expr* values, ttype type)
     | DictLen(expr arg, ttype type, expr? value)
@@ -343,6 +353,7 @@ expr
     | TupleItem(expr a, expr pos, ttype type, expr? value)
     | ListSection(expr a, array_index section, ttype type, expr? value)
     | ListPop(expr a, expr? index, ttype type, expr? value)
+    | ListRepeat(expr left, expr right, ttype type, expr? value)
     | DictPop(expr a, expr key, ttype type, expr? value)
     | SetPop(expr a, ttype type, expr? value)
     | IntegerBitLen(expr a, ttype type, expr? value)
@@ -395,6 +406,7 @@ ttype
     | Allocatable(ttype type)
     | Const(ttype type)
     | CPtr()
+    | SymbolicExpression()
     | TypeParameter(identifier param)
     | Array(ttype type, dimension* dims, array_physical_type physical_type)
     | FunctionType(ttype* arg_types, ttype? return_var_type,
@@ -443,7 +455,14 @@ cast_kind
     | IntegerToCharacter
     | LogicalToCharacter
     | UnsignedIntegerToInteger
+    | UnsignedIntegerToUnsignedInteger
+    | UnsignedIntegerToReal
+    | UnsignedIntegerToLogical
     | IntegerToUnsignedInteger
+    | RealToUnsignedInteger
+    | CPtrToUnsignedInteger
+    | UnsignedIntegerToCPtr
+    | IntegerToSymbolicExpression
 
 dimension = (expr? start, expr? length)
 

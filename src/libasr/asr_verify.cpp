@@ -617,14 +617,18 @@ public:
                 + std::string(x.m_name) + ")");
 
         ASR::asr_t* asr_owner = symtab->asr_owner;
-        bool is_module = false;
-        if( ASR::is_a<ASR::symbol_t>(*asr_owner) &&
-            ASR::is_a<ASR::Module_t>(
-                *ASR::down_cast<ASR::symbol_t>(asr_owner)) ) {
-            is_module = true;
+        bool is_module = false, is_struct = false;
+        if( ASR::is_a<ASR::symbol_t>(*asr_owner)) {
+            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
+            if (ASR::is_a<ASR::Module_t>(*asr_owner_sym)) {
+                is_module = true;
+            }
+            if (ASR::is_a<ASR::StructType_t>(*asr_owner_sym)) {
+                is_struct = true;
+            }
         }
         if( symtab->parent != nullptr &&
-            !is_module) {
+            !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
             require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
@@ -1024,6 +1028,28 @@ public:
             symbol_owner);
     }
 
+    void visit_ArrayConstant(const ArrayConstant_t& x) {
+        require(ASRUtils::is_array(x.m_type),
+            "Type of ArrayConstant must be an array");
+        BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstant(x);
+    }
+
+    void visit_dimension(const dimension_t &x) {
+        if (x.m_start) {
+            require_with_loc(ASRUtils::is_integer(
+                *ASRUtils::type_get_past_const(ASRUtils::expr_type(x.m_start))),
+                "Start dimension must be a signed integer", x.loc);
+            visit_expr(*x.m_start);
+        }
+
+        if (x.m_length) {
+            require_with_loc(ASRUtils::is_integer(
+                *ASRUtils::type_get_past_const(ASRUtils::expr_type(x.m_length))),
+                "Length dimension must be a signed integer", x.loc);
+            visit_expr(*x.m_length);
+        }
+    }
+
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
@@ -1038,6 +1064,14 @@ public:
     void visit_Pointer(const Pointer_t &x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Pointer type conflicts with Allocatable type");
+        if( ASR::is_a<ASR::Array_t>(*x.m_type) ) {
+            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x.m_type);
+            for (size_t i = 0; i < array_t->n_dims; i++) {
+                require(array_t->m_dims[i].m_start == nullptr &&
+                        array_t->m_dims[i].m_length == nullptr,
+                        "Array type in pointer must have deferred shape");
+            }
+        }
         visit_ttype(*x.m_type);
     }
 

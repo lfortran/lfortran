@@ -227,9 +227,7 @@ public:
             /* a_return_var */ result,
             ASR::abiType::Source,
             ASR::accessType::Public, ASR::deftypeType::Implementation,
-            nullptr,
-            false, false, false, false, false,
-            false, false, false);
+            nullptr, false, false, false, false, false, false, false, false);
         ASR::symbol_t *fn_sym = ASR::down_cast<ASR::symbol_t>(fn);
         global_scope->add_symbol(fn_name, fn_sym);
         compare_func_map[tuple_type_name] = fn_sym;

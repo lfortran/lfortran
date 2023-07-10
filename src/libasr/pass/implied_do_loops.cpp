@@ -322,6 +322,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
+        void visit_CPtrToPointer(const ASR::CPtrToPointer_t& /*x*/) {
+            // Do nothing.
+        }
+
 };
 
 void pass_replace_implied_do_loops(Allocator &al,

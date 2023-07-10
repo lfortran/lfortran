@@ -384,7 +384,7 @@ void fix_external_symbols(ASR::TranslationUnit_t &unit,
 }
 
 ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
-        bool load_symtab_id, SymbolTable& /*external_symtab*/) {
+        bool load_symtab_id, SymbolTable & /*external_symtab*/) {
     return deserialize_asr(al, s, load_symtab_id);
 }
 
