@@ -1076,6 +1076,9 @@ namespace Sign {
             err("Argument of the sign function must be Integer or Real",
                 args[0]->base.loc);
         }
+        if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[0]), ASRUtils::expr_type(args[1]))){
+            err("Type mismatch in statement function, the types must be compatible, type mismatch.", loc);     
+        }
         Vec<ASR::expr_t*> arg_values;
         arg_values.reserve(al, args.size());
         ASR::expr_t *arg_value;
