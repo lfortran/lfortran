@@ -118,7 +118,7 @@
                                         "access": "Public",
                                         "deterministic": false,
                                         "side_effect_free": false,
-                                        "c_header": []
+                                        "module_file": []
                                     },
                                     "loc": {
                                         "first": 220,
@@ -340,7 +340,7 @@
                                         "access": "Public",
                                         "deterministic": false,
                                         "side_effect_free": false,
-                                        "c_header": []
+                                        "module_file": []
                                     },
                                     "loc": {
                                         "first": 65,

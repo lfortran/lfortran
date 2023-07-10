@@ -203,6 +203,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     4 toml_tokenizer
                                 ),
@@ -443,6 +444,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -501,6 +503,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -518,6 +521,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    []
                                     ()
                                     8 toml_tokenizer
                                 )

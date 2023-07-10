@@ -151,9 +151,9 @@
                                                                     (Struct
                                                                         2 string_t
                                                                     )
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 2 (Integer 4)))]
-                                                                    FixedSizeArray
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
                                                             )
                                                             ColMajor
@@ -514,9 +514,9 @@
                                                                     (Struct
                                                                         2 string_t
                                                                     )
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 2 (Integer 4)))]
-                                                                    FixedSizeArray
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
                                                             )
                                                             ColMajor
@@ -778,6 +778,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -812,6 +813,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -974,6 +976,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     2 fpm_cmd_settings
                                 ),
@@ -1012,6 +1015,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -1029,6 +1033,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -1063,6 +1068,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 )

@@ -25,6 +25,7 @@ program arrays_op_15
     type(t), allocatable :: values(:)
     allocate(values(2))
     values = get_default_values()
+    print *, values(1), values(2)
     res = values(1)
     if (res%i /= 1) error stop
     res = values(2)
