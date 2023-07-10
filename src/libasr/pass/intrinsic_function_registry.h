@@ -1017,13 +1017,12 @@ namespace Abs {
 } // namespace Abs
 
 namespace Sign {
-
      static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 2, "ASR Verify: Call to sign must have exactly two arguments",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) ||
             ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[0])),
-             "ASR Verify: Arguments to sign must be of real or integer type",
+            "ASR Verify: Arguments to sign must be of real or integer type",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[0])) &&
                                         ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(x.m_args[1]))) ||
@@ -1111,7 +1110,7 @@ namespace Sign {
         Vec<ASR::expr_t*> args;
         args.reserve(al, new_args.size());
         ASRBuilder b(al, loc);
-        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+        Vec<ASR::stmt_t*> body; body.reserve(al, 2);
         SetChar dep; dep.reserve(al, 1);
         if (scope->get_symbol(fn_name)) {
             ASR::symbol_t *s = scope->get_symbol(fn_name);
@@ -1124,89 +1123,57 @@ namespace Sign {
         }
         auto result = declare(fn_name, return_type, ReturnVar);      
         /*
-            * if (y >= 0) then
-            *     r = x
-            * else
-            *     r = -x
+            r = abs(x)
+            * if (y < 0) then
+            *     r = -r
             * end if
         */
 
         ASR::expr_t* negative_x;
         ASR::expr_t *test;
-        
+        ASR::expr_t* zero;
+        ASR::expr_t* test2;
         if (ASRUtils::is_real(*ASRUtils::expr_type(args[0]))) {
-            ASR::expr_t* zero = make_ConstantWithType(make_RealConstant_t, 0, arg_types[0], loc);
+            zero = make_ConstantWithType(make_RealConstant_t, 0, arg_types[0], loc);
             negative_x = EXPR(ASR::make_RealUnaryMinus_t(al, loc, args[0], arg_types[0], nullptr));
-            test = make_Compare(make_RealCompare_t, args[1], Gt, zero);
-            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-
-            ASR::expr_t* test2;
+            
             test2 = make_Compare(make_RealCompare_t, args[0], Gt, zero);
             Vec<ASR::stmt_t *> if_body2; if_body2.reserve(al, 1);
             if_body2.push_back(al, Assignment(result, args[0]));
             Vec<ASR::stmt_t *> else_body2; else_body2.reserve(al, 1);
             else_body2.push_back(al, Assignment(result, negative_x));
-
-            if_body.push_back(al, STMT(ASR::make_If_t(al, loc, test2,
-                if_body2.p, if_body2.n, else_body2.p, else_body2.n)));
-
-            Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
-
-            ASR::expr_t* test3;
-            test3 = make_Compare(make_RealCompare_t, args[0], Gt, zero);
-            Vec<ASR::stmt_t *> if_body3; if_body3.reserve(al, 1);
-            if_body3.push_back(al, Assignment(result, negative_x));
-            Vec<ASR::stmt_t *> else_body3; else_body3.reserve(al, 1);
-            else_body3.push_back(al, Assignment(result, args[0]));
-
-
-            else_body.push_back(al, STMT(ASR::make_If_t(al, loc, test3,
-                if_body3.p, if_body3.n, else_body3.p, else_body3.n)));
-
-            body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-                if_body.p, if_body.n, else_body.p, else_body.n)));
-        } else {
-            ASR::expr_t* zero = make_ConstantWithType(make_IntegerConstant_t, 0, arg_types[0], loc);
-            negative_x = EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, args[0], arg_types[0], nullptr));
-            test = make_Compare(make_IntegerCompare_t, args[1], Gt, zero);
+            
+            test = make_Compare(make_RealCompare_t, args[1], Lt, zero);
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+            if_body.push_back(al, Assignment(result, EXPR(ASR::make_RealUnaryMinus_t(al, loc, result, arg_types[0], nullptr))));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, test2,
+                if_body2.p, if_body2.n, else_body2.p, else_body2.n)));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
+                if_body.p, if_body.n, nullptr, 0)));
+        } else {
+            zero = make_ConstantWithType(make_IntegerConstant_t, 0, arg_types[0], loc);
+            negative_x = EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, args[0], arg_types[0], nullptr));
 
-            ASR::expr_t* test2;
             test2 = make_Compare(make_IntegerCompare_t, args[0], Gt, zero);
             Vec<ASR::stmt_t *> if_body2; if_body2.reserve(al, 1);
             if_body2.push_back(al, Assignment(result, args[0]));
             Vec<ASR::stmt_t *> else_body2; else_body2.reserve(al, 1);
             else_body2.push_back(al, Assignment(result, negative_x));
 
-            if_body.push_back(al, STMT(ASR::make_If_t(al, loc, test2,
+            test = make_Compare(make_IntegerCompare_t, args[1], Lt, zero);
+            Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
+            if_body.push_back(al, Assignment(result, EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, result, arg_types[0], nullptr))));
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, test2,
                 if_body2.p, if_body2.n, else_body2.p, else_body2.n)));
-
-            Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
-
-            ASR::expr_t* test3;
-            test3 = make_Compare(make_IntegerCompare_t, args[0], Gt, zero);
-            Vec<ASR::stmt_t *> if_body3; if_body3.reserve(al, 1);
-            if_body3.push_back(al, Assignment(result, negative_x));
-            Vec<ASR::stmt_t *> else_body3; else_body3.reserve(al, 1);
-            else_body3.push_back(al, Assignment(result, args[0]));
-
-
-            else_body.push_back(al, STMT(ASR::make_If_t(al, loc, test3,
-                if_body3.p, if_body3.n, else_body3.p, else_body3.n)));
-
             body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
-                if_body.p, if_body.n, else_body.p, else_body.n)));
+                if_body.p, if_body.n, nullptr, 0)));
             }
-       
-        
-        
 
         ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
             body, result, Source, Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, compile_time_value);
     }
-    
 } // namespace Sign
 
 
