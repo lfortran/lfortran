@@ -1600,9 +1600,9 @@ public:
                     for (size_t i = 0; i < func->n_body; i++) {
                         this->visit_stmt(*func->m_body[i]);
                     }
-                    if (func->m_return_var) {
-                        this->visit_expr(*func->m_return_var);
-                    }
+                    // if (func->m_return_var) {
+                    this->visit_expr(*func->m_return_var);
+                    // }
                 }
                 scope = parent_scope;
                 for (auto &item: func->m_symtab->get_scope()) {
