@@ -613,7 +613,7 @@ jobs:
             find . -name "*.f" > files.txt
             files=$(<files.txt)
             for file in $files; do
-                ../src/bin/lfortran --fixed-form --implicit-typing --implicit-interface --implicit-argument-casting --show-asr $file > $file.f90
+                ../src/bin/lfortran --fixed-form --implicit-typing --implicit-interface --implicit-argument-casting --show-asr --no-color $file > $file.f90
             done
 
 
