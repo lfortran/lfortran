@@ -41,6 +41,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [scan_kind4]
@@ -203,6 +205,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [verify_kind4]

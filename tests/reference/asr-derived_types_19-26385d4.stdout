@@ -52,7 +52,7 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ~select_type_block_:
+                                            ~select_type_block__:
                                                 (Block
                                                     (SymbolTable
                                                         8
@@ -68,7 +68,7 @@
                                                                     Public
                                                                 )
                                                         })
-                                                    ~select_type_block_
+                                                    ~select_type_block__
                                                     [(If
                                                         (StructInstanceMember
                                                             (Var 7 ptr)
@@ -102,6 +102,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [not_ok
@@ -120,7 +122,7 @@
                                                 4 child_value
                                                 [(BlockCall
                                                     -1
-                                                    7 ~select_type_block_
+                                                    7 ~select_type_block__
                                                 )]
                                             )]
                                             [(SubroutineCall
@@ -191,6 +193,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -236,6 +240,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -320,6 +326,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [check_proc]

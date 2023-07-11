@@ -41,7 +41,7 @@
                                                     ptr
                                                     Public
                                                 ),
-                                            associate_block:
+                                            associate_block_:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         12
@@ -87,7 +87,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block
+                                                    associate_block_
                                                     [(=
                                                         (Var 12 target)
                                                         (StructInstanceMember
@@ -317,6 +317,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -345,7 +347,7 @@
                                         )
                                         ())
                                         [(AssociateBlockCall
-                                            9 associate_block
+                                            9 associate_block_
                                         )]
                                     )
                                     (ImplicitDeallocate
@@ -404,7 +406,7 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            associate_block:
+                                            associate_block_:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         14
@@ -450,7 +452,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block
+                                                    associate_block_
                                                     [(=
                                                         (Var 14 target)
                                                         (StructInstanceMember
@@ -691,6 +693,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -721,7 +725,7 @@
                                         )
                                         ())
                                         [(AssociateBlockCall
-                                            9 associate_block
+                                            9 associate_block_
                                         )]
                                     )
                                     (ImplicitDeallocate
@@ -908,6 +912,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [build_package_targets]

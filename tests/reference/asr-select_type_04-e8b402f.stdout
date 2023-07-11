@@ -146,6 +146,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -264,7 +266,7 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ~select_type_block_:
+                                            ~select_type_block__:
                                                 (Block
                                                     (SymbolTable
                                                         9
@@ -290,7 +292,7 @@
                                                                     Private
                                                                 )
                                                         })
-                                                    ~select_type_block_
+                                                    ~select_type_block__
                                                     [(=>
                                                         (Var 8 ptr)
                                                         (Var 8 tmp)
@@ -338,6 +340,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [present
@@ -361,7 +365,7 @@
                                                 4 toml_table
                                                 [(BlockCall
                                                     -1
-                                                    8 ~select_type_block_
+                                                    8 ~select_type_block__
                                                 )]
                                             )]
                                             [(If

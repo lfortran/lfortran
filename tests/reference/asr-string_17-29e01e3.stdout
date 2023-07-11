@@ -90,6 +90,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [allocated]
@@ -232,6 +234,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [len_string

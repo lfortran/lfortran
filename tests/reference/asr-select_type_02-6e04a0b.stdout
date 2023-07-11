@@ -258,79 +258,6 @@
                                     ()
                                     4 point
                                 ),
-                            ~select_type_block_:
-                                (Block
-                                    (SymbolTable
-                                        7
-                                        {
-                                            1_point_x:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_point_x
-                                                    3 x
-                                                    point
-                                                    []
-                                                    x
-                                                    Public
-                                                ),
-                                            1_point_y:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_point_y
-                                                    3 y
-                                                    point
-                                                    []
-                                                    y
-                                                    Public
-                                                ),
-                                            an:
-                                                (Variable
-                                                    7
-                                                    an
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Pointer
-                                                        (Class
-                                                            4 point
-                                                        )
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-                                        })
-                                    ~select_type_block_
-                                    [(=>
-                                        (Var 7 an)
-                                        (Var 4 p_or_cp)
-                                    )
-                                    (Print
-                                        ()
-                                        [(StringConstant
-                                            "point: "
-                                            (Character 1 7 ())
-                                        )
-                                        (StructInstanceMember
-                                            (Var 7 an)
-                                            7 1_point_x
-                                            (Real 4)
-                                            ()
-                                        )
-                                        (StructInstanceMember
-                                            (Var 7 an)
-                                            7 1_point_y
-                                            (Real 4)
-                                            ()
-                                        )]
-                                        ()
-                                        ()
-                                    )]
-                                ),
                             ~select_type_block_1:
                                 (Block
                                     (SymbolTable
@@ -414,6 +341,79 @@
                                             (Var 8 an)
                                             8 1_color_point_color
                                             (Integer 4)
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )]
+                                ),
+                            ~select_type_block__:
+                                (Block
+                                    (SymbolTable
+                                        7
+                                        {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_point_x
+                                                    3 x
+                                                    point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_point_y
+                                                    3 y
+                                                    point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
+                                            an:
+                                                (Variable
+                                                    7
+                                                    an
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Class
+                                                            4 point
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~select_type_block__
+                                    [(=>
+                                        (Var 7 an)
+                                        (Var 4 p_or_cp)
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "point: "
+                                            (Character 1 7 ())
+                                        )
+                                        (StructInstanceMember
+                                            (Var 7 an)
+                                            7 1_point_x
+                                            (Real 4)
+                                            ()
+                                        )
+                                        (StructInstanceMember
+                                            (Var 7 an)
+                                            7 1_point_y
+                                            (Real 4)
                                             ()
                                         )]
                                         ()
@@ -534,7 +534,7 @@
                             4 point
                             [(BlockCall
                                 -1
-                                4 ~select_type_block_
+                                4 ~select_type_block__
                             )]
                         )
                         (TypeStmtName

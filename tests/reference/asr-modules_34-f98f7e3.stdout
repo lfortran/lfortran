@@ -129,7 +129,7 @@
                                     (SymbolTable
                                         5
                                         {
-                                            associate_block:
+                                            associate_block_:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         6
@@ -193,7 +193,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block
+                                                    associate_block_
                                                     [(=>
                                                         (Var 6 ii)
                                                         (Var 5 i)
@@ -285,12 +285,14 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [1_to_string]
                                     [(Var 5 package)]
                                     [(AssociateBlockCall
-                                        5 associate_block
+                                        5 associate_block_
                                     )
                                     (ImplicitDeallocate
                                         [(Var 5 version)]
@@ -391,6 +393,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [1_to_string]
@@ -473,6 +477,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []

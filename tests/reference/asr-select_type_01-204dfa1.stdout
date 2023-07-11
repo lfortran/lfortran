@@ -181,57 +181,6 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ~select_type_block_:
-                                                (Block
-                                                    (SymbolTable
-                                                        6
-                                                        {
-                                                            1_base_i:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    1_base_i
-                                                                    3 i
-                                                                    base
-                                                                    []
-                                                                    i
-                                                                    Public
-                                                                )
-                                                        })
-                                                    ~select_type_block_
-                                                    [(Print
-                                                        ()
-                                                        [(StringConstant
-                                                            "base type: component value: "
-                                                            (Character 1 28 ())
-                                                        )
-                                                        (StructInstanceMember
-                                                            (Var 5 bptr)
-                                                            6 1_base_i
-                                                            (Integer 4)
-                                                            ()
-                                                        )]
-                                                        ()
-                                                        ()
-                                                    )
-                                                    (If
-                                                        (IntegerCompare
-                                                            (StructInstanceMember
-                                                                (Var 5 bptr)
-                                                                6 1_base_i
-                                                                (Integer 4)
-                                                                ()
-                                                            )
-                                                            NotEq
-                                                            (IntegerConstant 10 (Integer 4))
-                                                            (Logical 4)
-                                                            ()
-                                                        )
-                                                        [(ErrorStop
-                                                            ()
-                                                        )]
-                                                        []
-                                                    )]
-                                                ),
                                             ~select_type_block_1:
                                                 (Block
                                                     (SymbolTable
@@ -316,6 +265,57 @@
                                                         )]
                                                         []
                                                     )]
+                                                ),
+                                            ~select_type_block__:
+                                                (Block
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            1_base_i:
+                                                                (ExternalSymbol
+                                                                    6
+                                                                    1_base_i
+                                                                    3 i
+                                                                    base
+                                                                    []
+                                                                    i
+                                                                    Public
+                                                                )
+                                                        })
+                                                    ~select_type_block__
+                                                    [(Print
+                                                        ()
+                                                        [(StringConstant
+                                                            "base type: component value: "
+                                                            (Character 1 28 ())
+                                                        )
+                                                        (StructInstanceMember
+                                                            (Var 5 bptr)
+                                                            6 1_base_i
+                                                            (Integer 4)
+                                                            ()
+                                                        )]
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (If
+                                                        (IntegerCompare
+                                                            (StructInstanceMember
+                                                                (Var 5 bptr)
+                                                                6 1_base_i
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            NotEq
+                                                            (IntegerConstant 10 (Integer 4))
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(ErrorStop
+                                                            ()
+                                                        )]
+                                                        []
+                                                    )]
                                                 )
                                         })
                                     perform_select_type
@@ -334,6 +334,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -344,7 +346,7 @@
                                             2 base
                                             [(BlockCall
                                                 -1
-                                                5 ~select_type_block_
+                                                5 ~select_type_block__
                                             )]
                                         )
                                         (TypeStmtName
