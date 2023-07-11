@@ -900,7 +900,8 @@ public:
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
             curr_arg_m_a_type = ASRUtils::type_get_past_array(curr_arg_m_a_type);
             if( n_dims == 0 ) {
-                llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, llvm_utils->getIntType(4));
+                llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, llvm_utils->getIntType(4),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                 llvm::Function *fn = _Allocate();
                 if (ASRUtils::is_character(*curr_arg_m_a_type)) {
                     // TODO: Add ASR reference to capture the length of the string
@@ -2186,16 +2187,18 @@ public:
         LCOMPILERS_ASSERT(x.n_args == 0);
     }
 
-    llvm::Value* SizeOfTypeUtil(ASR::ttype_t* m_type, llvm::Type* output_type) {
+    llvm::Value* SizeOfTypeUtil(ASR::ttype_t* m_type, llvm::Type* output_type,
+        ASR::ttype_t* output_type_asr) {
         llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(m_type, module.get());
         llvm::DataLayout data_layout(module.get());
         int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
-        return llvm::ConstantInt::get(output_type, llvm::APInt(32, type_size));
+        return llvm::ConstantInt::get(output_type, llvm::APInt(
+            ASRUtils::extract_kind_from_ttype_t(output_type_asr) * 8, type_size));
     }
 
     void visit_SizeOfType(const ASR::SizeOfType_t& x) {
         llvm::Type* llvm_type_size = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
-        tmp = SizeOfTypeUtil(x.m_arg, llvm_type_size);
+        tmp = SizeOfTypeUtil(x.m_arg, llvm_type_size, x.m_type);
     }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
@@ -2760,19 +2763,23 @@ public:
             ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
         std::string struct_type_name = struct_type_t->m_name;
         for( auto item: struct_type_t->m_symtab->get_scope() ) {
-            if( ASR::is_a<ASR::ClassProcedure_t>(*item.second) ||
-                ASR::is_a<ASR::GenericProcedure_t>(*item.second) ||
-                ASR::is_a<ASR::UnionType_t>(*item.second) ||
-                ASR::is_a<ASR::StructType_t>(*item.second) ||
-                ASR::is_a<ASR::CustomOperator_t>(*item.second) ) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(item.second);
+            if (name2memidx[struct_type_name].find(item.first) == name2memidx[struct_type_name].end()) {
+                continue;
+            }
+            if( ASR::is_a<ASR::ClassProcedure_t>(*sym) ||
+                ASR::is_a<ASR::GenericProcedure_t>(*sym) ||
+                ASR::is_a<ASR::UnionType_t>(*sym) ||
+                ASR::is_a<ASR::StructType_t>(*sym) ||
+                ASR::is_a<ASR::CustomOperator_t>(*sym) ) {
                 continue ;
             }
-            ASR::ttype_t* symbol_type = ASRUtils::symbol_type(item.second);
+            ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
             int idx = name2memidx[struct_type_name][item.first];
             llvm::Value* ptr_member = llvm_utils->create_gep(ptr, idx);
             ASR::Variable_t* v = nullptr;
-            if( ASR::is_a<ASR::Variable_t>(*item.second) ) {
-                v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if( ASR::is_a<ASR::Variable_t>(*sym) ) {
+                v = ASR::down_cast<ASR::Variable_t>(sym);
                 set_pointer_variable_to_null(llvm::Constant::getNullValue(
                     llvm_utils->get_type_from_ttype_t_util(v->m_type, module.get())),
                     ptr_member);
@@ -4346,6 +4353,9 @@ public:
 
         if( m_new == ASR::array_physical_typeType::PointerToDataArray &&
             m_old == ASR::array_physical_typeType::DescriptorArray ) {
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*m_arg) ) {
+                arg = LLVM::CreateLoad(*builder, arg);
+            }
             tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(arg));
         } else if(
             m_new == ASR::array_physical_typeType::PointerToDataArray &&
@@ -4383,7 +4393,7 @@ public:
         LCOMPILERS_ASSERT(x.m_new != x.m_old);
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_arg));
-        this->visit_expr_wrapper(x.m_arg, true);
+        this->visit_expr_wrapper(x.m_arg, false);
         ptr_loads = ptr_loads_copy;
         visit_ArrayPhysicalCastUtil(tmp, x.m_arg, x.m_type, x.m_type, x.m_old, x.m_new);
     }

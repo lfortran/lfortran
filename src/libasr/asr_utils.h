@@ -1738,6 +1738,29 @@ static inline bool is_requirement_function(ASR::symbol_t *x) {
     }
 }
 
+static inline bool is_generic_function(ASR::symbol_t *x) {
+    ASR::symbol_t* x2 = symbol_get_past_external(x);
+    switch (x2->type) {
+        case ASR::symbolType::Function: {
+            ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x2);
+            return (ASRUtils::get_FunctionType(func_sym)->n_type_params > 0 &&
+                   !ASRUtils::get_FunctionType(func_sym)->m_is_restriction);
+        }
+        default: return false;
+    }
+}
+
+static inline bool is_restriction_function(ASR::symbol_t *x) {
+    ASR::symbol_t* x2 = symbol_get_past_external(x);
+    switch (x2->type) {
+        case ASR::symbolType::Function: {
+            ASR::Function_t *func_sym = ASR::down_cast<ASR::Function_t>(x2);
+            return ASRUtils::get_FunctionType(func_sym)->m_is_restriction;
+        }
+        default: return false;
+    }
+}
+
 static inline int get_body_size(ASR::symbol_t* s) {
     int n_body = 0;
     switch (s->type) {
@@ -2081,7 +2104,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             return ASRUtils::TYPE(ASR::make_FunctionType_t(al, ft->base.base.loc,
                 arg_types.p, arg_types.size(), ft->m_return_var_type, ft->m_abi,
                 ft->m_deftype, ft->m_bindc_name, ft->m_elemental, ft->m_pure, ft->m_module, ft->m_inline,
-                ft->m_static, ft->m_is_restriction));
+                ft->m_static, ft->m_type_params, ft->n_type_params, ft->m_restrictions, ft->n_restrictions,
+                ft->m_is_restriction));
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
@@ -2949,7 +2973,7 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
             // Import while assigning a new name to avoid conflicts
             // For example, if someone is using `len` from a user
             // define module then `get_unique_name` will avoid conflict
-            std::string unique_name = current_scope->get_unique_name(f->m_name);
+            std::string unique_name = current_scope->get_unique_name(f->m_name, false);
             Str s; s.from_str_view(unique_name);
             char *unique_name_c = s.c_str(al);
             LCOMPILERS_ASSERT(current_scope->get_symbol(unique_name) == nullptr);
@@ -3089,7 +3113,8 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     const Location &a_loc, ASR::expr_t** a_args, size_t n_args,
     ASR::expr_t* a_return_var, ASR::abiType a_abi, ASR::deftypeType a_deftype,
     char* a_bindc_name, bool a_elemental, bool a_pure, bool a_module, bool a_inline,
-    bool a_static, bool a_is_restriction) {
+    bool a_static, ASR::ttype_t** a_type_params, size_t n_type_params,
+    ASR::symbol_t** a_restrictions, size_t n_restrictions, bool a_is_restriction) {
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     ReplaceWithFunctionParamVisitor replacer(al, a_args, n_args);
@@ -3110,14 +3135,17 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     return ASR::make_FunctionType_t(
         al, a_loc, arg_types.p, arg_types.size(), return_var_type, a_abi, a_deftype,
         a_bindc_name, a_elemental, a_pure, a_module, a_inline,
-        a_static, a_is_restriction);
+        a_static, a_type_params, n_type_params, a_restrictions, n_restrictions,
+        a_is_restriction);
 }
 
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t** a_args, size_t n_args, ASR::expr_t* a_return_var, ASR::FunctionType_t* ft) {
     return ASRUtils::make_FunctionType_t_util(al, a_loc, a_args, n_args, a_return_var,
         ft->m_abi, ft->m_deftype, ft->m_bindc_name, ft->m_elemental,
-        ft->m_pure, ft->m_module, ft->m_inline, ft->m_static, ft->m_is_restriction);
+        ft->m_pure, ft->m_module, ft->m_inline, ft->m_static,
+        ft->m_type_params, ft->n_type_params, ft->m_restrictions,
+        ft->n_restrictions, ft->m_is_restriction);
 }
 
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
@@ -3125,11 +3153,13 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
     ASR::expr_t* m_return_var, ASR::abiType m_abi, ASR::accessType m_access,
     ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
-    bool m_module, bool m_inline, bool m_static,
-    bool m_is_restriction, bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr) {
+    bool m_module, bool m_inline, bool m_static, ASR::ttype_t** m_type_params, size_t n_type_params,
+    ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
+    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
-        m_elemental, m_pure, m_module, m_inline, m_static, m_is_restriction));
+        m_elemental, m_pure, m_module, m_inline, m_static, m_type_params, n_type_params,
+        m_restrictions, n_restrictions, m_is_restriction));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
@@ -3317,6 +3347,8 @@ class SymbolDuplicator {
             function_type->m_abi, function->m_access, function_type->m_deftype,
             function_type->m_bindc_name, function_type->m_elemental, function_type->m_pure,
             function_type->m_module, function_type->m_inline, function_type->m_static,
+            function_type->m_type_params, function_type->n_type_params,
+            function_type->m_restrictions, function_type->n_restrictions,
             function_type->m_is_restriction, function->m_deterministic,
             function->m_side_effect_free));
     }
@@ -4005,7 +4037,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::ttype_t* arg_array_type = (ASR::ttype_t*) arg_array_t;
                         ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, orig_arg_type->base.loc, arg_array_type));
 
-                        std::string cast_sym_name = current_scope->get_unique_name(sym_name + "_cast");
+                        std::string cast_sym_name = current_scope->get_unique_name(sym_name + "_cast", false);
                         ASR::asr_t* cast_ = ASR::make_Variable_t(al, arg->base.loc,
                                         current_scope, s2c(al, cast_sym_name), nullptr,
                                         0, ASR::intentType::Local, nullptr, nullptr,

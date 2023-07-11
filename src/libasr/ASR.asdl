@@ -352,7 +352,6 @@ expr
     | ListItem(expr a, expr pos, ttype type, expr? value)
     | TupleItem(expr a, expr pos, ttype type, expr? value)
     | ListSection(expr a, array_index section, ttype type, expr? value)
-    | ListPop(expr a, expr? index, ttype type, expr? value)
     | ListRepeat(expr left, expr right, ttype type, expr? value)
     | DictPop(expr a, expr key, ttype type, expr? value)
     | SetPop(expr a, ttype type, expr? value)
@@ -411,7 +410,8 @@ ttype
     | Array(ttype type, dimension* dims, array_physical_type physical_type)
     | FunctionType(ttype* arg_types, ttype? return_var_type,
         abi abi, deftype deftype, string? bindc_name, bool elemental,
-        bool pure, bool module, bool inline, bool static, bool is_restriction)
+        bool pure, bool module, bool inline, bool static, ttype* type_params,
+        symbol* restrictions, bool is_restriction)
 
 -- TODO: prefix the enumerators here, improve the names
 array_physical_type

@@ -603,7 +603,7 @@ R"(
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
         std::string strcat_def = "";
-        strcat_def += indent + "char* " + global_scope->get_unique_name("strcat_") + "(char* x, char* y) {\n";
+        strcat_def += indent + "char* " + global_scope->get_unique_name("strcat_", false) + "(char* x, char* y) {\n";
         strcat_def += indent + tab + "char* str_tmp = (char*) malloc((strlen(x) + strlen(y) + 2) * sizeof(char));\n";
         strcat_def += indent + tab + "strcpy(str_tmp, x);\n";
         strcat_def += indent + tab + "return strcat(str_tmp, y);\n";
@@ -777,9 +777,7 @@ R"(
                     item.second);
                 unit_src_tmp = convert_variable_decl(*v);
                 unit_src += unit_src_tmp;
-                if(unit_src_tmp.size() > 0 &&
-                    (!ASR::is_a<ASR::Const_t>(*v->m_type) ||
-                    v->m_intent == ASRUtils::intent_return_var )) {
+                if(unit_src_tmp.size() > 0) {
                     unit_src += ";\n";
                 }
             }
@@ -1023,8 +1021,8 @@ R"(    // Initialise Numpy
         meta_data.pop_back();
         meta_data += "};\n";
         std::string end_struct = "};\n\n";
-        std::string enum_names_type = "char " + global_scope->get_unique_name("enum_names_") +
-            std::string(x.m_name) + "[" + std::to_string(max_names) + "][" + std::to_string(max_name_len + 1) + "] ";
+        std::string enum_names_type = "char " + global_scope->get_unique_name("enum_names_" + std::string(x.m_name)) +
+         + "[" + std::to_string(max_names) + "][" + std::to_string(max_name_len + 1) + "] ";
         array_types_decls += enum_names_type + meta_data + open_struct + body + end_struct;
         src = "";
     }

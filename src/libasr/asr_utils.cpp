@@ -453,7 +453,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                     }
                     std::string mangled_name = current_scope->get_unique_name(
                                                 std::string(module_name) + "_" +
-                                                std::string(der_type_name));
+                                                std::string(der_type_name), false);
                     char* mangled_name_char = s2c(al, mangled_name);
                     if( current_scope->get_symbol(mangled_name) == nullptr ) {
                         bool make_new_ext_sym = true;
