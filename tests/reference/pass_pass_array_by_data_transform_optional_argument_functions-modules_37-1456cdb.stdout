@@ -41,7 +41,7 @@
                                                     ptr
                                                     Public
                                                 ),
-                                            associate_block:
+                                            associate_block_:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         12
@@ -87,7 +87,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block
+                                                    associate_block_
                                                     [(=
                                                         (Var 12 target)
                                                         (StructInstanceMember
@@ -151,9 +151,9 @@
                                                                     (Struct
                                                                         2 string_t
                                                                     )
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 2 (Integer 4)))]
-                                                                    FixedSizeArray
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
                                                             )
                                                             ColMajor
@@ -317,6 +317,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -345,7 +347,7 @@
                                         )
                                         ())
                                         [(AssociateBlockCall
-                                            9 associate_block
+                                            9 associate_block_
                                         )]
                                     )
                                     (ImplicitDeallocate
@@ -404,7 +406,7 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            associate_block:
+                                            associate_block_:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         14
@@ -450,7 +452,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block
+                                                    associate_block_
                                                     [(=
                                                         (Var 14 target)
                                                         (StructInstanceMember
@@ -514,9 +516,9 @@
                                                                     (Struct
                                                                         2 string_t
                                                                     )
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 2 (Integer 4)))]
-                                                                    FixedSizeArray
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
                                                             )
                                                             ColMajor
@@ -691,6 +693,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -721,7 +725,7 @@
                                         )
                                         ())
                                         [(AssociateBlockCall
-                                            9 associate_block
+                                            9 associate_block_
                                         )]
                                     )
                                     (ImplicitDeallocate
@@ -778,6 +782,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -812,6 +817,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -906,6 +912,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [build_package_targets]
@@ -974,6 +982,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     2 fpm_cmd_settings
                                 ),
@@ -1012,6 +1021,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -1029,6 +1039,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -1063,6 +1074,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 )

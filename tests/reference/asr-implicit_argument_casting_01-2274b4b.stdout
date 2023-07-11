@@ -103,6 +103,8 @@
                         .false.
                         .false.
                         .false.
+                        []
+                        []
                         .false.
                     )
                     [kind]
@@ -267,6 +269,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [idz_realcomp]

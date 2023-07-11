@@ -45,6 +45,7 @@ enum class IntrinsicFunctions : int64_t {
     ListIndex,
     Partition,
     ListReverse,
+    ListPop,
     Sum,
     Product,
     Max,
@@ -52,6 +53,21 @@ enum class IntrinsicFunctions : int64_t {
     Min,
     MinVal,
     Merge,
+    SymbolicSymbol,
+    SymbolicAdd,
+    SymbolicSub,
+    SymbolicMul,
+    SymbolicDiv,
+    SymbolicPow,
+    SymbolicPi,
+    SymbolicInteger,
+    SymbolicDiff,
+    SymbolicExpand,
+    SymbolicSin,
+    SymbolicCos,
+    SymbolicLog,
+    SymbolicExp,
+    SymbolicAbs,
     // ...
 };
 
@@ -81,6 +97,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
+        INTRINSIC_NAME_CASE(ListPop)
         INTRINSIC_NAME_CASE(Sum)
         INTRINSIC_NAME_CASE(Max)
         INTRINSIC_NAME_CASE(Min)
@@ -88,6 +105,21 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(MaxVal)
         INTRINSIC_NAME_CASE(MinVal)
         INTRINSIC_NAME_CASE(Merge)
+        INTRINSIC_NAME_CASE(SymbolicSymbol)
+        INTRINSIC_NAME_CASE(SymbolicAdd)
+        INTRINSIC_NAME_CASE(SymbolicSub)
+        INTRINSIC_NAME_CASE(SymbolicMul)
+        INTRINSIC_NAME_CASE(SymbolicDiv)
+        INTRINSIC_NAME_CASE(SymbolicPow)
+        INTRINSIC_NAME_CASE(SymbolicPi)
+        INTRINSIC_NAME_CASE(SymbolicInteger)
+        INTRINSIC_NAME_CASE(SymbolicDiff)
+        INTRINSIC_NAME_CASE(SymbolicExpand)
+        INTRINSIC_NAME_CASE(SymbolicSin)
+        INTRINSIC_NAME_CASE(SymbolicCos)
+        INTRINSIC_NAME_CASE(SymbolicLog)
+        INTRINSIC_NAME_CASE(SymbolicExp)
+        INTRINSIC_NAME_CASE(SymbolicAbs)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -138,7 +170,7 @@ class ASRBuilder {
         ASR::Constructor(al, loc, value, type)) \
 
     #define declare_basic_variables(name)                                       \
-        std::string fn_name = scope->get_unique_name(name);                     \
+        std::string fn_name = scope->get_unique_name(name, false);                     \
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);               \
         ASRBuilder b(al, loc);                                                  \
         Vec<ASR::expr_t*> args; args.reserve(al, 1);                            \
@@ -170,7 +202,7 @@ class ASRBuilder {
         symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n,    \
         return_var, ASR::abiType::abi, ASR::accessType::Public,                 \
         ASR::deftypeType::deftype, bindc_name, false, false, false, false,      \
-        false, false, false, false));
+        false, nullptr, 0, nullptr, 0, false, false, false));
 
     #define make_Function_Without_ReturnVar_t(name, symtab, dep, args, body,    \
             abi, deftype, bindc_name)                                           \
@@ -178,7 +210,7 @@ class ASRBuilder {
         symtab, s2c(al, name), dep.p, dep.n, args.p, args.n, body.p, body.n,    \
         nullptr, ASR::abiType::abi, ASR::accessType::Public,                    \
         ASR::deftypeType::deftype, bindc_name, false, false, false, false,      \
-        false, false, false, false));
+        false, nullptr, 0, nullptr, 0, false, false, false));
 
     // Types -------------------------------------------------------------------
     #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
@@ -1050,7 +1082,7 @@ create_exp_macro(Expm1, expm1)
 namespace ListIndex {
 
 static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
-    ASRUtils::require_impl(x.n_args == 2, "Call to list.index must have exactly two arguments",
+    ASRUtils::require_impl(x.n_args <= 4, "Call to list.index must have at most four arguments",
         x.base.base.loc, diagnostics);
     ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_args[0])) &&
         ASRUtils::check_equal_type(ASRUtils::expr_type(x.m_args[1]),
@@ -1058,6 +1090,18 @@ static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnost
         "First argument to list.index must be of list type and "
         "second argument must be of same type as list elemental type",
         x.base.base.loc, diagnostics);
+    if(x.n_args >= 3) {
+        ASRUtils::require_impl(
+            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[2])),
+            "Third argument to list.index must be an integer",
+            x.base.base.loc, diagnostics);
+    }
+    if(x.n_args == 4) {
+        ASRUtils::require_impl(
+            ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[3])),
+            "Fourth argument to list.index must be an integer",
+            x.base.base.loc, diagnostics);
+    }
     ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*x.m_type),
         "Return type of list.index must be an integer",
         x.base.base.loc, diagnostics);
@@ -1069,20 +1113,11 @@ static inline ASR::expr_t *eval_list_index(Allocator &/*al*/,
     return nullptr;
 }
 
+
 static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args,
     const std::function<void (const std::string &, const Location &)> err) {
-    if (args.size() != 2) {
-        // Support start and end arguments by overloading ListIndex
-        // intrinsic. We need 3 overload IDs,
-        // 0 - only list and element
-        // 1 - list, element and start
-        // 2 - list, element, start and end
-        // list, element and end case is not possible as list.index
-        // doesn't accept keyword arguments
-        err("For now index() takes exactly one argument", loc);
-    }
-
+    int64_t overload_id = 0;
     ASR::expr_t* list_expr = args[0];
     ASR::ttype_t *type = ASRUtils::expr_type(list_expr);
     ASR::ttype_t *list_type = ASR::down_cast<ASR::List_t>(type)->m_type;
@@ -1094,6 +1129,18 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
             "Type mismatch in 'index', the types must be compatible "
             "(found: '" + fnd + "', expected: '" + org + "')", loc);
     }
+    if (args.size() >= 3) {
+        overload_id = 1;
+        if(!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[2]))) {
+            err("Third argument to list.index must be an integer", loc);
+        }
+    }
+    if (args.size() == 4) {
+        overload_id = 2;
+        if(!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[3]))) {
+            err("Fourth argument to list.index must be an integer", loc);
+        }
+    }
     Vec<ASR::expr_t*> arg_values;
     arg_values.reserve(al, args.size());
     for( size_t i = 0; i < args.size(); i++ ) {
@@ -1101,9 +1148,9 @@ static inline ASR::asr_t* create_ListIndex(Allocator& al, const Location& loc,
     }
     ASR::expr_t* compile_time_value = eval_list_index(al, loc, arg_values);
     ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-    return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
+    return ASR::make_IntrinsicFunction_t(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListIndex),
-            args.p, args.size(), 0, to_type, compile_time_value);
+            args.p, args.size(), overload_id, to_type, compile_time_value);
 }
 
 } // namespace ListIndex
@@ -1147,6 +1194,65 @@ static inline ASR::asr_t* create_ListReverse(Allocator& al, const Location& loc,
 }
 
 } // namespace ListReverse
+
+namespace ListPop {
+
+static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+    ASRUtils::require_impl(x.n_args <= 2, "Call to list.pop must have at most one argument",
+        x.base.base.loc, diagnostics);
+    ASRUtils::require_impl(ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_args[0])),
+        "Argument to list.pop must be of list type",
+        x.base.base.loc, diagnostics);
+    switch(x.m_overload_id) {
+        case 0:
+            break;
+        case 1:
+            ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_args[1])),
+            "Argument to list.pop must be an integer",
+            x.base.base.loc, diagnostics);
+            break;
+    }
+    ASRUtils::require_impl(ASRUtils::check_equal_type(x.m_type,
+            ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_args[0]))),
+        "Return type of list.pop must be of same type as list's element type",
+        x.base.base.loc, diagnostics);
+}
+
+static inline ASR::expr_t *eval_list_pop(Allocator &/*al*/,
+    const Location &/*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+    // TODO: To be implemented for ListConstant expression
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_ListPop(Allocator& al, const Location& loc,
+    Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    if (args.size() > 2) {
+        err("Call to list.pop must have at most one argument", loc);
+    }
+    if (args.size() == 2 &&
+        !ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
+        err("Argument to list.pop must be an integer", loc);
+    }
+
+    ASR::expr_t* list_expr = args[0];
+    ASR::ttype_t *type = ASRUtils::expr_type(list_expr);
+    ASR::ttype_t *list_type = ASR::down_cast<ASR::List_t>(type)->m_type;
+
+    Vec<ASR::expr_t*> arg_values;
+    arg_values.reserve(al, args.size());
+    for( size_t i = 0; i < args.size(); i++ ) {
+        arg_values.push_back(al, ASRUtils::expr_value(args[i]));
+    }
+    ASR::expr_t* compile_time_value = eval_list_pop(al, loc, arg_values);
+    ASR::ttype_t *to_type = list_type;
+    int64_t overload_id = (args.size() == 2);
+    return ASR::make_IntrinsicFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListPop),
+            args.p, args.size(), overload_id, to_type, compile_time_value);
+}
+
+} // namespace ListPop
 
 namespace Any {
 
@@ -1368,7 +1474,7 @@ static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
         }
     }
 
-    new_name = scope->get_unique_name(new_name);
+    new_name = scope->get_unique_name(new_name, false);
     SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
 
     ASR::ttype_t* logical_return_type = ASRUtils::TYPE(ASR::make_Logical_t(
@@ -2075,7 +2181,7 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al, const Locatio
         }
     }
 
-    new_name = scope->get_unique_name(new_name);
+    new_name = scope->get_unique_name(new_name, false);
     SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
 
     Vec<ASR::expr_t*> args;
@@ -2569,6 +2675,204 @@ namespace Merge {
     }
 }
 
+namespace SymbolicSymbol {
+
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+        const Location& loc = x.base.base.loc;
+        ASRUtils::require_impl(x.n_args == 1,
+            "SymbolicSymbol intrinsic must have exactly 1 input argument",
+            loc, diagnostics);
+
+        ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(ASR::is_a<ASR::Character_t>(*input_type),
+            "SymbolicSymbol intrinsic expects a character input argument",
+            loc, diagnostics);
+    }
+
+    static inline ASR::expr_t *eval_SymbolicSymbol(Allocator &/*al*/,
+    const Location &/*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+        // TODO
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_SymbolicSymbol(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 1) {
+            err("Intrinsic Symbol function accepts exactly 1 argument", loc);
+        }
+
+        ASR::ttype_t *type = ASRUtils::expr_type(args[0]);
+        if (!ASRUtils::is_character(*type)) {
+            err("Argument of the Symbol function must be a Character",
+                args[0]->base.loc);
+        }
+
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_SymbolicSymbol,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol), 0, to_type);
+    }
+
+} // namespace SymbolicSymbol
+
+#define create_symbolic_binary_macro(X)                                                     \
+namespace X{                                                                               \
+                                                                                           \
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x,                      \
+            diag::Diagnostics& diagnostics) {                                              \
+        ASRUtils::require_impl(x.n_args == 2, "Intrinsic function `"#X"` accepts           \
+            exactly 2 arguments", x.base.base.loc, diagnostics);                           \
+                                                                                           \
+        ASR::ttype_t* left_type = ASRUtils::expr_type(x.m_args[0]);                        \
+        ASR::ttype_t* right_type = ASRUtils::expr_type(x.m_args[1]);                       \
+                                                                                           \
+        ASRUtils::require_impl(ASR::is_a<ASR::SymbolicExpression_t>(*left_type) &&         \
+            ASR::is_a<ASR::SymbolicExpression_t>(*right_type),                             \
+            "Both arguments of `"#X"` must be of type SymbolicExpression",                 \
+            x.base.base.loc, diagnostics);                                                 \
+    }                                                                                      \
+                                                                                           \
+    static inline ASR::expr_t* eval_##X(Allocator &/*al*/, const Location &/*loc*/,        \
+            Vec<ASR::expr_t*> &/*args*/) {                                                 \
+        /*TODO*/                                                                           \
+        return nullptr;                                                                    \
+    }                                                                                      \
+                                                                                           \
+    static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,               \
+            Vec<ASR::expr_t*>& args,                                                       \
+            const std::function<void (const std::string &, const Location &)> err) {       \
+        if (args.size() != 2) {                                                            \
+            err("Intrinsic function `"#X"` accepts exactly 2 arguments", loc);             \
+        }                                                                                  \
+                                                                                           \
+        for (size_t i = 0; i < args.size(); i++) {                                         \
+            ASR::ttype_t* argtype = ASRUtils::expr_type(args[i]);                          \
+            if(!ASR::is_a<ASR::SymbolicExpression_t>(*argtype)) {                          \
+                err("Arguments of `"#X"` function must be of type SymbolicExpression",     \
+                args[i]->base.loc);                                                        \
+            }                                                                              \
+        }                                                                                  \
+                                                                                           \
+        Vec<ASR::expr_t*> arg_values;                                                      \
+        arg_values.reserve(al, args.size());                                               \
+        for( size_t i = 0; i < args.size(); i++ ) {                                        \
+            arg_values.push_back(al, ASRUtils::expr_value(args[i]));                       \
+        }                                                                                  \
+        ASR::expr_t* compile_time_value = eval_##X(al, loc, arg_values);                   \
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));   \
+        return ASR::make_IntrinsicFunction_t(al, loc,                                      \
+                static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X),                     \
+                args.p, args.size(), 0, to_type, compile_time_value);                      \
+    }                                                                                      \
+} // namespace X
+
+create_symbolic_binary_macro(SymbolicAdd)
+create_symbolic_binary_macro(SymbolicSub)
+create_symbolic_binary_macro(SymbolicMul)
+create_symbolic_binary_macro(SymbolicDiv)
+create_symbolic_binary_macro(SymbolicPow)
+create_symbolic_binary_macro(SymbolicDiff)
+
+namespace SymbolicPi {
+
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 0, "SymbolicPi does not take arguments",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::expr_t *eval_SymbolicPi(Allocator &/*al*/,
+    const Location &/*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+        // TODO
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_SymbolicPi(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> /*err*/) {
+        ASR::expr_t* compile_time_value = eval_SymbolicPi(al, loc, args);
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));
+        return ASR::make_IntrinsicFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPi),
+                nullptr, 0, 0, to_type, compile_time_value);
+    }
+
+} // namespace SymbolicPi
+
+namespace SymbolicInteger {
+
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 1,
+            "SymbolicInteger intrinsic must have exactly 1 input argument",
+            x.base.base.loc, diagnostics);
+
+        ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);
+        ASRUtils::require_impl(ASR::is_a<ASR::Integer_t>(*input_type),
+            "SymbolicInteger intrinsic expects an integer input argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::expr_t* eval_SymbolicInteger(Allocator &/*al*/,
+    const Location &/*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+        // TODO
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_SymbolicInteger(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> /*err*/) {
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_SymbolicInteger,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicInteger), 0, to_type);
+    }
+} // namespace SymbolicInteger
+
+#define create_symbolic_unary_macro(X)                                                    \
+namespace X {                                                                             \
+                                                                                          \
+    static inline void verify_args(const ASR::IntrinsicFunction_t& x,                     \
+            diag::Diagnostics& diagnostics) {                                             \
+        const Location& loc = x.base.base.loc;                                            \
+        ASRUtils::require_impl(x.n_args == 1,                                             \
+            #X " must have exactly 1 input argument", loc, diagnostics);                  \
+                                                                                          \
+        ASR::ttype_t* input_type = ASRUtils::expr_type(x.m_args[0]);                      \
+        ASRUtils::require_impl(ASR::is_a<ASR::SymbolicExpression_t>(*input_type),         \
+            #X " expects an argument of type SymbolicExpression", loc, diagnostics);      \
+    }                                                                                     \
+                                                                                          \
+    static inline ASR::expr_t* eval_##X(Allocator &/*al*/, const Location &/*loc*/,       \
+            Vec<ASR::expr_t*> &/*args*/) {                                                \
+        /*TODO*/                                                                          \
+        return nullptr;                                                                   \
+    }                                                                                     \
+                                                                                          \
+    static inline ASR::asr_t* create_##X(Allocator& al, const Location& loc,              \
+            Vec<ASR::expr_t*>& args,                                                      \
+            const std::function<void (const std::string &, const Location &)> err) {      \
+        if (args.size() != 1) {                                                           \
+            err("Intrinsic " #X " function accepts exactly 1 argument", loc);             \
+        }                                                                                 \
+                                                                                          \
+        ASR::ttype_t* argtype = ASRUtils::expr_type(args[0]);                             \
+        if (!ASR::is_a<ASR::SymbolicExpression_t>(*argtype)) {                            \
+            err("Argument of " #X " function must be of type SymbolicExpression",         \
+                args[0]->base.loc);                                                       \
+        }                                                                                 \
+                                                                                          \
+        ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, loc));  \
+        return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_##X,      \
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X), 0, to_type);           \
+    }                                                                                     \
+                                                                                          \
+} // namespace X
+
+create_symbolic_unary_macro(SymbolicSin)
+create_symbolic_unary_macro(SymbolicCos)
+create_symbolic_unary_macro(SymbolicLog)
+create_symbolic_unary_macro(SymbolicExp)
+create_symbolic_unary_macro(SymbolicAbs)
+create_symbolic_unary_macro(SymbolicExpand)
+
 
 namespace IntrinsicFunctionRegistry {
 
@@ -2616,6 +2920,8 @@ namespace IntrinsicFunctionRegistry {
             {nullptr, &ListIndex::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListReverse),
             {nullptr, &ListReverse::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListPop),
+            {nullptr, &ListPop::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Max),
             {&Max::instantiate_Max, &Max::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxVal),
@@ -2626,6 +2932,36 @@ namespace IntrinsicFunctionRegistry {
             {&MinVal::instantiate_MinVal, &MinVal::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Merge),
             {&Merge::instantiate_Merge, &Merge::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol),
+            {nullptr, &SymbolicSymbol::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd),
+            {nullptr, &SymbolicAdd::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSub),
+            {nullptr, &SymbolicSub::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicMul),
+            {nullptr, &SymbolicMul::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicDiv),
+            {nullptr, &SymbolicDiv::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPow),
+            {nullptr, &SymbolicPow::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPi),
+            {nullptr, &SymbolicPi::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicInteger),
+            {nullptr, &SymbolicInteger::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicDiff),
+            {nullptr, &SymbolicDiff::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicExpand),
+            {nullptr, &SymbolicExpand::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSin),
+            {nullptr, &SymbolicSin::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicCos),
+            {nullptr, &SymbolicCos::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicLog),
+            {nullptr, &SymbolicLog::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicExp),
+            {nullptr, &SymbolicExp::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAbs),
+            {nullptr, &SymbolicAbs::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -2662,6 +2998,8 @@ namespace IntrinsicFunctionRegistry {
             "list.index"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListReverse),
             "list.reverse"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::ListPop),
+            "list.pop"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
             "any"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sum),
@@ -2678,6 +3016,40 @@ namespace IntrinsicFunctionRegistry {
             "minval"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Merge),
             "merge"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol),
+            "Symbol"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd),
+            "SymbolicAdd"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSub),
+            "SymbolicSub"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicMul),
+            "SymbolicMul"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicDiv),
+            "SymbolicDiv"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPow),
+            "SymbolicPow"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPi),
+            "pi"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicInteger),
+            "SymbolicInteger"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicDiff),
+            "SymbolicDiff"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicExpand),
+            "SymbolicExpand"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSin),
+            "SymbolicSin"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicCos),
+            "SymbolicCos"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicLog),
+            "SymbolicLog"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicExp),
+            "SymbolicExp"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAbs),
+            "SymbolicAbs"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
+            "any"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sum),
+            "sum"}
     };
 
 
@@ -2703,12 +3075,28 @@ namespace IntrinsicFunctionRegistry {
                 {"product", {&Product::create_Product, &Product::eval_Product}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
                 {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_list_reverse}},
+                {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"maxval", {&MaxVal::create_MaxVal, &MaxVal::eval_MaxVal}},
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
+                {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
+                {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
+                {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},
+                {"SymbolicMul", {&SymbolicMul::create_SymbolicMul, &SymbolicMul::eval_SymbolicMul}},
+                {"SymbolicDiv", {&SymbolicDiv::create_SymbolicDiv, &SymbolicDiv::eval_SymbolicDiv}},
+                {"SymbolicPow", {&SymbolicPow::create_SymbolicPow, &SymbolicPow::eval_SymbolicPow}},
+                {"pi", {&SymbolicPi::create_SymbolicPi, &SymbolicPi::eval_SymbolicPi}},
+                {"SymbolicInteger", {&SymbolicInteger::create_SymbolicInteger, &SymbolicInteger::eval_SymbolicInteger}},
+                {"diff", {&SymbolicDiff::create_SymbolicDiff, &SymbolicDiff::eval_SymbolicDiff}},
+                {"expand", {&SymbolicExpand::create_SymbolicExpand, &SymbolicExpand::eval_SymbolicExpand}},
+                {"SymbolicSin", {&SymbolicSin::create_SymbolicSin, &SymbolicSin::eval_SymbolicSin}},
+                {"SymbolicCos", {&SymbolicCos::create_SymbolicCos, &SymbolicCos::eval_SymbolicCos}},
+                {"SymbolicLog", {&SymbolicLog::create_SymbolicLog, &SymbolicLog::eval_SymbolicLog}},
+                {"SymbolicExp", {&SymbolicExp::create_SymbolicExp, &SymbolicExp::eval_SymbolicExp}},
+                {"SymbolicAbs", {&SymbolicAbs::create_SymbolicAbs, &SymbolicAbs::eval_SymbolicAbs}},
 
     };
 
@@ -2730,7 +3118,8 @@ namespace IntrinsicFunctionRegistry {
                  id_ == ASRUtils::IntrinsicFunctions::Exp ||
                  id_ == ASRUtils::IntrinsicFunctions::Exp2 ||
                  id_ == ASRUtils::IntrinsicFunctions::Expm1 ||
-                 id_ == ASRUtils::IntrinsicFunctions::Merge );
+                 id_ == ASRUtils::IntrinsicFunctions::Merge ||
+                 id_ == ASRUtils::IntrinsicFunctions::SymbolicSymbol);
     }
 
     /*

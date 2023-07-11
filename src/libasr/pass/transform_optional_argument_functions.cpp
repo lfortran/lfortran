@@ -98,7 +98,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
                 new_arg_types.push_back(al, ASRUtils::get_FunctionType(*s)->m_arg_types[i]);
                 if( is_presence_optional(arg_sym) ) {
                     std::string presence_bit_arg_name = "is_" + std::string(ASRUtils::symbol_name(arg_sym)) + "_present_";
-                    presence_bit_arg_name = s->m_symtab->get_unique_name(presence_bit_arg_name);
+                    presence_bit_arg_name = s->m_symtab->get_unique_name(presence_bit_arg_name, false);
                     ASR::expr_t* presence_bit_arg = PassUtils::create_auxiliary_variable(
                                                         arg_sym->base.loc, presence_bit_arg_name,
                                                         al, s->m_symtab, logical_type, ASR::intentType::In);
