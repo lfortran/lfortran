@@ -1446,15 +1446,34 @@ static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnost
     }
 }
 
-static inline ASR::expr_t *eval_ArrIntrinAnyAll(Allocator & /*al*/,
-    const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
-    return nullptr;
+static inline ASR::expr_t *eval_ArrIntrinAnyAll(Allocator & al,
+    const Location & loc, Vec<ASR::expr_t*>& args, std::function<bool(bool,bool)> logical_operation) {
+    ASR::expr_t *mask = args[0];
+    ASR::expr_t* value = nullptr;
+    // TODO: Use dim to compute the `value`
+    ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+    if (mask && ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
+        ASR::ArrayConstant_t *array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
+        bool result = true;
+        for (size_t i = 0; i < array->n_args; i++) {
+            ASR::expr_t *args_value = ASRUtils::expr_value(array->m_args[i]);
+            if (args_value && ASR::is_a<ASR::LogicalConstant_t>(*args_value)) {
+                result = logical_operation(result, ASR::down_cast<ASR::LogicalConstant_t>(args_value)->m_value);
+            } else {
+                // TODO: Handle other expressions
+                return nullptr;
+            }
+        }
+        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
+            loc, result, type));
+    }
+    return value;
 }
 
 static inline ASR::asr_t* create_ArrIntrinAnyAll(
     Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
     const std::function<void (const std::string &, const Location &)> err,
-    ASRUtils::IntrinsicFunctions intrinsic_func_id) {
+    ASRUtils::IntrinsicFunctions intrinsic_func_id, std::function<bool(bool,bool)> logical_operation) {
     std::string intrinsic_func_name = ASRUtils::get_intrinsic_name(static_cast<int>(intrinsic_func_id));
     int64_t overload_id = 0;
     Vec<ASR::expr_t*> arr_intrin_any_all_args;
@@ -1482,7 +1501,7 @@ static inline ASR::asr_t* create_ArrIntrinAnyAll(
         ASR::expr_t *axis_value = ASRUtils::expr_value(axis);
         arg_values.push_back(al, axis_value);
     }
-    value = eval_ArrIntrinAnyAll(al, loc, arg_values);
+    value = eval_ArrIntrinAnyAll(al, loc, arg_values, logical_operation);
 
     ASR::ttype_t* logical_return_type = nullptr;
     if( axis == nullptr ) {
@@ -1688,15 +1707,15 @@ static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnost
     ArrIntrinAnyAll::verify_args(x, diagnostics, ASRUtils::IntrinsicFunctions::Any);
 }
 
-static inline ASR::expr_t *eval_Any(Allocator & /*al*/,
-    const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
-    return nullptr;
+static inline ASR::expr_t *eval_Any(Allocator & al,
+    const Location & loc, Vec<ASR::expr_t*>& args) {
+    return ArrIntrinAnyAll::eval_ArrIntrinAnyAll(al, loc, args, std::logical_or<bool>());
 }
 
 static inline ASR::asr_t* create_Any(
     Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
     const std::function<void (const std::string &, const Location &)> err) {
-    return ArrIntrinAnyAll::create_ArrIntrinAnyAll(al, loc, args, err, ASRUtils::IntrinsicFunctions::Any);
+    return ArrIntrinAnyAll::create_ArrIntrinAnyAll(al, loc, args, err, ASRUtils::IntrinsicFunctions::Any, std::logical_or<bool>());
 }
 
 static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
@@ -1716,15 +1735,15 @@ static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnost
     ArrIntrinAnyAll::verify_args(x, diagnostics, ASRUtils::IntrinsicFunctions::All);
 }
 
-static inline ASR::expr_t *eval_All(Allocator & /*al*/,
-    const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
-    return nullptr;
+static inline ASR::expr_t *eval_All(Allocator & al,
+    const Location & loc, Vec<ASR::expr_t*>& args) {
+    return ArrIntrinAnyAll::eval_ArrIntrinAnyAll(al, loc, args, std::logical_and<bool>());
 }
 
 static inline ASR::asr_t* create_All(
     Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
     const std::function<void (const std::string &, const Location &)> err) {
-    return ArrIntrinAnyAll::create_ArrIntrinAnyAll(al, loc, args, err, ASRUtils::IntrinsicFunctions::All);
+    return ArrIntrinAnyAll::create_ArrIntrinAnyAll(al, loc, args, err, ASRUtils::IntrinsicFunctions::All, std::logical_and<bool>());
 }
 
 static inline ASR::expr_t* instantiate_All(Allocator &al, const Location &loc,
