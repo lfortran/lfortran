@@ -432,17 +432,10 @@ class ASRBuilder {
     }
 
     ASR::expr_t* ElementalOr(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc) {
+        const Location& loc, ASR::expr_t* value=nullptr) {
         return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
             left, ASR::Or, right,
-            ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), nullptr));
-    }
-
-    ASR::expr_t* Or(ASR::expr_t* left, ASR::expr_t* right,
-        const Location& loc) {
-        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
-            left, ASR::Or, right, ASRUtils::expr_type(left),
-            nullptr));
+            ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), value));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
@@ -1525,7 +1518,7 @@ static inline void generate_body_for_scalar_output(Allocator& al, const Location
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-            ASR::expr_t* logical_or = builder.Or(return_var, array_ref, loc);
+            ASR::expr_t* logical_or = builder.ElementalOr(return_var, array_ref, loc);
             ASR::stmt_t* loop_invariant = Assignment(return_var, logical_or);
             doloop_body.push_back(al, loop_invariant);
         }
