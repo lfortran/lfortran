@@ -1,5 +1,0 @@
-semantic error: Type mismatch in statement function, the types must be compatible, type mismatch.
- --> tests/errors/sign_intrinsic.f90:6:15
-  |
-6 |     signval = sign(x, y)
-  |               ^^^^^^^^^^ 
