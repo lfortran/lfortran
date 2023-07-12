@@ -2034,7 +2034,7 @@ static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnost
                     "mask argument cannot be nullptr", x.base.base.loc, diagnostics);
             }
             ASRUtils::require_impl(x.n_args >= 2 && x.m_args[1] != nullptr,
-                "dim argument to any intrinsic cannot be nullptr",
+                "dim argument to " + intrinsic_func_name + " intrinsic cannot be nullptr",
                 x.base.base.loc, diagnostics);
             verify_array_dim(x.m_args[0], x.m_args[1], x.m_type, x.base.base.loc, diagnostics, intrinsic_func_id);
             break;
