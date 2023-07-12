@@ -3905,6 +3905,10 @@ static inline bool is_allocatable(ASR::expr_t* expr) {
     return ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(expr));
 }
 
+static inline bool is_allocatable(ASR::ttype_t* type) {
+    return ASR::is_a<ASR::Allocatable_t>(*type);
+}
+
 static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_arg, ASR::array_physical_typeType a_old, ASR::array_physical_typeType a_new,
     ASR::ttype_t* a_type, ASR::expr_t* a_value) {
