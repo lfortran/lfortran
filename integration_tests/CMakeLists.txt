@@ -458,6 +458,7 @@ RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 RUN(NAME intrinsics_55 LABELS gfortran llvm NOFAST) #min
 RUN(NAME intrinsics_56 LABELS gfortran llvm)
 RUN(NAME intrinsics_57 LABELS gfortran llvm)
+RUN(NAME intrinsics_58 LABELS gfortran llvm) # sign
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -967,6 +968,3 @@ RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
 RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
-
-RUN(NAME sign_intrinsic LABELS gfortran)
-

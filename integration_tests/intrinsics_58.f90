@@ -1,4 +1,4 @@
-program sign_intrinsic
+program intrinsics_58
     integer :: x, y, signval
     real :: x1, y1, signval1
 
@@ -61,5 +61,4 @@ program sign_intrinsic
     signval1 = sign(x1, y1)
     print *, signval1
     if( signval1 /= -5.0 ) error stop
-
-end program
+end program intrinsics_58
