@@ -74,25 +74,37 @@
                                     l
                                     []
                                     Local
-                                    (ArrayAll
-                                        (ArrayConstant
-                                            [(LogicalConstant
-                                                .true.
-                                                (Logical 4)
+                                    (IntrinsicFunction
+                                        All
+                                        [(ArrayPhysicalCast
+                                            (ArrayConstant
+                                                [(LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )
+                                                (LogicalConstant
+                                                    .true.
+                                                    (Logical 4)
+                                                )]
+                                                (Array
+                                                    (Logical 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
                                             )
-                                            (LogicalConstant
-                                                .true.
-                                                (Logical 4)
-                                            )]
+                                            FixedSizeArray
+                                            DescriptorArray
                                             (Array
                                                 (Logical 4)
                                                 [((IntegerConstant 1 (Integer 4))
                                                 (IntegerConstant 2 (Integer 4)))]
-                                                FixedSizeArray
+                                                DescriptorArray
                                             )
-                                            ColMajor
-                                        )
-                                        ()
+                                            ()
+                                        )]
+                                        0
                                         (Logical 4)
                                         (LogicalConstant
                                             .true.
@@ -116,25 +128,37 @@
                     []
                     [(=
                         (Var 2 l)
-                        (ArrayAll
-                            (ArrayConstant
-                                [(LogicalConstant
-                                    .true.
-                                    (Logical 4)
+                        (IntrinsicFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(LogicalConstant
+                                        .true.
+                                        (Logical 4)
+                                    )
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
                                 )
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )]
+                                FixedSizeArray
+                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 2 (Integer 4)))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
-                                ColMajor
-                            )
-                            ()
+                                ()
+                            )]
+                            0
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -145,21 +169,33 @@
                     )
                     (=
                         (Var 2 l)
-                        (ArrayAll
-                            (ArrayConstant
-                                [(LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )]
+                        (IntrinsicFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 1 (Integer 4)))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
-                                ColMajor
-                            )
-                            ()
+                                ()
+                            )]
+                            0
                             (Logical 4)
                             (LogicalConstant
                                 .false.
@@ -170,21 +206,33 @@
                     )
                     (=
                         (Var 2 l)
-                        (ArrayAll
-                            (ArrayConstant
-                                [(LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                )]
+                        (IntrinsicFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(LogicalConstant
+                                        .true.
+                                        (Logical 4)
+                                    )]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 1 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 1 (Integer 4)))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
-                                ColMajor
-                            )
-                            ()
+                                ()
+                            )]
+                            0
                             (Logical 4)
                             (LogicalConstant
                                 .true.
@@ -195,9 +243,21 @@
                     )
                     (=
                         (Var 2 l)
-                        (ArrayAll
-                            (Var 2 a)
-                            ()
+                        (IntrinsicFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (Var 2 a)
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
                             (Logical 4)
                             ()
                         )
@@ -205,37 +265,49 @@
                     )
                     (=
                         (Var 2 l)
-                        (ArrayAll
-                            (ArrayConstant
-                                [(IntegerCompare
-                                    (IntegerConstant 1 (Integer 4))
-                                    Eq
-                                    (IntegerConstant 2 (Integer 4))
-                                    (Logical 4)
-                                    (LogicalConstant
-                                        .false.
+                        (IntrinsicFunction
+                            All
+                            [(ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(IntegerCompare
+                                        (IntegerConstant 1 (Integer 4))
+                                        Eq
+                                        (IntegerConstant 2 (Integer 4))
                                         (Logical 4)
+                                        (LogicalConstant
+                                            .false.
+                                            (Logical 4)
+                                        )
                                     )
+                                    (IntegerCompare
+                                        (IntegerConstant 0 (Integer 4))
+                                        Eq
+                                        (IntegerConstant 0 (Integer 4))
+                                        (Logical 4)
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4)
+                                        )
+                                    )]
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
                                 )
-                                (IntegerCompare
-                                    (IntegerConstant 0 (Integer 4))
-                                    Eq
-                                    (IntegerConstant 0 (Integer 4))
-                                    (Logical 4)
-                                    (LogicalConstant
-                                        .true.
-                                        (Logical 4)
-                                    )
-                                )]
+                                FixedSizeArray
+                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4))
                                     (IntegerConstant 2 (Integer 4)))]
-                                    FixedSizeArray
+                                    DescriptorArray
                                 )
-                                ColMajor
-                            )
-                            ()
+                                ()
+                            )]
+                            0
                             (Logical 4)
                             (LogicalConstant
                                 .false.
