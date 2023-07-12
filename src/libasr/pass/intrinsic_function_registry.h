@@ -42,6 +42,7 @@ enum class IntrinsicFunctions : int64_t {
     Exp2,
     Expm1,
     Any,
+    All,
     ListIndex,
     Partition,
     ListReverse,
@@ -95,6 +96,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(Exp2)
         INTRINSIC_NAME_CASE(Expm1)
         INTRINSIC_NAME_CASE(Any)
+        INTRINSIC_NAME_CASE(All)
         INTRINSIC_NAME_CASE(ListIndex)
         INTRINSIC_NAME_CASE(Partition)
         INTRINSIC_NAME_CASE(ListReverse)
@@ -435,6 +437,13 @@ class ASRBuilder {
         const Location& loc, ASR::expr_t* value=nullptr) {
         return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
             left, ASR::Or, right,
+            ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), value));
+    }
+
+    ASR::expr_t* ElementalAnd(ASR::expr_t* left, ASR::expr_t* right,
+        const Location& loc, ASR::expr_t* value=nullptr) {
+        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
+            left, ASR::And, right,
             ASRUtils::TYPE(ASR::make_Logical_t( al, loc, 4)), value));
     }
 
@@ -1700,6 +1709,34 @@ static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
 }
 
 } // namespace Any
+
+namespace All {
+
+static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+    ArrIntrinAnyAll::verify_args(x, diagnostics, ASRUtils::IntrinsicFunctions::All);
+}
+
+static inline ASR::expr_t *eval_All(Allocator & /*al*/,
+    const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_All(
+    Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    return ArrIntrinAnyAll::create_ArrIntrinAnyAll(al, loc, args, err, ASRUtils::IntrinsicFunctions::All);
+}
+
+static inline ASR::expr_t* instantiate_All(Allocator &al, const Location &loc,
+    SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+    Vec<ASR::call_arg_t>& new_args, int64_t overload_id,
+    ASR::expr_t* compile_time_value) {
+    return ArrIntrinAnyAll::instantiate_ArrIntrinAnyAll(al, loc, scope, arg_types, new_args,
+        overload_id, compile_time_value, ASRUtils::IntrinsicFunctions::All,
+        make_ConstantWithKind(make_LogicalConstant_t, make_Logical_t, true, 4, loc), &ASRUtils::ASRBuilder::ElementalAnd);
+}
+
+} // namespace All
 
 namespace Max {
     static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -3057,6 +3094,8 @@ namespace IntrinsicFunctionRegistry {
             {&Abs::instantiate_Abs, &Abs::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
             {&Any::instantiate_Any, &Any::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::All),
+            {&All::instantiate_All, &All::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sum),
             {&Sum::instantiate_Sum, &Sum::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Product),
@@ -3151,6 +3190,8 @@ namespace IntrinsicFunctionRegistry {
             "list.pop"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
             "any"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::All),
+            "all"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sum),
             "sum"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Product),
@@ -3199,6 +3240,8 @@ namespace IntrinsicFunctionRegistry {
             "SymbolicAbs"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Any),
             "any"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::All),
+            "all"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sum),
             "sum"}
     };
@@ -3222,6 +3265,7 @@ namespace IntrinsicFunctionRegistry {
                 {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
                 {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},
                 {"any", {&Any::create_Any, &Any::eval_Any}},
+                {"all", {&All::create_All, &All::eval_All}},
                 {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
                 {"product", {&Product::create_Product, &Product::eval_Product}},
                 {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
@@ -3284,6 +3328,7 @@ namespace IntrinsicFunctionRegistry {
     */
     static inline int get_dim_index(ASRUtils::IntrinsicFunctions id) {
         if( id == ASRUtils::IntrinsicFunctions::Any ||
+            id == ASRUtils::IntrinsicFunctions::All ||
             id == ASRUtils::IntrinsicFunctions::Sum ||
             id == ASRUtils::IntrinsicFunctions::Product ||
             id == ASRUtils::IntrinsicFunctions::MaxVal ||
