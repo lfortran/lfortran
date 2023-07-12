@@ -1057,17 +1057,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         if (is_return_var_handled) {
             bool is_dimension_empty = false;
             ASR::ttype_t* result_var_type = x->m_type;
-            ASR::dimension_t* m_dims = nullptr;
-            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(result_var_type, m_dims);
-            for( size_t i = 0; i < n_dims; i++ ) {
-                if( m_dims[i].m_length == nullptr ) {
-                    is_dimension_empty = true;
-                    break;
-                }
-            }
-            if( result_type && is_dimension_empty ) {
-                result_var_type = result_type;
-            }
             bool is_allocatable = false;
             {
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_name);

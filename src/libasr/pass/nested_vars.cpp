@@ -516,7 +516,7 @@ public:
                             ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                                         target, val));
                             body.push_back(al, associate);
-                            if( is_ext_sym_allocatable_or_pointer ) {
+                            if( is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer ) {
                                 associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc, val, target));
                                 assigns_at_end.push_back(associate);
                             }
