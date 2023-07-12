@@ -1673,6 +1673,34 @@ static inline ASR::expr_t* instantiate_ArrIntrinAnyAll(Allocator &al, const Loca
 
 } // namespace ArrIntrinAnyAll
 
+namespace Any {
+
+static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+    ArrIntrinAnyAll::verify_args(x, diagnostics, ASRUtils::IntrinsicFunctions::Any);
+}
+
+static inline ASR::expr_t *eval_Any(Allocator & /*al*/,
+    const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+    return nullptr;
+}
+
+static inline ASR::asr_t* create_Any(
+    Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args,
+    const std::function<void (const std::string &, const Location &)> err) {
+    return ArrIntrinAnyAll::create_ArrIntrinAnyAll(al, loc, args, err, ASRUtils::IntrinsicFunctions::Any);
+}
+
+static inline ASR::expr_t* instantiate_Any(Allocator &al, const Location &loc,
+    SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+    Vec<ASR::call_arg_t>& new_args, int64_t overload_id,
+    ASR::expr_t* compile_time_value) {
+    return ArrIntrinAnyAll::instantiate_ArrIntrinAnyAll(al, loc, scope, arg_types, new_args,
+        overload_id, compile_time_value, ASRUtils::IntrinsicFunctions::Any,
+        make_ConstantWithKind(make_LogicalConstant_t, make_Logical_t, false, 4, loc), &ASRUtils::ASRBuilder::ElementalOr);
+}
+
+} // namespace Any
+
 namespace Max {
     static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args > 1, "ASR Verify: Call to max0 must have at least two arguments",
