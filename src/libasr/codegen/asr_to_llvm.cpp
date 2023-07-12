@@ -1251,48 +1251,6 @@ public:
         }
     }
 
-    void visit_ArrayAll(const ASR::ArrayAll_t &x) {
-        if (x.m_value) {
-            this->visit_expr_wrapper(x.m_value, true);
-            return;
-        }
-        ASR::ttype_t *type_ = ASRUtils::expr_type(x.m_mask);
-        int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 2 - !LLVM::is_llvm_pointer(*type_);
-        this->visit_expr(*x.m_mask);
-        ptr_loads = ptr_loads_copy;
-        llvm::Value *mask = tmp;
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(
-            *ASRUtils::type_get_past_array(type_))) // TODO
-        int32_t n = ASRUtils::extract_n_dims_from_ttype(type_);
-        llvm::Value *size = llvm::ConstantInt::get(context, llvm::APInt(32, n));
-        switch( ASRUtils::extract_physical_type(type_) ) {
-             case ASR::array_physical_typeType::DescriptorArray: {
-                 mask = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(mask));
-                 break;
-             }
-             case ASR::array_physical_typeType::FixedSizeArray: {
-                 mask = llvm_utils->create_gep(mask, 0);
-                 break;
-             }
-             default: {
-                 LCOMPILERS_ASSERT(false);
-             }
-        }
-        std::string runtime_func_name = "_lfortran_all";
-        llvm::Function *fn = module->getFunction(runtime_func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getInt1Ty(context), {
-                    llvm::Type::getInt1Ty(context)->getPointerTo(),
-                    llvm::Type::getInt32Ty(context)
-                }, false);
-            fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
-        }
-        tmp = builder->CreateCall(fn, {mask, size});
-    }
-
     void visit_IntrinsicFunctionSqrt(const ASR::IntrinsicFunctionSqrt_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
