@@ -216,6 +216,7 @@ class ASRBuilder {
 
     // Types -------------------------------------------------------------------
     #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
+    #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
     #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr))
     #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
@@ -233,7 +234,7 @@ class ASRBuilder {
         int32, i32(x)))
     #define i32_neg(x, t) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
 
-    #define f32(x)   EXPR(ASR::make_RealConstant_t(al, loc, x, int32))
+    #define f32(x)   EXPR(ASR::make_RealConstant_t(al, loc, x, real32))
     #define f32_neg(x, t) EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
 
     #define bool32(x)  EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
