@@ -229,12 +229,13 @@ class ASRBuilder {
     }
 
     // Expressions -------------------------------------------------------------
+    #define i(x, t)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
     #define i32(x)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32))
     #define i32_n(x) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)),   \
         int32, i32(x)))
     #define i32_neg(x, t) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
 
-    #define f32(x)   EXPR(ASR::make_RealConstant_t(al, loc, x, real32))
+    #define f(x, t)   EXPR(ASR::make_RealConstant_t(al, loc, x, t))
     #define f32_neg(x, t) EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
 
     #define bool32(x)  EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
@@ -1135,7 +1136,7 @@ namespace Sign {
          * end if
         */
         if (is_real(*arg_types[0])) {
-            ASR::expr_t *zero = f32(0);
+            ASR::expr_t *zero = f(0, arg_types[0]);
             body.push_back(al, b.If(fGtE(args[0], zero), {
                 Assignment(result, args[0])
             }, /* else */ {
@@ -1145,7 +1146,7 @@ namespace Sign {
                 Assignment(result, f32_neg(result, arg_types[0]))
             }, {}));
         } else {
-            ASR::expr_t *zero = i32(0);
+            ASR::expr_t *zero = i(0, arg_types[0]);
             body.push_back(al, b.If(iGtE(args[0], zero), {
                 Assignment(result, args[0])
             }, /* else */  {
