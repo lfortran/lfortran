@@ -317,10 +317,10 @@ namespace LCompilers {
                         ASR::Variable_t* idx_var = ASR::down_cast<ASR::Variable_t>(idx_sym);
                         if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type) &&
                               idx_var->m_symbolic_value == nullptr) ) {
-                            idx_var_name = current_scope->get_unique_name(idx_var_name);
+                            idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                         }
                     } else {
-                        idx_var_name = current_scope->get_unique_name(idx_var_name);
+                        idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                     }
                 }
                 char* var_name = s2c(al, idx_var_name);;
@@ -362,10 +362,10 @@ namespace LCompilers {
                         ASR::Variable_t* idx_var = ASR::down_cast<ASR::Variable_t>(idx_sym);
                         if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type) &&
                               idx_var->m_symbolic_value == nullptr) ) {
-                            idx_var_name = current_scope->get_unique_name(idx_var_name);
+                            idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                         }
                     } else {
-                        idx_var_name = current_scope->get_unique_name(idx_var_name);
+                        idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                     }
                 }
                 char* var_name = s2c(al, idx_var_name);;
@@ -406,10 +406,10 @@ namespace LCompilers {
                         ASR::Variable_t* idx_var = ASR::down_cast<ASR::Variable_t>(idx_sym);
                         if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type) &&
                               idx_var->m_symbolic_value == nullptr) ) {
-                            idx_var_name = current_scope->get_unique_name(idx_var_name);
+                            idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                         }
                     } else {
-                        idx_var_name = current_scope->get_unique_name(idx_var_name);
+                        idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                     }
                 }
                 char* var_name = s2c(al, idx_var_name);;
@@ -743,7 +743,7 @@ namespace LCompilers {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Implementation,
                 nullptr, false, false, false, false, false,
-                false, false, false);
+                nullptr, 0, nullptr, 0, false, false, false);
             global_scope->add_symbol(vector_copy_name, ASR::down_cast<ASR::symbol_t>(vector_copy_asr));
             return ASR::down_cast<ASR::symbol_t>(vector_copy_asr);
         }

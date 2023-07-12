@@ -151,7 +151,7 @@
                                                     type_2
                                                     Public
                                                 ),
-                                            associate_block:
+                                            associate_block_:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         8
@@ -173,7 +173,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block
+                                                    associate_block_
                                                     [(=
                                                         (Var 8 target)
                                                         (StructInstanceMember
@@ -254,6 +254,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -284,7 +286,7 @@
                                         ()
                                     )
                                     (AssociateBlockCall
-                                        5 associate_block
+                                        5 associate_block_
                                     )]
                                     ()
                                     Public
@@ -307,7 +309,7 @@
                                                     type_2
                                                     Public
                                                 ),
-                                            associate_block:
+                                            associate_block_:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         9
@@ -351,7 +353,7 @@
                                                                     .false.
                                                                 )
                                                         })
-                                                    associate_block
+                                                    associate_block_
                                                     [(=
                                                         (Var 9 target)
                                                         (ArrayItem
@@ -439,6 +441,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -478,7 +482,7 @@
                                         ()
                                     )
                                     (AssociateBlockCall
-                                        6 associate_block
+                                        6 associate_block_
                                     )]
                                     ()
                                     Public
@@ -515,6 +519,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -556,6 +561,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 )

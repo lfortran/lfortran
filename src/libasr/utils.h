@@ -20,6 +20,8 @@ enum Platform {
 std::string pf2s(Platform);
 Platform get_platform();
 
+std::string get_unique_ID();
+
 struct CompilerOptions {
     std::filesystem::path mod_files_dir;
     std::vector<std::filesystem::path> include_dirs;
@@ -59,6 +61,9 @@ struct CompilerOptions {
     bool emit_debug_line_column = false;
     bool verbose = false;
     bool pass_cumulative = false;
+    bool enable_cpython = false;
+    bool enable_symengine = false;
+    bool link_numpy = false;
     std::vector<std::string> import_paths;
     Platform platform;
 

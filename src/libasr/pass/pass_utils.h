@@ -367,7 +367,7 @@ namespace LCompilers {
                 return ;
             }
             if( replacer->result_var == nullptr ) {
-                std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
+                std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__", false);
                 replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
                                     result_var_name, replacer->al, replacer->current_scope, x->m_type);
                 *replacer->current_expr = replacer->result_var;
@@ -667,6 +667,9 @@ namespace LCompilers {
 
     static inline void handle_fn_return_var(Allocator &al, ASR::Function_t *x,
             bool (*is_array_or_struct)(ASR::expr_t*)) {
+        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython) {
+            return;
+        }
         if (x->m_return_var) {
             /*
             * The `return_var` of the function, which is either an array or

@@ -57,6 +57,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -145,6 +146,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -263,7 +266,7 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            ~select_type_block_:
+                                            ~select_type_block__:
                                                 (Block
                                                     (SymbolTable
                                                         10
@@ -289,7 +292,7 @@
                                                                     Private
                                                                 )
                                                         })
-                                                    ~select_type_block_
+                                                    ~select_type_block__
                                                     [(=>
                                                         (Var 8 ptr)
                                                         (Var 8 tmp)
@@ -337,6 +340,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [present
@@ -360,7 +365,7 @@
                                                 2 toml_table
                                                 [(BlockCall
                                                     -1
-                                                    8 ~select_type_block_
+                                                    8 ~select_type_block__
                                                 )]
                                             )]
                                             [(If
@@ -466,6 +471,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     2 toml_value
                                 ),
@@ -515,6 +521,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 )

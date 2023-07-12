@@ -76,6 +76,8 @@
                                                 "module": false,
                                                 "inline": false,
                                                 "static": false,
+                                                "type_params": [],
+                                                "restrictions": [],
                                                 "is_restriction": false
                                             },
                                             "loc": {
@@ -118,7 +120,7 @@
                                         "access": "Public",
                                         "deterministic": false,
                                         "side_effect_free": false,
-                                        "c_header": []
+                                        "module_file": []
                                     },
                                     "loc": {
                                         "first": 220,
@@ -283,6 +285,8 @@
                                                 "module": false,
                                                 "inline": false,
                                                 "static": false,
+                                                "type_params": [],
+                                                "restrictions": [],
                                                 "is_restriction": false
                                             },
                                             "loc": {
@@ -340,7 +344,7 @@
                                         "access": "Public",
                                         "deterministic": false,
                                         "side_effect_free": false,
-                                        "c_header": []
+                                        "module_file": []
                                     },
                                     "loc": {
                                         "first": 65,

@@ -670,8 +670,8 @@ public:
             current_procedure_abi_type,
             s_access, deftype, bindc_name,
             is_pure, is_module, false, false, false,
-            is_requirement,
-            false, false);
+            nullptr, 0, nullptr, 0,
+            is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -1001,8 +1001,7 @@ public:
             /* a_return_var */ ASRUtils::EXPR(return_var_ref),
             current_procedure_abi_type, s_access, deftype,
             bindc_name, is_elemental, false, false, false, false,
-            is_requirement,
-            false, false);
+            nullptr, 0, nullptr, 0, is_requirement, false, false);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -1115,7 +1114,7 @@ public:
         tmp = ASR::make_StructType_t(al, x.base.base.loc, current_scope,
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(),
-            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, parent_sym);
+            ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
             parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         is_derived_type = false;
@@ -2423,7 +2422,7 @@ public:
                         nullptr, 0, args.p, 2, body.p, 1, return_expr,
                         ASR::abiType::Source, ASR::accessType::Public,
                         ASR::deftypeType::Implementation, nullptr, false, true,
-                        false, false, false, false, false, true);
+                        false, false, false, nullptr, 0, nullptr, 0, false, false, true);
 
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
@@ -2538,7 +2537,7 @@ public:
                 throw SemanticError(msg, loc);
             }
         }
-        symbol_subs[f_name] = sym_arg;      
+        symbol_subs[f_name] = sym_arg;
     }
 
     // TODO: give proper location to each symbol
@@ -2661,6 +2660,7 @@ public:
                     args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi, f->m_access,
                     ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental, ftype->m_pure,
                     ftype->m_module, ftype->m_inline, ftype->m_static,
+                    ftype->m_type_params, ftype->n_type_params, ftype->m_restrictions, ftype->n_restrictions,
                     ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free);
                 return ASR::down_cast<ASR::symbol_t>(new_f);
             }
