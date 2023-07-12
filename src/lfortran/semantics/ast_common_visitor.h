@@ -725,8 +725,8 @@ public:
         // min0 can accept any arbitrary number of arguments 2<=x<=100
         {"min0", {IntrinsicSignature({}, 2, 100)}},
         {"min", {IntrinsicSignature({}, 2, 100)}},
-        {"merge", {IntrinsicSignature({}, 3, 3)}}
-
+        {"merge", {IntrinsicSignature({}, 3, 3)}},
+        {"sign", {IntrinsicSignature({}, 2, 2)}},
     };
 
 

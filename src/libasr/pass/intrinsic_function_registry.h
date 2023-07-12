@@ -53,6 +53,7 @@ enum class IntrinsicFunctions : int64_t {
     Min,
     MinVal,
     Merge,
+    Sign,
     SymbolicSymbol,
     SymbolicAdd,
     SymbolicSub,
@@ -105,6 +106,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(MaxVal)
         INTRINSIC_NAME_CASE(MinVal)
         INTRINSIC_NAME_CASE(Merge)
+        INTRINSIC_NAME_CASE(Sign)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
         INTRINSIC_NAME_CASE(SymbolicSub)
@@ -214,6 +216,7 @@ class ASRBuilder {
 
     // Types -------------------------------------------------------------------
     #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
+    #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
     #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr))
     #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
@@ -226,9 +229,15 @@ class ASRBuilder {
     }
 
     // Expressions -------------------------------------------------------------
+    #define i(x, t)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, t))
     #define i32(x)   EXPR(ASR::make_IntegerConstant_t(al, loc, x, int32))
     #define i32_n(x) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, i32(abs(x)),   \
         int32, i32(x)))
+    #define i32_neg(x, t) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
+
+    #define f(x, t)   EXPR(ASR::make_RealConstant_t(al, loc, x, t))
+    #define f32_neg(x, t) EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
+
     #define bool32(x)  EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
 
     #define ListItem(x, pos, type) EXPR(ASR::make_ListItem_t(al, loc, x, pos,   \
@@ -254,11 +263,7 @@ class ASRBuilder {
 
     #define iEq(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
         ASR::cmpopType::Eq, y, logical, nullptr))
-    #define sEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,                \
-        ASR::cmpopType::Eq, y, logical, nullptr))
     #define iNotEq(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,            \
-        ASR::cmpopType::NotEq, y, logical, nullptr))
-    #define sNotEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
         ASR::cmpopType::NotEq, y, logical, nullptr))
     #define iLt(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,               \
         ASR::cmpopType::Lt, y, logical, nullptr))
@@ -266,6 +271,16 @@ class ASRBuilder {
         ASR::cmpopType::LtE, y, logical, nullptr))
     #define iGtE(x, y) EXPR(ASR::make_IntegerCompare_t(al, loc, x,              \
         ASR::cmpopType::GtE, y, logical, nullptr))
+
+    #define fGtE(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
+        ASR::cmpopType::GtE, y, logical, nullptr))
+    #define fLt(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
+        ASR::cmpopType::Lt, y, logical, nullptr))
+
+    #define sEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,                \
+        ASR::cmpopType::Eq, y, logical, nullptr))
+    #define sNotEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,             \
+        ASR::cmpopType::NotEq, y, logical, nullptr))
 
     ASR::stmt_t *If(ASR::expr_t *a_test, std::vector<ASR::stmt_t*> if_body,
             std::vector<ASR::stmt_t*> else_body) {
@@ -1045,6 +1060,110 @@ namespace Abs {
     }
 
 } // namespace Abs
+
+namespace Sign {
+     static inline void verify_args(const ASR::IntrinsicFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args == 2,
+            "ASR Verify: Call to sign must have exactly two arguments",
+            x.base.base.loc, diagnostics);
+        ASR::ttype_t *type1 = ASRUtils::expr_type(x.m_args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(x.m_args[1]);
+        ASRUtils::require_impl((is_real(*type1) || is_integer(*type2)),
+            "ASR Verify: Arguments to sign must be of real or integer type",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl((ASRUtils::check_equal_type(type1, type2)),
+            "ASR Verify: All arguments must be of the same type",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
+            Vec<ASR::expr_t*> &args) {
+        ASR::ttype_t* t1 = ASRUtils::expr_type(args[0]);
+        if (ASRUtils::is_real(*t1)) {
+            double rv1 = std::abs(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
+            double rv2 = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
+            if (rv2 < 0) rv1 = -rv1;
+            return make_ConstantWithType(make_RealConstant_t, rv1, t1, loc);
+        } else {
+            int64_t iv1 = std::abs(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
+            int64_t iv2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            if (iv2 < 0) iv1 = -iv1;
+            return make_ConstantWithType(make_IntegerConstant_t, iv1, t1, loc);
+        }
+    }
+
+    static inline ASR::asr_t* create_Sign(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        if (args.size() != 2) {
+            err("Intrinsic sign function accepts exactly 2 arguments", loc);
+        }
+        ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
+        if (!ASRUtils::is_integer(*type1) && !ASRUtils::is_real(*type1)) {
+            err("Argument of the sign function must be Integer or Real",
+                args[0]->base.loc);
+        }
+        if (!ASRUtils::check_equal_type(type1, type2)) {
+            err("Type mismatch in statement function: "
+                "the second argument must have the same type "
+                "and kind as the first argument.", args[1]->base.loc);
+        }
+        ASR::expr_t *m_value = nullptr;
+        if (all_args_evaluated(args)) {
+            Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
+            arg_values.push_back(al, expr_value(args[0]));
+            arg_values.push_back(al, expr_value(args[1]));
+            m_value = eval_Sign(al, loc, arg_values);
+        }
+        return ASR::make_IntrinsicFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sign),
+            args.p, args.n, 0, ASRUtils::expr_type(args[0]), m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Sign(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
+            ASR::expr_t* compile_time_value) {
+        declare_basic_variables("_lcompilers_sign_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[0]);
+        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        /*
+         * r = abs(x)
+         * if (y < 0) then
+         *     r = -r
+         * end if
+        */
+        if (is_real(*arg_types[0])) {
+            ASR::expr_t *zero = f(0, arg_types[0]);
+            body.push_back(al, b.If(fGtE(args[0], zero), {
+                Assignment(result, args[0])
+            }, /* else */ {
+                Assignment(result, f32_neg(args[0], arg_types[0]))
+            }));
+            body.push_back(al, b.If(fLt(args[1], zero), {
+                Assignment(result, f32_neg(result, arg_types[0]))
+            }, {}));
+        } else {
+            ASR::expr_t *zero = i(0, arg_types[0]);
+            body.push_back(al, b.If(iGtE(args[0], zero), {
+                Assignment(result, args[0])
+            }, /* else */  {
+                Assignment(result, i32_neg(args[0], arg_types[0]))
+            }));
+            body.push_back(al, b.If(iLt(args[1], zero), {
+                Assignment(result, i32_neg(result, arg_types[0]))
+            }, {}));
+        }
+
+        ASR::symbol_t *f_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, arg_types[0], compile_time_value);
+    }
+} // namespace Sign
+
 
 #define create_exp_macro(X, stdeval)                                                      \
 namespace X {                                                                             \
@@ -2932,6 +3051,8 @@ namespace IntrinsicFunctionRegistry {
             {&MinVal::instantiate_MinVal, &MinVal::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Merge),
             {&Merge::instantiate_Merge, &Merge::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sign),
+            {&Sign::instantiate_Sign, &Sign::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol),
             {nullptr, &SymbolicSymbol::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd),
@@ -3016,6 +3137,8 @@ namespace IntrinsicFunctionRegistry {
             "minval"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Merge),
             "merge"},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sign),
+            "sign"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol),
             "Symbol"},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd),
@@ -3082,6 +3205,7 @@ namespace IntrinsicFunctionRegistry {
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
+                {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},
@@ -3097,7 +3221,6 @@ namespace IntrinsicFunctionRegistry {
                 {"SymbolicLog", {&SymbolicLog::create_SymbolicLog, &SymbolicLog::eval_SymbolicLog}},
                 {"SymbolicExp", {&SymbolicExp::create_SymbolicExp, &SymbolicExp::eval_SymbolicExp}},
                 {"SymbolicAbs", {&SymbolicAbs::create_SymbolicAbs, &SymbolicAbs::eval_SymbolicAbs}},
-
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {
