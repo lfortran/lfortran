@@ -1524,7 +1524,7 @@ public:
                     for (size_t i = 0; i < arr_type->n_dims; i++) {
                         ASR::dimension_t dim = arr_type->m_dims[i];
                         ASR::expr_t* dim_length = dim.m_length;
-                        if (ASR::is_a<ASR::Var_t>(*dim_length)) {
+                        if (dim_length && ASR::is_a<ASR::Var_t>(*dim_length)) {
                             ASR::Var_t* dim_length_var = ASR::down_cast<ASR::Var_t>(dim_length);
                             ASR::symbol_t* dim_length_sym = dim_length_var->m_v;
                             std::string dim_length_sym_name = ASRUtils::symbol_name(dim_length_sym);

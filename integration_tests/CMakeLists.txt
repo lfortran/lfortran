@@ -960,6 +960,7 @@ RUN(NAME entry_02 LABELS gfortran llvm)
 RUN(NAME entry_03 LABELS gfortran llvm)
 RUN(NAME entry_04 LABELS gfortran llvm)
 RUN(NAME entry_05 LABELS gfortran llvm)
+RUN(NAME entry_06 LABELS gfortran)
 
 RUN(NAME character_01 LABELS gfortran llvm)
 
