@@ -2110,12 +2110,6 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
-        std::map<AST::intrinsicopType, std::vector<std::string>> requirement_op_procs;
-        for (auto &proc: overloaded_op_procs) {
-            requirement_op_procs[proc.first] = proc.second;
-        }
-        overloaded_op_procs.clear();
-
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -2124,11 +2118,45 @@ public:
             current_procedure_args.push_back(arg);
         }
 
+        std::map<AST::intrinsicopType, std::vector<std::string>> requirement_op_procs;
+        for (auto &proc: overloaded_op_procs) {
+            requirement_op_procs[proc.first] = proc.second;
+        }
+        overloaded_op_procs.clear();
+
         for (size_t i=0; i<x.n_decl; i++) {
             this->visit_unit_decl2(*x.m_decl[i]);
         }
         for (size_t i=0; i<x.n_funcs; i++) {
             this->visit_program_unit(*x.m_funcs[i]);
+        }
+
+        for (size_t i=0; i<x.n_namelist; i++) {
+            std::string arg = to_lower(x.m_namelist[i]);
+            if (!current_scope->get_symbol(arg)) {
+                diag.add(Diagnostic(
+                    "Parameter " + arg + " is unused in " + x.m_name,
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }
+                ));
+            }
+            current_procedure_args.push_back(arg);
+        }
+
+        for (auto &item: current_scope->get_scope()) {
+            bool defined = false;
+            std::string sym = item.first;
+            for (size_t i=0; i<current_procedure_args.size(); i++) {
+                std::string arg = current_procedure_args[i];
+                if (sym.compare(arg) == 0) {
+                    defined = true;
+                }
+            }
+            if (!defined) {
+                throw SemanticError("Symbol " + sym + " is not declared in " + to_lower(x.m_name) + "'s parameters",
+                                    x.base.base.loc);
+            }
         }
 
         add_overloaded_procedures();
@@ -2148,6 +2176,7 @@ public:
     }
 
     void visit_Requires(const AST::Requires_t &x) {
+        std::map<std::string,std::string> parameter_map;
         std::string require_name = to_lower(x.m_name);
         ASR::symbol_t *req0 = current_scope->resolve_symbol(require_name);
 
@@ -2177,10 +2206,32 @@ public:
             ASR::symbol_t *temp_arg_sym = current_scope->resolve_symbol(temp_arg);
             if (!temp_arg_sym) {
                 std::string req_arg = req->m_args[i];
+                parameter_map[req_arg] = temp_arg;
                 ASR::symbol_t *req_arg_sym = (req->m_symtab)->get_symbol(req_arg);
-                // TODO: inline this? convert into a static method?
                 temp_arg_sym = replace_symbol(req_arg_sym, temp_arg);
                 current_scope->add_symbol(temp_arg, temp_arg_sym);
+            }
+        }
+
+        // adding custom operators
+        for (auto &item: req->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                ASR::CustomOperator_t *c_op = ASR::down_cast<ASR::CustomOperator_t>(item.second);
+                
+                // may not need to add new custom operators if another requires already got an interface
+                Vec<ASR::symbol_t*> symbols;
+                symbols.reserve(al, c_op->n_procs);
+                for (size_t i=0; i<c_op->n_procs; i++) {
+                    ASR::symbol_t *proc = c_op->m_procs[i];
+                    std::string new_proc_name = parameter_map[ASRUtils::symbol_name(proc)];
+                    proc = current_scope->resolve_symbol(new_proc_name);
+                    symbols.push_back(al, proc);
+                }
+
+                ASR::symbol_t *new_c_op = ASR::down_cast<ASR::symbol_t>(ASR::make_CustomOperator_t(
+                        al, c_op->base.base.loc, current_scope,
+                        s2c(al, c_op->m_name), symbols.p, symbols.size(), c_op->m_access));
+                current_scope->add_symbol(c_op->m_name, new_c_op);
             }
         }
 

@@ -5196,8 +5196,32 @@ public:
 
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
-        } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)){
-            asr = ASR::make_TemplateBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+        } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+            // if overloaded is not found, then reject
+            if (overloaded == nullptr) {
+                std::string op_str = "+";
+                switch (op) {
+                    case (ASR::Add):
+                        break;
+                    case (ASR::Sub):
+                        op_str = "-";
+                        break;
+                    case (ASR::Mul):
+                        op_str = "*";
+                        break;
+                    case (ASR::Div):
+                        op_str = "/";
+                        break;
+                    case (ASR::Pow):
+                        op_str = "**";
+                        break;
+                    default:
+                        LCOMPILERS_ASSERT(false);
+                }
+                throw SemanticError("Operator undefined for " + ASRUtils::type_to_str(left_type)
+                                    + " " +  op_str + " " + ASRUtils::type_to_str(right_type), x.base.base.loc);
+            }
+            return;
         }
 
         if (overloaded != nullptr) {
