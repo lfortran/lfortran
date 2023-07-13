@@ -725,8 +725,8 @@ public:
         // min0 can accept any arbitrary number of arguments 2<=x<=100
         {"min0", {IntrinsicSignature({}, 2, 100)}},
         {"min", {IntrinsicSignature({}, 2, 100)}},
-        {"merge", {IntrinsicSignature({}, 3, 3)}}
-
+        {"merge", {IntrinsicSignature({}, 3, 3)}},
+        {"sign", {IntrinsicSignature({}, 2, 2)}},
     };
 
 
@@ -1072,7 +1072,7 @@ public:
             }
 
             ASR::asr_t* new_target = ASR::make_StructInstanceMember_t(al, target->base.loc, ASRUtils::EXPR(struct_var_),
-                member_sym, target_var->m_type, nullptr);
+                member_sym, ASRUtils::symbol_type(struct_type->m_symtab->resolve_symbol(target_var_name)), nullptr);
 
             return new_target;
         } else {
@@ -1164,7 +1164,7 @@ public:
                         dim.m_length = x_n_args;
                         dims.push_back(al, dim);
                         obj_type = ASRUtils::duplicate_type(al, obj_type, &dims);
-                        tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
+                        tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
                             body.size(), obj_type, ASR::arraystorageType::ColMajor);
                         ASR::Variable_t* v2 = nullptr;
                         if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
@@ -1346,8 +1346,10 @@ public:
 
             // create a struct
             SymbolTable* struct_scope = al.make_new<SymbolTable>(current_scope);
-            ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_StructType_t(al, loc, struct_scope, s2c(al,common_block_name),
-                                            nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, nullptr, nullptr));
+            ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_StructType_t(
+                al, loc, struct_scope, s2c(al,common_block_name),
+                nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false,
+                nullptr, 0, nullptr, nullptr));
             current_scope->add_symbol(common_block_name, struct_symbol);
 
             // create a struct instance
@@ -1494,6 +1496,21 @@ public:
                             uint64_t hash = get_hash((ASR::asr_t*) var__);
                             common_variables_hash[hash] = common_block_struct_sym;
                         }
+                        if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+                            /*
+                                Update type of original symbol
+                                case:
+                                program main
+                                double precision x
+                                common /a/ x(10)
+                                end program
+                            */
+                            ASR::symbol_t* var_sym = current_scope->get_symbol(s2c(al, var_->m_name));
+                            if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
+                                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
+                                var->m_type = var_->m_type;
+                            }
+                        }
                         i++;
                     }
                     i-=1;
@@ -1570,7 +1587,7 @@ public:
                 /* n_body */ 0,
                 /* a_return_var */ to_return,
                 ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
-                nullptr, false, false, false, false, false,
+                nullptr, false, false, false, false, false, nullptr, 0, nullptr, 0,
                 false, false, false);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
             current_scope = parent_scope;
@@ -1709,14 +1726,45 @@ public:
                                 std::string sym = to_lower(s.m_name);
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPrivate) {
-                                    assgnd_access[sym] = ASR::accessType::Private;
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        assgnd_access[sym] = ASR::accessType::Private;
+                                    } else {
+                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            v->m_access = ASR::accessType::Private;
+                                        } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                                            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
+                                            f->m_access = ASR::accessType::Private;
+                                        }
+                                    }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPublic || sa->m_attr == AST::simple_attributeType
                                                 ::AttrParameter) {
-                                    assgnd_access[sym] = ASR::accessType::Public;
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        assgnd_access[sym] = ASR::accessType::Public;
+                                    } else {
+                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                                v->m_access = ASR::accessType::Public;
+                                            } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                                                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
+                                                f->m_access = ASR::accessType::Public;
+                                            }
+                                    }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrOptional) {
-                                    assgnd_presence[sym] = ASR::presenceType::Optional;
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (!sym_) {
+                                        assgnd_presence[sym] = ASR::presenceType::Optional;
+                                    } else {
+                                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                            ASRUtils::symbol_get_past_external(sym_));
+                                        v->m_presence = ASR::presenceType::Optional;
+                                    }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
                                     // Ignore Intrinsic attribute
@@ -2169,7 +2217,7 @@ public:
                                                 }
                                             }
                                             if (is_int) {
-                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
+                                                ASR::expr_t* array_const = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, a->base.base.loc, body.p, body.size(), real_type, a->m_storage_format));
                                                 cast->m_value = ASRUtils::expr_value(array_const);
                                                 value = cast->m_value;
                                             }
@@ -2200,7 +2248,7 @@ public:
                                 }
                                 body.push_back(al, a_m_args);
                             }
-                            value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al,
+                            value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al,
                                 a->base.base.loc, body.p, body.size(),
                                 a->m_type, a->m_storage_format));
                         }
@@ -2504,7 +2552,8 @@ public:
                 current_scope = al.make_new<SymbolTable>(parent_scope);
                 ASR::asr_t* dtype = ASR::make_StructType_t(al, loc, current_scope,
                                                 s2c(al, to_lower(derived_type_name)), nullptr, 0, nullptr, 0,
-                                                ASR::abiType::Source, dflt_access, false, true, nullptr, nullptr);
+                                                ASR::abiType::Source, dflt_access, false, true,
+                                                nullptr, 0, nullptr, nullptr);
                 v = ASR::down_cast<ASR::symbol_t>(dtype);
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;
@@ -2840,7 +2889,7 @@ public:
         dim.m_length = x_n_args;
         dims.push_back(al, dim);
         type = ASRUtils::duplicate_type(al, type, &dims);
-        tmp = ASR::make_ArrayConstant_t(al, x.base.base.loc, body.p,
+        tmp = ASRUtils::make_ArrayConstant_t_util(al, x.base.base.loc, body.p,
             body.size(), type, ASR::arraystorageType::ColMajor);
     }
 
@@ -4348,8 +4397,8 @@ public:
         ASR::expr_t *v_Var = args[0];
         if( !ASR::is_a<ASR::GetPointer_t>(*v_Var) &&
             !ASRUtils::is_pointer(ASRUtils::expr_type(v_Var)) ) {
-            ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc,
-                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var))));
+            ASR::ttype_t* ptr_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc,
+                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var)));
             v_Var = ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc,
                             v_Var, ptr_type, nullptr));
         }
@@ -4483,7 +4532,7 @@ public:
             /* n_body */ 0,
             /* a_return_var */ to_return,
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
-            nullptr, false, false, false, false, false,
+            nullptr, false, false, false, false, false, nullptr, 0, nullptr, 0,
             false, false, false);
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;

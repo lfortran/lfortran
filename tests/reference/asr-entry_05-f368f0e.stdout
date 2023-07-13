@@ -1,0 +1,628 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            dstzr:
+                (Function
+                    (SymbolTable
+                        89
+                        {
+                            abstol:
+                                (Variable
+                                    89
+                                    abstol
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ftol:
+                                (Function
+                                    (SymbolTable
+                                        90
+                                        {
+                                            ftol_return_var_name:
+                                                (Variable
+                                                    90
+                                                    ftol_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            max:
+                                                (ExternalSymbol
+                                                    90
+                                                    max
+                                                    6 max
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    max
+                                                    Private
+                                                ),
+                                            max@dmax:
+                                                (ExternalSymbol
+                                                    90
+                                                    max@dmax
+                                                    6 dmax
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    dmax
+                                                    Private
+                                                ),
+                                            zx:
+                                                (Variable
+                                                    90
+                                                    zx
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ftol
+                                    (FunctionType
+                                        [(Real 8)]
+                                        (Real 8)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [max@dmax]
+                                    [(Var 90 zx)]
+                                    [(=
+                                        (Var 90 ftol_return_var_name)
+                                        (RealBinOp
+                                            (RealConstant
+                                                0.500000
+                                                (Real 8)
+                                            )
+                                            Mul
+                                            (FunctionCall
+                                                90 max@dmax
+                                                90 max
+                                                [((Var 89 abstol))
+                                                ((RealBinOp
+                                                    (Var 89 reltol)
+                                                    Mul
+                                                    (IntrinsicFunction
+                                                        Abs
+                                                        [(Var 90 zx)]
+                                                        0
+                                                        (Real 8)
+                                                        ()
+                                                    )
+                                                    (Real 8)
+                                                    ()
+                                                ))]
+                                                (Real 8)
+                                                ()
+                                                ()
+                                            )
+                                            (Real 8)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 90 ftol_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    89
+                                    n
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            r:
+                                (Variable
+                                    89
+                                    r
+                                    [n]
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 89 n))]
+                                        PointerToDataArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            reltol:
+                                (Variable
+                                    89
+                                    reltol
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            zx:
+                                (Variable
+                                    89
+                                    zx
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    dstzr
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            dzror:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            abstol:
+                                (Variable
+                                    2
+                                    abstol
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            ftol:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            ftol_return_var_name:
+                                                (Variable
+                                                    4
+                                                    ftol_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            max:
+                                                (ExternalSymbol
+                                                    4
+                                                    max
+                                                    6 max
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    max
+                                                    Private
+                                                ),
+                                            max@dmax:
+                                                (ExternalSymbol
+                                                    4
+                                                    max@dmax
+                                                    6 dmax
+                                                    lfortran_intrinsic_math2
+                                                    []
+                                                    dmax
+                                                    Private
+                                                ),
+                                            zx:
+                                                (Variable
+                                                    4
+                                                    zx
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ftol
+                                    (FunctionType
+                                        [(Real 8)]
+                                        (Real 8)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [max@dmax]
+                                    [(Var 4 zx)]
+                                    [(=
+                                        (Var 4 ftol_return_var_name)
+                                        (RealBinOp
+                                            (RealConstant
+                                                0.500000
+                                                (Real 8)
+                                            )
+                                            Mul
+                                            (FunctionCall
+                                                4 max@dmax
+                                                4 max
+                                                [((Var 2 abstol))
+                                                ((RealBinOp
+                                                    (Var 2 reltol)
+                                                    Mul
+                                                    (IntrinsicFunction
+                                                        Abs
+                                                        [(Var 4 zx)]
+                                                        0
+                                                        (Real 8)
+                                                        ()
+                                                    )
+                                                    (Real 8)
+                                                    ()
+                                                ))]
+                                                (Real 8)
+                                                ()
+                                                ()
+                                            )
+                                            (Real 8)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 4 ftol_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            r:
+                                (Variable
+                                    2
+                                    r
+                                    [n]
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 n))]
+                                        PointerToDataArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            reltol:
+                                (Variable
+                                    2
+                                    reltol
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            zx:
+                                (Variable
+                                    2
+                                    zx
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    dzror
+                    (FunctionType
+                        [(Integer 4)
+                        (Array
+                            (Real 4)
+                            [((IntegerConstant 1 (Integer 4))
+                            (FunctionParam
+                                0
+                                (Integer 4)
+                                ()
+                            ))]
+                            PointerToDataArray
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 n)
+                    (Var 2 r)]
+                    [(=
+                        (Var 2 r)
+                        (RealUnaryMinus
+                            (RealConstant
+                                83.030000
+                                (Real 4)
+                            )
+                            (Real 4)
+                            (RealConstant
+                                -83.030000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                    )
+                    (Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            entry_05:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            i:
+                                (Variable
+                                    3
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            r:
+                                (Variable
+                                    3
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    entry_05
+                    []
+                    [(SubroutineCall
+                        1 dzror
+                        ()
+                        [((IntegerConstant 10 (Integer 4)))
+                        ((ArrayPhysicalCast
+                            (Var 3 r)
+                            FixedSizeArray
+                            PointerToDataArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4)))]
+                                PointerToDataArray
+                            )
+                            ()
+                        ))]
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 3 i)
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 10 (Integer 4))
+                        ())
+                        [(If
+                            (RealCompare
+                                (IntrinsicFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (Var 3 r)
+                                            [(()
+                                            (Var 3 i)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        Sub
+                                        (RealUnaryMinus
+                                            (RealConstant
+                                                83.030000
+                                                (Real 4)
+                                            )
+                                            (Real 4)
+                                            (RealConstant
+                                                -83.030000
+                                                (Real 4)
+                                            )
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                ()
+                            )]
+                            []
+                        )]
+                    )
+                    (Print
+                        ()
+                        [(Var 3 r)]
+                        ()
+                        ()
+                    )]
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_math2:
+                (IntrinsicModule lfortran_intrinsic_math2),
+            lfortran_intrinsic_math3:
+                (IntrinsicModule lfortran_intrinsic_math3)
+        })
+    []
+)

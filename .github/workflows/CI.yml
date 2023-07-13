@@ -357,6 +357,12 @@ jobs:
             FC=$(pwd)/../src/bin/lfortran cmake .
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-asr --no-indent --no-color main.f90
+            git clean -fdx
+            git checkout -t origin/lf3
+            git checkout e5ce0676705d6bd12621f55496d73388a7a3e787
+            FC=$(pwd)/../src/bin/lfortran cmake .
+            make fastgpt
+            $(pwd)/../src/bin/lfortran --show-llvm main.f90
 
 
   fpm:
@@ -597,6 +603,19 @@ jobs:
                 #fi
 
             done
+
+            cd ..
+            rm -rf scipy/
+            git clone https://github.com/pranavchiku/scipy.git
+            cd scipy
+            git checkout -t origin/scipy1
+            git checkout a70f11a305edd024cb9a0e5048257eb0f51e29e1
+            find . -name "*.f" > files.txt
+            files=$(<files.txt)
+            for file in $files; do
+                ../src/bin/lfortran --fixed-form --implicit-typing --implicit-interface --implicit-argument-casting --show-asr --no-color $file > $file.f90
+            done
+
 
 
   test_without_llvm:

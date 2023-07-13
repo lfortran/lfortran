@@ -1013,6 +1013,16 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         result_var = nullptr;
     }
 
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        ASR::BaseExprReplacer<ReplaceArrayOp>::replace_ArrayPhysicalCast(x);
+        if( ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) != x->m_old ) {
+            x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+        }
+        if( x->m_old == x->m_new ) {
+            *current_expr = x->m_arg;
+        }
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         // The following checks if the name of a function actually
         // points to a subroutine. If true this would mean that the
@@ -1086,7 +1096,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             result_arg.m_value = *current_expr;
             s_args.push_back(al, result_arg);
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                                            x->m_name, nullptr, s_args.p, s_args.size(), nullptr));
+                                            x->m_name, nullptr, s_args.p, s_args.size(), nullptr,
+                                            nullptr, false));
             pass_result.push_back(al, subrout_call);
 
             if (is_allocatable && result_var != *current_expr &&

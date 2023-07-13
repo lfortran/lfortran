@@ -34,6 +34,37 @@ typedef double _Complex double_complex_t;
 #define LFORTRAN_API /* Nothing */
 #endif
 
+
+
+#ifndef ASSERT
+#define ASSERT(cond)                                                           \
+    {                                                                          \
+        if (!(cond)) {                                                         \
+            printf("%s%s", "ASSERT failed: ", __FILE__);                       \
+            printf("%s%s", "\nfunction ", __func__);                           \
+            printf("%s%d%s", "(), line number ", __LINE__, " at \n");          \
+            printf("%s%s", #cond, "\n");                                       \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+#endif
+
+#ifndef ASSERT_MSG
+#define ASSERT_MSG(cond, fmt, msg)                                                  \
+    {                                                                          \
+        if (!(cond)) {                                                         \
+            printf("%s%s", "ASSERT failed: ", __FILE__);                       \
+            printf("%s%s", "\nfunction ", __func__);                           \
+            printf("%s%d%s", "(), line number ", __LINE__, " at \n");          \
+            printf("%s%s", #cond, "\n");                                       \
+            printf("%s", "ERROR MESSAGE: ");                                  \
+            printf(fmt, msg);                                                  \
+            printf("%s", "\n");                                                \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+#endif
+
 LFORTRAN_API double _lfortran_sum(int n, double *v);
 LFORTRAN_API void _lfortran_random_number(int n, double *v);
 LFORTRAN_API double _lfortran_random();
@@ -172,6 +203,7 @@ LFORTRAN_API void _lfortran_free(char* ptr);
 LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t len);
 LFORTRAN_API void _lfortran_string_init(int size_plus_one, char *s);
 LFORTRAN_API char* _lfortran_str_item(char* s, int32_t idx);
+LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2); // idx1 and idx2 both start from 1
 LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
                         bool idx1_present, bool idx2_present);
 LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, int32_t idx2, int32_t step,

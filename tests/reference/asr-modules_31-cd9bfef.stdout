@@ -159,6 +159,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [1_update_dependency]
@@ -274,6 +276,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -347,6 +350,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     4 fpm_cmd_settings
                                 )
@@ -411,6 +415,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -510,6 +515,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     9 dependency_config_t
                                 ),
@@ -657,6 +663,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -691,6 +698,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 ),
@@ -774,6 +782,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []

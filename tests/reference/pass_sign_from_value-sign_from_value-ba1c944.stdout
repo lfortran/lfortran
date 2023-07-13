@@ -184,109 +184,27 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            sign:
-                                (ExternalSymbol
-                                    2
-                                    sign
-                                    4 sign
-                                    lfortran_intrinsic_math
-                                    []
-                                    sign
-                                    Private
-                                ),
-                            sign@signi32:
-                                (ExternalSymbol
-                                    2
-                                    sign@signi32
-                                    4 signi32
-                                    lfortran_intrinsic_math
-                                    []
-                                    signi32
-                                    Private
-                                ),
-                            sign@signi64:
-                                (ExternalSymbol
-                                    2
-                                    sign@signi64
-                                    4 signi64
-                                    lfortran_intrinsic_math
-                                    []
-                                    signi64
-                                    Private
-                                ),
-                            sign@signr32:
-                                (ExternalSymbol
-                                    2
-                                    sign@signr32
-                                    4 signr32
-                                    lfortran_intrinsic_math
-                                    []
-                                    signr32
-                                    Private
-                                ),
-                            sign@signr64:
-                                (ExternalSymbol
-                                    2
-                                    sign@signr64
-                                    4 signr64
-                                    lfortran_intrinsic_math
-                                    []
-                                    signr64
-                                    Private
-                                ),
-                            sign_from_value@signfromvaluei32i32:
-                                (ExternalSymbol
-                                    2
-                                    sign_from_value@signfromvaluei32i32
-                                    230 signfromvaluei32i32
-                                    lfortran_intrinsic_optimization
-                                    []
-                                    signfromvaluei32i32
-                                    Private
-                                ),
-                            sign_from_value@signfromvaluei64i64:
-                                (ExternalSymbol
-                                    2
-                                    sign_from_value@signfromvaluei64i64
-                                    230 signfromvaluei64i64
-                                    lfortran_intrinsic_optimization
-                                    []
-                                    signfromvaluei64i64
-                                    Private
-                                ),
-                            sign_from_value@signfromvaluer32r32:
-                                (ExternalSymbol
-                                    2
-                                    sign_from_value@signfromvaluer32r32
-                                    230 signfromvaluer32r32
-                                    lfortran_intrinsic_optimization
-                                    []
-                                    signfromvaluer32r32
-                                    Private
-                                ),
-                            sign_from_value@signfromvaluer64r64:
-                                (ExternalSymbol
-                                    2
-                                    sign_from_value@signfromvaluer64r64
-                                    230 signfromvaluer64r64
-                                    lfortran_intrinsic_optimization
-                                    []
-                                    signfromvaluer64r64
-                                    Private
                                 )
                         })
                     flip_sign
                     []
                     [(=
                         (Var 2 rxsp)
-                        (FunctionCall
-                            2 sign_from_value@signfromvaluer32r32
-                            1 sign_from_value
-                            [((Var 2 rxsp))
-                            ((Var 2 epsrsp))]
+                        (RealBinOp
+                            (Var 2 rxsp)
+                            Mul
+                            (IntrinsicFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (Var 2 epsrsp)]
+                                0
+                                (Real 4)
+                                ()
+                            )
                             (Real 4)
-                            ()
                             ()
                         )
                         ()
@@ -327,17 +245,25 @@
                     )
                     (=
                         (Var 2 rxsp)
-                        (FunctionCall
-                            2 sign_from_value@signfromvaluer32r32
-                            1 sign_from_value
-                            [((Var 2 rxsp))
-                            ((RealUnaryMinus
-                                (Var 2 epsrsp)
+                        (RealBinOp
+                            (Var 2 rxsp)
+                            Mul
+                            (IntrinsicFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (RealUnaryMinus
+                                    (Var 2 epsrsp)
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
                                 (Real 4)
                                 ()
-                            ))]
+                            )
                             (Real 4)
-                            ()
                             ()
                         )
                         ()
@@ -378,13 +304,21 @@
                     )
                     (=
                         (Var 2 rxdp)
-                        (FunctionCall
-                            2 sign_from_value@signfromvaluer64r64
-                            1 sign_from_value
-                            [((Var 2 rxdp))
-                            ((Var 2 epsrdp))]
+                        (RealBinOp
+                            (Var 2 rxdp)
+                            Mul
+                            (IntrinsicFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 8)
+                                )
+                                (Var 2 epsrdp)]
+                                0
+                                (Real 8)
+                                ()
+                            )
                             (Real 8)
-                            ()
                             ()
                         )
                         ()
@@ -433,17 +367,25 @@
                     )
                     (=
                         (Var 2 rxdp)
-                        (FunctionCall
-                            2 sign_from_value@signfromvaluer64r64
-                            1 sign_from_value
-                            [((Var 2 rxdp))
-                            ((RealUnaryMinus
-                                (Var 2 epsrdp)
+                        (RealBinOp
+                            (Var 2 rxdp)
+                            Mul
+                            (IntrinsicFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 8)
+                                )
+                                (RealUnaryMinus
+                                    (Var 2 epsrdp)
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
                                 (Real 8)
                                 ()
-                            ))]
+                            )
                             (Real 8)
-                            ()
                             ()
                         )
                         ()
@@ -492,13 +434,18 @@
                     )
                     (=
                         (Var 2 ixsp)
-                        (FunctionCall
-                            2 sign_from_value@signfromvaluei32i32
-                            1 sign_from_value
-                            [((Var 2 ixsp))
-                            ((Var 2 epsisp))]
+                        (IntegerBinOp
+                            (Var 2 ixsp)
+                            Mul
+                            (IntrinsicFunction
+                                Sign
+                                [(IntegerConstant 1 (Integer 4))
+                                (Var 2 epsisp)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -524,13 +471,18 @@
                     )
                     (=
                         (Var 2 ixdp)
-                        (FunctionCall
-                            2 sign_from_value@signfromvaluei64i64
-                            1 sign_from_value
-                            [((Var 2 ixdp))
-                            ((Var 2 epsidp))]
+                        (IntegerBinOp
+                            (Var 2 ixdp)
+                            Mul
+                            (IntrinsicFunction
+                                Sign
+                                [(IntegerConstant 1 (Integer 8))
+                                (Var 2 epsidp)]
+                                0
+                                (Integer 8)
+                                ()
+                            )
                             (Integer 8)
-                            ()
                             ()
                         )
                         ()
@@ -559,26 +511,6 @@
                         )]
                         []
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math),
-            lfortran_intrinsic_optimization:
-                (IntrinsicModule lfortran_intrinsic_optimization),
-            sign_from_value:
-                (ExternalSymbol
-                    1
-                    sign_from_value
-                    230 sign_from_value
-                    lfortran_intrinsic_optimization
-                    []
-                    sign_from_value
-                    Private
                 )
         })
     []

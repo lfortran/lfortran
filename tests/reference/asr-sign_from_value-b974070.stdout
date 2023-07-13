@@ -184,56 +184,6 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            sign:
-                                (ExternalSymbol
-                                    2
-                                    sign
-                                    4 sign
-                                    lfortran_intrinsic_math
-                                    []
-                                    sign
-                                    Private
-                                ),
-                            sign@signi32:
-                                (ExternalSymbol
-                                    2
-                                    sign@signi32
-                                    4 signi32
-                                    lfortran_intrinsic_math
-                                    []
-                                    signi32
-                                    Private
-                                ),
-                            sign@signi64:
-                                (ExternalSymbol
-                                    2
-                                    sign@signi64
-                                    4 signi64
-                                    lfortran_intrinsic_math
-                                    []
-                                    signi64
-                                    Private
-                                ),
-                            sign@signr32:
-                                (ExternalSymbol
-                                    2
-                                    sign@signr32
-                                    4 signr32
-                                    lfortran_intrinsic_math
-                                    []
-                                    signr32
-                                    Private
-                                ),
-                            sign@signr64:
-                                (ExternalSymbol
-                                    2
-                                    sign@signr64
-                                    4 signr64
-                                    lfortran_intrinsic_math
-                                    []
-                                    signr64
-                                    Private
                                 )
                         })
                     flip_sign
@@ -243,16 +193,15 @@
                         (RealBinOp
                             (Var 2 rxsp)
                             Mul
-                            (FunctionCall
-                                2 sign@signr32
-                                2 sign
-                                [((RealConstant
+                            (IntrinsicFunction
+                                Sign
+                                [(RealConstant
                                     1.000000
                                     (Real 4)
-                                ))
-                                ((Var 2 epsrsp))]
+                                )
+                                (Var 2 epsrsp)]
+                                0
                                 (Real 4)
-                                ()
                                 ()
                             )
                             (Real 4)
@@ -299,20 +248,19 @@
                         (RealBinOp
                             (Var 2 rxsp)
                             Mul
-                            (FunctionCall
-                                2 sign@signr32
-                                2 sign
-                                [((RealConstant
+                            (IntrinsicFunction
+                                Sign
+                                [(RealConstant
                                     1.000000
                                     (Real 4)
-                                ))
-                                ((RealUnaryMinus
+                                )
+                                (RealUnaryMinus
                                     (Var 2 epsrsp)
                                     (Real 4)
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 4)
-                                ()
                                 ()
                             )
                             (Real 4)
@@ -359,16 +307,15 @@
                         (RealBinOp
                             (Var 2 rxdp)
                             Mul
-                            (FunctionCall
-                                2 sign@signr64
-                                2 sign
-                                [((RealConstant
+                            (IntrinsicFunction
+                                Sign
+                                [(RealConstant
                                     1.000000
                                     (Real 8)
-                                ))
-                                ((Var 2 epsrdp))]
+                                )
+                                (Var 2 epsrdp)]
+                                0
                                 (Real 8)
-                                ()
                                 ()
                             )
                             (Real 8)
@@ -423,20 +370,19 @@
                         (RealBinOp
                             (Var 2 rxdp)
                             Mul
-                            (FunctionCall
-                                2 sign@signr64
-                                2 sign
-                                [((RealConstant
+                            (IntrinsicFunction
+                                Sign
+                                [(RealConstant
                                     1.000000
                                     (Real 8)
-                                ))
-                                ((RealUnaryMinus
+                                )
+                                (RealUnaryMinus
                                     (Var 2 epsrdp)
                                     (Real 8)
                                     ()
-                                ))]
+                                )]
+                                0
                                 (Real 8)
-                                ()
                                 ()
                             )
                             (Real 8)
@@ -491,13 +437,12 @@
                         (IntegerBinOp
                             (Var 2 ixsp)
                             Mul
-                            (FunctionCall
-                                2 sign@signi32
-                                2 sign
-                                [((IntegerConstant 1 (Integer 4)))
-                                ((Var 2 epsisp))]
+                            (IntrinsicFunction
+                                Sign
+                                [(IntegerConstant 1 (Integer 4))
+                                (Var 2 epsisp)]
+                                0
                                 (Integer 4)
-                                ()
                                 ()
                             )
                             (Integer 4)
@@ -529,13 +474,12 @@
                         (IntegerBinOp
                             (Var 2 ixdp)
                             Mul
-                            (FunctionCall
-                                2 sign@signi64
-                                2 sign
-                                [((IntegerConstant 1 (Integer 8)))
-                                ((Var 2 epsidp))]
+                            (IntrinsicFunction
+                                Sign
+                                [(IntegerConstant 1 (Integer 8))
+                                (Var 2 epsidp)]
+                                0
                                 (Integer 8)
-                                ()
                                 ()
                             )
                             (Integer 8)
@@ -567,15 +511,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

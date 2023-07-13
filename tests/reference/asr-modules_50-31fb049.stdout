@@ -71,6 +71,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 )
@@ -138,6 +139,8 @@
                                                         .false.
                                                         .false.
                                                         .false.
+                                                        []
+                                                        []
                                                         .false.
                                                     )
                                                     []
@@ -181,9 +184,9 @@
                                                                     (Struct
                                                                         4 int_t
                                                                     )
-                                                                    [((IntegerConstant 1 (Integer 4))
-                                                                    (IntegerConstant 1 (Integer 4)))]
-                                                                    FixedSizeArray
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
                                                             )
                                                             ColMajor
@@ -234,6 +237,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [collect_used_modules]

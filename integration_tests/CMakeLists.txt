@@ -101,6 +101,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
 				${extra_args} --implicit-typing --implicit-interface -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+        elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicitArgument")
+            execute_process(COMMAND lfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
+				${extra_args} --implicit-argument-casting -o ${name})
+            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${extra_args})
@@ -198,6 +202,7 @@ RUN(NAME expr_09 LABELS gfortran llvm wasm)
 RUN(NAME expr_10 LABELS gfortran llvm wasm)
 RUN(NAME expr_12 LABELS gfortran llvm) # it uses string compare
 RUN(NAME expr_13 LABELS gfortran llvm wasm NOFAST)
+RUN(NAME expr_14 LABELS gfortran llvm wasm)
 
 RUN(NAME data_01 LABELS gfortran llvm)
 RUN(NAME data_02 LABELS gfortran)
@@ -453,6 +458,7 @@ RUN(NAME intrinsics_open_close_read_write LABELS gfortran)
 RUN(NAME intrinsics_55 LABELS gfortran llvm NOFAST) #min
 RUN(NAME intrinsics_56 LABELS gfortran llvm)
 RUN(NAME intrinsics_57 LABELS gfortran llvm)
+RUN(NAME intrinsics_58 LABELS gfortran llvm) # sign
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -932,6 +938,8 @@ RUN(NAME common_08 LABELS gfortran llvmImplicit)
 RUN(NAME common_09 LABELS gfortran llvm)
 RUN(NAME common_10 LABELS gfortran llvm)
 RUN(NAME common_11 LABELS gfortran llvm)
+RUN(NAME common_12 LABELS gfortran llvm llvmImplicit)
+
 
 
 RUN(NAME statement_01 LABELS gfortran llvmImplicit)
@@ -950,7 +958,14 @@ RUN(NAME save_03 LABELS gfortran llvm)
 RUN(NAME entry_01 LABELS gfortran llvm)
 RUN(NAME entry_02 LABELS gfortran llvm)
 RUN(NAME entry_03 LABELS gfortran llvm)
+RUN(NAME entry_04 LABELS gfortran llvm)
+RUN(NAME entry_05 LABELS gfortran llvm)
+RUN(NAME entry_06 LABELS gfortran)
 
 RUN(NAME character_01 LABELS gfortran llvm)
 
 RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
+
+RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
+
+RUN(NAME arrayitem_01 LABELS gfortran llvm)
