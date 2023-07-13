@@ -5,9 +5,6 @@ module template_add_01b_m
 
     requirement R(T, F)
         type :: T; end type
-        interface operator (+)
-            procedure F
-        end interface
         function F(x, y) result(z)
             type(T), intent(in) :: x, y
             type(T) :: z
@@ -22,7 +19,6 @@ module template_add_01b_m
         function add_generic(x, y) result(z)
             type(T), intent(in) :: x, y
             type(T) :: z
-            !print*, "x, y, z, x+y+z =", x, y, z, x+y+z
             z = x + y
         end function
     end template
@@ -37,10 +33,6 @@ contains
     subroutine test_template()
         real :: a
         integer :: n, s
-
-        !instantiate add_t(real), only: add_real => add_generic
-        !a = add_real(5.1, 7.2, 10.0)
-        !print*, "The result is", a
 
         instantiate add_t(integer, func_arg_int), only: add_integer => add_generic
         n = add_integer(5, 9)
