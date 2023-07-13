@@ -25,6 +25,11 @@ module template_add_01b_m
             !print*, "x, y, z, x+y+z =", x, y, z, x+y+z
             z = x + y
         end function
+        function add_generic2(x, y, z) result(s)
+            type(T), intent(in) :: x, y, z
+            type(T) :: s
+            s = x + y + z
+        end function
     end template
 
 contains
@@ -35,17 +40,13 @@ contains
     end function
 
     subroutine test_template()
-        real :: a
-        integer :: n, s
+        integer :: n1, n2
 
-        !instantiate add_t(real), only: add_real => add_generic
-        !a = add_real(5.1, 7.2, 10.0)
-        !print*, "The result is", a
-
-        instantiate add_t(integer, func_arg_int), only: add_integer => add_generic
-        n = add_integer(5, 9)
-        !s = add_integer2(5, 9, 10)
-        print*, "The result is", n
+        instantiate add_t(integer, func_arg_int), only: add_integer => add_generic, add_integer2 => add_generic2
+        n1 = add_integer(5, 9)
+        n2 = add_integer2(5, 9, 10)
+        print*, "The result is", n1
+        print*, "The result is", n2
     end subroutine
 end module
 

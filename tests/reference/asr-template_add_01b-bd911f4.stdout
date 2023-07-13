@@ -5,11 +5,11 @@
             template_add_01b:
                 (Program
                     (SymbolTable
-                        11
+                        13
                         {
                             add_t:
                                 (ExternalSymbol
-                                    11
+                                    13
                                     add_t
                                     2 add_t
                                     template_add_01b_m
@@ -19,7 +19,7 @@
                                 ),
                             func_arg_int:
                                 (ExternalSymbol
-                                    11
+                                    13
                                     func_arg_int
                                     2 func_arg_int
                                     template_add_01b_m
@@ -29,7 +29,7 @@
                                 ),
                             r:
                                 (ExternalSymbol
-                                    11
+                                    13
                                     r
                                     2 r
                                     template_add_01b_m
@@ -39,7 +39,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    11
+                                    13
                                     test_template
                                     2 test_template
                                     template_add_01b_m
@@ -51,7 +51,7 @@
                     template_add_01b
                     [template_add_01b_m]
                     [(SubroutineCall
-                        11 test_template
+                        13 test_template
                         ()
                         []
                         ()
@@ -170,6 +170,145 @@
                                                     )]
                                                     (Var 7 z)
                                                     Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            add_generic2:
+                                                (Function
+                                                    (SymbolTable
+                                                        8
+                                                        {
+                                                            s:
+                                                                (Variable
+                                                                    8
+                                                                    s
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    8
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    8
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            z:
+                                                                (Variable
+                                                                    8
+                                                                    z
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    add_generic2
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [f]
+                                                    [(Var 8 x)
+                                                    (Var 8 y)
+                                                    (Var 8 z)]
+                                                    [(=
+                                                        (Var 8 s)
+                                                        (FunctionCall
+                                                            5 f
+                                                            5 ~add
+                                                            [((FunctionCall
+                                                                5 f
+                                                                5 ~add
+                                                                [((Var 8 x))
+                                                                ((Var 8 y))]
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                ()
+                                                                ()
+                                                            ))
+                                                            ((Var 8 z))]
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 8 s)
+                                                    Private
                                                     .false.
                                                     .false.
                                                     ()
@@ -305,11 +444,11 @@
                             func_arg_int:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             x:
                                                 (Variable
-                                                    8
+                                                    9
                                                     x
                                                     []
                                                     In
@@ -325,7 +464,7 @@
                                                 ),
                                             y:
                                                 (Variable
-                                                    8
+                                                    9
                                                     y
                                                     []
                                                     In
@@ -341,7 +480,7 @@
                                                 ),
                                             z:
                                                 (Variable
-                                                    8
+                                                    9
                                                     z
                                                     []
                                                     ReturnVar
@@ -374,20 +513,20 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 8 x)
-                                    (Var 8 y)]
+                                    [(Var 9 x)
+                                    (Var 9 y)]
                                     [(=
-                                        (Var 8 z)
+                                        (Var 9 z)
                                         (IntegerBinOp
-                                            (Var 8 x)
+                                            (Var 9 x)
                                             Add
-                                            (Var 8 y)
+                                            (Var 9 y)
                                             (Integer 4)
                                             ()
                                         )
                                         ()
                                     )]
-                                    (Var 8 z)
+                                    (Var 9 z)
                                     Private
                                     .false.
                                     .false.
@@ -525,32 +664,16 @@
                             test_template:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
-                                            a:
-                                                (Variable
-                                                    9
-                                                    a
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                ),
                                             add_integer:
                                                 (Function
                                                     (SymbolTable
-                                                        10
+                                                        11
                                                         {
                                                             x:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     x
                                                                     []
                                                                     In
@@ -566,7 +689,7 @@
                                                                 ),
                                                             y:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     y
                                                                     []
                                                                     In
@@ -582,7 +705,7 @@
                                                                 ),
                                                             z:
                                                                 (Variable
-                                                                    10
+                                                                    11
                                                                     z
                                                                     []
                                                                     ReturnVar
@@ -615,31 +738,150 @@
                                                         .false.
                                                     )
                                                     [func_arg_int]
-                                                    [(Var 10 x)
-                                                    (Var 10 y)]
+                                                    [(Var 11 x)
+                                                    (Var 11 y)]
                                                     [(=
-                                                        (Var 10 z)
+                                                        (Var 11 z)
                                                         (FunctionCall
                                                             2 func_arg_int
                                                             5 ~add
-                                                            [((Var 10 x))
-                                                            ((Var 10 y))]
+                                                            [((Var 11 x))
+                                                            ((Var 11 y))]
                                                             (Integer 4)
                                                             ()
                                                             ()
                                                         )
                                                         ()
                                                     )]
-                                                    (Var 10 z)
+                                                    (Var 11 z)
                                                     Public
                                                     .false.
                                                     .false.
                                                     ()
                                                 ),
-                                            n:
+                                            add_integer2:
+                                                (Function
+                                                    (SymbolTable
+                                                        12
+                                                        {
+                                                            s:
+                                                                (Variable
+                                                                    12
+                                                                    s
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            x:
+                                                                (Variable
+                                                                    12
+                                                                    x
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            y:
+                                                                (Variable
+                                                                    12
+                                                                    y
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            z:
+                                                                (Variable
+                                                                    12
+                                                                    z
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    add_integer2
+                                                    (FunctionType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [func_arg_int]
+                                                    [(Var 12 x)
+                                                    (Var 12 y)
+                                                    (Var 12 z)]
+                                                    [(=
+                                                        (Var 12 s)
+                                                        (FunctionCall
+                                                            2 func_arg_int
+                                                            5 ~add
+                                                            [((FunctionCall
+                                                                2 func_arg_int
+                                                                5 ~add
+                                                                [((Var 12 x))
+                                                                ((Var 12 y))]
+                                                                (Integer 4)
+                                                                ()
+                                                                ()
+                                                            ))
+                                                            ((Var 12 z))]
+                                                            (Integer 4)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 12 s)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            n1:
                                                 (Variable
-                                                    9
-                                                    n
+                                                    10
+                                                    n1
                                                     []
                                                     Local
                                                     ()
@@ -652,10 +894,10 @@
                                                     Required
                                                     .false.
                                                 ),
-                                            s:
+                                            n2:
                                                 (Variable
-                                                    9
-                                                    s
+                                                    10
+                                                    n2
                                                     []
                                                     Local
                                                     ()
@@ -685,15 +927,30 @@
                                         []
                                         .false.
                                     )
-                                    [add_integer]
+                                    [add_integer
+                                    add_integer2]
                                     []
                                     [(=
-                                        (Var 9 n)
+                                        (Var 10 n1)
                                         (FunctionCall
-                                            9 add_integer
+                                            10 add_integer
                                             ()
                                             [((IntegerConstant 5 (Integer 4)))
                                             ((IntegerConstant 9 (Integer 4)))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (=
+                                        (Var 10 n2)
+                                        (FunctionCall
+                                            10 add_integer2
+                                            ()
+                                            [((IntegerConstant 5 (Integer 4)))
+                                            ((IntegerConstant 9 (Integer 4)))
+                                            ((IntegerConstant 10 (Integer 4)))]
                                             (Integer 4)
                                             ()
                                             ()
@@ -706,7 +963,17 @@
                                             "The result is"
                                             (Character 1 13 ())
                                         )
-                                        (Var 9 n)]
+                                        (Var 10 n1)]
+                                        ()
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "The result is"
+                                            (Character 1 13 ())
+                                        )
+                                        (Var 10 n2)]
                                         ()
                                         ()
                                     )]
