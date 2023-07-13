@@ -1282,7 +1282,7 @@ public:
                 Str s;
                 s.from_str_view(pname);
                 char *name = s.c_str(al);
-                x = resolve_symbol(loc, name);
+                x = resolve_symbol(loc, to_lower(name));
                 symbols.push_back(al, x);
             }
             LCOMPILERS_ASSERT(strlen(generic_name) > 0);
@@ -2110,6 +2110,12 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
+        std::map<AST::intrinsicopType, std::vector<std::string>> requirement_op_procs;
+        for (auto &proc: overloaded_op_procs) {
+            requirement_op_procs[proc.first] = proc.second;
+        }
+        overloaded_op_procs.clear();
+
         SetChar args;
         args.reserve(al, x.n_namelist);
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -2123,6 +2129,11 @@ public:
         }
         for (size_t i=0; i<x.n_funcs; i++) {
             this->visit_program_unit(*x.m_funcs[i]);
+        }
+
+        add_overloaded_procedures();
+        for (auto &proc: requirement_op_procs) {
+            overloaded_op_procs[proc.first] = proc.second;
         }
 
         ASR::asr_t *req = ASR::make_Requirement_t(al, x.base.base.loc,
@@ -2218,7 +2229,6 @@ public:
         current_procedure_args.clear();
         context_map.clear();
         is_template = false;
-
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {

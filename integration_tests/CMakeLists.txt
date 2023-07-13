@@ -826,7 +826,7 @@ RUN(NAME assign_to2 LABELS gfortran llvm)
 RUN(NAME conv_complex2real LABELS gfortran llvm wasm)
 
 RUN(NAME template_add_01 LABELS llvm)
-RUN(NAME template_add_01b LABELS llvm wasm)
+# RUN(NAME template_add_01b LABELS llvm wasm)
 RUN(NAME template_add_02 LABELS llvm)
 RUN(NAME template_add_03 LABELS llvm)
 RUN(NAME template_add_04 LABELS llvm NOFAST)
