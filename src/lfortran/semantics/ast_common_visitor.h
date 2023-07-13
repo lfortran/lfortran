@@ -3372,9 +3372,34 @@ public:
         }
     }
 
+    #define make_ArrayItem_from_struct_m_args(struct_m_args, struct_n_args, expr, array_item_node, loc) if( struct_n_args > 0 ) { \
+            ASR::asr_t* tmp_copy = tmp; \
+            Vec<ASR::array_index_t> indices; \
+            indices.reserve(al, struct_n_args); \
+            for( size_t j = 0; j < struct_n_args; j++ ) { \
+                LCOMPILERS_ASSERT(struct_m_args[j].m_step == nullptr); \
+                this->visit_expr(*struct_m_args[j].m_end); \
+                ASR::array_index_t index; \
+                index.loc = struct_m_args->loc; \
+                index.m_left = nullptr; \
+                index.m_right = ASRUtils::EXPR(tmp); \
+                index.m_step = nullptr; \
+                indices.push_back(al, index); \
+            } \
+            tmp = tmp_copy; \
+            array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p, \
+                        indices.size(), ASRUtils::type_get_past_array( \
+                            ASRUtils::type_get_past_pointer( \
+                                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr)))), \
+                        ASR::arraystorageType::ColMajor, nullptr); \
+            array_item_node = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(array_item_node)); \
+        } \
+
     ASR::asr_t* resolve_variable2(const Location &loc, const std::string &var_name,
             const std::string &dt_name, SymbolTable*& scope,
-            AST::fnarg_t* struct_m_args=nullptr, size_t struct_n_args=0) {
+            AST::fnarg_t* dt_struct_m_args=nullptr, size_t dt_struct_n_args=0,
+            AST::fnarg_t* member_struct_m_args=nullptr, size_t member_struct_n_args=0) {
+
         ASR::symbol_t *v = scope->resolve_symbol(dt_name);
         if (!v) {
             throw SemanticError("Variable '" + dt_name + "' not declared", loc);
@@ -3419,27 +3444,13 @@ public:
             }
             if( member != nullptr ) {
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
-                if( struct_n_args > 0 ) {
-                    Vec<ASR::array_index_t> indices;
-                    indices.reserve(al, struct_n_args);
-                    for( size_t i = 0; i < struct_n_args; i++ ) {
-                        LCOMPILERS_ASSERT(struct_m_args[i].m_step == nullptr);
-                        this->visit_expr(*struct_m_args[i].m_end);
-                        ASR::array_index_t index;
-                        index.loc = struct_m_args->loc;
-                        index.m_left = nullptr;
-                        index.m_right = ASRUtils::EXPR(tmp);
-                        index.m_step = nullptr;
-                        indices.push_back(al, index);
-                    }
-                    v_var = ASRUtils::make_ArrayItem_t_util(al, v_var->loc, ASRUtils::EXPR(v_var),
-                                indices.p, indices.size(),
-                                ASRUtils::type_get_past_array(
-                                    ASRUtils::type_get_past_allocatable(v_variable->m_type)),
-                                ASR::arraystorageType::ColMajor, nullptr);
-                    v_var = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(v_var));
-                }
-                return ASRUtils::getStructInstanceMember_t(al, loc, v_var, v, member, current_scope);
+                make_ArrayItem_from_struct_m_args(
+                    dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
+                ASR::asr_t* expr_ = (ASR::asr_t*) ASRUtils::getStructInstanceMember_t(
+                    al, loc, v_var, v, member, current_scope);
+                make_ArrayItem_from_struct_m_args(
+                    member_struct_m_args, member_struct_n_args, ASRUtils::EXPR(expr_), expr_, loc);
+                return expr_;
             } else {
                 throw SemanticError("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.", loc);
             }
@@ -5860,23 +5871,28 @@ public:
     void visit_NameUtil(AST::struct_member_t* x_m_member, size_t x_n_member,
                         char* x_m_id, const Location& loc) {
         if (x_n_member == 0) {
-            tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id))));
+            tmp = (ASR::asr_t*) replace_with_common_block_variables(
+                ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id))));
         } else if (x_n_member == 1) {
             if (x_m_member[0].n_args == 0) {
                 SymbolTable* scope = current_scope;
-                tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
+                tmp = (ASR::asr_t*) replace_with_common_block_variables(
+                    ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
                     to_lower(x_m_member[0].m_name), scope)));
             } else {
                 // TODO: incorporate m_args
                 SymbolTable* scope = current_scope;
-                tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope,
-                    x_m_member->m_args, x_m_member->n_args)));
+                tmp = (ASR::asr_t*) replace_with_common_block_variables(
+                    ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
+                    to_lower(x_m_member[0].m_name), scope, x_m_member->m_args, x_m_member->n_args)));
             }
         } else {
             SymbolTable* scope = current_scope;
-            tmp = (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_member[1].m_name),
-                                          to_lower(x_m_member[0].m_name), scope)));
+            tmp = (ASR::asr_t*) replace_with_common_block_variables(
+                    ASRUtils::EXPR(this->resolve_variable2(loc,
+                    to_lower(x_m_member[1].m_name), to_lower(x_m_member[0].m_name), scope,
+                    x_m_member[0].m_args, x_m_member[0].n_args,
+                    x_m_member[1].m_args, x_m_member[1].n_args)));
             ASR::StructInstanceMember_t* tmp2;
             std::uint32_t i;
             for( i = 2; i < x_n_member; i++ ) {
@@ -5888,6 +5904,8 @@ public:
                                                     tmp2->m_m, current_scope, tmp2_mem_type);
                 tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp),
                                                        tmp2_m_m_ext, tmp2_mem_type, nullptr);
+                make_ArrayItem_from_struct_m_args(x_m_member[i].m_args, x_m_member[i].n_args,
+                    ASRUtils::EXPR(tmp), tmp, loc);
             }
             i = x_n_member - 1;
             tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),

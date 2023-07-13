@@ -1055,7 +1055,6 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             is_return_var_handled = fn->m_return_var == nullptr;
         }
         if (is_return_var_handled) {
-            bool is_dimension_empty = false;
             ASR::ttype_t* result_var_type = x->m_type;
             bool is_allocatable = false;
             {
@@ -1404,7 +1403,8 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
                 (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) ||
                 (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
                  ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
-                 ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) ) { // TODO: fix for StructInstanceMember targets
+                 ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+                 !ASR::is_a<ASR::FunctionCall_t>(*x.m_value)) ) { // TODO: fix for StructInstanceMember targets
                 return ;
             }
 
