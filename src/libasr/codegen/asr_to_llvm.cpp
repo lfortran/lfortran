@@ -6995,6 +6995,7 @@ public:
                         tmp = llvm_symtab_fn[h];
                     } else {
                         // Must be an argument/chained procedure pass
+                        LCOMPILERS_ASSERT(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end());
                         tmp = llvm_symtab_fn_arg[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
                     }
