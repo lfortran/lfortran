@@ -89,7 +89,7 @@ std::string Diagnostics::render(LocationManager &lm,
                 }
                 out += "\n\n";
                 out += bold + "Note" + reset
-                    + ": Please report unclear or confusing messages as bugs at https://github.com/lfortran/lfortran/issues.\n";
+                    + ": Please report unclear or confusing messages as bugs at\nhttps://github.com/lfortran/lfortran/issues.\n";
             }
         }
     }
