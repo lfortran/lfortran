@@ -6996,6 +6996,7 @@ public:
                     } else {
                         // Must be an argument/chained procedure pass
                         tmp = llvm_symtab_fn_arg[h];
+                        LCOMPILERS_ASSERT(tmp != nullptr)
                     }
                 }
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
