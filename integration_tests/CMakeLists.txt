@@ -59,6 +59,8 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         # GFortran
         if ("gfortran" IN_LIST labels)
             set(ADD_TEST ON)
+        elseif ("gfortranImplicitArgument" IN_LIST labels)
+            set(ADD_TEST ON)
         else()
             set(ADD_TEST OFF)
         endif()
@@ -110,6 +112,9 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         else ()
+            if ("gfortranImplicitArgument" IN_LIST labels)
+                set(extra_args ${extra_args} -fallow-argument-mismatch)
+            endif()
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
@@ -969,3 +974,5 @@ RUN(NAME c_ptr_01 LABELS gfortran llvm NOFAST)
 RUN(NAME implicit_argument_casting_01 LABELS llvmImplicitArgument)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm)
+
+RUN(NAME implicit_argument_casting_01 LABELS gfortranImplicitArgument llvmImplicitArgument)
