@@ -1648,9 +1648,9 @@ public:
         tmp = list_api->pop_position(plist, pos, asr_el_type, module.get(), name2memidx);
     }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t& x) {
-        switch (static_cast<ASRUtils::IntrinsicFunctions>(x.m_intrinsic_id)) {
-            case ASRUtils::IntrinsicFunctions::ListIndex: {
+    void visit_IntrinsicScalarFunction(const ASR::IntrinsicFunction_t& x) {
+        switch (static_cast<ASRUtils::IntrinsicScalarFunctions>(x.m_intrinsic_id)){
+            case ASRUtils::IntrinsicScalarFunctions::ListIndex: {
                 ASR::expr_t* m_arg = x.m_args[0];
                 ASR::expr_t* m_ele = x.m_args[1];
                 ASR::expr_t* m_start = nullptr;
@@ -1676,22 +1676,7 @@ public:
                 generate_ListIndex(m_arg, m_ele, m_start, m_end);
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::ListReverse: {
-                generate_ListReverse(x.m_args[0]);
-                break;
-            }
-            case ASRUtils::IntrinsicFunctions::ListPop: {
-                switch(x.m_overload_id) {
-                    case 0:
-                        generate_ListPop_0(x.m_args[0]);
-                        break;
-                    case 1:
-                        generate_ListPop_1(x.m_args[0], x.m_args[1]);
-                        break;
-                }
-                break;
-            }
-            case ASRUtils::IntrinsicFunctions::Exp: {
+            case ASRUtils::IntrinsicScalarFunctions::Exp: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1705,7 +1690,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::Exp2: {
+            case ASRUtils::IntrinsicScalarFunctions::Exp2: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1719,7 +1704,7 @@ public:
                 }
                 break ;
             }
-            case ASRUtils::IntrinsicFunctions::Expm1: {
+            case ASRUtils::IntrinsicScalarFunctions::Expm1: {
                 switch (x.m_overload_id) {
                     case 0: {
                         ASR::expr_t* m_arg = x.m_args[0];
@@ -1740,15 +1725,41 @@ public:
             }
         }
     }
+    
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicFunction_t& x) {
+        switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicImpureFunctions::ListReverse: {
+                generate_ListReverse(x.m_args[0]);
+                break;
+            }
+            case ASRUtils::IntrinsicImpureFunctions::ListPop: {
+                switch(x.m_overload_id) {
+                    case 0:
+                        generate_ListPop_0(x.m_args[0]);
+                        break;
+                    case 1:
+                        generate_ListPop_1(x.m_args[0], x.m_args[1]);
+                        break;
+                }
+                break;
+            }
+            
+            default: {
+                throw CodeGenError( ASRUtils::IntrinsicFunctionRegistry::
+                        get_intrinsic_function_name(x.m_intrinsic_id) +
+                        " is not implemented by LLVM backend.", x.base.base.loc);
+            }
+        }
+    }
 
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
-        switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_impure_intrinsic_id)) {
-            case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd : {
+        switch (static_cast<ASRUtils::IntrinsicImpureFunction>(x.m_impure_intrinsic_id)) {
+            case ASRUtils::IntrinsicImpureFunction::IsIostatEnd : {
                 // TODO: Fix this once the iostat is implemented in file handling;
                 // until then, this returns `False`
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));
                 break ;
-            } case ASRUtils::IntrinsicImpureFunctions::IsIostatEor : {
+            } case ASRUtils::IntrinsicImpureFunction::IsIostatEor : {
                 // TODO: Fix this once the iostat is implemented in file handling;
                 // until then, this returns `False`
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 0));

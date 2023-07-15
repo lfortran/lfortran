@@ -30,12 +30,12 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
 
     Allocator& al;
     SymbolTable* global_scope;
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicFunctions>& func2intrinsicid;
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicScalarFunctions>& func2intrinsicid;
 
     public:
 
     ReplaceIntrinsicFunction(Allocator& al_, SymbolTable* global_scope_,
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicFunctions>& func2intrinsicid_) :
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicScalarFunctions>& func2intrinsicid_) :
         al(al_), global_scope(global_scope_), func2intrinsicid(func2intrinsicid_) {}
 
 
@@ -83,7 +83,7 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionCall_t>(*func_call));
         ASR::FunctionCall_t* function_call_t = ASR::down_cast<ASR::FunctionCall_t>(func_call);
         ASR::symbol_t* function_call_t_symbol = ASRUtils::symbol_get_past_external(function_call_t->m_name);
-        func2intrinsicid[function_call_t_symbol] = (ASRUtils::IntrinsicFunctions) x->m_intrinsic_id;
+        func2intrinsicid[function_call_t_symbol] = (ASRUtils::IntrinsicScalarFunctions) x->m_intrinsic_id;
     }
 
 };
@@ -102,7 +102,7 @@ class ReplaceIntrinsicFunctionVisitor : public ASR::CallReplacerOnExpressionsVis
     public:
 
         ReplaceIntrinsicFunctionVisitor(Allocator& al_, SymbolTable* global_scope_,
-            std::map<ASR::symbol_t*, ASRUtils::IntrinsicFunctions>& func2intrinsicid_) :
+            std::map<ASR::symbol_t*, ASRUtils::IntrinsicScalarFunctions>& func2intrinsicid_) :
             replacer(al_, global_scope_, func2intrinsicid_) {}
 
         void call_replacer() {
@@ -119,14 +119,14 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
     Allocator& al;
     Vec<ASR::stmt_t*>& pass_result;
     size_t result_counter;
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicFunctions>& func2intrinsicid;
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid;
 
     public:
 
     SymbolTable* current_scope;
 
     ReplaceFunctionCallReturningArray(Allocator& al_, Vec<ASR::stmt_t*>& pass_result_,
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicFunctions>& func2intrinsicid_) :
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
     al(al_), pass_result(pass_result_), result_counter(0),
     func2intrinsicid(func2intrinsicid_), current_scope(nullptr) {}
 
@@ -282,7 +282,7 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
     public:
 
         ReplaceFunctionCallReturningArrayVisitor(Allocator& al_,
-            std::map<ASR::symbol_t*, ASRUtils::IntrinsicFunctions>& func2intrinsicid_) :
+            std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_) :
         al(al_), replacer(al_, pass_result, func2intrinsicid_), parent_body(nullptr) {
             pass_result.n = 0;
         }
@@ -331,10 +331,11 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
 
 void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit,
                              const LCompilers::PassOptions& /*pass_options*/) {
-    std::map<ASR::symbol_t*, ASRUtils::IntrinsicFunctions> func2intrinsicid;
-    ReplaceIntrinsicFunctionVisitor v(al, unit.m_global_scope, func2intrinsicid);
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicScalarFunctions> func2intrinsicidscalar;
+    ReplaceIntrinsicFunctionVisitor v(al, unit.m_global_scope, func2intrinsicidscalar);
     v.visit_TranslationUnit(unit);
-    ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
+    std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicidarray;
+    ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicidarray);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);

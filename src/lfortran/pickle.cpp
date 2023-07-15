@@ -260,13 +260,41 @@ public:
         };
     }
 
-    std::string convert_intrinsic_id(int x) {
+    std::string convert_intrinsic_scalar_id(int x) {
         std::string s;
         if (use_colors) {
             s.append(color(style::bold));
             s.append(color(fg::green));
         }
-        s.append(ASRUtils::get_intrinsic_name(x));
+        s.append(ASRUtils::get_intrinsic_scalar_name(x));
+        if (use_colors) {
+            s.append(color(fg::reset));
+            s.append(color(style::reset));
+        }
+        return s;
+    }
+
+    std::string convert_intrinsic_array_id(int x) {
+        std::string s;
+        if (use_colors) {
+            s.append(color(style::bold));
+            s.append(color(fg::green));
+        }
+        s.append(ASRUtils::get_intrinsic_array_name(x));
+        if (use_colors) {
+            s.append(color(fg::reset));
+            s.append(color(style::reset));
+        }
+        return s;
+    }
+
+    std::string convert_intrinsic_impure_id(int x) {
+        std::string s;
+        if (use_colors) {
+            s.append(color(style::bold));
+            s.append(color(fg::green));
+        }
+        s.append(ASRUtils::get_intrinsic_impure_name(x));
         if (use_colors) {
             s.append(color(fg::reset));
             s.append(color(style::reset));

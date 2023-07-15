@@ -2763,11 +2763,18 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    #define SET_INTRINSIC_NAME(X, func_name)                             \
-        case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : { \
+    #define SET_INTRINSIC_SCALAR_NAME(X, func_name)                             \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::X)) : { \
             out += func_name; break;                                     \
         }
-
+    #define SET_INTRINSIC_ARRAY_NAME(X, func_name)                             \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::X)) : { \
+            out += func_name; break;                                     \
+        }    
+    #define SET_INTRINSIC_IMPURE_NAME(X, func_name)                             \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::X)) : { \
+            out += func_name; break;                                     \
+        }
     std::string performBinarySymbolicOperation(const std::string& functionName, const ASR::IntrinsicFunction_t& x) {
         headers.insert("symengine/cwrapper.h");
         std::string indent(4, ' ');
@@ -2814,68 +2821,68 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string out;
         std::string indent(4, ' ');
         switch (x.m_intrinsic_id) {
-            SET_INTRINSIC_NAME(Sin, "sin");
-            SET_INTRINSIC_NAME(Cos, "cos");
-            SET_INTRINSIC_NAME(Tan, "tan");
-            SET_INTRINSIC_NAME(Asin, "asin");
-            SET_INTRINSIC_NAME(Acos, "acos");
-            SET_INTRINSIC_NAME(Atan, "atan");
-            SET_INTRINSIC_NAME(Sinh, "sinh");
-            SET_INTRINSIC_NAME(Cosh, "cosh");
-            SET_INTRINSIC_NAME(Tanh, "tanh");
-            SET_INTRINSIC_NAME(Abs, "abs");
-            SET_INTRINSIC_NAME(Exp, "exp");
-            SET_INTRINSIC_NAME(Exp2, "exp2");
-            SET_INTRINSIC_NAME(Expm1, "expm1");
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAdd)): {
+            SET_INTRINSIC_SCALAR_NAME(Sin, "sin");
+            SET_INTRINSIC_SCALAR_NAME(Cos, "cos");
+            SET_INTRINSIC_SCALAR_NAME(Tan, "tan");
+            SET_INTRINSIC_SCALAR_NAME(Asin, "asin");
+            SET_INTRINSIC_SCALAR_NAME(Acos, "acos");
+            SET_INTRINSIC_SCALAR_NAME(Atan, "atan");
+            SET_INTRINSIC_SCALAR_NAME(Sinh, "sinh");
+            SET_INTRINSIC_SCALAR_NAME(Cosh, "cosh");
+            SET_INTRINSIC_SCALAR_NAME(Tanh, "tanh");
+            SET_INTRINSIC_SCALAR_NAME(Abs, "abs");
+            SET_INTRINSIC_SCALAR_NAME(Exp, "exp");
+            SET_INTRINSIC_SCALAR_NAME(Exp2, "exp2");
+            SET_INTRINSIC_SCALAR_NAME(Expm1, "expm1");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicAdd)): {
                 src = performBinarySymbolicOperation("basic_add", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSub)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSub)): {
                 src = performBinarySymbolicOperation("basic_sub", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicMul)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicMul)): {
                 src = performBinarySymbolicOperation("basic_mul", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicDiv)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicDiv)): {
                 src = performBinarySymbolicOperation("basic_div", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPow)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicPow)): {
                 src = performBinarySymbolicOperation("basic_pow", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicDiff)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicDiff)): {
                 src = performBinarySymbolicOperation("basic_diff", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSin)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSin)): {
                 src = performUnarySymbolicOperation("basic_sin", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicCos)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicCos)): {
                 src = performUnarySymbolicOperation("basic_cos", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicLog)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicLog)): {
                 src = performUnarySymbolicOperation("basic_log", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicExp)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicExp)): {
                 src = performUnarySymbolicOperation("basic_exp", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicAbs)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicAbs)): {
                 src = performUnarySymbolicOperation("basic_abs", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicExpand)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicExpand)): {
                 src = performUnarySymbolicOperation("basic_expand", x);
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicPi)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicPi)): {
                 headers.insert("symengine/cwrapper.h");
                 LCOMPILERS_ASSERT(x.n_args == 0);
                 std::string target = symengine_queue.push();
@@ -2883,7 +2890,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 src = target;
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicSymbol)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicSymbol)): {
                 headers.insert("symengine/cwrapper.h");
                 LCOMPILERS_ASSERT(x.n_args == 1);
                 this->visit_expr(*x.m_args[0]);
@@ -2892,7 +2899,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 src = target;
                 return;
             }
-            case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::SymbolicInteger)): {
+            case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::SymbolicInteger)): {
                 headers.insert("symengine/cwrapper.h");
                 LCOMPILERS_ASSERT(x.n_args == 1);
                 this->visit_expr(*x.m_args[0]);
@@ -2903,7 +2910,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             }
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
-                    + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
+                    + ASRUtils::get_intrinsic_scalar_name(x.m_intrinsic_id)
                     + "` is not implemented");
             }
         }

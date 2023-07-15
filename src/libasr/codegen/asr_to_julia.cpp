@@ -1892,33 +1892,53 @@ public:
         src = out;
     }
 
-    #define SET_INTRINSIC_NAME(X, func_name)                             \
-        case (static_cast<int64_t>(ASRUtils::IntrinsicFunctions::X)) : { \
+    #define SET_INTRINSIC_SCALAR_NAME(X, func_name)                             \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicScalarFunctions::X)) : { \
             out += func_name; break;                                     \
         }
 
-    void visit_IntrinsicFunction(const ASR::IntrinsicFunction_t &x) {
+    void visit_IntrinsicScalarFunction(const ASR::IntrinsicFunction_t &x) {
         std::string out;
         LCOMPILERS_ASSERT(x.n_args == 1);
         visit_expr(*x.m_args[0]);
         switch (x.m_intrinsic_id) {
-            SET_INTRINSIC_NAME(Sin, "sin");
-            SET_INTRINSIC_NAME(Cos, "cos");
-            SET_INTRINSIC_NAME(Tan, "tan");
-            SET_INTRINSIC_NAME(Asin, "asin");
-            SET_INTRINSIC_NAME(Acos, "acos");
-            SET_INTRINSIC_NAME(Atan, "atan");
-            SET_INTRINSIC_NAME(Sinh, "sinh");
-            SET_INTRINSIC_NAME(Cosh, "cosh");
-            SET_INTRINSIC_NAME(Tanh, "tanh");
-            SET_INTRINSIC_NAME(Abs, "abs");
-            SET_INTRINSIC_NAME(Exp, "exp");
-            SET_INTRINSIC_NAME(Exp2, "exp2");
-            SET_INTRINSIC_NAME(Expm1, "expm1");
-            SET_INTRINSIC_NAME(Sum, "sum");
+            SET_INTRINSIC_SCALAR_NAME(Sin, "sin");
+            SET_INTRINSIC_SCALAR_NAME(Cos, "cos");
+            SET_INTRINSIC_SCALAR_NAME(Tan, "tan");
+            SET_INTRINSIC_SCALAR_NAME(Asin, "asin");
+            SET_INTRINSIC_SCALAR_NAME(Acos, "acos");
+            SET_INTRINSIC_SCALAR_NAME(Atan, "atan");
+            SET_INTRINSIC_SCALAR_NAME(Sinh, "sinh");
+            SET_INTRINSIC_SCALAR_NAME(Cosh, "cosh");
+            SET_INTRINSIC_SCALAR_NAME(Tanh, "tanh");
+            SET_INTRINSIC_SCALAR_NAME(Abs, "abs");
+            SET_INTRINSIC_SCALAR_NAME(Exp, "exp");
+            SET_INTRINSIC_SCALAR_NAME(Exp2, "exp2");
+            SET_INTRINSIC_SCALAR_NAME(Expm1, "expm1");
             default : {
                 throw LCompilersException("IntrinsicFunction: `"
-                    + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)
+                    + ASRUtils::get_intrinsic_scalar_name(x.m_intrinsic_id)
+                    + "` is not implemented");
+            }
+        }
+        out += "(" + src + ")";
+        src = out;
+    }
+
+    #define SET_INTRINSIC_ARRAY_NAME(X, func_name)                             \
+        case (static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::X)) : { \
+            out += func_name; break;                                     \
+        }
+
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicFunction_t &x) {
+        std::string out;
+        LCOMPILERS_ASSERT(x.n_args == 1);
+        visit_expr(*x.m_args[0]);
+        switch (x.m_intrinsic_id) {
+            SET_INTRINSIC_ARRAY_NAME(Sum, "sum");
+            default : {
+                throw LCompilersException("IntrinsicFunction: `"
+                    + ASRUtils::get_intrinsic_array_name(x.m_intrinsic_id)
                     + "` is not implemented");
             }
         }
