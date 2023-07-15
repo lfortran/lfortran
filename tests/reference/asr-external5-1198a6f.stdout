@@ -51,7 +51,7 @@
                                         []
                                         ()
                                         BindC
-                                        Interface
+                                        Implementation
                                         ()
                                         .false.
                                         .false.

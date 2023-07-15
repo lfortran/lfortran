@@ -46,7 +46,7 @@
                                             []
                                             (Real 8)
                                             BindC
-                                            Interface
+                                            Implementation
                                             ()
                                             .false.
                                             .false.
@@ -197,7 +197,7 @@
                             []
                             (Real 8)
                             BindC
-                            Interface
+                            Implementation
                             ()
                             .false.
                             .false.

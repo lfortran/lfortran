@@ -34,7 +34,7 @@
                                         []
                                         (Real 4)
                                         BindC
-                                        Interface
+                                        Implementation
                                         ()
                                         .false.
                                         .false.
@@ -61,7 +61,7 @@
                             []
                             (Real 4)
                             BindC
-                            Interface
+                            Implementation
                             ()
                             .false.
                             .false.

@@ -111,7 +111,7 @@
                             []
                             (Real 4)
                             BindC
-                            Interface
+                            Implementation
                             ()
                             .false.
                             .false.
