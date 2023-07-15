@@ -134,6 +134,10 @@ public:
                             }
                         }
                         stmt_vector.push_back(tmp_stmt);
+
+                        if (tmp_stmt->type == ASR::stmtType::Return) {
+                            break;
+                        }
                     } else if (!tmp_vec.empty()) {
                         for(auto &x: tmp_vec) {
                             stmt_vector.push_back(ASRUtils::STMT(x));
