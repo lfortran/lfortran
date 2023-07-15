@@ -1535,6 +1535,11 @@ public:
                         }
                     }
                 }
+                // check if variable is in current current_procedure_args
+                if (std::find(current_procedure_args.begin(), current_procedure_args.end(), item.first) != current_procedure_args.end()) {
+                    // if yes, then make var->m_intent = ASR::intentType::Unspecified
+                    var->m_intent = ASR::intentType::Unspecified;
+                }
             }
         }
 
