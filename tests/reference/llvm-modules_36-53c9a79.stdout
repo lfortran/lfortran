@@ -10,11 +10,11 @@ source_filename = "LFortran"
 
 @0 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 
-define i1 @any_4_1_0(%array* %mask) {
+define i1 @Any_4_1_0(%array* %mask) {
 .entry:
+  %Any_4_1_0 = alloca i1, align 1
   %__1_i = alloca i32, align 4
-  %any_4_1_0 = alloca i1, align 1
-  store i1 false, i1* %any_4_1_0, align 1
+  store i1 false, i1* %Any_4_1_0, align 1
   %0 = getelementptr %array, %array* %mask, i32 0, i32 2
   %1 = load %dimension_descriptor*, %dimension_descriptor** %0, align 8
   %2 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %1, i32 0
@@ -43,7 +43,7 @@ loop.body:                                        ; preds = %loop.head
   %18 = load i32, i32* %__1_i, align 4
   %19 = add i32 %18, 1
   store i32 %19, i32* %__1_i, align 4
-  %20 = load i1, i1* %any_4_1_0, align 1
+  %20 = load i1, i1* %Any_4_1_0, align 1
   %21 = load i32, i32* %__1_i, align 4
   %22 = getelementptr %array, %array* %mask, i32 0, i32 2
   %23 = load %dimension_descriptor*, %dimension_descriptor** %22, align 8
@@ -76,14 +76,14 @@ else:                                             ; preds = %loop.body
 
 ifcont:                                           ; preds = %else, %then
   %41 = load i1, i1* %40, align 1
-  store i1 %41, i1* %any_4_1_0, align 1
+  store i1 %41, i1* %Any_4_1_0, align 1
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end
-  %42 = load i1, i1* %any_4_1_0, align 1
+  %42 = load i1, i1* %Any_4_1_0, align 1
   ret i1 %42
 }
 
@@ -172,7 +172,7 @@ loop.end:                                         ; preds = %ifcont4
   store i32 1, i32* %32, align 4
   store i32 1, i32* %33, align 4
   store i32 2, i32* %34, align 4
-  %35 = call i1 @any_4_1_0(%array* %array_descriptor)
+  %35 = call i1 @Any_4_1_0(%array* %array_descriptor)
   %36 = load i1, i1* %toomany, align 1
   %37 = load i1, i1* %test, align 1
   %38 = xor i1 %37, true

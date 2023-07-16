@@ -1758,15 +1758,6 @@ LFORTRAN_API int32_t _lfortran_iachar(char *c) {
     return (int32_t) c[0];
 }
 
-LFORTRAN_API int32_t _lfortran_all(bool *mask, int32_t n) {
-    for (size_t i = 0; i < n; i++) {
-        if (!mask[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 // Command line arguments
 int32_t _argc;
 char **_argv;
