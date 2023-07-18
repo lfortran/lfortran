@@ -2118,8 +2118,14 @@ public:
             current_procedure_args.push_back(arg);
         }
 
+        Vec<ASR::require_instantiation_t*> reqs;
+        reqs.reserve(al, x.n_decl);
         for (size_t i=0; i<x.n_decl; i++) {
             this->visit_unit_decl2(*x.m_decl[i]);
+            if (tmp && ASR::is_a<ASR::require_instantiation_t>(*tmp)) {
+                reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                tmp = nullptr;    
+            }
         }
         for (size_t i=0; i<x.n_funcs; i++) {
             this->visit_program_unit(*x.m_funcs[i]);
@@ -2127,7 +2133,7 @@ public:
 
         ASR::asr_t *req = ASR::make_Requirement_t(al, x.base.base.loc,
             current_scope, s2c(al, to_lower(x.m_name)), args.p, args.size(),
-            nullptr, 0);
+            reqs.p, reqs.size());
 
         parent_scope->add_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(req));
 
