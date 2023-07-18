@@ -104,7 +104,6 @@
                         .false.
                         .false.
                         []
-                        []
                         .false.
                     )
                     [kind]
@@ -269,7 +268,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
                                         []
                                         .false.
                                     )
