@@ -8,6 +8,7 @@
 #include <libasr/utils.h>
 #include <libasr/modfile.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 namespace LCompilers {
 
@@ -207,7 +208,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
             scope = func->m_symtab;
         }
     };
-    
+
     if (implicit_interface) {
         UpdateArgsVisitor v(al);
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
@@ -452,7 +453,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                     }
                     std::string mangled_name = current_scope->get_unique_name(
                                                 std::string(module_name) + "_" +
-                                                std::string(der_type_name));
+                                                std::string(der_type_name), false);
                     char* mangled_name_char = s2c(al, mangled_name);
                     if( current_scope->get_symbol(mangled_name) == nullptr ) {
                         bool make_new_ext_sym = true;
@@ -873,7 +874,7 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
             asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, sym,
-                                            a_args.p, 2, nullptr);
+                                            a_args.p, 2, nullptr, nullptr, false);
         }
     }
 }
@@ -1213,7 +1214,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
         }
         return ASRUtils::make_SubroutineCall_t_util(al, loc, final_sym,
                                         v, args.p, args.size(),
-                                        nullptr);
+                                        nullptr, nullptr, false);
     } else {
         if( func ) {
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
@@ -1279,6 +1280,15 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             double real = value_complex->m_re;
             value = ASR::down_cast<ASR::expr_t>(
                     ASR::make_RealConstant_t(al, a_loc, real, a_type));
+        } else if (a_kind == ASR::cast_kindType::IntegerToSymbolicExpression) {
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, a_arg);
+            LCompilers::ASRUtils::create_intrinsic_function create_function =
+                LCompilers::ASRUtils::IntrinsicFunctionRegistry::get_create_function("SymbolicInteger");
+            value = ASR::down_cast<ASR::expr_t>(create_function(al, a_loc, args,
+                [](const std::string&, const Location&) {
+            }));
         }
     }
 

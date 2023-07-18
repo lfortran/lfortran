@@ -78,6 +78,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -103,6 +105,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    []
                                     ()
                                     10 toml_structure
                                 ),
@@ -129,6 +132,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    []
                                     ()
                                     ()
                                 )
@@ -231,6 +235,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [allocated
@@ -362,6 +368,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -416,6 +424,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     2 toml_value
                                 ),
@@ -491,6 +500,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -543,6 +554,7 @@
                                     Private
                                     .false.
                                     .true.
+                                    []
                                     ()
                                     ()
                                 )

@@ -1,0 +1,470 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            idz_realcomp:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    [n]
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 2 n))]
+                                        PointerToDataArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            dp:
+                                (Variable
+                                    2
+                                    dp
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        2 kind
+                                        ()
+                                        [((RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        ))]
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
+                                        ()
+                                    )
+                                    (IntegerConstant 8 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            kind:
+                                (ExternalSymbol
+                                    2
+                                    kind
+                                    4 kind
+                                    lfortran_intrinsic_kind
+                                    []
+                                    kind
+                                    Private
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    idz_realcomp
+                    (FunctionType
+                        [(Integer 4)
+                        (Array
+                            (Real 8)
+                            [((IntegerConstant 1 (Integer 4))
+                            (FunctionParam
+                                0
+                                (Integer 4)
+                                ()
+                            ))]
+                            PointerToDataArray
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    [kind]
+                    [(Var 2 n)
+                    (Var 2 a)]
+                    [(=
+                        (Var 2 a)
+                        (RealConstant
+                            12.500000
+                            (Real 8)
+                        )
+                        ()
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            lfortran_intrinsic_builtin:
+                (IntrinsicModule lfortran_intrinsic_builtin),
+            lfortran_intrinsic_kind:
+                (IntrinsicModule lfortran_intrinsic_kind),
+            main:
+                (Program
+                    (SymbolTable
+                        12
+                        {
+                            dp:
+                                (Variable
+                                    12
+                                    dp
+                                    []
+                                    Local
+                                    (FunctionCall
+                                        12 kind
+                                        ()
+                                        [((RealConstant
+                                            0.000000
+                                            (Real 8)
+                                        ))]
+                                        (Integer 4)
+                                        (IntegerConstant 8 (Integer 4))
+                                        ()
+                                    )
+                                    (IntegerConstant 8 (Integer 4))
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            idzp_svd:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            isi:
+                                                (Variable
+                                                    13
+                                                    isi
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ls:
+                                                (Variable
+                                                    13
+                                                    ls
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            real:
+                                                (ExternalSymbol
+                                                    13
+                                                    real
+                                                    15 real
+                                                    lfortran_intrinsic_builtin
+                                                    []
+                                                    real
+                                                    Private
+                                                ),
+                                            w:
+                                                (Variable
+                                                    13
+                                                    w
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Complex 8)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            w_cast:
+                                                (Variable
+                                                    13
+                                                    w_cast
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (Real 8)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    idzp_svd
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Array
+                                            (Complex 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [idz_realcomp]
+                                    [(Var 13 ls)
+                                    (Var 13 w)]
+                                    [(=
+                                        (Var 13 isi)
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (CPtrToPointer
+                                        (PointerToCPtr
+                                            (GetPointer
+                                                (ArrayItem
+                                                    (Var 13 w)
+                                                    [(()
+                                                    (Var 13 isi)
+                                                    ())]
+                                                    (Complex 8)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Pointer
+                                                    (Complex 8)
+                                                )
+                                                ()
+                                            )
+                                            (CPtr)
+                                            ()
+                                        )
+                                        (Var 13 w_cast)
+                                        (ArrayConstant
+                                            [(IntegerConstant 1000 (Integer 4))]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 1 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        ()
+                                    )
+                                    (SubroutineCall
+                                        1 idz_realcomp
+                                        ()
+                                        [((IntegerBinOp
+                                            (Var 13 ls)
+                                            Mul
+                                            (IntegerConstant 2 (Integer 4))
+                                            (Integer 4)
+                                            ()
+                                        ))
+                                        ((ArrayPhysicalCast
+                                            (Var 13 w_cast)
+                                            DescriptorArray
+                                            PointerToDataArray
+                                            (Pointer
+                                                (Array
+                                                    (Real 8)
+                                                    [(()
+                                                    ())]
+                                                    PointerToDataArray
+                                                )
+                                            )
+                                            ()
+                                        ))]
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(ArrayItem
+                                            (Var 13 w)
+                                            [(()
+                                            (Var 13 isi)
+                                            ())]
+                                            (Complex 8)
+                                            ColMajor
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        (RealCompare
+                                            (IntrinsicFunction
+                                                Abs
+                                                [(RealBinOp
+                                                    (Cast
+                                                        (ArrayItem
+                                                            (Var 13 w)
+                                                            [(()
+                                                            (Var 13 isi)
+                                                            ())]
+                                                            (Complex 8)
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        ComplexToReal
+                                                        (Real 8)
+                                                        ()
+                                                    )
+                                                    Sub
+                                                    (RealConstant
+                                                        12.500000
+                                                        (Real 8)
+                                                    )
+                                                    (Real 8)
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 8)
+                                                ()
+                                            )
+                                            Gt
+                                            (Cast
+                                                (RealConstant
+                                                    0.000000
+                                                    (Real 4)
+                                                )
+                                                RealToReal
+                                                (Real 8)
+                                                (RealConstant
+                                                    0.000000
+                                                    (Real 8)
+                                                )
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            kind:
+                                (ExternalSymbol
+                                    12
+                                    kind
+                                    4 kind
+                                    lfortran_intrinsic_kind
+                                    []
+                                    kind
+                                    Private
+                                ),
+                            w:
+                                (Variable
+                                    12
+                                    w
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Complex 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 5 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    main
+                    [lfortran_intrinsic_kind]
+                    [(SubroutineCall
+                        12 idzp_svd
+                        ()
+                        [((IntegerConstant 5 (Integer 4)))
+                        ((ArrayPhysicalCast
+                            (Var 12 w)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Complex 8)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 5 (Integer 4)))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))]
+                        ()
+                    )]
+                )
+        })
+    []
+)

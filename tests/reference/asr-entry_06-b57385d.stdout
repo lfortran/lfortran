@@ -1,0 +1,574 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            entry_06:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            mvndfn:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            mvndfn:
+                                                (Variable
+                                                    4
+                                                    mvndfn
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                ),
+                                            w:
+                                                (Variable
+                                                    4
+                                                    w
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 8)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    mvndfn
+                                    (FunctionType
+                                        [(Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        (Real 8)
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 w)]
+                                    []
+                                    (Var 4 mvndfn)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            w:
+                                (Variable
+                                    3
+                                    w
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    entry_06
+                    []
+                    [(If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (FunctionCall
+                                        3 mvndfn
+                                        ()
+                                        [((ArrayPhysicalCast
+                                            (Var 3 w)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Real 8)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        ))]
+                                        (Real 8)
+                                        ()
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        1.200000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                ),
+            mvndfn:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            mvndfn:
+                                (Variable
+                                    2
+                                    mvndfn
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            w:
+                                (Variable
+                                    2
+                                    w
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    mvndfn
+                    (FunctionType
+                        [(Array
+                            (Real 8)
+                            [(()
+                            ())]
+                            DescriptorArray
+                        )]
+                        (Real 8)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 w)]
+                    [(=
+                        (ArrayItem
+                            (Var 2 w)
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            10.900000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 2 w)
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            10.900000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 w)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4))
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.900000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 2 w)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4))
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.900000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 2 mvndfn)
+                        (RealConstant
+                            1.200000
+                            (Real 8)
+                        )
+                        ()
+                    )]
+                    (Var 2 mvndfn)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            mvndnt:
+                (Function
+                    (SymbolTable
+                        5
+                        {
+                            mvndfn:
+                                (Variable
+                                    5
+                                    mvndfn
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            w:
+                                (Variable
+                                    5
+                                    w
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    mvndnt
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        []
+                        .false.
+                    )
+                    []
+                    []
+                    [(=
+                        (ArrayItem
+                            (Var 5 w)
+                            [(()
+                            (IntegerConstant 1 (Integer 4))
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            10.900000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (=
+                        (ArrayItem
+                            (Var 5 w)
+                            [(()
+                            (IntegerConstant 2 (Integer 4))
+                            ())]
+                            (Real 8)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            10.900000
+                            (Real 8)
+                        )
+                        ()
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 5 w)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4))
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.900000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 5 w)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4))
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        10.900000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (=
+                        (Var 5 mvndfn)
+                        (RealConstant
+                            1.200000
+                            (Real 8)
+                        )
+                        ()
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

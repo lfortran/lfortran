@@ -13,11 +13,11 @@
             stdlib_strings_use:
                 (Program
                     (SymbolTable
-                        108
+                        98
                         {
                             char:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     char
                                     2 char
                                     string_19_stdlib_string_type
@@ -27,7 +27,7 @@
                                 ),
                             char_string:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     char_string
                                     2 char_string
                                     string_19_stdlib_string_type
@@ -37,7 +37,7 @@
                                 ),
                             compute_lps:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     compute_lps
                                     6 compute_lps
                                     string_19_stdlib_strings
@@ -47,7 +47,7 @@
                                 ),
                             compute_lps_use:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     compute_lps_use
                                     6 compute_lps_use
                                     string_19_stdlib_strings
@@ -57,7 +57,7 @@
                                 ),
                             compute_lps_use1:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     compute_lps_use1
                                     6 compute_lps_use1
                                     string_19_stdlib_strings
@@ -67,7 +67,7 @@
                                 ),
                             len:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     len
                                     2 len
                                     string_19_stdlib_string_type
@@ -77,7 +77,7 @@
                                 ),
                             len_string:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     len_string
                                     2 len_string
                                     string_19_stdlib_string_type
@@ -87,7 +87,7 @@
                                 ),
                             padl:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     padl
                                     6 padl
                                     string_19_stdlib_strings
@@ -97,7 +97,7 @@
                                 ),
                             padl_char_default:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     padl_char_default
                                     6 padl_char_default
                                     string_19_stdlib_strings
@@ -107,7 +107,7 @@
                                 ),
                             padl_char_pad_with:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     padl_char_pad_with
                                     6 padl_char_pad_with
                                     string_19_stdlib_strings
@@ -117,7 +117,7 @@
                                 ),
                             padl_string_default:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     padl_string_default
                                     6 padl_string_default
                                     string_19_stdlib_strings
@@ -127,7 +127,7 @@
                                 ),
                             padl_string_pad_with:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     padl_string_pad_with
                                     6 padl_string_pad_with
                                     string_19_stdlib_strings
@@ -137,7 +137,7 @@
                                 ),
                             string_type:
                                 (ExternalSymbol
-                                    108
+                                    98
                                     string_type
                                     2 string_type
                                     string_19_stdlib_string_type
@@ -236,6 +236,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [len_string]
@@ -308,6 +310,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -350,6 +354,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 )
@@ -456,6 +461,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     []
@@ -517,6 +524,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [compute_lps]
@@ -623,6 +632,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [len_string
@@ -763,6 +774,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [imax
@@ -957,6 +970,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [max@imax]
@@ -1075,6 +1090,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [len_string
@@ -1275,6 +1292,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [len_string

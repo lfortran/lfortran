@@ -5,11 +5,11 @@
             template_struct_01:
                 (Program
                     (SymbolTable
-                        8
+                        12
                         {
                             r:
                                 (ExternalSymbol
-                                    8
+                                    12
                                     r
                                     2 r
                                     template_struct_01_m
@@ -19,7 +19,7 @@
                                 ),
                             struct_t:
                                 (ExternalSymbol
-                                    8
+                                    12
                                     struct_t
                                     2 struct_t
                                     template_struct_01_m
@@ -29,7 +29,7 @@
                                 ),
                             test_template:
                                 (ExternalSymbol
-                                    8
+                                    12
                                     test_template
                                     2 test_template
                                     template_struct_01_m
@@ -40,7 +40,12 @@
                         })
                     template_struct_01
                     [template_struct_01_m]
-                    []
+                    [(SubroutineCall
+                        12 test_template
+                        ()
+                        []
+                        ()
+                    )]
                 ),
             template_struct_01_m:
                 (Module
@@ -80,6 +85,190 @@
                                     (SymbolTable
                                         4
                                         {
+                                            get_fst:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            1_tuple_fst:
+                                                                (ExternalSymbol
+                                                                    6
+                                                                    1_tuple_fst
+                                                                    5 fst
+                                                                    tuple
+                                                                    []
+                                                                    fst
+                                                                    Public
+                                                                ),
+                                                            p:
+                                                                (Variable
+                                                                    6
+                                                                    p
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        4 tuple
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    6
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    get_fst
+                                                    (FunctionType
+                                                        [(Struct
+                                                            4 tuple
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 6 p)]
+                                                    [(=
+                                                        (Var 6 r)
+                                                        (StructInstanceMember
+                                                            (Var 6 p)
+                                                            6 1_tuple_fst
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 6 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            get_snd:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            1_tuple_snd:
+                                                                (ExternalSymbol
+                                                                    7
+                                                                    1_tuple_snd
+                                                                    5 snd
+                                                                    tuple
+                                                                    []
+                                                                    snd
+                                                                    Public
+                                                                ),
+                                                            p:
+                                                                (Variable
+                                                                    7
+                                                                    p
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        4 tuple
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    7
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    get_snd
+                                                    (FunctionType
+                                                        [(Struct
+                                                            4 tuple
+                                                        )]
+                                                        (TypeParameter
+                                                            t
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 7 p)]
+                                                    [(=
+                                                        (Var 7 r)
+                                                        (StructInstanceMember
+                                                            (Var 7 p)
+                                                            7 1_tuple_snd
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 7 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             t:
                                                 (Variable
                                                     4
@@ -148,6 +337,7 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    []
                                                     ()
                                                     ()
                                                 )
@@ -162,13 +352,13 @@
                             test_template:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        8
                                         {
                                             1_int_tuple_fst:
                                                 (ExternalSymbol
-                                                    6
+                                                    8
                                                     1_int_tuple_fst
-                                                    7 fst
+                                                    9 fst
                                                     int_tuple
                                                     []
                                                     fst
@@ -176,22 +366,194 @@
                                                 ),
                                             1_int_tuple_snd:
                                                 (ExternalSymbol
-                                                    6
+                                                    8
                                                     1_int_tuple_snd
-                                                    7 snd
+                                                    9 snd
                                                     int_tuple
                                                     []
                                                     snd
                                                     Public
                                                 ),
+                                            get_int_fst:
+                                                (Function
+                                                    (SymbolTable
+                                                        10
+                                                        {
+                                                            1_int_tuple_fst:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    1_int_tuple_fst
+                                                                    9 fst
+                                                                    int_tuple
+                                                                    []
+                                                                    fst
+                                                                    Public
+                                                                ),
+                                                            p:
+                                                                (Variable
+                                                                    10
+                                                                    p
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        8 int_tuple
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    10
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    get_int_fst
+                                                    (FunctionType
+                                                        [(Struct
+                                                            8 int_tuple
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 10 p)]
+                                                    [(=
+                                                        (Var 10 r)
+                                                        (StructInstanceMember
+                                                            (Var 10 p)
+                                                            10 1_int_tuple_fst
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 10 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            get_int_snd:
+                                                (Function
+                                                    (SymbolTable
+                                                        11
+                                                        {
+                                                            1_int_tuple_snd:
+                                                                (ExternalSymbol
+                                                                    11
+                                                                    1_int_tuple_snd
+                                                                    9 snd
+                                                                    int_tuple
+                                                                    []
+                                                                    snd
+                                                                    Public
+                                                                ),
+                                                            p:
+                                                                (Variable
+                                                                    11
+                                                                    p
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Struct
+                                                                        8 int_tuple
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    11
+                                                                    r
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    get_int_snd
+                                                    (FunctionType
+                                                        [(Struct
+                                                            8 int_tuple
+                                                        )]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [(Var 11 p)]
+                                                    [(=
+                                                        (Var 11 r)
+                                                        (StructInstanceMember
+                                                            (Var 11 p)
+                                                            11 1_int_tuple_snd
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )]
+                                                    (Var 11 r)
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             int_tuple:
                                                 (StructType
                                                     (SymbolTable
-                                                        7
+                                                        9
                                                         {
                                                             fst:
                                                                 (Variable
-                                                                    7
+                                                                    9
                                                                     fst
                                                                     []
                                                                     Local
@@ -207,7 +569,7 @@
                                                                 ),
                                                             snd:
                                                                 (Variable
-                                                                    7
+                                                                    9
                                                                     snd
                                                                     []
                                                                     Local
@@ -230,12 +592,13 @@
                                                     Private
                                                     .false.
                                                     .false.
+                                                    []
                                                     ()
                                                     ()
                                                 ),
                                             t:
                                                 (Variable
-                                                    6
+                                                    8
                                                     t
                                                     []
                                                     Local
@@ -243,7 +606,7 @@
                                                     ()
                                                     Default
                                                     (Struct
-                                                        6 int_tuple
+                                                        8 int_tuple
                                                     )
                                                     ()
                                                     Source
@@ -264,28 +627,65 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
-                                    []
+                                    [get_int_fst
+                                    get_int_snd]
                                     []
                                     [(=
                                         (StructInstanceMember
-                                            (Var 6 t)
-                                            6 1_int_tuple_fst
+                                            (Var 8 t)
+                                            8 1_int_tuple_fst
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerConstant 1 (Integer 4))
                                         ()
                                     )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "First element: "
+                                            (Character 1 15 ())
+                                        )
+                                        (FunctionCall
+                                            8 get_int_fst
+                                            ()
+                                            [((Var 8 t))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                    )
                                     (=
                                         (StructInstanceMember
-                                            (Var 6 t)
-                                            6 1_int_tuple_snd
+                                            (Var 8 t)
+                                            8 1_int_tuple_snd
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerConstant 2 (Integer 4))
+                                        ()
+                                    )
+                                    (Print
+                                        ()
+                                        [(StringConstant
+                                            "Second element: "
+                                            (Character 1 16 ())
+                                        )
+                                        (FunctionCall
+                                            8 get_int_snd
+                                            ()
+                                            [((Var 8 t))]
+                                            (Integer 4)
+                                            ()
+                                            ()
+                                        )]
+                                        ()
                                         ()
                                     )]
                                     ()
@@ -296,7 +696,7 @@
                                 )
                         })
                     template_struct_01_m
-                    []
+                    [template_struct_01_m]
                     .false.
                     .false.
                 )

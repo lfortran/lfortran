@@ -466,7 +466,7 @@
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4))
                                 (IntegerConstant 2 (Integer 4)))]
-                                FixedSizeArray
+                                PointerToDataArray
                             )
                             ColMajor
                         )

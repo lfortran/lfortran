@@ -3,7 +3,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
-#include <libasr/pass/subroutine_from_function.h>
+#include <libasr/pass/create_subroutine_from_function.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <vector>
@@ -158,7 +158,8 @@ class ReplaceFunctionCallWithSubroutineCall:
             result_arg.m_value = result_var;
             s_args.push_back(al, result_arg);
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
-                al, x->base.base.loc, x->m_name, nullptr, s_args.p, s_args.size(), nullptr));
+                al, x->base.base.loc, x->m_name, nullptr, s_args.p, s_args.size(), nullptr,
+                nullptr, false));
             pass_result.push_back(al, subrout_call);
             result_var = nullptr;
         }

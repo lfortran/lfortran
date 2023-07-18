@@ -2499,6 +2499,14 @@ filename = "../integration_tests/entry_02.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/entry_05.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/entry_06.f90"
+asr = true
+
+[[test]]
 filename = "issue532.f90"
 asr = true
 llvm = true
@@ -3362,3 +3370,7 @@ asr = true
 [[test]]
 filename = "errors/subroutine3.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/implicit_argument_casting_01.f90"
+asr_implicit_argument_casting = true

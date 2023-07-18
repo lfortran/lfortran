@@ -227,6 +227,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [allocated]
@@ -427,9 +429,9 @@
                                                         (Struct
                                                             2 srcfile_t
                                                         )
-                                                        [((IntegerConstant 1 (Integer 4))
-                                                        (IntegerConstant 2 (Integer 4)))]
-                                                        FixedSizeArray
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
                                                     )
                                                 )
                                                 ColMajor
@@ -513,6 +515,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    []
                                     ()
                                     ()
                                 )

@@ -3,7 +3,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
-#include <libasr/pass/implied_do_loops.h>
+#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
@@ -320,6 +320,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             if( !remove_original_statement ) {
                 this->visit_expr(*x.m_value);
             }
+        }
+
+        void visit_CPtrToPointer(const ASR::CPtrToPointer_t& /*x*/) {
+            // Do nothing.
         }
 
 };

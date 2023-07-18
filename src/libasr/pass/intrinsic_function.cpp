@@ -3,7 +3,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
-#include <libasr/pass/intrinsic_function.h>
+#include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -263,7 +263,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
         new_args.push_back(al, new_arg);
         pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
-            new_args.size(), x->m_dt)));
+            new_args.size(), x->m_dt, nullptr, false)));
 
         *current_expr = new_args.p[new_args.size() - 1].m_value;
     }

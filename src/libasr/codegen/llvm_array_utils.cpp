@@ -91,7 +91,8 @@ namespace LCompilers {
         bool SimpleCMODescriptor::is_array(ASR::ttype_t* asr_type) {
             std::string asr_type_code = ASRUtils::get_type_code(
                 ASRUtils::type_get_past_allocatable(asr_type), false, false);
-            return ASRUtils::is_array(asr_type);
+            return (tkr2array.find(asr_type_code) != tkr2array.end() &&
+                    ASRUtils::is_array(asr_type));
         }
 
         llvm::Value* SimpleCMODescriptor::
@@ -100,6 +101,7 @@ namespace LCompilers {
             if( data_only ) {
                 return LLVM::CreateLoad(*builder, get_pointer_to_data(tmp));
             }
+            llvm::Value* arg_struct = builder->CreateAlloca(arg_type, nullptr);
             llvm::Value* first_ele_ptr = nullptr;
             std::string asr_arg_type_code = ASRUtils::get_type_code(ASRUtils::get_contained_type(asr_arg_type), false, false);
             llvm::StructType* tmp_struct_type = tkr2array[asr_arg_type_code].first;
@@ -110,8 +112,6 @@ namespace LCompilers {
             } else if( tmp_struct_type->getNumElements() == 5 ) {
                 return tmp;
             }
-            LCOMPILERS_ASSERT(arg_type != nullptr);
-            llvm::Value* arg_struct = builder->CreateAlloca(arg_type, nullptr);
             llvm::Value* first_arg_ptr = llvm_utils->create_gep(arg_struct, 0);
             builder->CreateStore(first_ele_ptr, first_arg_ptr);
             llvm::Value* sec_ele_ptr = get_offset(tmp);
@@ -159,9 +159,9 @@ namespace LCompilers {
         }
 
         llvm::Type* SimpleCMODescriptor::get_array_type
-        (ASR::ttype_t* m_type_, llvm::Type* el_type, bool get_pointer) {
-            std::string array_key = ASRUtils::get_type_code(
-                ASRUtils::type_get_past_allocatable(m_type_), false, false);
+        (ASR::ttype_t* m_type_, llvm::Type* el_type,
+        bool get_pointer) {
+            std::string array_key = ASRUtils::get_type_code(m_type_, false, false);
             if( tkr2array.find(array_key) != tkr2array.end() ) {
                 if( get_pointer ) {
                     return tkr2array[array_key].first->getPointerTo();
@@ -284,22 +284,25 @@ namespace LCompilers {
                 LCOMPILERS_ASSERT(false);
             }
 
+
             llvm::Value* source_offset_val = LLVM::CreateLoad(*builder, llvm_utils->create_gep(source, 1));
             llvm::Value* dest_offset = llvm_utils->create_gep(destination, 1);
             builder->CreateStore(source_offset_val, dest_offset);
 
+
             llvm::Value* source_dim_des_val = LLVM::CreateLoad(*builder, llvm_utils->create_gep(source, 2));
             llvm::Value* dest_dim_des_ptr = llvm_utils->create_gep(destination, 2);
             builder->CreateStore(source_dim_des_val, dest_dim_des_ptr);
+
 
             llvm::Value* source_rank = this->get_rank(source, false);
             this->set_rank(destination, source_rank);
         };
 
         void SimpleCMODescriptor::fill_malloc_array_details(
-        llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
-        std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
-        llvm::Module* module) {
+            llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
+            std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
+            llvm::Module* module) {
             arr = LLVM::CreateLoad(*builder, arr);
             llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
@@ -763,6 +766,7 @@ namespace LCompilers {
 
             // end
             llvm_utils->start_new_block(loopend);
+
 
             builder->CreateStore(n_dims, this->get_rank(dest, true));
         }

@@ -202,6 +202,7 @@
                                                     Public
                                                     .false.
                                                     .true.
+                                                    []
                                                     ()
                                                     ()
                                                 )
@@ -243,6 +244,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [msg_scalar]
@@ -561,42 +564,6 @@
                                                                     len_trim
                                                                     Private
                                                                 ),
-                                                            ~select_type_block_:
-                                                                (Block
-                                                                    (SymbolTable
-                                                                        58
-                                                                        {
-                                                                            
-                                                                        })
-                                                                    ~select_type_block_
-                                                                    [(FileWrite
-                                                                        0
-                                                                        (StringSection
-                                                                            (Var 3 line)
-                                                                            (IntegerBinOp
-                                                                                (Var 3 istart)
-                                                                                Sub
-                                                                                (IntegerConstant 1 (Integer 4))
-                                                                                (Integer 4)
-                                                                                ()
-                                                                            )
-                                                                            ()
-                                                                            (IntegerConstant 1 (Integer 4))
-                                                                            (Character 1 -1 ())
-                                                                            ()
-                                                                        )
-                                                                        (StringConstant
-                                                                            "(i0)"
-                                                                            (Character 1 4 ())
-                                                                        )
-                                                                        ()
-                                                                        ()
-                                                                        ()
-                                                                        [(Var 5 generic)]
-                                                                        ()
-                                                                        ()
-                                                                    )]
-                                                                ),
                                                             ~select_type_block_1:
                                                                 (Block
                                                                     (SymbolTable
@@ -907,6 +874,42 @@
                                                                         ()
                                                                         ()
                                                                     )]
+                                                                ),
+                                                            ~select_type_block__:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        58
+                                                                        {
+                                                                            
+                                                                        })
+                                                                    ~select_type_block__
+                                                                    [(FileWrite
+                                                                        0
+                                                                        (StringSection
+                                                                            (Var 3 line)
+                                                                            (IntegerBinOp
+                                                                                (Var 3 istart)
+                                                                                Sub
+                                                                                (IntegerConstant 1 (Integer 4))
+                                                                                (Integer 4)
+                                                                                ()
+                                                                            )
+                                                                            ()
+                                                                            (IntegerConstant 1 (Integer 4))
+                                                                            (Character 1 -1 ())
+                                                                            ()
+                                                                        )
+                                                                        (StringConstant
+                                                                            "(i0)"
+                                                                            (Character 1 4 ())
+                                                                        )
+                                                                        ()
+                                                                        ()
+                                                                        ()
+                                                                        [(Var 5 generic)]
+                                                                        ()
+                                                                        ()
+                                                                    )]
                                                                 )
                                                         })
                                                     print_generic
@@ -923,6 +926,8 @@
                                                         .false.
                                                         .false.
                                                         .false.
+                                                        []
+                                                        []
                                                         .false.
                                                     )
                                                     [len_trim
@@ -934,7 +939,7 @@
                                                             (Integer 1)
                                                             [(BlockCall
                                                                 -1
-                                                                5 ~select_type_block_
+                                                                5 ~select_type_block__
                                                             )]
                                                         )
                                                         (TypeStmtType
@@ -1101,6 +1106,7 @@
                                                     Public
                                                     .false.
                                                     .true.
+                                                    []
                                                     ()
                                                     ()
                                                 )
@@ -1143,6 +1149,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [present

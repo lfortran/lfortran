@@ -89,26 +89,6 @@
                                     Required
                                     .false.
                                 ),
-                            sign:
-                                (ExternalSymbol
-                                    2
-                                    sign
-                                    4 sign
-                                    lfortran_intrinsic_math
-                                    []
-                                    sign
-                                    Private
-                                ),
-                            sign@signr32:
-                                (ExternalSymbol
-                                    2
-                                    sign@signr32
-                                    4 signr32
-                                    lfortran_intrinsic_math
-                                    []
-                                    signr32
-                                    Private
-                                ),
                             x:
                                 (Variable
                                     2
@@ -190,16 +170,15 @@
                                         (Real 4)
                                     )
                                     Mul
-                                    (FunctionCall
-                                        2 sign@signr32
-                                        2 sign
-                                        [((RealConstant
+                                    (IntrinsicFunction
+                                        Sign
+                                        [(RealConstant
                                             1.000000
                                             (Real 4)
-                                        ))
-                                        ((Var 2 x))]
+                                        )
+                                        (Var 2 x)]
+                                        0
                                         (Real 4)
-                                        ()
                                         ()
                                     )
                                     (Real 4)
@@ -316,15 +295,7 @@
                         )]
                         []
                     )]
-                ),
-            iso_c_binding:
-                (IntrinsicModule lfortran_intrinsic_iso_c_binding),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_math:
-                (IntrinsicModule lfortran_intrinsic_math)
+                )
         })
     []
 )

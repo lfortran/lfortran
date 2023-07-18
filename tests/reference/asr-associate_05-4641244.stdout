@@ -28,7 +28,7 @@
                                     Required
                                     .false.
                                 ),
-                            associate_block:
+                            associate_block_:
                                 (AssociateBlock
                                     (SymbolTable
                                         3
@@ -78,7 +78,7 @@
                                                     .false.
                                                 )
                                         })
-                                    associate_block
+                                    associate_block_
                                     [(=
                                         (Var 3 z)
                                         (RealBinOp
@@ -439,7 +439,7 @@
                         ()
                     )
                     (AssociateBlockCall
-                        2 associate_block
+                        2 associate_block_
                     )
                     (Print
                         ()

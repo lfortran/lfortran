@@ -58,6 +58,8 @@
                                                         .false.
                                                         .false.
                                                         .false.
+                                                        []
+                                                        []
                                                         .false.
                                                     )
                                                     [get_command_argument]
@@ -90,6 +92,8 @@
                                         .false.
                                         .false.
                                         .false.
+                                        []
+                                        []
                                         .false.
                                     )
                                     [default_help]
