@@ -3370,3 +3370,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/implicit_argument_casting_01.f90"
 asr_implicit_argument_casting = true
+
+[[test]]
+filename = "../integration_tests/implied_do_loops4.f90"
+asr = true
