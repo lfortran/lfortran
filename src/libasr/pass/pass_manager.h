@@ -18,6 +18,7 @@
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_implied_do_loops.h>
+#include <libasr/pass/replace_array_constant.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/wrap_global_stmts.h>
@@ -68,6 +69,7 @@ namespace LCompilers {
         std::map<std::string, pass_function> _passes_db = {
             {"do_loops", &pass_replace_do_loops},
             {"global_stmts", &pass_wrap_global_stmts},
+            {"array_constant", &pass_replace_array_constant},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
             {"intrinsic_function", &pass_replace_intrinsic_function},
@@ -194,6 +196,7 @@ namespace LCompilers {
                 "nested_vars",
                 "global_stmts",
                 "init_expr",
+                "array_constant",
                 "implied_do_loops",
                 "class_constructor",
                 "pass_list_expr",
@@ -219,6 +222,7 @@ namespace LCompilers {
             _with_optimization_passes = {
                 "global_stmts",
                 "init_expr",
+                "array_constant"
                 "implied_do_loops",
                 "class_constructor",
                 "pass_array_by_data",

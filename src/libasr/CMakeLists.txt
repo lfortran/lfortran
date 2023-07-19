@@ -36,6 +36,7 @@ set(SRC
     pass/select_case.cpp
     pass/init_expr.cpp
     pass/implied_do_loops.cpp
+    pass/array_constant.cpp
     pass/array_op.cpp
     pass/subroutine_from_function.cpp
     pass/transform_optional_argument_functions.cpp
