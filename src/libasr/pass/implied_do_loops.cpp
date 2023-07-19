@@ -654,6 +654,7 @@ class ReplaceImpliedDoLoops: public ASR::BaseExprReplacer<ReplaceImpliedDoLoops>
 
         for( auto& itr: vec_args ) {
             ASR::call_arg_t call_arg;
+            call_arg.loc = loc;
             call_arg.m_value = itr;
             call_args.push_back(al, call_arg);
         }
