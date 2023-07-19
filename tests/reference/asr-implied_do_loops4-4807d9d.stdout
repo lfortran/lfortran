@@ -1,0 +1,182 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            implied_do_loops4:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 10 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                )
+                        })
+                    implied_do_loops4
+                    []
+                    [(=
+                        (Var 2 x)
+                        (ArrayConstant
+                            [(ImpliedDoLoop
+                                [(IntegerBinOp
+                                    (Var 2 i)
+                                    Mul
+                                    (IntegerConstant 7 (Integer 4))
+                                    (Integer 4)
+                                    ()
+                                )]
+                                (Var 2 i)
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4))
+                                ()
+                                (Integer 4)
+                                ()
+                            )]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4))
+                        (IntegerConstant 10 (Integer 4))
+                        ())
+                        [(If
+                            (IntegerCompare
+                                (ArrayItem
+                                    (Var 2 x)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Integer 4)
+                                    ColMajor
+                                    ()
+                                )
+                                NotEq
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Mul
+                                    (IntegerConstant 7 (Integer 4))
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                ()
+                            )]
+                            []
+                        )]
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "x = "
+                            (Character 1 4 ())
+                        )
+                        (Var 2 x)]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "direct = "
+                            (Character 1 9 ())
+                        )
+                        (ArrayConstant
+                            [(ImpliedDoLoop
+                                [(IntegerBinOp
+                                    (Var 2 i)
+                                    Mul
+                                    (IntegerConstant 7 (Integer 4))
+                                    (Integer 4)
+                                    ()
+                                )]
+                                (Var 2 i)
+                                (IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 10 (Integer 4))
+                                ()
+                                (Integer 4)
+                                ()
+                            )]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4))
+                                (IntegerConstant 1 (Integer 4)))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(StringConstant
+                            "direct 2 = "
+                            (Character 1 11 ())
+                        )
+                        (ImpliedDoLoop
+                            [(IntegerBinOp
+                                (Var 2 i)
+                                Mul
+                                (IntegerConstant 7 (Integer 4))
+                                (Integer 4)
+                                ()
+                            )]
+                            (Var 2 i)
+                            (IntegerConstant 1 (Integer 4))
+                            (IntegerConstant 10 (Integer 4))
+                            ()
+                            (Integer 4)
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

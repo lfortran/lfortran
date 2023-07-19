@@ -118,7 +118,11 @@
             end
         end
         local.get 0
-        i32.const 5050
+        i32.const 100
+        i32.const 101
+        i32.mul
+        i32.const 2
+        i32.div_s
         i32.ne
         if
             i32.const 1

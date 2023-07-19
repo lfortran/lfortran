@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implied_do_loops4-4807d9d",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/implied_do_loops4.f90",
+    "infile_hash": "2bc54e7ba6a2cb0d476f8741455d1b39a7cc2eac0e64483464bf8d27",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-implied_do_loops4-4807d9d.stdout",
+    "stdout_hash": "bbbb69b0352a393e3948428d6715135dae6000b7abf92978e5f417a3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

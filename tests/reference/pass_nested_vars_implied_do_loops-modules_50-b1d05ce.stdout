@@ -182,38 +182,6 @@
                                                                     i
                                                                     Public
                                                                 ),
-                                                            __1_k:
-                                                                (Variable
-                                                                    6
-                                                                    __1_k
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
-                                                            __1_t:
-                                                                (Variable
-                                                                    6
-                                                                    __1_t
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    Source
-                                                                    Public
-                                                                    Required
-                                                                    .false.
-                                                                ),
                                                             __lcompilers_created__nested_context__prune_build_targets_modules_used:
                                                                 (ExternalSymbol
                                                                     6
@@ -274,72 +242,22 @@
                                                         ()
                                                     )
                                                     (=
-                                                        (Var 6 __1_k)
-                                                        (ArrayBound
-                                                            (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
-                                                            (IntegerConstant 1 (Integer 4))
-                                                            (Integer 4)
-                                                            LBound
-                                                            ()
-                                                        )
-                                                        ()
-                                                    )
-                                                    (DoLoop
-                                                        ()
-                                                        ((Var 6 __1_t)
-                                                        (ArrayBound
-                                                            (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
-                                                            (IntegerConstant 1 (Integer 4))
-                                                            (Integer 4)
-                                                            LBound
-                                                            ()
-                                                        )
-                                                        (ArrayBound
-                                                            (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
-                                                            (IntegerConstant 1 (Integer 4))
-                                                            (Integer 4)
-                                                            UBound
-                                                            ()
-                                                        )
-                                                        ())
-                                                        [(=
-                                                            (ArrayItem
-                                                                (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
-                                                                [(()
-                                                                (Var 6 __1_k)
-                                                                ())]
-                                                                (Pointer
+                                                        (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
+                                                        (ArrayConstant
+                                                            [(Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)]
+                                                            (Allocatable
+                                                                (Array
                                                                     (Struct
                                                                         4 int_t
                                                                     )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
                                                                 )
-                                                                RowMajor
-                                                                ()
                                                             )
-                                                            (ArrayItem
-                                                                (Var 6 __lcompilers_created__nested_context__prune_build_targets_modules_used)
-                                                                [(()
-                                                                (Var 6 __1_t)
-                                                                ())]
-                                                                (Struct
-                                                                    4 int_t
-                                                                )
-                                                                RowMajor
-                                                                ()
-                                                            )
-                                                            ()
+                                                            ColMajor
                                                         )
-                                                        (=
-                                                            (Var 6 __1_k)
-                                                            (IntegerBinOp
-                                                                (Var 6 __1_k)
-                                                                Add
-                                                                (IntegerConstant 1 (Integer 4))
-                                                                (Integer 4)
-                                                                ()
-                                                            )
-                                                            ()
-                                                        )]
+                                                        ()
                                                     )]
                                                     ()
                                                     Public
