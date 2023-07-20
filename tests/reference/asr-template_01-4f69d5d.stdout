@@ -339,7 +339,11 @@
                                     combine
                                     sconcat
                                     stimes]
-                                    []
+                                    [(Require
+                                        semigroup
+                                        [t
+                                        combine]
+                                    )]
                                 ),
                             semigroup:
                                 (Requirement

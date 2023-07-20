@@ -1,10 +1,10 @@
-module template_add_m
+module template_error_04_m
     implicit none
     private
     public :: add_t
 
     requirement R(T, F) 
-        type :: T; end type
+        type, deferred :: T
         function F(x, y) result(z)
             type(T), intent(in) :: x, y
             type(T) :: z
@@ -40,10 +40,10 @@ contains
     end subroutine
 end module
 
-program template_add
-use template_add_m
+program template_error_04
+use template_error_04_m
 implicit none
 
 call test_template()
 
-end program template_add
+end program template_error_04
