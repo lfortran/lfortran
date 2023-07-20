@@ -134,6 +134,10 @@ public:
                             }
                         }
                         stmt_vector.push_back(tmp_stmt);
+
+                        if (tmp_stmt->type == ASR::stmtType::Return) {
+                            break;
+                        }
                     } else if (!tmp_vec.empty()) {
                         for(auto &x: tmp_vec) {
                             stmt_vector.push_back(ASRUtils::STMT(x));
@@ -1534,6 +1538,11 @@ public:
                             }
                         }
                     }
+                }
+                // check if variable is in current current_procedure_args
+                if (std::find(current_procedure_args.begin(), current_procedure_args.end(), item.first) != current_procedure_args.end()) {
+                    // if yes, then make var->m_intent = ASR::intentType::Unspecified
+                    var->m_intent = ASR::intentType::Unspecified;
                 }
             }
         }
