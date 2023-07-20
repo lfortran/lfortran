@@ -930,8 +930,12 @@ public:
                     curr_arg_m_a_type, curr_arg_m_a_type->base.loc);
                 llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(asr_data_type, module.get());
                 fill_malloc_array_details(x_arr, llvm_data_type, curr_arg.m_dims, curr_arg.n_dims);
-                allocate_array_members_of_struct_arrays(LLVM::CreateLoad(*builder, x_arr),
-                    ASRUtils::expr_type(tmp_expr));
+                if( ASR::is_a<ASR::Struct_t>(*ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(tmp_expr))))) ) {
+                    allocate_array_members_of_struct_arrays(LLVM::CreateLoad(*builder, x_arr),
+                        ASRUtils::expr_type(tmp_expr));
+                }
             }
         }
         if (x.m_stat) {
@@ -1929,8 +1933,13 @@ public:
             array = tmp;
         }
 
-        if( ASR::is_a<ASR::Struct_t>(*x.m_type) ) {
-            ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(x.m_type);
+        if( ASR::is_a<ASR::Struct_t>(*ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(x.m_type)))) ) {
+            ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(x.m_type))));
             current_der_type_name = ASRUtils::symbol_name(
                 ASRUtils::symbol_get_past_external(der_type->m_derived_type));
         }
@@ -3756,7 +3765,7 @@ public:
 
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
-        visit_expr(*array_section->m_v);
+        visit_expr_wrapper(array_section->m_v, true);
         llvm::Value* value_desc = tmp;
         ptr_loads = 0;
         visit_expr(*x.m_target);

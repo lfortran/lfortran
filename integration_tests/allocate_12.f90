@@ -45,6 +45,6 @@ if( fobj(2)%es(2)%ds(1)%member /= 1 ) error stop
 if( fobj(2)%es(2)%ds(2)%member /= 2 ) error stop
 if( fobj(2)%es(2)%ds(3)%member /= 3 ) error stop
 
-! if( any(fobj(2)%es(2)%ds(:)%member /= (/1, 2, 3/)) ) error stop ! TODO: Uncomment
+if( any(fobj(2)%es(2)%ds(:)%member /= (/1, 2, 3/)) ) error stop
 
 end program
