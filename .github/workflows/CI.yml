@@ -278,6 +278,7 @@ jobs:
           create-args: >-
             python=3.10
             openblas=0.3.21
+            llvm-openmp=11.1.0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
