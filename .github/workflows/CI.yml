@@ -355,14 +355,15 @@ jobs:
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
             git clean -fdx
-            git checkout -t origin/lf5
-            git checkout acae3384545f5adeea1e19d04b8dff58f803d156
+            git checkout -t origin/lf6
+            git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
             FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
             make
-            ls -l ./gpt2 ./test_basic_input ./test_chat ./test_more_inputs
-            file ./gpt2 ./test_basic_input ./test_chat ./test_more_inputs
+            ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+            file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
             ldd ./gpt2
+            ldd ./chat
             ldd ./test_basic_input
             ldd ./test_chat
             ldd ./test_more_inputs
