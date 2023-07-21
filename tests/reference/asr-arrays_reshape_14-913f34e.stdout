@@ -7,6 +7,82 @@
                     (SymbolTable
                         2
                         {
+                            i23:
+                                (Variable
+                                    2
+                                    i23
+                                    []
+                                    Local
+                                    (ArrayReshape
+                                        (ArrayConstant
+                                            [(IntegerUnaryMinus
+                                                (IntegerConstant 14 (Integer 4))
+                                                (Integer 4)
+                                                (IntegerConstant -14 (Integer 4))
+                                            )
+                                            (IntegerConstant 3 (Integer 4))
+                                            (IntegerConstant 0 (Integer 4))
+                                            (IntegerUnaryMinus
+                                                (IntegerConstant 2 (Integer 4))
+                                                (Integer 4)
+                                                (IntegerConstant -2 (Integer 4))
+                                            )
+                                            (IntegerConstant 19 (Integer 4))
+                                            (IntegerConstant 1 (Integer 4))]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 6 (Integer 4)))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        )
+                                        (ArrayPhysicalCast
+                                            (ArrayConstant
+                                                [(IntegerConstant 2 (Integer 4))
+                                                (IntegerConstant 3 (Integer 4))]
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4))
+                                                    (IntegerConstant 2 (Integer 4)))]
+                                                    FixedSizeArray
+                                                )
+                                                ColMajor
+                                            )
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4))
+                                                (IntegerConstant 2 (Integer 4)))]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                        )
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                    )
+                                    ()
+                                    Save
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 2 (Integer 4)))
+                                        ((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 3 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                ),
                             test_1d_to_nd:
                                 (Function
                                     (SymbolTable
@@ -1776,7 +1852,13 @@
                         })
                     array_reshape_14
                     []
-                    [(SubroutineCall
+                    [(Print
+                        ()
+                        [(Var 2 i23)]
+                        ()
+                        ()
+                    )
+                    (SubroutineCall
                         2 test_reshape_with_argument
                         ()
                         []
