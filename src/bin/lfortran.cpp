@@ -1450,7 +1450,12 @@ int link_executable(const std::vector<std::string> &infiles,
 #else
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
-
+    std::string extra_runtime_linker_path;
+    if (!compiler_options.runtime_linker_paths.empty()) {
+        for (auto &s: compiler_options.runtime_linker_paths) {
+            extra_runtime_linker_path += "," + s;
+        }
+    }
     if (backend == Backend::llvm) {
         if (t == "x86_64-pc-windows-msvc") {
             std::string cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -1504,7 +1509,11 @@ int link_executable(const std::vector<std::string> &infiles,
                 cmd += s + " ";
             }
             cmd += + " -L"
-                + base_path + " -Wl,-rpath," + base_path + " -l" + runtime_lib + " -lm";
+                + base_path + " -Wl,-rpath," + base_path;
+            if (!extra_runtime_linker_path.empty()) {
+                cmd += extra_runtime_linker_path;
+            }
+            cmd += " -l" + runtime_lib + " -lm";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1531,7 +1540,11 @@ int link_executable(const std::vector<std::string> &infiles,
             cmd += s + " ";
         }
         cmd += " -L" + base_path
-            + " -Wl,-rpath," + base_path + " -l" + runtime_lib + " -lm";
+            + " -Wl,-rpath," + base_path;
+        if (!extra_runtime_linker_path.empty()) {
+            cmd += extra_runtime_linker_path;
+        }
+        cmd += " -l" + runtime_lib + " -lm";
         int err = system(cmd.c_str());
         if (err) {
             std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1721,6 +1734,46 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 
 #endif
 
+void _parse_linker_args(std::string& arg, std::vector<std::string>& linker_flags) {
+    if (arg == "") return;
+    std::string current_arg = "";
+    for( size_t i = 0; i < arg.size(); i++ ) {
+        char ch = arg[i];
+        if (ch != ',') {
+            current_arg.push_back(ch);
+        } else {
+            linker_flags.push_back(current_arg);
+            current_arg.clear();
+        }
+    }
+    if (!current_arg.empty()) {
+        linker_flags.push_back(current_arg);
+    }
+}
+
+void _get_rpath_from_linker_flags(std::vector<std::string>& linker_flags, CompilerOptions &co) {
+    if (!linker_flags.empty() && linker_flags[0] != "l") {
+        LCompilers::LCompilersException("Linker arguments must start with -Wl");
+        return;
+    }
+    if (linker_flags.empty()) {
+        return;
+    }
+    bool is_rpath = false;
+    for( size_t i = 1; i < linker_flags.size(); i++ ) {
+        if (linker_flags[i][0] == '-') {
+            if (linker_flags[i] == "-rpath") {
+                is_rpath = true;
+            } else {
+                is_rpath = false;
+            }
+            continue;
+        }
+        if (is_rpath) {
+            co.runtime_linker_paths.push_back(linker_flags[i]);
+        }
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -1782,6 +1835,7 @@ int main(int argc, char *argv[])
 
         std::string arg_pywrap_file;
         std::string arg_pywrap_array_order="f";
+        std::vector<std::string> linker_flags;
 
         CompilerOptions compiler_options;
         compiler_options.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
@@ -1805,6 +1859,7 @@ int main(int argc, char *argv[])
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", arg_version, "Display compiler version information");
+        app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
 
         // LFortran specific options
         app.add_flag("--cpp", compiler_options.c_preprocessor, "Enable C preprocessing");
@@ -1885,7 +1940,12 @@ int main(int argc, char *argv[])
         app.require_subcommand(0, 1);
         CLI11_PARSE(app, argc, argv);
         lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
-
+        if (!linker_flags.empty()) {
+            std::string linker_flags_args = linker_flags[0];
+            linker_flags.clear();
+            _parse_linker_args(linker_flags_args, linker_flags);
+            _get_rpath_from_linker_flags(linker_flags, compiler_options);
+        }
 
         if (arg_version) {
             std::string version = LFORTRAN_VERSION;

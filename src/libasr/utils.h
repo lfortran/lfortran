@@ -25,6 +25,7 @@ std::string get_unique_ID();
 struct CompilerOptions {
     std::filesystem::path mod_files_dir;
     std::vector<std::filesystem::path> include_dirs;
+    std::vector<std::string> runtime_linker_paths;
 
     // TODO: Convert to std::filesystem::path (also change find_and_load_module())
     std::string runtime_library_dir;
