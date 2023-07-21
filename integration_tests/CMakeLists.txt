@@ -35,13 +35,14 @@ message("LFORTRAN_BACKEND: ${LFORTRAN_BACKEND}")
 message("FAST: ${FAST}")
 
 
-macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN)
     set(fail ${${RUN_FAIL}})
     set(name ${${RUN_NAME}})
     set(file_name ${${RUN_FILE_NAME}})
     set(labels ${${RUN_LABELS}})
     set(extra_files ${${RUN_EXTRAFILES}})
     set(extra_args ${${RUN_EXTRA_ARGS}})
+    set(copy_to_bin ${${RUN_COPY_TO_BIN}})
 
     if (NOT name)
         message(FATAL_ERROR "Must specify the NAME argument")
@@ -127,12 +128,16 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         if (fail)
             set_tests_properties(${name} PROPERTIES WILL_FAIL TRUE)
         endif()
+
+        if (copy_to_bin)
+            file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${copy_to_bin} DESTINATION ${CURRENT_BINARY_DIR})
+        endif()
     endif()
 endmacro(RUN_UTIL)
 
 macro(RUN)
     set(options FAIL NOFAST)
-    set(oneValueArgs NAME INCLUDE_PATH)
+    set(oneValueArgs NAME INCLUDE_PATH COPY_TO_BIN)
     set(multiValueArgs LABELS EXTRAFILES)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
@@ -147,14 +152,14 @@ macro(RUN)
     endif()
 
     if (NOT FAST)
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN)
     endif()
 
     if ((FAST) AND (NOT RUN_NOFAST))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --fast)
         set(RUN_NAME "${RUN_NAME}_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN)
     endif()
 endmacro(RUN)
 
@@ -785,8 +790,8 @@ RUN(NAME return_02 LABELS gfortran llvm) # contains module
 RUN(NAME return_03 LABELS gfortran llvm wasm)
 RUN(NAME return_04 LABELS gfortran llvm wasm)
 
-RUN(NAME file_01       LABELS gfortran llvm)
-RUN(NAME file_02       LABELS gfortran llvm)
+RUN(NAME file_01       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+RUN(NAME file_02       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME inquire_01    LABELS gfortran llvm)
 
 RUN(NAME class_01 LABELS gfortran)
