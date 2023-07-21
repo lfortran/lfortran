@@ -1637,8 +1637,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         f_name = "_lfortran_generated_file.txt";
     }
 
-    // Presently we just consider write append mode.
-    status = "a+";
+    // Presently we just consider only read mode.
+    status = "r";
     FILE *fd;
     fd = fopen(f_name, status);
     if (!fd)
@@ -1693,7 +1693,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
         printf("No file found with given unit\n");
         exit(1);
     }
-    (void)fread(p, sizeof(int32_t), 1, unit_to_file[unit_num]);
+    fscanf(unit_to_file[unit_num], "%d", p);
 }
 
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
@@ -1710,8 +1710,8 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
         printf("No file found with given unit\n");
         exit(1);
     }
-    *p = (char*)malloc(16);
-    (void)fread(*p, sizeof(char), 16, unit_to_file[unit_num]);
+    *p = (char*)malloc(strlen(*p) * sizeof(char));
+    fscanf(unit_to_file[unit_num], "%s", *p);
 }
 
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
@@ -1727,7 +1727,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
         printf("No file found with given unit\n");
         exit(1);
     }
-    (void)fread(p, sizeof(float), 1, unit_to_file[unit_num]);
+    fscanf(unit_to_file[unit_num], "%f", p);
 }
 
 LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
@@ -1743,7 +1743,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
         printf("No file found with given unit\n");
         exit(1);
     }
-    (void)fread(p, sizeof(double), 1, unit_to_file[unit_num]);
+    fscanf(unit_to_file[unit_num], "%lf", p);
 }
 
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
@@ -1774,8 +1774,7 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num)
         printf("No file found with given unit\n");
         exit(1);
     }
-    if (fclose(unit_to_file[unit_num]) != 0)
-    {
+    if (fclose(unit_to_file[unit_num]) != 0) {
         printf("Error in closing the file!\n");
         exit(1);
     }
