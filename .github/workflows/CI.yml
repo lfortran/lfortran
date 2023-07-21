@@ -359,10 +359,11 @@ jobs:
             git checkout 96168611878ea4a77c2ebf4618db2787b7367912
             echo $CONDA_PREFIX
             FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
-            make gpt2
-            ls -l ./gpt2
-            file ./gpt2
+            make gpt2 test_basic_input
+            ls -l ./gpt2 ./test_basic_input
+            file ./gpt2 ./test_basic_input
             ldd ./gpt2
+            ldd ./test_basic_input
 
 
   fpm:
