@@ -878,7 +878,6 @@ public:
             x->m_original_name, args.p, args.size(), dt, nullptr, false);
     }
 
-
     ASR::ttype_t* substitute_type(ASR::ttype_t *param_type) {
         if (ASR::is_a<ASR::List_t>(*param_type)) {
             ASR::List_t *tlist = ASR::down_cast<ASR::List_t>(param_type);
