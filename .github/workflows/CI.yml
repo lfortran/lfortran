@@ -358,8 +358,8 @@ jobs:
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-asr --no-indent --no-color main.f90
             git clean -fdx
-            git checkout -t origin/lf3
-            git checkout e5ce0676705d6bd12621f55496d73388a7a3e787
+            git checkout -t origin/lf2
+            git checkout 824605b7366464baa53bfe6bf723654e26f80fad
             FC=$(pwd)/../src/bin/lfortran cmake .
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-llvm main.f90
