@@ -1630,14 +1630,9 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 #define MAXUNITS 100
 
 FILE* unit_to_file[MAXUNITS];
-bool is_unit_to_file_init = false;
 
 LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status)
 {
-    if (!is_unit_to_file_init) {
-        for (int32_t i=0; i<100; i++) unit_to_file[i] = NULL;
-        is_unit_to_file_init = true;
-    }
     if (f_name == NULL) {
         f_name = "_lfortran_generated_file.txt";
     }
@@ -1658,7 +1653,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
 
 LFORTRAN_API void _lfortran_flush(int32_t unit_num)
 {
-    if( !is_unit_to_file_init || unit_to_file[unit_num] == NULL ) {
+    if( unit_to_file[unit_num] == NULL ) {
         printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
         exit(1);
     }
@@ -1677,7 +1672,7 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists) {
 
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
 {
-    if( !is_unit_to_file_init || unit_to_file[unit_num] == NULL ) {
+    if( unit_to_file[unit_num] == NULL ) {
         printf("Specified UNIT %d in REWIND is not created or connected.\n", unit_num);
         exit(1);
     }
