@@ -7178,7 +7178,10 @@ public:
                                         && value->getType()->isPointerTy()) {
                                     value = CreateLoad(value);
                                 }
-                                if( !ASR::is_a<ASR::CPtr_t>(*arg_type) ) {
+                                if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&
+                                    !(orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                                      LLVM::is_llvm_pointer(*arg_type) &&
+                                      !ASRUtils::is_character(*orig_arg->m_type)) ) {
                                     llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
                                     llvm::IRBuilder<> builder0(context);
                                     builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
