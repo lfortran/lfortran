@@ -1,4 +1,4 @@
-module template_struct_02_m
+module template_error_06_m
   implicit none
   private
   public :: struct_t
@@ -25,8 +25,8 @@ contains
 
 end module
 
-program template_struct_02
-use template_struct_02_m
+program template_error_06
+use template_error_06_m
 
 implicit none
 

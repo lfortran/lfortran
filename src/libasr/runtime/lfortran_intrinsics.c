@@ -1715,6 +1715,38 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
     (void)fread(*p, sizeof(char), 16, unit_to_file[unit_num]);
 }
 
+LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        FILE *fp = fdopen(0, "r+");
+        (void)fread(p, sizeof(float), 1, fp);
+        fclose(fp);
+        return;
+    }
+    if (!unit_to_file[unit_num]) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+    (void)fread(p, sizeof(float), 1, unit_to_file[unit_num]);
+}
+
+LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        FILE *fp = fdopen(0, "r+");
+        (void)fread(p, sizeof(double), 1, fp);
+        fclose(fp);
+        return;
+    }
+    if (!unit_to_file[unit_num]) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+    (void)fread(p, sizeof(double), 1, unit_to_file[unit_num]);
+}
+
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
 {
     char *c = (char *) calloc(n, sizeof(char));

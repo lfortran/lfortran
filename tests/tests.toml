@@ -305,6 +305,10 @@ filename = "errors/template_error_06.f90"
 asr = true
 
 [[test]]
+filename = "errors/template_error_07.f90"
+asr = true
+
+[[test]]
 filename = "warnings/dim_assgn_test.f90"
 asr = true
 

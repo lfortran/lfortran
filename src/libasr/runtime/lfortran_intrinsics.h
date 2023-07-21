@@ -252,6 +252,8 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists);
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num);
+LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num);
+LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num);

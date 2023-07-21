@@ -28,9 +28,9 @@ module travel
     public :: travel_tmpl
 
     requirement operations(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-        type :: D; end type
-        type :: T; end type
-        type :: S; end type
+        type, deferred :: D
+        type, deferred :: T
+        type, deferred :: S
 
         pure function plus_D(l, r) result(total)
             type(D), intent(in) :: l, R
@@ -78,7 +78,7 @@ module travel
 
 end module
 
-module template_travel_m
+module template_error_01_m
 
     use math
     use travel
@@ -100,10 +100,10 @@ contains
 
 end module
 
-program template_travel
-use template_travel_m
+program template_error_01
+use template_error_01_m
 implicit none
 
 call test_template()
 
-end program template_travel
+end program template_error_01
