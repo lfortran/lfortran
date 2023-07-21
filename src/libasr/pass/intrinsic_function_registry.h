@@ -472,6 +472,12 @@ class ASRBuilder {
                 s, s, args.p, args.size(), return_type, value, nullptr));
     }
 
+    ASR::expr_t *ArrayItem(ASR::expr_t *arr, std::vector<ASR::expr_t*> idx) {
+        Vec<ASR::expr_t*> idx_vars; idx_vars.reserve(al, 1);
+        for (auto &x: idx) idx_vars.push_back(al, x);
+        return PassUtils::create_array_ref(arr, idx_vars, al);
+    }
+
     // Statements --------------------------------------------------------------
     #define Return() STMT(ASR::make_Return_t(al, loc))
     #define Assignment(lhs, rhs) ASRUtils::STMT(ASR::make_Assignment_t(al, loc, \
@@ -2513,38 +2519,43 @@ namespace MaxLoc {
     static inline ASR::asr_t* create_MaxLoc(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        return ArrIntrinsic::create_ArrIntrinsic(al, loc, args, err,
-            ASRUtils::IntrinsicFunctions::MaxLoc);
+        int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
+        ASR::ttype_t *return_type = type_get_past_array(type_get_past_allocatable(expr_type(args[0])));
+        if (!args[1]) {
+            err("Unsupported argument for maxloc, please specify `dim` argument", loc);
+        } else if (!is_integer(*expr_type(args[1]))) {
+            err("`dim` should be a scalar integer type", loc);
+        } else if (n_dims != 1) {
+            err("Only array with rank one is supported for now", loc);
+        }
+        return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxLoc),
+            args.p, args.n, 0, return_type, nullptr);
     }
 
     static inline ASR::expr_t* instantiate_MaxLoc(Allocator &al,
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, Vec<ASR::call_arg_t>& m_args,
-            int64_t overload_id, ASR::expr_t* compile_time_value) {
+            int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
         declare_basic_variables("_lcompilers_maxloc")
-        ASR::ttype_t* return_type = int32;
+        ASR::ttype_t* return_type = type_get_past_array(type_get_past_allocatable(
+            expr_type(m_args[0].m_value)));
         fill_func_arg("array", arg_types[0]);
+        fill_func_arg("dim", arg_types[1]);
         auto result = declare("result", return_type, ReturnVar);
-        body.push_back(al, Assignment(result, i32(0)));
-        if (overload_id == 0) {
-            // TODO Support 2 dim array
+        body.push_back(al, Assignment(result, i32(1)));
+        int n_dims = extract_n_dims_from_ttype(arg_types[0]);
+        if (n_dims == 1) {
             auto i = declare("i", int32, Local);
-            body.push_back(al, Assignment(i, i32(0)));
-            Vec<ASR::expr_t *> idx_vars; idx_vars.reserve(al, 1);
-            idx_vars.push_back(al, i);
-            ASR::expr_t* i_value = PassUtils::create_array_ref(args[0], idx_vars, al);
-            idx_vars.p = nullptr; idx_vars.n = 0; idx_vars.reserve(al, 1);
-            idx_vars.push_back(al, result);
-            ASR::expr_t* i_max = PassUtils::create_array_ref(args[0], idx_vars, al);
-            body.push_back(al, b.While(iLt(i, ArraySize(args[0], i32(1))), {
-                Assignment(i, iAdd(i, i32(1))),
-                b.If(iGt(i_value, i_max), {Assignment(result, i)}, {})
+            body.push_back(al, Assignment(i, i32(2)));
+            body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
+                b.If(iGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result})), {
+                    Assignment(result, i)
+                }, {}),
+                Assignment(i, iAdd(i, i32(1)))
             }));
             body.push_back(al, Return());
-        } else {
-            // TODO
         }
-
         ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
                 body, result, Source, Implementation, nullptr);
         scope->add_symbol(fn_name, fn_sym);
