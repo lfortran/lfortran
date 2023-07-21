@@ -356,14 +356,16 @@ jobs:
             cd fastGPT
             git clean -fdx
             git checkout -t origin/lf5
-            git checkout 96168611878ea4a77c2ebf4618db2787b7367912
+            git checkout acae3384545f5adeea1e19d04b8dff58f803d156
             echo $CONDA_PREFIX
             FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
-            make gpt2 test_basic_input
-            ls -l ./gpt2 ./test_basic_input
-            file ./gpt2 ./test_basic_input
+            make
+            ls -l ./gpt2 ./test_basic_input ./test_chat ./test_more_inputs
+            file ./gpt2 ./test_basic_input ./test_chat ./test_more_inputs
             ldd ./gpt2
             ldd ./test_basic_input
+            ldd ./test_chat
+            ldd ./test_more_inputs
 
 
   fpm:
