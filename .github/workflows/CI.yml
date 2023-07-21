@@ -277,6 +277,8 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
+            openblas=0.3.21
+            llvm-openmp=11.1.0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -358,9 +360,10 @@ jobs:
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-asr --no-indent --no-color main.f90
             git clean -fdx
-            git checkout -t origin/lf3
-            git checkout e5ce0676705d6bd12621f55496d73388a7a3e787
-            FC=$(pwd)/../src/bin/lfortran cmake .
+            git checkout -t origin/lf2
+            git checkout 824605b7366464baa53bfe6bf723654e26f80fad
+            echo $CONDA_PREFIX
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-llvm main.f90
 
