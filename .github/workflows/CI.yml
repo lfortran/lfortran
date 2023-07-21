@@ -277,6 +277,7 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
+            openblas=0.3.21
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -360,7 +361,7 @@ jobs:
             git clean -fdx
             git checkout -t origin/lf2
             git checkout 824605b7366464baa53bfe6bf723654e26f80fad
-            FC=$(pwd)/../src/bin/lfortran cmake .
+            FC=$(pwd)/../src/bin/lfortran cmake -DFASTGPT_BLAS=OpenBLAS .
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-llvm main.f90
 
