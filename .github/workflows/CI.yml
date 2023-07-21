@@ -361,7 +361,8 @@ jobs:
             git clean -fdx
             git checkout -t origin/lf2
             git checkout 824605b7366464baa53bfe6bf723654e26f80fad
-            FC=$(pwd)/../src/bin/lfortran cmake -DFASTGPT_BLAS=OpenBLAS .
+            echo $CONDA_PREFIX
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-llvm main.f90
 
