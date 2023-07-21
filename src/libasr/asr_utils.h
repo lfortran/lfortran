@@ -3206,6 +3206,12 @@ class SymbolDuplicator {
                 new_symbol_name = block->m_name;
                 break;
             }
+            case ASR::symbolType::StructType: {
+                ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(symbol);
+                new_symbol = duplicate_StructType(struct_type, destination_symtab);
+                new_symbol_name = struct_type->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -3359,6 +3365,19 @@ class SymbolDuplicator {
         return ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al,
                 block_t->base.base.loc, block_symtab, block_t->m_name,
                 new_body.p, new_body.size()));
+    }
+
+    ASR::symbol_t* duplicate_StructType(ASR::StructType_t* struct_type_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* struct_type_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(struct_type_t->m_symtab, struct_type_symtab);
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_StructType_t(
+            al, struct_type_t->base.base.loc, struct_type_symtab,
+            struct_type_t->m_name, struct_type_t->m_dependencies, struct_type_t->n_dependencies,
+            struct_type_t->m_members, struct_type_t->n_members, struct_type_t->m_abi,
+            struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
+            struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
+            struct_type_t->m_parent));
     }
 
 };
