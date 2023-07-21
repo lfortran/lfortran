@@ -1258,12 +1258,11 @@ public:
         }
         ASR::ttype_t *type_ = ASRUtils::expr_type(x.m_mask);
         int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 2 - !LLVM::is_llvm_pointer(*type_);
+        ptr_loads = 1 - !LLVM::is_llvm_pointer(*type_);
         this->visit_expr(*x.m_mask);
         ptr_loads = ptr_loads_copy;
         llvm::Value *mask = tmp;
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Logical_t>(
-            *ASRUtils::type_get_past_array(type_))) // TODO
+        LCOMPILERS_ASSERT(ASRUtils::is_logical(*type_));
         int32_t n = ASRUtils::extract_n_dims_from_ttype(type_);
         llvm::Value *size = llvm::ConstantInt::get(context, llvm::APInt(32, n));
         switch( ASRUtils::extract_physical_type(type_) ) {
