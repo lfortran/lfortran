@@ -360,12 +360,13 @@ jobs:
             make fastgpt
             $(pwd)/../src/bin/lfortran --show-asr --no-indent --no-color main.f90
             git clean -fdx
-            git checkout -t origin/lf4
-            git checkout aaafdedd84d611f4b66482011628fbf4ed261948
+            git checkout -t origin/lf5
+            git checkout 96168611878ea4a77c2ebf4618db2787b7367912
             echo $CONDA_PREFIX
             FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
-            make fastgpt
-            $(pwd)/../src/bin/lfortran --show-llvm main.f90
+            make gpt2
+            ls -l ./gpt2
+            file ./gpt2
 
 
   fpm:
