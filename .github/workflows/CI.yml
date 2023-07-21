@@ -354,11 +354,6 @@ jobs:
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
-            git checkout -t origin/lf
-            git checkout 20502f9b1193487ebf0d2b32082875f60ec340c9
-            FC=$(pwd)/../src/bin/lfortran cmake .
-            make fastgpt
-            $(pwd)/../src/bin/lfortran --show-asr --no-indent --no-color main.f90
             git clean -fdx
             git checkout -t origin/lf5
             git checkout 96168611878ea4a77c2ebf4618db2787b7367912
@@ -367,6 +362,7 @@ jobs:
             make gpt2
             ls -l ./gpt2
             file ./gpt2
+            ldd ./gpt2
 
 
   fpm:
