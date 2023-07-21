@@ -1453,7 +1453,7 @@ int link_executable(const std::vector<std::string> &infiles,
     std::string extra_runtime_linker_path;
     if (!compiler_options.runtime_linker_paths.empty()) {
         for (auto &s: compiler_options.runtime_linker_paths) {
-            extra_runtime_linker_path += "," + s;
+            extra_runtime_linker_path += " -Wl,-rpath," + s;
         }
     }
     if (backend == Backend::llvm) {
