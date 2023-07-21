@@ -283,6 +283,8 @@ class ASRBuilder {
         ASR::cmpopType::GtE, y, logical, nullptr))
     #define fLt(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                  \
         ASR::cmpopType::Lt, y, logical, nullptr))
+    #define fGt(x, y) EXPR(ASR::make_RealCompare_t(al, loc, x,                 \
+        ASR::cmpopType::Gt, y, logical, nullptr))
 
     #define sEq(x, y) EXPR(ASR::make_StringCompare_t(al, loc, x,                \
         ASR::cmpopType::Eq, y, logical, nullptr))
@@ -2504,10 +2506,9 @@ static inline ASR::expr_t* instantiate_MaxVal(Allocator &al, const Location &loc
 } // namespace MaxVal
 
 namespace MaxLoc {
-    static inline void verify_args(const ASR::IntrinsicFunction_t& x,
-            diag::Diagnostics& diagnostics) {
-        ArrIntrinsic::verify_args(x, diagnostics, ASRUtils::IntrinsicFunctions::MaxLoc,
-            &ArrIntrinsic::verify_array_int_real);
+    static inline void verify_args(const ASR::IntrinsicFunction_t& /*x*/,
+            diag::Diagnostics& /*diagnostics*/) {
+        // TODO
     }
 
     static inline ASR::expr_t *eval_MaxLoc(Allocator & /*al*/,
@@ -2520,9 +2521,11 @@ namespace MaxLoc {
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
         int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
-        ASR::ttype_t *return_type = type_get_past_array(type_get_past_allocatable(expr_type(args[0])));
+        ASR::ttype_t *return_type = int32;
         if (!args[1]) {
             err("Unsupported argument for maxloc, please specify `dim` argument", loc);
+        } else if (!is_integer(*expr_type(args[0])) && !is_real(*expr_type(args[0]))) {
+            err("`array` argument of `maxloc` must be integer or real", loc);
         } else if (!is_integer(*expr_type(args[1]))) {
             err("`dim` should be a scalar integer type", loc);
         } else if (n_dims != 1) {
@@ -2538,23 +2541,33 @@ namespace MaxLoc {
             Vec<ASR::ttype_t*>& arg_types, Vec<ASR::call_arg_t>& m_args,
             int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
         declare_basic_variables("_lcompilers_maxloc")
-        ASR::ttype_t* return_type = type_get_past_array(type_get_past_allocatable(
-            expr_type(m_args[0].m_value)));
+        ASR::ttype_t* return_type = int32; // TODO: Use default kind as `array`
         fill_func_arg("array", arg_types[0]);
         fill_func_arg("dim", arg_types[1]);
-        auto result = declare("result", return_type, ReturnVar);
-        body.push_back(al, Assignment(result, i32(1)));
+        auto result = declare("result", int32, ReturnVar);
         int n_dims = extract_n_dims_from_ttype(arg_types[0]);
         if (n_dims == 1) {
             auto i = declare("i", int32, Local);
             body.push_back(al, Assignment(i, i32(2)));
+            ASR::expr_t *test;
+            if (is_real(*arg_types[0])) {
+                test = fGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
+            } else {
+                test = iGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
+            }
             body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
-                b.If(iGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result})), {
+                b.If(test, {
                     Assignment(result, i)
                 }, {}),
                 Assignment(i, iAdd(i, i32(1)))
             }));
             body.push_back(al, Return());
+        } else {
+            // int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+            // TODO: 2D array
+            // max_index = maxloc(reshape(arr, 1D_size))
+            // return convert_to_2d_idx(max_index, shape(arr))
+            // TODO: implement shape intrinsic and use it here
         }
         ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
                 body, result, Source, Implementation, nullptr);

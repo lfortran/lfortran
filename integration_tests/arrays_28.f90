@@ -2,7 +2,7 @@ program arrays_28
     implicit none
     integer :: dim = 1, i, size = 6
     integer :: arr_01(6) = [-14, 3, 0, -2, 19, 1]
-    integer, allocatable :: arr_02(:)
+    real(8), allocatable :: arr_02(:)
 
     allocate(arr_02(size))
 
