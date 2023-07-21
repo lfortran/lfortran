@@ -53,6 +53,7 @@ enum class IntrinsicFunctions : int64_t {
     MaxLoc,
     Min,
     MinVal,
+    MinLoc,
     Merge,
     Sign,
     SymbolicSymbol,
@@ -107,6 +108,7 @@ inline std::string get_intrinsic_name(int x) {
         INTRINSIC_NAME_CASE(MaxVal)
         INTRINSIC_NAME_CASE(MaxLoc)
         INTRINSIC_NAME_CASE(MinVal)
+        INTRINSIC_NAME_CASE(MinLoc)
         INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Sign)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
@@ -2545,6 +2547,7 @@ namespace MaxLoc {
         fill_func_arg("array", arg_types[0]);
         fill_func_arg("dim", arg_types[1]);
         auto result = declare("result", int32, ReturnVar);
+        body.push_back(al, Assignment(result, i32(1)));
         int n_dims = extract_n_dims_from_ttype(arg_types[0]);
         if (n_dims == 1) {
             auto i = declare("i", int32, Local);
@@ -2563,6 +2566,7 @@ namespace MaxLoc {
             }));
             body.push_back(al, Return());
         } else {
+            LCOMPILERS_ASSERT(false)
             // int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
             // TODO: 2D array
             // max_index = maxloc(reshape(arr, 1D_size))
@@ -2603,6 +2607,75 @@ static inline ASR::expr_t* instantiate_MinVal(Allocator &al, const Location &loc
 }
 
 } // namespace MinVal
+
+namespace MinLoc {
+    static inline void verify_args(const ASR::IntrinsicFunction_t& /*x*/,
+            diag::Diagnostics& /*diagnostics*/) {
+        // TODO
+    }
+
+    static inline ASR::expr_t *eval_MinLoc(Allocator & /*al*/,
+            const Location & /*loc*/, Vec<ASR::expr_t*>& /*args*/) {
+        // TODO
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_MinLoc(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args,
+            const std::function<void (const std::string &, const Location &)> err) {
+        int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
+        ASR::ttype_t *return_type = int32;
+        if (!args[1]) {
+            err("Unsupported argument for minloc, please specify `dim` argument", loc);
+        } else if (!is_integer(*expr_type(args[0])) && !is_real(*expr_type(args[0]))) {
+            err("`array` argument of `minloc` must be integer or real", loc);
+        } else if (!is_integer(*expr_type(args[1]))) {
+            err("`dim` should be a scalar integer type", loc);
+        } else if (n_dims != 1) {
+            err("Only array with rank one is supported for now", loc);
+        }
+        return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinLoc),
+            args.p, args.n, 0, return_type, nullptr);
+    }
+
+    static inline ASR::expr_t* instantiate_MinLoc(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, Vec<ASR::call_arg_t>& m_args,
+            int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
+        declare_basic_variables("_lcompilers_minloc")
+        ASR::ttype_t* return_type = int32; // TODO: Use default kind as `array`
+        fill_func_arg("array", arg_types[0]);
+        fill_func_arg("dim", arg_types[1]);
+        auto result = declare("result", int32, ReturnVar);
+        body.push_back(al, Assignment(result, i32(1)));
+        int n_dims = extract_n_dims_from_ttype(arg_types[0]);
+        if (n_dims == 1) {
+            auto i = declare("i", int32, Local);
+            body.push_back(al, Assignment(i, i32(2)));
+            ASR::expr_t *test;
+            if (is_real(*arg_types[0])) {
+                test = fLt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
+            } else {
+                test = iLt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
+            }
+            body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
+                b.If(test, {
+                    Assignment(result, i)
+                }, {}),
+                Assignment(i, iAdd(i, i32(1)))
+            }));
+            body.push_back(al, Return());
+        } else {
+            LCOMPILERS_ASSERT(false)
+            // TODO
+        }
+        ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, Source, Implementation, nullptr);
+        scope->add_symbol(fn_name, fn_sym);
+        return b.Call(fn_sym, m_args, return_type, compile_time_value);
+    }
+} // namespace MaxLoc
 
 namespace Partition {
 
@@ -3137,6 +3210,8 @@ namespace IntrinsicFunctionRegistry {
             {&Min::instantiate_Min, &Min::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinVal),
             {&MinVal::instantiate_MinVal, &MinVal::verify_args}},
+        {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MinLoc),
+            {&MinLoc::instantiate_MinLoc, &MinLoc::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Merge),
             {&Merge::instantiate_Merge, &Merge::verify_args}},
         {static_cast<int64_t>(ASRUtils::IntrinsicFunctions::Sign),
@@ -3293,6 +3368,7 @@ namespace IntrinsicFunctionRegistry {
                 {"min0", {&Min::create_Min, &Min::eval_Min}},
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
+                {"minloc", {&MinLoc::create_MinLoc, &MinLoc::eval_MinLoc}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
                 {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},

@@ -9,7 +9,8 @@ program arrays_28
     do i = 1, size
         arr_02(i) = arr_01(size - i + 1)
     end do
-
+    if (minloc(arr_01, dim) /= 1) error stop
     if (maxloc(arr_01, dim) /= 5) error stop
+    if (minloc(arr_02, dim=1) /= 6) error stop
     if (maxloc(arr_02, dim=1) /= 2) error stop
 end program arrays_28
