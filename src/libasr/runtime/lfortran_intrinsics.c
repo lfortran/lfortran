@@ -1380,6 +1380,7 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
 
 LFORTRAN_API void _lfortran_alloc(char** ptr, int32_t size) {
     *ptr = (char *) malloc(size);
+    memset(*ptr, ' ', size);
 }
 
 // size_plus_one is the size of the string including the null character
@@ -1824,9 +1825,10 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
         exit(1);
     }
 
-    *p = (char*)malloc(strlen(*p) * sizeof(char));
+    int n = strlen(*p);
+    *p = (char*)malloc(n * sizeof(char));
     if (unit_file_bin) {
-        fread(p, sizeof(char), strlen(*p), filep);
+        fread(*p, sizeof(char), n, filep);
     } else {
         fscanf(filep, "%s", *p);
     }

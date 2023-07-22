@@ -900,8 +900,6 @@ public:
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(curr_arg_m_a_type);
             curr_arg_m_a_type = ASRUtils::type_get_past_array(curr_arg_m_a_type);
             if( n_dims == 0 ) {
-                llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, llvm_utils->getIntType(4),
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                 llvm::Function *fn = _Allocate();
                 if (ASRUtils::is_character(*curr_arg_m_a_type)) {
                     // TODO: Add ASR reference to capture the length of the string
@@ -912,12 +910,13 @@ public:
                     visit_expr(*curr_arg.m_len_expr);
                     ptr_loads = ptr_loads_copy;
                     llvm::Value* m_len = tmp;
-                    malloc_size = builder->CreateMul(malloc_size, m_len);
-                    std::vector<llvm::Value*> args = {x_arr, malloc_size};
+                    std::vector<llvm::Value*> args = {x_arr, m_len};
                     builder->CreateCall(fn, args);
                 } else if(ASR::is_a<ASR::Struct_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Class_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type)) {
+                    llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, llvm_utils->getIntType(4),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                     llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                         context, *module, *builder, malloc_size);
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg_m_a_type, module.get());
