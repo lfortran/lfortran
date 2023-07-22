@@ -2409,6 +2409,8 @@ public:
                   is_overloaded = ASRUtils::is_op_overloaded(binop, op_name, current_scope, nullptr);
                 } else if (is_cmop) {
                   is_overloaded = ASRUtils::is_op_overloaded(cmop, op_name, current_scope, nullptr);
+                } else {
+                    throw LCompilersException("ICE: must be binop or cmop");
                 }
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
                 std::string f_name = f->m_name;
