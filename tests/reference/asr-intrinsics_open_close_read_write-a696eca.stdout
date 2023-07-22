@@ -285,6 +285,7 @@
                             "replace"
                             (Character 1 7 ())
                         )
+                        ()
                     )
                     (DoLoop
                         ()
@@ -347,6 +348,7 @@
                             "old"
                             (Character 1 3 ())
                         )
+                        ()
                     )
                     (DoLoop
                         ()
