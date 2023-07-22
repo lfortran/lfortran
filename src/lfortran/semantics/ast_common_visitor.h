@@ -2323,6 +2323,18 @@ public:
         }
     }
 
+    void visit_Interface(const AST::Interface_t /*&x*/) {
+      
+    }
+    
+    void visit_DerivedType(const AST::DerivedType_t /*&x*/) {
+      
+    }
+
+    void visit_Enum(const AST::Enum_t /*&x*/) {
+      
+    }
+
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
