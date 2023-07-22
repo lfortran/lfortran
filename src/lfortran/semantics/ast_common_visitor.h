@@ -2232,7 +2232,23 @@ public:
                                 ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
                                 array->m_type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
                             } else {
-                                type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
+
+                                //  type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, len, nullptr));
+
+                                ASR::ttype_t *char_type = nullptr;
+                                char_type = ASRUtils::TYPE(ASR::make_Character_t(al, int_const->base.base.loc, 1, 1, nullptr));
+                                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int32_type));
+                                ASR::expr_t* x_n_args = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, len, int32_type));
+                                Vec<ASR::dimension_t> dims;
+                                dims.reserve(al, 1);
+                                ASR::dimension_t dims_;
+                                dims_.m_start = one;
+                                dims_.m_length = x_n_args;
+                                dims_.loc = x.base.base.loc;
+                                dims.push_back(al, dims_);
+                                type = ASRUtils::TYPE(ASR::make_Array_t(al, int_const->base.base.loc, char_type, dims.p, dims.size(), ASR::array_physical_typeType::PointerToDataArray));
+
                             }
                         } else {
                             throw SemanticError("Initialisation of " + std::string(x.m_syms[i].m_name) +
