@@ -271,6 +271,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'common' { KW(COMMON) }
             'complex' { KW(COMPLEX) }
             'concurrent' { KW(CONCURRENT) }
+            'constant' { KW(CONSTANT) }
             'contains' { KW(CONTAINS) }
             'contiguous' { KW(CONTIGUOUS) }
             'continue' { KW(CONTINUE) }

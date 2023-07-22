@@ -159,6 +159,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_COMMON
 %token <string> KW_COMPLEX
 %token <string> KW_CONCURRENT
+%token <string> KW_CONSTANT
 %token <string> KW_CONTAINS
 %token <string> KW_CONTIGUOUS
 %token <string> KW_CONTINUE
@@ -1354,6 +1355,7 @@ var_modifier_list
 
 var_modifier
     : KW_PARAMETER { $$ = SIMPLE_ATTR(Parameter, @$); }
+    | KW_CONSTANT { $$ = SIMPLE_ATTR(Constant, @$); }
     | KW_DIMENSION "(" array_comp_decl_list ")" { $$ = DIMENSION($3, @$); }
     | KW_DIMENSION { $$ = DIMENSION0(@$); }
     | KW_CODIMENSION "[" coarray_comp_decl_list "]" { $$ = CODIMENSION($3, @$); }
