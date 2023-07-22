@@ -1687,10 +1687,32 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         f_name = "_lfortran_generated_file.txt";
     }
 
+    if (status == NULL) {
+        status = "unknown";
+    }
+
+    if (strcmp(status, "old") == 0 ||
+        strcmp(status, "new") == 0 ||
+        strcmp(status, "replace") == 0 ||
+        strcmp(status, "scratch") == 0 ||
+        strcmp(status, "unknown") == 0) {
+        // TODO: status can be one of the above. We need to support it
+        /*
+            "old" (file must already exist), If it does not exist, the open operation will fail
+            "new" (file does not exist and will be created)
+            "replace" (file will be created, replacing any existing file)
+            "scratch" (temporary file will be deleted when closed)
+            "unknown" (it is not known whether the file exists)
+        */
+    } else {
+        printf("Error: STATUS specifier in OPEN statement has invalid value '%s'\n", status);
+        exit(1);
+    }
+
     // Presently we just consider only read mode.
-    status = "r";
+    char *access_mode = "r";
     FILE *fd;
-    fd = fopen(f_name, status);
+    fd = fopen(f_name, access_mode);
     if (!fd)
     {
         printf("Error in opening the file!\n");
