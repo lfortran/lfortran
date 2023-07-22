@@ -1632,17 +1632,19 @@ LFORTRAN_API int64_t _lpython_open(char *path, char *flags)
 struct UNIT_FILE {
     int32_t unit;
     FILE* filep;
+    bool unit_file_bin;
 };
 
 int32_t last_index_used = -1;
 
 struct UNIT_FILE unit_to_file[MAXUNITS];
 
-void store_unit_file(int32_t unit_num, FILE* filep) {
+void store_unit_file(int32_t unit_num, FILE* filep, bool unit_file_bin) {
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
             unit_to_file[i].unit = unit_num;
             unit_to_file[i].filep = filep;
+            unit_to_file[i].unit_file_bin = unit_file_bin;
         }
     }
     last_index_used += 1;
@@ -1652,11 +1654,13 @@ void store_unit_file(int32_t unit_num, FILE* filep) {
     }
     unit_to_file[last_index_used].unit = unit_num;
     unit_to_file[last_index_used].filep = filep;
+    unit_to_file[last_index_used].unit_file_bin = unit_file_bin;
 }
 
-FILE* get_file_pointer_from_unit(int32_t unit_num) {
+FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin) {
     for( int i = 0; i <= last_index_used; i++ ) {
         if( unit_to_file[i].unit == unit_num ) {
+            *unit_file_bin = unit_to_file[i].unit_file_bin;
             return unit_to_file[i].filep;
         }
     }
@@ -1677,11 +1681,12 @@ void remove_from_unit_to_file(int32_t unit_num) {
     for( int i = index; i < last_index_used; i++ ) {
         unit_to_file[i].unit = unit_to_file[i + 1].unit;
         unit_to_file[i].filep = unit_to_file[i + 1].filep;
+        unit_to_file[i].unit_file_bin = unit_to_file[i + 1].unit_file_bin;
     }
     last_index_used -= 1;
 }
 
-LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status)
+LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form)
 {
     if (f_name == NULL) {
         f_name = "_lfortran_generated_file.txt";
@@ -1689,6 +1694,10 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
 
     if (status == NULL) {
         status = "unknown";
+    }
+
+    if (form == NULL) {
+        form = "formatted";
     }
 
     if (strcmp(status, "old") == 0 ||
@@ -1709,8 +1718,20 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         exit(1);
     }
 
-    // Presently we just consider only read mode.
-    char *access_mode = "r";
+    char *access_mode = NULL;
+    bool unit_file_bin;
+
+    if (strcmp(form, "formatted") == 0) {
+        access_mode = "r";
+        unit_file_bin = false;
+    } else if (strcmp(form, "unformatted") == 0) {
+        access_mode = "rb";
+        unit_file_bin = true;
+    } else {
+        printf("Error: FORM specifier in OPEN statement has invalid value '%s'\n", status);
+        exit(1);
+    }
+
     FILE *fd;
     fd = fopen(f_name, access_mode);
     if (!fd)
@@ -1719,13 +1740,14 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         perror(f_name);
         exit(1);
     }
-    store_unit_file(unit_num, fd);
+    store_unit_file(unit_num, fd, unit_file_bin);
     return (int64_t)fd;
 }
 
 LFORTRAN_API void _lfortran_flush(int32_t unit_num)
 {
-    FILE* filep = get_file_pointer_from_unit(unit_num);
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if( filep == NULL ) {
         printf("Specified UNIT %d in FLUSH is not connected.\n", unit_num);
         exit(1);
@@ -1745,7 +1767,8 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists) {
 
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num)
 {
-    FILE* filep = get_file_pointer_from_unit(unit_num);
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if( filep == NULL ) {
         printf("Specified UNIT %d in REWIND is not created or connected.\n", unit_num);
         exit(1);
@@ -1761,12 +1784,19 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
         scanf("%d", p);
         return;
     }
-    FILE* filep = get_file_pointer_from_unit(unit_num);
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
-    fscanf(filep, "%d", p);
+
+    if (unit_file_bin) {
+        fread(p, sizeof(*p), 1, filep);
+    } else {
+        fscanf(filep, "%d", p);
+    }
 }
 
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
@@ -1778,13 +1808,19 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
         return;
     }
 
-    FILE* filep = get_file_pointer_from_unit(unit_num);
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
+
     *p = (char*)malloc(strlen(*p) * sizeof(char));
-    fscanf(filep, "%s", *p);
+    if (unit_file_bin) {
+        fread(p, sizeof(char), strlen(*p), filep);
+    } else {
+        fscanf(filep, "%s", *p);
+    }
 }
 
 LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
@@ -1795,12 +1831,18 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
         return;
     }
 
-    FILE* filep = get_file_pointer_from_unit(unit_num);
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
-    fscanf(filep, "%f", p);
+
+    if (unit_file_bin) {
+        fread(p, sizeof(*p), 1, filep);
+    } else {
+        fscanf(filep, "%f", p);
+    }
 }
 
 LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
@@ -1811,12 +1853,18 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
         return;
     }
 
-    FILE* filep = get_file_pointer_from_unit(unit_num);
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
-    fscanf(filep, "%lf", p);
+
+    if (unit_file_bin) {
+        fread(p, sizeof(*p), 1, filep);
+    } else {
+        fscanf(filep, "%lf", p);
+    }
 }
 
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
@@ -1843,7 +1891,8 @@ LFORTRAN_API void _lpython_close(int64_t fd)
 
 LFORTRAN_API void _lfortran_close(int32_t unit_num)
 {
-    FILE* filep = get_file_pointer_from_unit(unit_num);
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
