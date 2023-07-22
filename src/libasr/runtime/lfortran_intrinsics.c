@@ -1689,9 +1689,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        FILE *fp = fdopen(0, "r+");
-        (void)fread(p, sizeof(int32_t), 1, fp);
-        fclose(fp);
+        scanf("%d", p);
         return;
     }
     if (!unit_to_file[unit_num]) {
@@ -1705,10 +1703,8 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        *p = (char*)malloc(16);
-        FILE *fp = fdopen(0, "r+");
-        (void)fread(*p, sizeof(char), 16, fp);
-        fclose(fp);
+        *p = (char*)malloc(strlen(*p) * sizeof(char));
+        scanf("%s", *p);
         return;
     }
     if (!unit_to_file[unit_num]) {
@@ -1723,9 +1719,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        FILE *fp = fdopen(0, "r+");
-        (void)fread(p, sizeof(float), 1, fp);
-        fclose(fp);
+        scanf("%f", p);
         return;
     }
     if (!unit_to_file[unit_num]) {
@@ -1739,9 +1733,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 {
     if (unit_num == -1) {
         // Read from stdin
-        FILE *fp = fdopen(0, "r+");
-        (void)fread(p, sizeof(double), 1, fp);
-        fclose(fp);
+        scanf("%lf", p);
         return;
     }
     if (!unit_to_file[unit_num]) {
@@ -1779,8 +1771,7 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num)
         printf("No file found with given unit\n");
         exit(1);
     }
-    if (fclose(unit_to_file[unit_num]) != 0)
-    {
+    if (fclose(unit_to_file[unit_num]) != 0) {
         printf("Error in closing the file!\n");
         exit(1);
     }
