@@ -1,0 +1,1541 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            template_02:
+                (Program
+                    (SymbolTable
+                        8
+                        {
+                            change_positions_chr:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            i:
+                                                (Variable
+                                                    12
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    12
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            mask:
+                                                (Variable
+                                                    12
+                                                    mask
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    12
+                                                    n
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            pos:
+                                                (Variable
+                                                    12
+                                                    pos
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            vec:
+                                                (Variable
+                                                    12
+                                                    vec
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Character 1 0 ())
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    change_positions_chr
+                                    (FunctionType
+                                        [(Array
+                                            (Character 1 0 ())
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        (Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [~neq_intrinsic_character]
+                                    [(Var 12 vec)]
+                                    [(=
+                                        (Var 12 n)
+                                        (ArraySize
+                                            (Var 12 vec)
+                                            ()
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Allocate
+                                        [((Var 12 pos)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 12 n))]
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (Var 12 n)
+                                            Lt
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Return)]
+                                        []
+                                    )
+                                    (=
+                                        (Var 12 pos)
+                                        (IntegerConstant 0 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (Var 12 pos)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 12 j)
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 12 i)
+                                        (IntegerConstant 2 (Integer 4))
+                                        (Var 12 n)
+                                        ())
+                                        [(If
+                                            (FunctionCall
+                                                8 ~neq_intrinsic_character
+                                                ()
+                                                [((ArrayItem
+                                                    (Var 12 vec)
+                                                    [(()
+                                                    (Var 12 i)
+                                                    ())]
+                                                    (Character 1 0 ())
+                                                    ColMajor
+                                                    ()
+                                                ))
+                                                ((ArrayItem
+                                                    (Var 12 vec)
+                                                    [(()
+                                                    (IntegerBinOp
+                                                        (Var 12 i)
+                                                        Sub
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    ())]
+                                                    (Character 1 0 ())
+                                                    ColMajor
+                                                    ()
+                                                ))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                            [(=
+                                                (Var 12 j)
+                                                (IntegerBinOp
+                                                    (Var 12 j)
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4))
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                ()
+                                            )
+                                            (=
+                                                (ArrayItem
+                                                    (Var 12 pos)
+                                                    [(()
+                                                    (Var 12 j)
+                                                    ())]
+                                                    (Integer 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Var 12 i)
+                                                ()
+                                            )]
+                                            []
+                                        )]
+                                    )
+                                    (Allocate
+                                        [((Var 12 mask)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 12 j))]
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 12 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Var 12 j)
+                                        ())
+                                        [(=
+                                            (ArrayItem
+                                                (Var 12 mask)
+                                                [(()
+                                                (Var 12 i)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (ArrayItem
+                                                (Var 12 pos)
+                                                [(()
+                                                (Var 12 i)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 12 pos)]
+                                    )]
+                                    (Var 12 mask)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            change_positions_int:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            i:
+                                                (Variable
+                                                    10
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            j:
+                                                (Variable
+                                                    10
+                                                    j
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            mask:
+                                                (Variable
+                                                    10
+                                                    mask
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    10
+                                                    n
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            pos:
+                                                (Variable
+                                                    10
+                                                    pos
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            vec:
+                                                (Variable
+                                                    10
+                                                    vec
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    change_positions_int
+                                    (FunctionType
+                                        [(Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        (Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    [~neq_intrinsic_integer]
+                                    [(Var 10 vec)]
+                                    [(=
+                                        (Var 10 n)
+                                        (ArraySize
+                                            (Var 10 vec)
+                                            ()
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                    )
+                                    (Allocate
+                                        [((Var 10 pos)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 10 n))]
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (Var 10 n)
+                                            Lt
+                                            (IntegerConstant 1 (Integer 4))
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Return)]
+                                        []
+                                    )
+                                    (=
+                                        (Var 10 pos)
+                                        (IntegerConstant 0 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (ArrayItem
+                                            (Var 10 pos)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4))
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (=
+                                        (Var 10 j)
+                                        (IntegerConstant 1 (Integer 4))
+                                        ()
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 10 i)
+                                        (IntegerConstant 2 (Integer 4))
+                                        (Var 10 n)
+                                        ())
+                                        [(If
+                                            (FunctionCall
+                                                8 ~neq_intrinsic_integer
+                                                ()
+                                                [((ArrayItem
+                                                    (Var 10 vec)
+                                                    [(()
+                                                    (Var 10 i)
+                                                    ())]
+                                                    (Integer 4)
+                                                    ColMajor
+                                                    ()
+                                                ))
+                                                ((ArrayItem
+                                                    (Var 10 vec)
+                                                    [(()
+                                                    (IntegerBinOp
+                                                        (Var 10 i)
+                                                        Sub
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    ())]
+                                                    (Integer 4)
+                                                    ColMajor
+                                                    ()
+                                                ))]
+                                                (Logical 4)
+                                                ()
+                                                ()
+                                            )
+                                            [(=
+                                                (Var 10 j)
+                                                (IntegerBinOp
+                                                    (Var 10 j)
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4))
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                ()
+                                            )
+                                            (=
+                                                (ArrayItem
+                                                    (Var 10 pos)
+                                                    [(()
+                                                    (Var 10 j)
+                                                    ())]
+                                                    (Integer 4)
+                                                    ColMajor
+                                                    ()
+                                                )
+                                                (Var 10 i)
+                                                ()
+                                            )]
+                                            []
+                                        )]
+                                    )
+                                    (Allocate
+                                        [((Var 10 mask)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (Var 10 j))]
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 10 i)
+                                        (IntegerConstant 1 (Integer 4))
+                                        (Var 10 j)
+                                        ())
+                                        [(=
+                                            (ArrayItem
+                                                (Var 10 mask)
+                                                [(()
+                                                (Var 10 i)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            (ArrayItem
+                                                (Var 10 pos)
+                                                [(()
+                                                (Var 10 i)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )
+                                            ()
+                                        )]
+                                    )
+                                    (ImplicitDeallocate
+                                        [(Var 10 pos)]
+                                    )]
+                                    (Var 10 mask)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            change_positions_tmpl:
+                                (ExternalSymbol
+                                    8
+                                    change_positions_tmpl
+                                    2 change_positions_tmpl
+                                    template_02_m
+                                    []
+                                    change_positions_tmpl
+                                    Public
+                                ),
+                            eq:
+                                (ExternalSymbol
+                                    8
+                                    eq
+                                    2 eq
+                                    template_02_m
+                                    []
+                                    eq
+                                    Public
+                                ),
+                            ~neq_intrinsic_character:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    11
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 0 ())
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    11
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Character 1 0 ())
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    11
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~neq_intrinsic_character
+                                    (FunctionType
+                                        [(Character 1 0 ())
+                                        (Character 1 0 ())]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 11 arg0)
+                                    (Var 11 arg1)]
+                                    [(=
+                                        (Var 11 ret)
+                                        (StringCompare
+                                            (Var 11 arg0)
+                                            NotEq
+                                            (Var 11 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 11 ret)
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                ),
+                            ~neq_intrinsic_integer:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            arg0:
+                                                (Variable
+                                                    9
+                                                    arg0
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            arg1:
+                                                (Variable
+                                                    9
+                                                    arg1
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                ),
+                                            ret:
+                                                (Variable
+                                                    9
+                                                    ret
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    ~neq_intrinsic_integer
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 9 arg0)
+                                    (Var 9 arg1)]
+                                    [(=
+                                        (Var 9 ret)
+                                        (IntegerCompare
+                                            (Var 9 arg0)
+                                            NotEq
+                                            (Var 9 arg1)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                    )]
+                                    (Var 9 ret)
+                                    Public
+                                    .false.
+                                    .true.
+                                    ()
+                                )
+                        })
+                    template_02
+                    [template_02_m]
+                    [(Print
+                        ()
+                        [(FunctionCall
+                            8 change_positions_int
+                            ()
+                            [((ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 3 (Integer 4))
+                                    (IntegerConstant 6 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 2 (Integer 4))
+                                    (IntegerConstant 1 (Integer 4))]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 7 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 7 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))]
+                            (Allocatable
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )
+                    (Print
+                        ()
+                        [(FunctionCall
+                            8 change_positions_chr
+                            ()
+                            [((ArrayPhysicalCast
+                                (ArrayConstant
+                                    [(StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "a"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "b"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "p"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "p"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "p"
+                                        (Character 1 1 ())
+                                    )
+                                    (StringConstant
+                                        "o"
+                                        (Character 1 1 ())
+                                    )]
+                                    (Array
+                                        (Character 1 1 ())
+                                        [((IntegerConstant 1 (Integer 4))
+                                        (IntegerConstant 7 (Integer 4)))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Character 1 1 ())
+                                    [((IntegerConstant 1 (Integer 4))
+                                    (IntegerConstant 7 (Integer 4)))]
+                                    DescriptorArray
+                                )
+                                ()
+                            ))]
+                            (Allocatable
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                            )
+                            ()
+                            ()
+                        )]
+                        ()
+                        ()
+                    )]
+                ),
+            template_02_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            change_positions_tmpl:
+                                (Template
+                                    (SymbolTable
+                                        5
+                                        {
+                                            change_positions_t:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            i:
+                                                                (Variable
+                                                                    7
+                                                                    i
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            j:
+                                                                (Variable
+                                                                    7
+                                                                    j
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            mask:
+                                                                (Variable
+                                                                    7
+                                                                    mask
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            n:
+                                                                (Variable
+                                                                    7
+                                                                    n
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            pos:
+                                                                (Variable
+                                                                    7
+                                                                    pos
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Allocatable
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            vec:
+                                                                (Variable
+                                                                    7
+                                                                    vec
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    change_positions_t
+                                                    (FunctionType
+                                                        [(Array
+                                                            (TypeParameter
+                                                                t
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )]
+                                                        (Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .false.
+                                                    )
+                                                    [ne]
+                                                    [(Var 7 vec)]
+                                                    [(=
+                                                        (Var 7 n)
+                                                        (ArraySize
+                                                            (Var 7 vec)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Allocate
+                                                        [((Var 7 pos)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 7 n))]
+                                                        ()
+                                                        ())]
+                                                        ()
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (If
+                                                        (IntegerCompare
+                                                            (Var 7 n)
+                                                            Lt
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Return)]
+                                                        []
+                                                    )
+                                                    (=
+                                                        (Var 7 pos)
+                                                        (IntegerConstant 0 (Integer 4))
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (ArrayItem
+                                                            (Var 7 pos)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4))
+                                                            ())]
+                                                            (Integer 4)
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        ()
+                                                    )
+                                                    (=
+                                                        (Var 7 j)
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        ()
+                                                    )
+                                                    (DoLoop
+                                                        ()
+                                                        ((Var 7 i)
+                                                        (IntegerConstant 2 (Integer 4))
+                                                        (Var 7 n)
+                                                        ())
+                                                        [(If
+                                                            (FunctionCall
+                                                                5 ne
+                                                                ()
+                                                                [((ArrayItem
+                                                                    (Var 7 vec)
+                                                                    [(()
+                                                                    (Var 7 i)
+                                                                    ())]
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
+                                                                ))
+                                                                ((ArrayItem
+                                                                    (Var 7 vec)
+                                                                    [(()
+                                                                    (IntegerBinOp
+                                                                        (Var 7 i)
+                                                                        Sub
+                                                                        (IntegerConstant 1 (Integer 4))
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    ())]
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
+                                                                ))]
+                                                                (Logical 4)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            [(=
+                                                                (Var 7 j)
+                                                                (IntegerBinOp
+                                                                    (Var 7 j)
+                                                                    Add
+                                                                    (IntegerConstant 1 (Integer 4))
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                ()
+                                                            )
+                                                            (=
+                                                                (ArrayItem
+                                                                    (Var 7 pos)
+                                                                    [(()
+                                                                    (Var 7 j)
+                                                                    ())]
+                                                                    (Integer 4)
+                                                                    ColMajor
+                                                                    ()
+                                                                )
+                                                                (Var 7 i)
+                                                                ()
+                                                            )]
+                                                            []
+                                                        )]
+                                                    )
+                                                    (Allocate
+                                                        [((Var 7 mask)
+                                                        [((IntegerConstant 1 (Integer 4))
+                                                        (Var 7 j))]
+                                                        ()
+                                                        ())]
+                                                        ()
+                                                        ()
+                                                        ()
+                                                    )
+                                                    (DoLoop
+                                                        ()
+                                                        ((Var 7 i)
+                                                        (IntegerConstant 1 (Integer 4))
+                                                        (Var 7 j)
+                                                        ())
+                                                        [(=
+                                                            (ArrayItem
+                                                                (Var 7 mask)
+                                                                [(()
+                                                                (Var 7 i)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            (ArrayItem
+                                                                (Var 7 pos)
+                                                                [(()
+                                                                (Var 7 i)
+                                                                ())]
+                                                                (Integer 4)
+                                                                ColMajor
+                                                                ()
+                                                            )
+                                                            ()
+                                                        )]
+                                                    )
+                                                    (ImplicitDeallocate
+                                                        [(Var 7 pos)]
+                                                    )]
+                                                    (Var 7 mask)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            ne:
+                                                (Function
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    6
+                                                                    lhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            ne:
+                                                                (Variable
+                                                                    6
+                                                                    ne
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    6
+                                                                    rhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    ne
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (Logical 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 6 lhs)
+                                                    (Var 6 rhs)]
+                                                    []
+                                                    (Var 6 ne)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    5
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    change_positions_tmpl
+                                    [t
+                                    ne]
+                                    [(Require
+                                        eq
+                                        [t
+                                        ne]
+                                    )]
+                                ),
+                            eq:
+                                (Requirement
+                                    (SymbolTable
+                                        3
+                                        {
+                                            ne:
+                                                (Function
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            lhs:
+                                                                (Variable
+                                                                    4
+                                                                    lhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            ne:
+                                                                (Variable
+                                                                    4
+                                                                    ne
+                                                                    []
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Logical 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                ),
+                                                            rhs:
+                                                                (Variable
+                                                                    4
+                                                                    rhs
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                )
+                                                        })
+                                                    ne
+                                                    (FunctionType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        (Logical 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        []
+                                                        .true.
+                                                    )
+                                                    []
+                                                    [(Var 4 lhs)
+                                                    (Var 4 rhs)]
+                                                    []
+                                                    (Var 4 ne)
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            t:
+                                                (Variable
+                                                    3
+                                                    t
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        t
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                )
+                                        })
+                                    eq
+                                    [t
+                                    ne]
+                                    []
+                                )
+                        })
+                    template_02_m
+                    [template_02_m]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)
