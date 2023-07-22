@@ -6411,6 +6411,37 @@ public:
                 }
                 break;
             }
+            case (ASR::ttypeType::Array): {
+                type = ASRUtils::type_get_past_array(type);
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
+                if (a_kind != 4) {
+                    throw CodeGenError("Integer and Real arrays of kind 4 only supported for now. Found kind: "
+                                        + std::to_string(a_kind));
+                }
+                std::string runtime_func_name;
+                llvm::Type *type_arg;
+                if (ASR::is_a<ASR::Integer_t>(*type)) {
+                    runtime_func_name = "_lfortran_read_array_int32";
+                    type_arg = llvm::Type::getInt32Ty(context);
+                } else if (ASR::is_a<ASR::Real_t>(*type)) {
+                    runtime_func_name = "_lfortran_read_array_float";
+                    type_arg = llvm::Type::getFloatTy(context);
+                } else {
+                    throw CodeGenError("Type not supported.");
+                }
+                fn = module->getFunction(runtime_func_name);
+                if (!fn) {
+                    llvm::FunctionType *function_type = llvm::FunctionType::get(
+                            llvm::Type::getVoidTy(context), {
+                               type_arg->getPointerTo(),
+                               llvm::Type::getInt32Ty(context),
+                                llvm::Type::getInt32Ty(context)
+                            }, false);
+                    fn = llvm::Function::Create(function_type,
+                            llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                }
+                break;
+            }
             default: {
                 std::string s_type = ASRUtils::type_to_str(type);
                 throw CodeGenError("Read function not implemented for: " + s_type);
@@ -6438,9 +6469,24 @@ public:
             ptr_loads = 0;
             this->visit_expr(*x.m_values[i]);
             ptr_loads = ptr_copy;
-            llvm::Function *fn = get_read_function(
-                    ASRUtils::expr_type(x.m_values[i]));
-            builder->CreateCall(fn, {tmp, unit_val});
+            ASR::ttype_t* type = ASRUtils::expr_type(x.m_values[i]);
+            llvm::Function *fn = get_read_function(type);
+            if (ASRUtils::is_array(type)) {
+                if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+                    tmp = CreateLoad(tmp);
+                }
+                tmp = arr_descr->get_pointer_to_data(tmp);
+                if (ASR::is_a<ASR::Allocatable_t>(*type)) {
+                    tmp = CreateLoad(tmp);
+                }
+                llvm::Value *arr = tmp;
+                ASR::ArraySize_t* array_size = (ASR::ArraySize_t*) ASR::make_ArraySize_t(al, x.base.base.loc,
+                    x.m_values[i], nullptr, type, nullptr);
+                visit_ArraySize(*array_size);
+                builder->CreateCall(fn, {arr, tmp, unit_val});
+            } else {
+                builder->CreateCall(fn, {tmp, unit_val});
+            }
         }
     }
 

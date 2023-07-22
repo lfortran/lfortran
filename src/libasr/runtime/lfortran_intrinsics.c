@@ -1809,6 +1809,32 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
     }
 }
 
+LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            scanf("%d", &p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        fread(p, sizeof(int), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            fscanf(filep, "%d", &p[i]);
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num)
 {
     if (unit_num == -1) {
@@ -1853,6 +1879,32 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
         fread(p, sizeof(*p), 1, filep);
     } else {
         fscanf(filep, "%f", p);
+    }
+}
+
+LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            scanf("%f", &p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        fread(p, sizeof(float), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            fscanf(filep, "%f", &p[i]);
+        }
     }
 }
 
