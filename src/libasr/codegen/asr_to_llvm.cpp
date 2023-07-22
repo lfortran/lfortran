@@ -8106,7 +8106,7 @@ public:
             args.push_back(tmp);
 
             for (size_t i=0; i<x.n_args; i++) {
-                visit_expr(*x.m_args[i]);
+                visit_expr_wrapper(x.m_args[i], true);
                 ASR::expr_t *v = x.m_args[i];
                 ASR::ttype_t *t = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v));
                 t = ASRUtils::type_get_past_allocatable(t);
