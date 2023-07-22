@@ -411,6 +411,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, ...)
             double val = va_arg(args, double);
             handle_decimal(value, val, scale, &result, "E");
             arguments++;
+        } else if (tolower(value[0]) == 'f') {
+            double val = va_arg(args, double);
+            handle_decimal(value, val, scale, &result, "E");
+            arguments++;
         } else if (strlen(value) != 0) {
             printf("Printing support is not available for %s format.\n",value);
         }
