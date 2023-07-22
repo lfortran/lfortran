@@ -793,6 +793,7 @@ RUN(NAME return_04 LABELS gfortran llvm wasm)
 RUN(NAME file_01       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_02       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_03       LABELS gfortran llvm COPY_TO_BIN file_03_data.txt)
+RUN(NAME file_04       LABELS gfortran llvm COPY_TO_BIN file_04_data.dat)
 RUN(NAME inquire_01    LABELS gfortran llvm)
 
 RUN(NAME class_01 LABELS gfortran)
