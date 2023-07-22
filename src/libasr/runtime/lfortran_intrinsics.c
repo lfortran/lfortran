@@ -69,6 +69,15 @@ struct Stacktrace {
 
 #endif // HAVE_RUNTIME_STACKTRACE
 
+// This function performs case insensitive string comparison
+bool streql(const char *s1, const char* s2) {
+#if defined(_MSC_VER)
+    return _stricmp(s1, s2) == 0;
+#else
+    return strcasecmp(s1, s2) == 0;
+#endif
+}
+
 LFORTRAN_API double _lfortran_sum(int n, double *v)
 {
     int i, r;
@@ -1700,11 +1709,11 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         form = "formatted";
     }
 
-    if (strcmp(status, "old") == 0 ||
-        strcmp(status, "new") == 0 ||
-        strcmp(status, "replace") == 0 ||
-        strcmp(status, "scratch") == 0 ||
-        strcmp(status, "unknown") == 0) {
+    if (streql(status, "old") ||
+        streql(status, "new") ||
+        streql(status, "replace") ||
+        streql(status, "scratch") ||
+        streql(status, "unknown")) {
         // TODO: status can be one of the above. We need to support it
         /*
             "old" (file must already exist), If it does not exist, the open operation will fail
@@ -1721,10 +1730,10 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     char *access_mode = NULL;
     bool unit_file_bin;
 
-    if (strcmp(form, "formatted") == 0) {
+    if (streql(form, "formatted")) {
         access_mode = "r";
         unit_file_bin = false;
-    } else if (strcmp(form, "unformatted") == 0) {
+    } else if (streql(form, "unformatted")) {
         access_mode = "rb";
         unit_file_bin = true;
     } else {
