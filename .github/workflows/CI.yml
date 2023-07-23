@@ -354,7 +354,6 @@ jobs:
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
-            git clean -fdx
             git checkout -t origin/lf6
             git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
@@ -367,6 +366,15 @@ jobs:
             ldd ./test_basic_input
             ldd ./test_chat
             ldd ./test_more_inputs
+
+            git clean -dfx
+            git checkout -t origin/lf7run
+            git checkout b418399f9d4ffba97d89c1a9848ddf78cafea74d
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+            make
+            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            ./gpt2
+
 
 
   fpm:
