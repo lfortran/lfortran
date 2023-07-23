@@ -1997,7 +1997,7 @@ LFORTRAN_API int32_t _lfortran_ichar(char *c) {
 }
 
 LFORTRAN_API int32_t _lfortran_iachar(char *c) {
-    return (int32_t) c[0];
+    return (int32_t) (uint8_t)(c[0]);
 }
 
 LFORTRAN_API int32_t _lfortran_all(bool *mask, int32_t n) {

@@ -4170,7 +4170,7 @@ public:
             std::string arg_str;
             bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
             if( is_const_value ) {
-                int64_t ascii_code = arg_str[0];
+                int64_t ascii_code = uint8_t(arg_str[0]);
                 iachar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                 ascii_code, type));
             }
