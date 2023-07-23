@@ -1826,7 +1826,7 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(int), array_size, filep);
+        fread(p, sizeof(int8_t), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
             fscanf(filep, "%s", &p[i]);
@@ -1852,7 +1852,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     if (unit_file_bin) {
-        fread(p, sizeof(int), array_size, filep);
+        fread(p, sizeof(int32_t), array_size, filep);
     } else {
         for (int i = 0; i < array_size; i++) {
             fscanf(filep, "%d", &p[i]);
