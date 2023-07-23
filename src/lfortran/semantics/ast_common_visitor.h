@@ -4191,13 +4191,14 @@ public:
             x.base.base.loc, 1, 1, nullptr));
         ASR::expr_t* char_value = nullptr; int64_t ascii_code;
         if( ASRUtils::extract_value(arg, ascii_code) ) {
-            std::string cvalue;
-            cvalue = (char) ascii_code;
-            if (! (ascii_code >= 0 && ascii_code <= 127) ) {
+            ascii_code = (uint8_t) ascii_code;
+            if (! (ascii_code >= 0 && ascii_code <= 255) ) {
                 throw SemanticError("'x' argument of char(x) must be in the "
-                    "range 0 <= x <= 127", x.base.base.loc);
+                    "range 0 <= x <= 255", x.base.base.loc);
             }
-            char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
+            std::string cvalue;
+            cvalue += char(ascii_code);
+             char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
                 x.base.base.loc, s2c(al, cvalue), type));
         }
         ASR::ttype_t* i32_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
