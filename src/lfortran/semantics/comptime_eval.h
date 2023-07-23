@@ -91,7 +91,6 @@ struct IntrinsicProcedures {
             {"aimag", {m_math, &eval_aimag, true}},
             {"imag", {m_math, &eval_aimag, true}},
             {"dimag", {m_math, &eval_aimag, true}},
-            {"char", {m_builtin, &eval_char, true}},
             {"floor", {m_math3, &eval_floor, true}},
             {"ceiling", {m_math2, &eval_ceiling, true}},
             {"nint", {m_math2, &eval_nint, true}},
@@ -801,32 +800,6 @@ TRIG2(sqrt, dsqrt)
     static ASR::expr_t *not_implemented(Allocator &/*al*/, const Location &/*loc*/, Vec<ASR::expr_t*> &/*args*/) {
         // This intrinsic is not evaluated at compile time yet
         return nullptr;
-    }
-
-    static ASR::expr_t *eval_char(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        ASR::expr_t* real_expr = args[0];
-        ASR::ttype_t* real_type = ASRUtils::expr_type(real_expr);
-        if (ASR::is_a<ASR::Integer_t>(*real_type)) {
-            int64_t c = ASR::down_cast<ASR::IntegerConstant_t>(real_expr)->m_n;
-            if (! (c >= 0 && c <= 127) ) {
-                throw SemanticError("The argument 'x' in char(x) must be in the range 0 <= x <= 127.", loc);
-            }
-            char cc = c;
-            std::string svalue;
-            svalue += cc;
-            Str s;
-            s.from_str_view(svalue);
-            char *str_val = s.c_str(al);
-            // TODO: Should be 0 for char(0) but we store it as 1
-            ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_Character_t(al,
-                loc, 1, 1, nullptr));
-            return ASR::down_cast<ASR::expr_t>(
-                ASR::make_StringConstant_t(al, loc,
-                str_val, str_type));
-        } else {
-            throw SemanticError("char() must have one integer argument", loc);
-        }
     }
 
     static ASR::expr_t *eval_achar(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
