@@ -354,7 +354,7 @@ loop.body:                                        ; preds = %loop.head
 loop.end:                                         ; preds = %loop.head
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
-  call void (i8**, i32, ...) @_lfortran_alloc(i8** %str, i32 64)
+  call void (i8**, i32, ...) @_lfortran_alloc(i8** %str, i32 8)
   call void @_lfortran_strcpy(i8** %str, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @21, i32 0, i32 0), i8 1)
   %271 = load i8*, i8** %str, align 8
   %272 = call i8* @_lfortran_str_slice(i8* %271, i32 1, i32 0, i32 1, i1 true, i1 false)
