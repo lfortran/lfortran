@@ -907,6 +907,7 @@ int compile_to_object_file(const std::string &infile,
             && !LCompilers::ASRUtils::main_program_present(*asr)) {
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
+        std::cerr << "Semantic_error: " << "No main program found" << std::endl;
         e.create_empty_object_file(outfile);
         return 0;
     }
