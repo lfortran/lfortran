@@ -2324,15 +2324,15 @@ public:
     }
 
     void visit_Interface(const AST::Interface_t /*&x*/) {
-      
+
     }
-    
+
     void visit_DerivedType(const AST::DerivedType_t /*&x*/) {
-      
+
     }
 
     void visit_Enum(const AST::Enum_t /*&x*/) {
-      
+
     }
 
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
