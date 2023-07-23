@@ -4200,6 +4200,9 @@ public:
             char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
                 x.base.base.loc, s2c(al, cvalue), type));
         }
+        ASR::ttype_t* i32_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            x.base.base.loc, 4));
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg, ASRUtils::expr_type(arg), i32_type);
         return ASR::make_StringChr_t(al, x.base.base.loc, arg, type, char_value);
     }
 
