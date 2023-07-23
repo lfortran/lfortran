@@ -5,11 +5,11 @@
             dstzr:
                 (Function
                     (SymbolTable
-                        89
+                        88
                         {
                             abstol:
                                 (Variable
-                                    89
+                                    88
                                     abstol
                                     []
                                     Local
@@ -26,11 +26,11 @@
                             ftol:
                                 (Function
                                     (SymbolTable
-                                        90
+                                        89
                                         {
                                             ftol_return_var_name:
                                                 (Variable
-                                                    90
+                                                    89
                                                     ftol_return_var_name
                                                     []
                                                     ReturnVar
@@ -46,7 +46,7 @@
                                                 ),
                                             max:
                                                 (ExternalSymbol
-                                                    90
+                                                    89
                                                     max
                                                     6 max
                                                     lfortran_intrinsic_math2
@@ -56,7 +56,7 @@
                                                 ),
                                             max@dmax:
                                                 (ExternalSymbol
-                                                    90
+                                                    89
                                                     max@dmax
                                                     6 dmax
                                                     lfortran_intrinsic_math2
@@ -66,7 +66,7 @@
                                                 ),
                                             zx:
                                                 (Variable
-                                                    90
+                                                    89
                                                     zx
                                                     []
                                                     In
@@ -98,9 +98,9 @@
                                         .false.
                                     )
                                     [max@dmax]
-                                    [(Var 90 zx)]
+                                    [(Var 89 zx)]
                                     [(=
-                                        (Var 90 ftol_return_var_name)
+                                        (Var 89 ftol_return_var_name)
                                         (RealBinOp
                                             (RealConstant
                                                 0.500000
@@ -108,15 +108,15 @@
                                             )
                                             Mul
                                             (FunctionCall
-                                                90 max@dmax
-                                                90 max
-                                                [((Var 89 abstol))
+                                                89 max@dmax
+                                                89 max
+                                                [((Var 88 abstol))
                                                 ((RealBinOp
-                                                    (Var 89 reltol)
+                                                    (Var 88 reltol)
                                                     Mul
                                                     (IntrinsicFunction
                                                         Abs
-                                                        [(Var 90 zx)]
+                                                        [(Var 89 zx)]
                                                         0
                                                         (Real 8)
                                                         ()
@@ -133,7 +133,7 @@
                                         )
                                         ()
                                     )]
-                                    (Var 90 ftol_return_var_name)
+                                    (Var 89 ftol_return_var_name)
                                     Public
                                     .false.
                                     .false.
@@ -141,7 +141,7 @@
                                 ),
                             n:
                                 (Variable
-                                    89
+                                    88
                                     n
                                     []
                                     Unspecified
@@ -157,7 +157,7 @@
                                 ),
                             r:
                                 (Variable
-                                    89
+                                    88
                                     r
                                     [n]
                                     Unspecified
@@ -167,7 +167,7 @@
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4))
-                                        (Var 89 n))]
+                                        (Var 88 n))]
                                         PointerToDataArray
                                     )
                                     ()
@@ -178,7 +178,7 @@
                                 ),
                             reltol:
                                 (Variable
-                                    89
+                                    88
                                     reltol
                                     []
                                     Local
@@ -194,7 +194,7 @@
                                 ),
                             zx:
                                 (Variable
-                                    89
+                                    88
                                     zx
                                     []
                                     Local

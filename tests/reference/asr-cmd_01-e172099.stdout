@@ -85,7 +85,7 @@
                                 (ExternalSymbol
                                     2
                                     len_trim
-                                    30 len_trim
+                                    29 len_trim
                                     lfortran_intrinsic_string
                                     []
                                     len_trim
@@ -95,7 +95,7 @@
                                 (ExternalSymbol
                                     2
                                     trim
-                                    30 trim
+                                    29 trim
                                     lfortran_intrinsic_string
                                     []
                                     trim

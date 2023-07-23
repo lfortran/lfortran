@@ -100,7 +100,7 @@
                                 (ExternalSymbol
                                     2
                                     not
-                                    32 not
+                                    31 not
                                     lfortran_intrinsic_bit
                                     []
                                     not

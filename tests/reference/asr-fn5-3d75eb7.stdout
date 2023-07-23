@@ -16,7 +16,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_repeati32
-                                                    90 len_repeati32
+                                                    89 len_repeati32
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_repeati32
@@ -26,7 +26,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     len_trim
-                                                    90 len_trim
+                                                    89 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -114,7 +114,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     repeat
-                                                    90 repeat
+                                                    89 repeat
                                                     lfortran_intrinsic_string
                                                     []
                                                     repeat
@@ -124,7 +124,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     repeat@repeati32
-                                                    90 repeati32
+                                                    89 repeati32
                                                     lfortran_intrinsic_string
                                                     []
                                                     repeati32
@@ -177,7 +177,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     trim
-                                                    90 trim
+                                                    89 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -409,7 +409,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     len_trim
-                                                    90 len_trim
+                                                    89 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -501,7 +501,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     trim
-                                                    90 trim
+                                                    89 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
