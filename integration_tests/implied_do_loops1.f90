@@ -1,6 +1,7 @@
 program implied_do_loop1
     integer :: j
-    integer :: a(10)=(/(j,j=1,10)/)
+    integer :: a(10) !=(/(j,j=1,10)/)
+    a = [(j,j=1,10)]
     call s()
     print*, (a(j),j=1,10)
 

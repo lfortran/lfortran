@@ -13,19 +13,35 @@
     (global $6 (mut f64) (f64.const 0.000000))
     (func $2 (type 2) (param) (result)
         (local i32 f32)
+        f32.const 1.000000
         f32.const 2.000000
+        f32.mul
         local.set 1
         f32.const 2.000000
+        f32.const 1.000000
+        f32.mul
         local.set 1
-        f32.const 8.000000
+        f32.const 2.000000
+        f32.const 3.000000
+        f32.const 1.000000
+        f32.add
+        f32.mul
         local.set 1
-        f32.const 4.000000
+        f32.const 2.000000
+        f32.const 3.000000
+        f32.const 1.000000
+        f32.sub
+        f32.mul
         local.set 1
         f32.const 0.000000
         local.set 1
-        f32.const 0.500000
+        f32.const 1.000000
+        f32.const 2.000000
+        f32.div
         local.set 1
-        f32.const 0.500000
+        f32.const 1.000000
+        f32.const 2.000000
+        f32.div
         local.set 1
         i32.const 2
         local.set 0
@@ -35,7 +51,9 @@
         local.set 0
         i32.const 4
         local.set 0
-        i32.const 0
+        i32.const 1
+        i32.const 2
+        i32.div_s
         local.set 0
         i32.const 0
         local.set 0

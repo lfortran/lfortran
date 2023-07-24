@@ -35,7 +35,9 @@
     )
     (func $4 (type 4) (param) (result i64)
         (local i64)
-        i64.const 1000000000000
+        i64.const -15000000000000
+        i64.const -16000000000000
+        i64.sub
         local.set 0
         local.get 0
         return

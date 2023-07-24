@@ -10,6 +10,7 @@ passes = [
         "replace_for_all",
         "wrap_global_stmts",
         "replace_implied_do_loops",
+        "replace_array_constant"
         "replace_init_expr",
         "inline_function_calls",
         "replace_intrinsic_function",

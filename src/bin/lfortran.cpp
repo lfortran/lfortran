@@ -25,6 +25,7 @@
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/pass/replace_implied_do_loops.h>
+#include <libasr/pass/replace_array_constant.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_class_constructor.h>
 #include <libasr/pass/replace_arr_slice.h>
