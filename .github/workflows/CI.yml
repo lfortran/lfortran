@@ -354,18 +354,27 @@ jobs:
         run: |
             git clone https://github.com/certik/fastGPT.git
             cd fastGPT
-            git checkout -t origin/lf
-            git checkout 20502f9b1193487ebf0d2b32082875f60ec340c9
-            FC=$(pwd)/../src/bin/lfortran cmake .
-            make fastgpt
-            $(pwd)/../src/bin/lfortran --show-asr --no-indent --no-color main.f90
-            git clean -fdx
-            git checkout -t origin/lf4
-            git checkout aaafdedd84d611f4b66482011628fbf4ed261948
+            git checkout -t origin/lf6
+            git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
             echo $CONDA_PREFIX
             FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
-            make fastgpt
-            $(pwd)/../src/bin/lfortran --show-llvm main.f90
+            make
+            ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+            file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
+            ldd ./gpt2
+            ldd ./chat
+            ldd ./test_basic_input
+            ldd ./test_chat
+            ldd ./test_more_inputs
+
+            git clean -dfx
+            git checkout -t origin/lf12run
+            git checkout 23efcd60f404e9e0a0c3da4e7e120a10d653eb93
+            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+            make
+            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
+            ./gpt2
+
 
 
   fpm:

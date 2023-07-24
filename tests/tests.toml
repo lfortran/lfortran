@@ -17,6 +17,10 @@ filename = "../integration_tests/template_add_01.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_add_01b.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_add_02.f90"
 asr = true
 
@@ -31,6 +35,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/template_nested.f90"
 ast = true
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_add_01b.f90"
 asr = true
 
 [[test]]
@@ -60,6 +68,11 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_01.f90"
+asr = true
+ast = true
+
+[[test]]
+filename = "../integration_tests/template_02.f90"
 asr = true
 ast = true
 
@@ -302,6 +315,22 @@ asr = true
 
 [[test]]
 filename = "errors/template_error_06.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_07a.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_07b.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_07c.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_error_08.f90"
 asr = true
 
 [[test]]
@@ -971,9 +1000,10 @@ llvm = true
 filename = "../integration_tests/arrays_20.f90"
 asr = true
 
-[[test]]
-filename = "../integration_tests/arrays_21.f90"
-asr = true
+# TODO: Implement maxloc
+# [[test]]
+# filename = "../integration_tests/arrays_21.f90"
+# asr = true
 
 [[test]]
 filename = "../integration_tests/arrays_25.f90"

@@ -228,7 +228,7 @@ public:
     }
 
     void visit_Open(const AST::Open_t& x) {
-        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr;
+        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr;
         if( x.n_args > 1 ) {
             throw SemanticError("Number of arguments cannot be more than 1 in Open statement.",
                                 x.base.base.loc);
@@ -277,6 +277,17 @@ public:
                 if (!ASRUtils::is_character(*a_status_type)) {
                         throw SemanticError("`status` must be of type, Character or CharacterPointer", x.base.base.loc);
                 }
+            } else if( m_arg_str == std::string("form") ) {
+                if ( a_form != nullptr ) {
+                    throw SemanticError(R"""(Duplicate value of `form` found, unit has already been specified via arguments or keyword arguments)""",
+                                        x.base.base.loc);
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_form = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_form_type = ASRUtils::expr_type(a_form);
+                if (!ASRUtils::is_character(*a_form_type)) {
+                        throw SemanticError("`form` must be of type, Character or CharacterPointer", x.base.base.loc);
+                }
             }
         }
         if( a_newunit == nullptr ) {
@@ -284,7 +295,7 @@ public:
                                 x.base.base.loc);
         }
         tmp = ASR::make_FileOpen_t(al, x.base.base.loc, x.m_label,
-                               a_newunit, a_filename, a_status);
+                               a_newunit, a_filename, a_status, a_form);
     }
 
     void visit_Close(const AST::Close_t& x) {
@@ -1376,6 +1387,10 @@ public:
         current_scope = v->m_symtab;
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            visit_unit_decl2(*x.m_decl[i]);
+        }
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);

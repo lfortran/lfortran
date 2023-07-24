@@ -718,8 +718,10 @@ public:
                  IntrinsicSignature({"mask"}, 1, 2)}},
         {"maxval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                 IntrinsicSignature({"mask"}, 1, 2)}},
+        {"maxloc", {IntrinsicSignature({"dim"}, 1, 2)}},
         {"minval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                 IntrinsicSignature({"mask"}, 1, 2)}},
+        {"minloc", {IntrinsicSignature({"dim"}, 1, 2)}},
         // max0 can accept any arbitrary number of arguments 2<=x<=100
         {"max0", {IntrinsicSignature({}, 2, 100)}},
         // min0 can accept any arbitrary number of arguments 2<=x<=100
@@ -2321,6 +2323,18 @@ public:
         }
     }
 
+    void visit_Interface(const AST::Interface_t /*&x*/) {
+
+    }
+
+    void visit_DerivedType(const AST::DerivedType_t /*&x*/) {
+
+    }
+
+    void visit_Enum(const AST::Enum_t /*&x*/) {
+
+    }
+
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
@@ -2518,7 +2532,7 @@ public:
             } else {
                 if (!v) {
                     if (is_template) {
-                      throw SemanticError("Type parameter '" + derived_type_name + "' is not specified " 
+                      throw SemanticError("Type parameter '" + derived_type_name + "' is not specified "
                                           "in any requirements", loc);
                     }
                     // Placeholder symbol for Struct type
@@ -4156,7 +4170,7 @@ public:
             std::string arg_str;
             bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
             if( is_const_value ) {
-                int64_t ascii_code = arg_str[0];
+                int64_t ascii_code = uint8_t(arg_str[0]);
                 iachar_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                 ascii_code, type));
             }
@@ -4177,15 +4191,19 @@ public:
             x.base.base.loc, 1, 1, nullptr));
         ASR::expr_t* char_value = nullptr; int64_t ascii_code;
         if( ASRUtils::extract_value(arg, ascii_code) ) {
-            std::string cvalue;
-            cvalue = (char) ascii_code;
-            if (! (ascii_code >= 0 && ascii_code <= 127) ) {
+            ascii_code = (uint8_t) ascii_code;
+            if (! (ascii_code >= 0 && ascii_code <= 255) ) {
                 throw SemanticError("'x' argument of char(x) must be in the "
-                    "range 0 <= x <= 127", x.base.base.loc);
+                    "range 0 <= x <= 255", x.base.base.loc);
             }
-            char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
+            std::string cvalue;
+            cvalue += char(ascii_code);
+             char_value = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
                 x.base.base.loc, s2c(al, cvalue), type));
         }
+        ASR::ttype_t* i32_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            x.base.base.loc, 4));
+        ImplicitCastRules::set_converted_value(al, x.base.base.loc, &arg, ASRUtils::expr_type(arg), i32_type);
         return ASR::make_StringChr_t(al, x.base.base.loc, arg, type, char_value);
     }
 
@@ -5246,6 +5264,32 @@ public:
 
             asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
+        } else if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+            // if overloaded is not found, then reject
+            if (overloaded == nullptr) {
+                std::string op_str = "+";
+                switch (op) {
+                    case (ASR::Add):
+                        break;
+                    case (ASR::Sub):
+                        op_str = "-";
+                        break;
+                    case (ASR::Mul):
+                        op_str = "*";
+                        break;
+                    case (ASR::Div):
+                        op_str = "/";
+                        break;
+                    case (ASR::Pow):
+                        op_str = "**";
+                        break;
+                    default:
+                        LCOMPILERS_ASSERT(false);
+                }
+                throw SemanticError("Operator undefined for " + ASRUtils::type_to_str(left_type)
+                                    + " " +  op_str + " " + ASRUtils::type_to_str(right_type), x.base.base.loc);
+            }
+            return;
         }
 
         if (overloaded != nullptr) {

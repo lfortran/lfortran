@@ -1281,7 +1281,7 @@ public:
                 Str s;
                 s.from_str_view(pname);
                 char *name = s.c_str(al);
-                x = resolve_symbol(loc, name);
+                x = resolve_symbol(loc, to_lower(name));
                 symbols.push_back(al, x);
             }
             LCOMPILERS_ASSERT(strlen(generic_name) > 0);
@@ -2117,6 +2117,12 @@ public:
             current_procedure_args.push_back(arg);
         }
 
+        std::map<AST::intrinsicopType, std::vector<std::string>> requirement_op_procs;
+        for (auto &proc: overloaded_op_procs) {
+            requirement_op_procs[proc.first] = proc.second;
+        }
+        overloaded_op_procs.clear();
+
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_decl);
         for (size_t i=0; i<x.n_decl; i++) {
@@ -2128,6 +2134,39 @@ public:
         }
         for (size_t i=0; i<x.n_funcs; i++) {
             this->visit_program_unit(*x.m_funcs[i]);
+        }
+
+        for (size_t i=0; i<x.n_namelist; i++) {
+            std::string arg = to_lower(x.m_namelist[i]);
+            if (!current_scope->get_symbol(arg)) {
+                diag.add(Diagnostic(
+                    "Parameter " + arg + " is unused in " + x.m_name,
+                    Level::Warning, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }
+                ));
+            }
+            current_procedure_args.push_back(arg);
+        }
+
+        for (auto &item: current_scope->get_scope()) {
+            bool defined = false;
+            std::string sym = item.first;
+            for (size_t i=0; i<current_procedure_args.size(); i++) {
+                std::string arg = current_procedure_args[i];
+                if (sym.compare(arg) == 0) {
+                    defined = true;
+                }
+            }
+            if (!defined) {
+                throw SemanticError("Symbol " + sym + " is not declared in " + to_lower(x.m_name) + "'s parameters",
+                                    x.base.base.loc);
+            }
+        }
+
+        add_overloaded_procedures();
+        for (auto &proc: requirement_op_procs) {
+            overloaded_op_procs[proc.first] = proc.second;
         }
 
         ASR::asr_t *req = ASR::make_Requirement_t(al, x.base.base.loc,
@@ -2142,6 +2181,7 @@ public:
     }
 
     void visit_Requires(const AST::Requires_t &x) {
+        std::map<std::string,std::string> parameter_map;
         std::string require_name = to_lower(x.m_name);
         ASR::symbol_t *req0 = current_scope->resolve_symbol(require_name);
 
@@ -2171,10 +2211,32 @@ public:
             ASR::symbol_t *temp_arg_sym = current_scope->resolve_symbol(temp_arg);
             if (!temp_arg_sym) {
                 std::string req_arg = req->m_args[i];
+                parameter_map[req_arg] = temp_arg;
                 ASR::symbol_t *req_arg_sym = (req->m_symtab)->get_symbol(req_arg);
-                // TODO: inline this? convert into a static method?
                 temp_arg_sym = replace_symbol(req_arg_sym, temp_arg);
                 current_scope->add_symbol(temp_arg, temp_arg_sym);
+            }
+        }
+
+        // adding custom operators
+        for (auto &item: req->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                ASR::CustomOperator_t *c_op = ASR::down_cast<ASR::CustomOperator_t>(item.second);
+                
+                // may not need to add new custom operators if another requires already got an interface
+                Vec<ASR::symbol_t*> symbols;
+                symbols.reserve(al, c_op->n_procs);
+                for (size_t i=0; i<c_op->n_procs; i++) {
+                    ASR::symbol_t *proc = c_op->m_procs[i];
+                    std::string new_proc_name = parameter_map[ASRUtils::symbol_name(proc)];
+                    proc = current_scope->resolve_symbol(new_proc_name);
+                    symbols.push_back(al, proc);
+                }
+
+                ASR::symbol_t *new_c_op = ASR::down_cast<ASR::symbol_t>(ASR::make_CustomOperator_t(
+                        al, c_op->base.base.loc, current_scope,
+                        s2c(al, c_op->m_name), symbols.p, symbols.size(), c_op->m_access));
+                current_scope->add_symbol(c_op->m_name, new_c_op);
             }
         }
 
@@ -2223,7 +2285,6 @@ public:
         current_procedure_args.clear();
         context_map.clear();
         is_template = false;
-
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
@@ -2270,6 +2331,8 @@ public:
                             s = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                         } else if (arg.compare("complex") == 0) {
                             s = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc, 4));
+                        } else if (arg.compare("character") == 0) {
+                            s = ASRUtils::TYPE(ASR::make_Character_t(al, x.base.base.loc, 1, 0, nullptr));
                         } else {
                             throw SemanticError(
                                 "The type " + arg + " is not yet handled for template instantiation",
@@ -2306,30 +2369,52 @@ public:
                 }
             } else if (AST::is_a<AST::IntrinsicOperator_t>(*x.m_args[i])) {
                 AST::IntrinsicOperator_t *intrinsic_op = AST::down_cast<AST::IntrinsicOperator_t>(x.m_args[i]);
-                ASR::binopType op = ASR::Add;
+                ASR::binopType binop = ASR::Add;
+                ASR::cmpopType cmop = ASR::Eq;
+                bool is_binop = true;
+                bool is_cmop = false;
                 std::string op_name = "~add";
                 switch (intrinsic_op->m_op) {
                     case (AST::PLUS):
                         break;
                     case (AST::MINUS):
-                        op = ASR::Sub;
+                        binop = ASR::Sub;
                         op_name = "~sub";
                         break;
                     case (AST::STAR):
-                        op = ASR::Mul;
+                        binop = ASR::Mul;
                         op_name = "~mul";
                         break;
                     case (AST::DIV):
-                        op = ASR::Div;
+                        binop = ASR::Div;
                         op_name = "~div";
+                        break;
+                    case (AST::EQ):
+                        is_binop = false;
+                        is_cmop = true;
+                        cmop = ASR::Eq;
+                        op_name = "~eq";
+                        break;
+                    case (AST::NOTEQ):
+                        is_binop = false;
+                        is_cmop = true;
+                        cmop = ASR::NotEq;
+                        op_name = "~neq";
                         break;
                     default:
                         throw SemanticError("Unsupported binary operator", x.m_args[i]->base.loc);
                 }
-                bool is_overloaded = ASRUtils::is_op_overloaded(op, op_name, current_scope);
-                bool found = false;
+                bool is_overloaded;
+                if (is_binop) {
+                  is_overloaded = ASRUtils::is_op_overloaded(binop, op_name, current_scope, nullptr);
+                } else if (is_cmop) {
+                  is_overloaded = ASRUtils::is_op_overloaded(cmop, op_name, current_scope, nullptr);
+                } else {
+                    throw LCompilersException("ICE: must be binop or cmop");
+                }
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
                 std::string f_name = f->m_name;
+                bool found = false;
                 // check if an alias is defined for the operator
                 if (is_overloaded) {
                     ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
@@ -2355,9 +2440,16 @@ public:
                     ASR::ttype_t *ltype = ASRUtils::subs_expr_type(type_subs, f->m_args[0]);
                     ASR::ttype_t *rtype = ASRUtils::subs_expr_type(type_subs, f->m_args[1]);
                     ASR::ttype_t *ftype = ASRUtils::subs_expr_type(type_subs, f->m_return_var);
-                    if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
-                        throw SemanticError("Intrinsic operator doesn't apply to "
-                            "restriction with different parameter types.", x.base.base.loc);
+                    if (is_binop) {
+                      if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::check_equal_type(rtype, ftype)) {
+                          throw SemanticError("Intrinsic operator doesn't apply to "
+                              "restriction with different parameter types.", x.base.base.loc);
+                      }
+                    } else if (is_cmop) {
+                      if (!ASRUtils::check_equal_type(ltype, rtype) || !ASRUtils::is_logical(*ftype)) {
+                          throw SemanticError("Intrinsic operator " + op_name + 
+                              " requires same-typed arguments and a logical return type", x.base.base.loc);
+                      }
                     }
 
                     SymbolTable *parent_scope = current_scope;
@@ -2386,30 +2478,63 @@ public:
                     switch (ltype->type) {
                         case ASR::ttypeType::Real: {
                             func_name = op_name + "_intrinsic_real";
-                            value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x.base.base.loc,
-                                lexpr, op, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            if (is_binop) {
+                              value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, x.base.base.loc,
+                                  lexpr, binop, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            } else if (is_cmop) {
+                              value = ASRUtils::EXPR(ASR::make_RealCompare_t(al, x.base.base.loc,
+                                  lexpr, cmop, rexpr, 
+                                  ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr));
+                            }
                             break;
                         }
                         case ASR::ttypeType::Integer: {
                             func_name = op_name + "_intrinsic_integer";
-                            value = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc,
-                                lexpr, op, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            if (is_binop) {
+                              value = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc,
+                                  lexpr, binop, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            } else if (is_cmop) {
+                              value = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, x.base.base.loc,
+                                  lexpr, cmop, rexpr, 
+                                  ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr));
+                            }
                             break;
                         }
                         case ASR::ttypeType::Complex: {
                             func_name = op_name + "_intrinsic_complex";
-                            value = ASRUtils::EXPR(ASR::make_ComplexBinOp_t(al, x.base.base.loc,
-                                lexpr, op, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            if (is_binop) {
+                              value = ASRUtils::EXPR(ASR::make_ComplexBinOp_t(al, x.base.base.loc,
+                                  lexpr, binop, rexpr, ASRUtils::duplicate_type(al, ltype), nullptr));
+                            } else if (is_cmop) {
+                              value = ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, x.base.base.loc,
+                                  lexpr, cmop, rexpr, 
+                                  ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr));
+                            }
+                            break;
+                        }
+                        case ASR::ttypeType::Character: {
+                            func_name = op_name + "_intrinsic_character";
+                            if (is_cmop) {
+                              value = ASRUtils::EXPR(ASR::make_StringCompare_t(al, x.base.base.loc,
+                                  lexpr, cmop, rexpr, 
+                                  ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr));
+                            }
                             break;
                         }
                         default:
                             throw LCompilersException("Not implemented " + std::to_string(ltype->type));
                     }
 
+                    ASR::ttype_t *return_type;
+                    if (is_binop) {
+                      return_type = ASRUtils::duplicate_type(al, ltype);
+                    } else {
+                      return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
+                    }
                     ASR::asr_t *return_v = ASR::make_Variable_t(al, x.base.base.loc,
                         current_scope, s2c(al, "ret"), nullptr, 0,
                         ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, ltype), nullptr, ASR::abiType::Source,
+                        return_type, nullptr, ASR::abiType::Source,
                         ASR::accessType::Private, ASR::presenceType::Required, false);
                     current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
                     ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
@@ -2449,8 +2574,6 @@ public:
                                     x.base.base.loc);
             }
             std::string new_sym_name = to_lower(use_symbol->m_local_rename);
-            //pass_instantiate_symbol(al, type_subs, symbol_subs, current_scope,
-            //    temp->m_symtab, new_sym_name, s);
             pass_instantiate_symbol(al, context_map, type_subs, symbol_subs,
                 current_scope, temp->m_symtab, new_sym_name, s);
             context_map[generic_name] = new_sym_name;

@@ -1,4 +1,8 @@
 program array_reshape_14
+implicit none
+
+integer :: i23(2, 3) = reshape([-14, 3, 0, -2, 19, 1], [2, 3])
+print *, i23
 
 call test_reshape_with_argument()
 

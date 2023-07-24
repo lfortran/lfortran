@@ -666,7 +666,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     ieor
-                                                    36 ieor
+                                                    35 ieor
                                                     lfortran_intrinsic_bit
                                                     []
                                                     ieor
@@ -676,7 +676,7 @@
                                                 (ExternalSymbol
                                                     4
                                                     ieor@ieor64
-                                                    36 ieor64
+                                                    35 ieor64
                                                     lfortran_intrinsic_bit
                                                     []
                                                     ieor64
@@ -1080,7 +1080,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     len_trim
-                                                    103 len_trim
+                                                    102 len_trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     len_trim
@@ -1162,7 +1162,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     trim
-                                                    103 trim
+                                                    102 trim
                                                     lfortran_intrinsic_string
                                                     []
                                                     trim
@@ -1194,7 +1194,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     verify_kind4
-                                                    103 verify_kind4
+                                                    102 verify_kind4
                                                     lfortran_intrinsic_string
                                                     []
                                                     verify_kind4

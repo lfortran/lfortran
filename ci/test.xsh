@@ -47,7 +47,7 @@ if not $IS_WIN:
     mkdir build-lfortran-llvm
     cd build-lfortran-llvm
     $FC="../../src/bin/lfortran"
-    cmake -DLFORTRAN_BACKEND=llvm ..
+    cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
     make
     ctest -L llvm
     cd ..

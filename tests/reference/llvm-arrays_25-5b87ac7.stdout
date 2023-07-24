@@ -247,23 +247,26 @@ loop.end3:                                        ; preds = %loop.head1
   %129 = load %array*, %array** %128, align 8
   %130 = getelementptr %array, %array* %129, i32 0, i32 0
   %131 = load i32*, i32** %130, align 8
-  %132 = getelementptr %model_t, %model_t* %m, i32 0, i32 0
-  %133 = load %array*, %array** %132, align 8
-  %134 = getelementptr %array, %array* %133, i32 0, i32 2
-  %135 = load %dimension_descriptor*, %dimension_descriptor** %134, align 8
-  %136 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %135, i32 0
-  %137 = getelementptr %dimension_descriptor, %dimension_descriptor* %136, i32 0, i32 1
-  %138 = load i32, i32* %137, align 4
-  store i32 %138, i32* %call_arg_value, align 4
-  %139 = getelementptr %model_t, %model_t* %m, i32 0, i32 0
-  %140 = load %array*, %array** %139, align 8
-  %141 = getelementptr %array, %array* %140, i32 0, i32 2
-  %142 = load %dimension_descriptor*, %dimension_descriptor** %141, align 8
-  %143 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %142, i32 0
-  %144 = getelementptr %dimension_descriptor, %dimension_descriptor* %143, i32 0, i32 2
-  %145 = load i32, i32* %144, align 4
-  store i32 %145, i32* %call_arg_value4, align 4
-  call void @decode_idx(i32* %131, i32* %call_arg_value, i32* %call_arg_value4)
+  %132 = getelementptr %array, %array* %129, i32 0, i32 1
+  %133 = load i32, i32* %132, align 4
+  %134 = getelementptr inbounds i32, i32* %131, i32 %133
+  %135 = getelementptr %model_t, %model_t* %m, i32 0, i32 0
+  %136 = load %array*, %array** %135, align 8
+  %137 = getelementptr %array, %array* %136, i32 0, i32 2
+  %138 = load %dimension_descriptor*, %dimension_descriptor** %137, align 8
+  %139 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %138, i32 0
+  %140 = getelementptr %dimension_descriptor, %dimension_descriptor* %139, i32 0, i32 1
+  %141 = load i32, i32* %140, align 4
+  store i32 %141, i32* %call_arg_value, align 4
+  %142 = getelementptr %model_t, %model_t* %m, i32 0, i32 0
+  %143 = load %array*, %array** %142, align 8
+  %144 = getelementptr %array, %array* %143, i32 0, i32 2
+  %145 = load %dimension_descriptor*, %dimension_descriptor** %144, align 8
+  %146 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %145, i32 0
+  %147 = getelementptr %dimension_descriptor, %dimension_descriptor* %146, i32 0, i32 2
+  %148 = load i32, i32* %147, align 4
+  store i32 %148, i32* %call_arg_value4, align 4
+  call void @decode_idx(i32* %134, i32* %call_arg_value, i32* %call_arg_value4)
   ret i32 0
 }
 

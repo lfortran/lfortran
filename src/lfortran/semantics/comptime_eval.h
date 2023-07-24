@@ -91,7 +91,6 @@ struct IntrinsicProcedures {
             {"aimag", {m_math, &eval_aimag, true}},
             {"imag", {m_math, &eval_aimag, true}},
             {"dimag", {m_math, &eval_aimag, true}},
-            {"char", {m_builtin, &eval_char, true}},
             {"floor", {m_math3, &eval_floor, true}},
             {"ceiling", {m_math2, &eval_ceiling, true}},
             {"nint", {m_math2, &eval_nint, true}},
@@ -198,7 +197,6 @@ struct IntrinsicProcedures {
             {"blt", {m_bit, &not_implemented, true}},
             {"ibits", {m_bit, &not_implemented, true}},
             {"count", {m_bit, &not_implemented, false}},
-            {"iachar",  {m_builtin, &eval_iachar, true}},
             {"achar", {m_builtin, &eval_achar, true}},
             {"len", {m_builtin, &eval_len, false}},
             {"move_alloc", {m_builtin, &not_implemented, false}},
@@ -804,32 +802,6 @@ TRIG2(sqrt, dsqrt)
         return nullptr;
     }
 
-    static ASR::expr_t *eval_char(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        ASR::expr_t* real_expr = args[0];
-        ASR::ttype_t* real_type = ASRUtils::expr_type(real_expr);
-        if (ASR::is_a<ASR::Integer_t>(*real_type)) {
-            int64_t c = ASR::down_cast<ASR::IntegerConstant_t>(real_expr)->m_n;
-            if (! (c >= 0 && c <= 127) ) {
-                throw SemanticError("The argument 'x' in char(x) must be in the range 0 <= x <= 127.", loc);
-            }
-            char cc = c;
-            std::string svalue;
-            svalue += cc;
-            Str s;
-            s.from_str_view(svalue);
-            char *str_val = s.c_str(al);
-            // TODO: Should be 0 for char(0) but we store it as 1
-            ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_Character_t(al,
-                loc, 1, 1, nullptr));
-            return ASR::down_cast<ASR::expr_t>(
-                ASR::make_StringConstant_t(al, loc,
-                str_val, str_type));
-        } else {
-            throw SemanticError("char() must have one integer argument", loc);
-        }
-    }
-
     static ASR::expr_t *eval_achar(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         ASR::expr_t* int_expr = args[0];
@@ -849,22 +821,6 @@ TRIG2(sqrt, dsqrt)
                 str_val, str_type));
         } else {
             throw SemanticError("achar() must have one integer argument", loc);
-        }
-    }
-
-    static ASR::expr_t *eval_iachar(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
-        ASR::expr_t* char_expr = args[0];
-        ASR::ttype_t* char_type = ASRUtils::expr_type(char_expr);
-        if (ASR::is_a<ASR::Character_t>(*char_type)) {
-            char* c = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(char_expr))->m_s;
-            ASR::ttype_t* int_type =
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            return ASR::down_cast<ASR::expr_t>(
-                ASR::make_IntegerConstant_t(al, loc,
-                c[0], int_type));
-        } else {
-            throw SemanticError("iachar() must have one character argument", loc);
         }
     }
 

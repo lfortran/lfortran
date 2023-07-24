@@ -33,7 +33,7 @@
                                 (ExternalSymbol
                                     2
                                     flipsign@flipsigni32r32
-                                    88 flipsigni32r32
+                                    87 flipsigni32r32
                                     lfortran_intrinsic_optimization
                                     []
                                     flipsigni32r32
@@ -202,7 +202,7 @@
                 (ExternalSymbol
                     1
                     flipsign
-                    88 flipsign
+                    87 flipsign
                     lfortran_intrinsic_optimization
                     []
                     flipsign

@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     13
                                     toml_ordered
-                                    41 toml_ordered
+                                    40 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -28,16 +28,16 @@
             tomlf_structure_base:
                 (Module
                     (SymbolTable
-                        41
+                        40
                         {
                             destroy:
                                 (Function
                                     (SymbolTable
-                                        44
+                                        43
                                         {
                                             self:
                                                 (Variable
-                                                    44
+                                                    43
                                                     self
                                                     []
                                                     InOut
@@ -45,7 +45,7 @@
                                                     ()
                                                     Default
                                                     (Class
-                                                        41 toml_structure
+                                                        40 toml_structure
                                                     )
                                                     ()
                                                     Source
@@ -55,7 +55,7 @@
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
-                                                    44
+                                                    43
                                                     toml_value
                                                     9 toml_value
                                                     tomlf_type_value
@@ -67,7 +67,7 @@
                                     destroy
                                     (FunctionType
                                         [(Class
-                                            41 toml_structure
+                                            40 toml_structure
                                         )]
                                         ()
                                         Source
@@ -82,7 +82,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 44 self)]
+                                    [(Var 43 self)]
                                     []
                                     ()
                                     Public
@@ -93,7 +93,7 @@
                             toml_ordered:
                                 (StructType
                                     (SymbolTable
-                                        42
+                                        41
                                         {
                                             
                                         })
@@ -106,20 +106,20 @@
                                     .true.
                                     []
                                     ()
-                                    41 toml_structure
+                                    40 toml_structure
                                 ),
                             toml_structure:
                                 (StructType
                                     (SymbolTable
-                                        43
+                                        42
                                         {
                                             destroy:
                                                 (ClassProcedure
-                                                    43
+                                                    42
                                                     destroy
                                                     ()
                                                     destroy
-                                                    41 destroy
+                                                    40 destroy
                                                     Source
                                                     .true.
                                                 )
@@ -190,7 +190,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_ordered
-                                    41 toml_ordered
+                                    40 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -226,7 +226,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     1_destroy
-                                                    43 destroy
+                                                    42 destroy
                                                     1_toml_structure
                                                     []
                                                     destroy
@@ -246,7 +246,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     1_toml_structure
-                                                    41 toml_structure
+                                                    40 toml_structure
                                                     tomlf_structure_base
                                                     []
                                                     toml_structure
@@ -500,7 +500,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_ordered
-                                    41 toml_ordered
+                                    40 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered

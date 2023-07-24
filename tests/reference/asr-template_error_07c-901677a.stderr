@@ -1,0 +1,5 @@
+semantic error: Parameter 'scombine' was not declared
+  --> tests/errors/template_error_07c.f90:15:9
+   |
+15 |         requires semigroup(t, scombine)
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

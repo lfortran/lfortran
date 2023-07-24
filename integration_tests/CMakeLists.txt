@@ -35,13 +35,14 @@ message("LFORTRAN_BACKEND: ${LFORTRAN_BACKEND}")
 message("FAST: ${FAST}")
 
 
-macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN)
     set(fail ${${RUN_FAIL}})
     set(name ${${RUN_NAME}})
     set(file_name ${${RUN_FILE_NAME}})
     set(labels ${${RUN_LABELS}})
     set(extra_files ${${RUN_EXTRAFILES}})
     set(extra_args ${${RUN_EXTRA_ARGS}})
+    set(copy_to_bin ${${RUN_COPY_TO_BIN}})
 
     if (NOT name)
         message(FATAL_ERROR "Must specify the NAME argument")
@@ -127,12 +128,16 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         if (fail)
             set_tests_properties(${name} PROPERTIES WILL_FAIL TRUE)
         endif()
+
+        if (copy_to_bin)
+            file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${copy_to_bin} DESTINATION ${CURRENT_BINARY_DIR})
+        endif()
     endif()
 endmacro(RUN_UTIL)
 
 macro(RUN)
     set(options FAIL NOFAST)
-    set(oneValueArgs NAME INCLUDE_PATH)
+    set(oneValueArgs NAME INCLUDE_PATH COPY_TO_BIN)
     set(multiValueArgs LABELS EXTRAFILES)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
@@ -147,14 +152,14 @@ macro(RUN)
     endif()
 
     if (NOT FAST)
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN)
     endif()
 
     if ((FAST) AND (NOT RUN_NOFAST))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --fast)
         set(RUN_NAME "${RUN_NAME}_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN)
     endif()
 endmacro(RUN)
 
@@ -344,6 +349,8 @@ RUN(NAME arrays_24 LABELS gfortran llvm)
 RUN(NAME arrays_25 LABELS gfortran llvm)
 RUN(NAME arrays_26 LABELS gfortran llvm)
 RUN(NAME arrays_27 LABELS gfortran llvm)
+RUN(NAME arrays_28 LABELS gfortran llvm)
+RUN(NAME arrays_29 LABELS gfortran llvm NOFAST)
 
 
 # GFortran
@@ -464,6 +471,9 @@ RUN(NAME intrinsics_55 LABELS gfortran llvm NOFAST) #min
 RUN(NAME intrinsics_56 LABELS gfortran llvm)
 RUN(NAME intrinsics_57 LABELS gfortran llvm)
 RUN(NAME intrinsics_58 LABELS gfortran llvm) # sign
+RUN(NAME intrinsics_59 LABELS gfortran llvm) # sign
+RUN(NAME intrinsics_60 LABELS gfortran llvm COPY_TO_BIN intrinsics_60_data.txt) # iachar for extended ascii
+RUN(NAME intrinsics_61 LABELS gfortran llvm) # char
 
 RUN(NAME parameter_01 LABELS gfortran)
 RUN(NAME parameter_02 LABELS gfortran)
@@ -783,8 +793,13 @@ RUN(NAME return_02 LABELS gfortran llvm) # contains module
 RUN(NAME return_03 LABELS gfortran llvm wasm)
 RUN(NAME return_04 LABELS gfortran llvm wasm)
 
-RUN(NAME file_01       LABELS gfortran llvm)
-RUN(NAME file_02       LABELS gfortran llvm)
+RUN(NAME file_01       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+RUN(NAME file_02       LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
+RUN(NAME file_03       LABELS gfortran llvm COPY_TO_BIN file_03_data.txt)
+RUN(NAME file_04       LABELS gfortran llvm COPY_TO_BIN file_04_data.dat)
+RUN(NAME file_05       LABELS gfortran llvm COPY_TO_BIN file_05_data.dat)
+RUN(NAME file_06       LABELS gfortran llvm COPY_TO_BIN file_06_data.dat)
+RUN(NAME file_07       LABELS gfortran llvm COPY_TO_BIN file_07_data.dat)
 RUN(NAME inquire_01    LABELS gfortran llvm)
 
 RUN(NAME class_01 LABELS gfortran)
@@ -829,7 +844,7 @@ RUN(NAME loop_unroll_large LABELS gfortran llvm)
 RUN(NAME sign_from_value LABELS gfortran llvm wasm)
 
 RUN(NAME rewind_inquire_flush LABELS gfortran)
-RUN(NAME flush_01 LABELS gfortran llvm)
+RUN(NAME flush_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 
 RUN(NAME assign_to1 LABELS gfortran llvm)
 RUN(NAME assign_to2 LABELS gfortran llvm)
@@ -837,6 +852,7 @@ RUN(NAME assign_to2 LABELS gfortran llvm)
 RUN(NAME conv_complex2real LABELS gfortran llvm wasm)
 
 RUN(NAME template_add_01 LABELS llvm)
+RUN(NAME template_add_01b LABELS llvm)
 RUN(NAME template_add_02 LABELS llvm)
 RUN(NAME template_add_03 LABELS llvm)
 RUN(NAME template_add_04 LABELS llvm NOFAST)
@@ -849,9 +865,9 @@ RUN(NAME template_array_02 LABELS llvm NOFAST)
 RUN(NAME template_array_02b LABELS llvm NOFAST)
 RUN(NAME template_array_03 LABELS llvm)
 RUN(NAME template_array_04 LABELS llvm NOFAST)
-RUN(NAME template_01 LABELS llvm NOFAST)
+RUN(NAME template_01 LABELS llvm)
+RUN(NAME template_02 LABELS llvm)
 RUN(NAME template_struct_01 LABELS llvm)
-
 
 RUN(NAME statement1 LABELS gfortran llvm)
 
