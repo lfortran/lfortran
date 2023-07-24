@@ -222,7 +222,7 @@ namespace LCompilers {
                 "implied_do_loops",
                 "class_constructor",
                 "pass_array_by_data",
-                "arr_slice",
+                // "arr_slice", TODO: Remove ``arr_slice.cpp`` completely
                 "subroutine_from_function",
                 "array_op",
                 "intrinsic_function",
