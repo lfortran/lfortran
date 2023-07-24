@@ -4356,6 +4356,7 @@ public:
                 arg = LLVM::CreateLoad(*builder, arg);
             }
             tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(arg));
+            tmp = llvm_utils->create_ptr_gep(tmp, arr_descr->get_offset(arg));
         } else if(
             m_new == ASR::array_physical_typeType::PointerToDataArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {

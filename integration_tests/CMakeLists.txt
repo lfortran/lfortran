@@ -350,6 +350,7 @@ RUN(NAME arrays_25 LABELS gfortran llvm)
 RUN(NAME arrays_26 LABELS gfortran llvm)
 RUN(NAME arrays_27 LABELS gfortran llvm)
 RUN(NAME arrays_28 LABELS gfortran llvm)
+RUN(NAME arrays_29 LABELS gfortran llvm NOFAST)
 
 
 # GFortran
