@@ -166,7 +166,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     [swap]
@@ -322,7 +321,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     []
@@ -448,7 +446,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     []
@@ -559,7 +556,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     [__asr_generic_swap]
@@ -646,7 +642,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
                                         []
                                         .false.
                                     )

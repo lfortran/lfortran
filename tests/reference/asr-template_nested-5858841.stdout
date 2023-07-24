@@ -147,7 +147,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     [f]
@@ -254,7 +253,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     [add_generic]
@@ -360,7 +358,6 @@
                                                         .false.
                                                         .false.
                                                         .false.
-                                                        []
                                                         []
                                                         .true.
                                                     )
@@ -470,7 +467,6 @@
                                         .false.
                                         .false.
                                         []
-                                        []
                                         .false.
                                     )
                                     []
@@ -577,7 +573,6 @@
                                                         .false.
                                                         .false.
                                                         .false.
-                                                        []
                                                         []
                                                         .true.
                                                     )
@@ -688,7 +683,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     [func_arg_real]
@@ -797,7 +791,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     [__asr_generic_add_generic]
@@ -883,7 +876,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
                                         []
                                         .false.
                                     )
