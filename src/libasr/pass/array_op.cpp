@@ -1272,6 +1272,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+            bool remove_original_statement_copy = remove_original_statement;
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
             if( parent_body ) {
@@ -1301,6 +1302,7 @@ class ArrayOpVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisit
             replacer.result_var = nullptr;
             replacer.result_type = nullptr;
             pass_result.n = 0;
+            remove_original_statement = remove_original_statement_copy;
         }
 
         // TODO: Only Program and While is processed, we need to process all calls
