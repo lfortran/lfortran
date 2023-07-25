@@ -9,4 +9,4 @@ program associate_11
     print *, x
     if( x(1) /= 124 ) error stop
     if( x(2) /= 123 ) error stop
-end program test
+end program

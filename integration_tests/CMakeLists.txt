@@ -720,6 +720,7 @@ RUN(NAME associate_07 LABELS gfortran llvm)
 RUN(NAME associate_08 LABELS gfortran)
 RUN(NAME associate_09 LABELS gfortran llvm)
 RUN(NAME associate_10 LABELS gfortran llvm NOFAST)
+RUN(NAME associate_11 LABELS gfortran llvm)
 
 RUN(NAME real_dp_01 LABELS gfortran llvm wasm)
 RUN(NAME real_dp_02 LABELS gfortran llvm wasm)
