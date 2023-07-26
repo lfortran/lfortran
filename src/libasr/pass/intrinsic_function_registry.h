@@ -2569,23 +2569,23 @@ namespace MaxLoc {
         // fill_func_arg("dim", arg_types[1]);
         auto result = declare("result", return_type, ReturnVar);
         if (n_dims == 1) {
-            auto maxloc = declare("maxloc", int32, Local);
+            auto max_index = declare("max_index", int32, Local);
             auto i = declare("i", int32, Local);
-            body.push_back(al, Assignment(maxloc, i32(1)));
+            body.push_back(al, Assignment(max_index, i32(1)));
             body.push_back(al, Assignment(i, i32(2)));
             ASR::expr_t *test;
             if (is_real(*arg_types[0])) {
-                test = fGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {maxloc}));
+                test = fGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {max_index}));
             } else {
-                test = iGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {maxloc}));
+                test = iGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {max_index}));
             }
             body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
                 b.If(test, {
-                    Assignment(maxloc, i)
+                    Assignment(max_index, i)
                 }, {}),
                 Assignment(i, iAdd(i, i32(1)))
             }));
-            body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), maxloc));
+            body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
             body.push_back(al, Return());
         } else {
             LCOMPILERS_ASSERT(false)
