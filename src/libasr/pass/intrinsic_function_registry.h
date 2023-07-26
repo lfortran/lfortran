@@ -2523,7 +2523,7 @@ namespace MaxLoc {
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
         int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
-        ASR::ttype_t *return_type;
+        ASR::ttype_t *return_type = nullptr;
         if (n_dims == 1) {
             Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
             ASR::dimension_t dim;
