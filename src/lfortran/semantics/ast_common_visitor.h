@@ -719,8 +719,7 @@ public:
         {"maxval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                 IntrinsicSignature({"mask"}, 1, 2)}},
         // Problem with the argument being nullptr
-        {"maxloc", {IntrinsicSignature({"dim", "mask", "kind", "back"}, 2, 2),
-                IntrinsicSignature({"mask", "kind", "back"}, 1, 1)}},
+        {"maxloc", {IntrinsicSignature({"dim", "mask", "kind", "back"}, 1, 5)}},
         {"minval", {IntrinsicSignature({"dim", "mask"}, 1, 3),
                 IntrinsicSignature({"mask"}, 1, 2)}},
         {"minloc", {IntrinsicSignature({"dim"}, 1, 2)}},

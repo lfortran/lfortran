@@ -2522,33 +2522,38 @@ namespace MaxLoc {
     static inline ASR::asr_t* create_MaxLoc(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
-        int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
-        ASR::ttype_t *return_type = nullptr;
-        if (n_dims == 1) {
-            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-            ASR::dimension_t dim;
-            dim.loc = args[0]->base.loc;
-            dim.m_start = i32(1);
-            dim.m_length = i32(n_dims);
-            dims.push_back(al, dim);
-            return_type = duplicate_type(al, expr_type(args[0]), &dims);
-        // } else {
-            // return_type = int32;
-            // LCOMPILERS_ASSERT(false);
-        }
-        // if (!args[1]) {
-        //     err("Unsupported argument for maxloc, please specify `dim` argument", loc);
-        // } else
         if (!is_integer(*expr_type(args[0])) && !is_real(*expr_type(args[0]))) {
             err("`array` argument of `maxloc` must be integer or real", loc);
-        // } else if (!is_integer(*expr_type(args[1]))) {
-        //     err("`dim` should be a scalar integer type", loc);
-        } else if (n_dims != 1) {
+        } else if (args[2] || args[3] || args[4]) {
+            err("Only `dim` keyword argument is supported for now!", loc);
+        }
+        ASR::ttype_t *return_type = nullptr;
+        Vec<ASR::expr_t *> m_args; m_args.reserve(al, 1);
+        m_args.push_back(al, args[0]);
+        int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
+        if (n_dims == 1) {
+            if (args[1]) {
+                if (!is_integer(*expr_type(args[1]))) {
+                    err("`dim` should be a scalar integer type", loc);
+                } else {
+                    m_args.push_back(al, args[1]);
+                    return_type = int32;
+                }
+            } else {
+                Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+                ASR::dimension_t dim;
+                dim.loc = args[0]->base.loc;
+                dim.m_start = i32(1);
+                dim.m_length = i32(n_dims);
+                dims.push_back(al, dim);
+                return_type = duplicate_type(al, expr_type(args[0]), &dims);
+            }
+        } else {
             err("Only array with rank one is supported for now", loc);
         }
         return ASRUtils::make_IntrinsicFunction_t_util(al, loc,
             static_cast<int64_t>(ASRUtils::IntrinsicFunctions::MaxLoc),
-            args.p, args.n, 0, return_type, nullptr);
+            m_args.p, m_args.n, 0, return_type, nullptr);
     }
 
     static inline ASR::expr_t* instantiate_MaxLoc(Allocator &al,
@@ -2557,16 +2562,21 @@ namespace MaxLoc {
             int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
         declare_basic_variables("_lcompilers_maxloc")
         int n_dims = extract_n_dims_from_ttype(arg_types[0]);
-        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-        ASR::dimension_t dim;
-        dim.loc = m_args[0].m_value->base.loc;
-        dim.m_start = i32(1);
-        dim.m_length = i32(n_dims);
-        dims.push_back(al, dim);
-        // TODO: Use default kind as `array` as return type kind
-        ASR::ttype_t* return_type = duplicate_type(al, expr_type(m_args[0].m_value), &dims);
         fill_func_arg("array", arg_types[0]);
-        // fill_func_arg("dim", arg_types[1]);
+        ASR::ttype_t *return_type = nullptr;
+        // TODO: Use default kind as `array` as return type kind
+        if (m_args.size() == 1) {
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = m_args[0].m_value->base.loc;
+            dim.m_start = i32(1);
+            dim.m_length = i32(n_dims);
+            dims.push_back(al, dim);
+            return_type = duplicate_type(al, expr_type(m_args[0].m_value), &dims);
+        } else {
+            fill_func_arg("dim", arg_types[1]);
+            return_type = int32;
+        }
         auto result = declare("result", return_type, ReturnVar);
         if (n_dims == 1) {
             auto max_index = declare("max_index", int32, Local);
@@ -2585,7 +2595,11 @@ namespace MaxLoc {
                 }, {}),
                 Assignment(i, iAdd(i, i32(1)))
             }));
-            body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
+            if (m_args.size() == 1) {
+                body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
+            } else {
+                body.push_back(al, Assignment(result, max_index));
+            }
             body.push_back(al, Return());
         } else {
             LCOMPILERS_ASSERT(false)
