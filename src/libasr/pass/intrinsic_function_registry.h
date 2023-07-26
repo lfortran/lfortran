@@ -2523,13 +2523,26 @@ namespace MaxLoc {
             Vec<ASR::expr_t*>& args,
             const std::function<void (const std::string &, const Location &)> err) {
         int n_dims = extract_n_dims_from_ttype(expr_type(args[0]));
-        ASR::ttype_t *return_type = int32;
-        if (!args[1]) {
-            err("Unsupported argument for maxloc, please specify `dim` argument", loc);
-        } else if (!is_integer(*expr_type(args[0])) && !is_real(*expr_type(args[0]))) {
+        ASR::ttype_t *return_type;
+        if (n_dims == 1) {
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = args[0]->base.loc;
+            dim.m_start = i32(1);
+            dim.m_length = i32(n_dims);
+            dims.push_back(al, dim);
+            return_type = duplicate_type(al, expr_type(args[0]), &dims);
+        // } else {
+            // return_type = int32;
+            // LCOMPILERS_ASSERT(false);
+        }
+        // if (!args[1]) {
+        //     err("Unsupported argument for maxloc, please specify `dim` argument", loc);
+        // } else
+        if (!is_integer(*expr_type(args[0])) && !is_real(*expr_type(args[0]))) {
             err("`array` argument of `maxloc` must be integer or real", loc);
-        } else if (!is_integer(*expr_type(args[1]))) {
-            err("`dim` should be a scalar integer type", loc);
+        // } else if (!is_integer(*expr_type(args[1]))) {
+        //     err("`dim` should be a scalar integer type", loc);
         } else if (n_dims != 1) {
             err("Only array with rank one is supported for now", loc);
         }
@@ -2543,27 +2556,36 @@ namespace MaxLoc {
             Vec<ASR::ttype_t*>& arg_types, Vec<ASR::call_arg_t>& m_args,
             int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
         declare_basic_variables("_lcompilers_maxloc")
-        ASR::ttype_t* return_type = int32; // TODO: Use default kind as `array`
-        fill_func_arg("array", arg_types[0]);
-        fill_func_arg("dim", arg_types[1]);
-        auto result = declare("result", int32, ReturnVar);
-        body.push_back(al, Assignment(result, i32(1)));
         int n_dims = extract_n_dims_from_ttype(arg_types[0]);
+        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = m_args[0].m_value->base.loc;
+        dim.m_start = i32(1);
+        dim.m_length = i32(n_dims);
+        dims.push_back(al, dim);
+        // TODO: Use default kind as `array` as return type kind
+        ASR::ttype_t* return_type = duplicate_type(al, expr_type(m_args[0].m_value), &dims);
+        fill_func_arg("array", arg_types[0]);
+        // fill_func_arg("dim", arg_types[1]);
+        auto result = declare("result", return_type, ReturnVar);
         if (n_dims == 1) {
+            auto maxloc = declare("maxloc", int32, Local);
             auto i = declare("i", int32, Local);
+            body.push_back(al, Assignment(maxloc, i32(1)));
             body.push_back(al, Assignment(i, i32(2)));
             ASR::expr_t *test;
             if (is_real(*arg_types[0])) {
-                test = fGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
+                test = fGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {maxloc}));
             } else {
-                test = iGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
+                test = iGt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {maxloc}));
             }
             body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
                 b.If(test, {
-                    Assignment(result, i)
+                    Assignment(maxloc, i)
                 }, {}),
                 Assignment(i, iAdd(i, i32(1)))
             }));
+            body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), maxloc));
             body.push_back(al, Return());
         } else {
             LCOMPILERS_ASSERT(false)
