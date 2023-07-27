@@ -4323,7 +4323,8 @@ public:
         ASR::ttype_t* m_type, ASR::ttype_t* m_type_for_dimensions,
         ASR::array_physical_typeType m_old, ASR::array_physical_typeType m_new) {
 
-        if( m_old == m_new ) {
+        if( m_old == m_new &&
+            m_old != ASR::array_physical_typeType::DescriptorArray ) {
             return ;
         }
 
@@ -4384,13 +4385,34 @@ public:
             tmp = LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(tmp));
             llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
+        } else if(
+            m_new == ASR::array_physical_typeType::DescriptorArray &&
+            m_old == ASR::array_physical_typeType::DescriptorArray) {
+            // TODO: For allocatables, first check if its allocated (generate code for it)
+            // and then if its allocated only then proceed with reseting array details.
+            llvm::BasicBlock &entry_block = builder->GetInsertBlock()->getParent()->getEntryBlock();
+            llvm::IRBuilder<> builder0(context);
+            builder0.SetInsertPoint(&entry_block, entry_block.getFirstInsertionPt());
+            llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(m_type)), module.get());
+            llvm::AllocaInst *target = builder0.CreateAlloca(
+                target_type, nullptr, "array_descriptor");
+            builder->CreateStore(llvm_utils->create_ptr_gep(
+                LLVM::CreateLoad(*builder, arr_descr->get_pointer_to_data(tmp)),
+                arr_descr->get_offset(tmp)), arr_descr->get_pointer_to_data(target));
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_for_dimensions);
+            arr_descr->reset_array_details(target, tmp, n_dims);
+            tmp = target;
         } else {
             LCOMPILERS_ASSERT(false);
         }
     }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
-        LCOMPILERS_ASSERT(x.m_new != x.m_old);
+        if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
+            LCOMPILERS_ASSERT(x.m_new != x.m_old);
+        }
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_arg));
         this->visit_expr_wrapper(x.m_arg, false);
