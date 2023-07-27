@@ -2632,10 +2632,60 @@ namespace MaxLoc {
                 ? b.ArrayItem(result, {i32(1)}) : result, max_index));
             body.push_back(al, Return());
         } else {
-            LCOMPILERS_ASSERT(false)
-            // TODO: 2D array
             // max_index = maxloc(reshape(arr, 1D_size))
             // return convert_to_2d_idx(max_index, shape(arr))
+        int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = m_args[0].m_value->base.loc;
+        dim.m_length = i32(1);
+        dim.m_start = i32(1);
+        dims.push_back(al, dim);
+        ASR::ttype_t *shape_type = make_Array_t_util(al, loc, int32, dims.p, dims.n);
+        ASR::ttype_t *shape_type2 = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+            int32, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+        Vec<ASR::expr_t *> shape_expr; shape_expr.reserve(al, 1);
+        shape_expr.push_back(al, i32(size));
+
+        ASR::expr_t *shape = EXPR(ASR::make_ArrayConstant_t(al, loc,
+            shape_expr.p, 1, shape_type, ASR::arraystorageType::ColMajor));
+
+        shape = EXPR(ASR::make_ArrayPhysicalCast_t(al, loc, shape,
+            ASR::array_physical_typeType::FixedSizeArray,
+            ASR::array_physical_typeType::DescriptorArray, shape_type2, nullptr));
+
+
+
+        ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
+            args[0], shape, shape_type2, nullptr));
+        auto tmp_array = declare("tmp_array", shape_type, Local);
+        body.push_back(al, Assignment(tmp_array, reshape_expr));
+        {
+            auto max_index = declare("max_index", int32, Local);
+            auto i = declare("i", int32, Local);
+            body.push_back(al, Assignment(max_index, i32(1)));
+            body.push_back(al, Assignment(i, i32(2)));
+            ASR::expr_t *test;
+            if (is_real(*arg_types[0])) {
+                test = fGt(b.ArrayItem(tmp_array, {i}), b.ArrayItem(tmp_array, {max_index}));
+            } else {
+                test = iGt(b.ArrayItem(tmp_array, {i}), b.ArrayItem(tmp_array, {max_index}));
+            }
+            body.push_back(al, b.While(iLtE(i, ArraySize(tmp_array, i32(1))), {
+                b.If(test, {
+                    Assignment(max_index, i)
+                }, {}),
+                Assignment(i, iAdd(i, i32(1)))
+            }));
+            // body.push_back(al, Assignment(is_array(return_type)
+            //     ? b.ArrayItem(result, {i32(1)}) : result, max_index));
+            body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
+            body.push_back(al, Return());
+        }
+std::cout << extract_n_dims_from_ttype(EXPR2VAR(result)->m_type) << "_";
+std::cout << extract_n_dims_from_ttype(return_type) << "\n";
+            // LCOMPILERS_ASSERT(false)
+            // TODO: 2D array
             // TODO: implement shape intrinsic and use it here
         }
         ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
