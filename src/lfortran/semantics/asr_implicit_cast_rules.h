@@ -220,7 +220,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(*convert_can)))
+                LCOMPILERS_ASSERT(ASRUtils::is_integer(*ASRUtils::expr_type(*convert_can)))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);

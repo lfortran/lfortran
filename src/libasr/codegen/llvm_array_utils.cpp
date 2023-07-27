@@ -344,15 +344,41 @@ namespace LCompilers {
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
         }
 
+        void SimpleCMODescriptor::reset_array_details(llvm::Value* arr, llvm::Value* source_arr, int n_dims) {
+            llvm::Value* offset_val = llvm_utils->create_gep(arr, 1);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), offset_val);
+            llvm::Value* dim_des_val = llvm_utils->create_gep(arr, 2);
+            llvm::Value* llvm_ndims = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr);
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), llvm_ndims);
+            llvm::Value* dim_des_first = builder->CreateAlloca(dim_des,
+                                                               LLVM::CreateLoad(*builder, llvm_ndims));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
+            builder->CreateStore(dim_des_first, dim_des_val);
+            dim_des_val = LLVM::CreateLoad(*builder, dim_des_val);
+            llvm::Value* source_dim_des_arr = this->get_pointer_to_dimension_descriptor_array(source_arr);
+            for( int r = 0; r < n_dims; r++ ) {
+                llvm::Value* dim_val = llvm_utils->create_ptr_gep(dim_des_val, r);
+                llvm::Value* s_val = llvm_utils->create_gep(dim_val, 0);
+                llvm::Value* stride = this->get_stride(
+                    this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, r))));
+                builder->CreateStore(stride, s_val);
+                llvm::Value* l_val = llvm_utils->create_gep(dim_val, 1);
+                llvm::Value* dim_size_ptr = llvm_utils->create_gep(dim_val, 2);
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), l_val);
+                llvm::Value* dim_size = this->get_dimension_size(
+                   this->get_pointer_to_dimension_descriptor(source_dim_des_arr,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, r))));
+                builder->CreateStore(dim_size, dim_size_ptr);
+            }
+        }
+
         void SimpleCMODescriptor::fill_descriptor_for_array_section(
             llvm::Value* value_desc, llvm::Value* target,
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             int value_rank, int target_rank) {
             llvm::Value* value_desc_data = LLVM::CreateLoad(*builder, get_pointer_to_data(value_desc));
-            llvm::Value* target_data = get_pointer_to_data(target);
-            builder->CreateStore(value_desc_data, target_data);
-
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -365,7 +391,13 @@ namespace LCompilers {
             }
             llvm::Value* target_offset = cmo_convertor_single_element(
                 value_desc, section_first_indices, value_rank, false);
-            builder->CreateStore(target_offset, get_offset(target, false));
+            value_desc_data = llvm_utils->create_ptr_gep(value_desc_data, target_offset);
+            llvm::Value* target_data = get_pointer_to_data(target);
+            builder->CreateStore(value_desc_data, target_data);
+
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                get_offset(target, false));
 
             llvm::Value* value_dim_des_array = get_pointer_to_dimension_descriptor_array(value_desc);
             llvm::Value* target_dim_des_array = get_pointer_to_dimension_descriptor_array(target);
@@ -384,7 +416,8 @@ namespace LCompilers {
                     llvm::Value* value_stride = get_stride(value_dim_des, true);
                     llvm::Value* target_stride = get_stride(target_dim_des, false);
                     builder->CreateStore(value_stride, target_stride);
-                    builder->CreateStore(lbs[i],
+                    // Diverges from LPython, 0 should be stored there.
+                    builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
                                          get_lower_bound(target_dim_des, false));
                     builder->CreateStore(dim_length,
                                          get_dimension_size(target_dim_des, false));
@@ -403,8 +436,6 @@ namespace LCompilers {
             llvm::Value** lbs, llvm::Value** ubs,
             llvm::Value** ds, llvm::Value** non_sliced_indices,
             llvm::Value** llvm_diminfo, int value_rank, int target_rank) {
-            builder->CreateStore(value_desc, get_pointer_to_data(target));
-
             std::vector<llvm::Value*> section_first_indices;
             for( int i = 0; i < value_rank; i++ ) {
                 if( ds[i] != nullptr ) {
@@ -417,7 +448,12 @@ namespace LCompilers {
             }
             llvm::Value* target_offset = cmo_convertor_single_element_data_only(
                 llvm_diminfo, section_first_indices, value_rank, false);
-            builder->CreateStore(target_offset, get_offset(target, false));
+            value_desc = llvm_utils->create_ptr_gep(value_desc, target_offset);
+            builder->CreateStore(value_desc, get_pointer_to_data(target));
+
+            builder->CreateStore(
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                get_offset(target, false));
 
             llvm::Value* target_dim_des_array = get_pointer_to_dimension_descriptor_array(target);
             int j = 0, r = 1;
@@ -434,7 +470,7 @@ namespace LCompilers {
                     llvm::Value* target_dim_des = llvm_utils->create_ptr_gep(target_dim_des_array, j);
                     builder->CreateStore(stride,
                                          get_stride(target_dim_des, false));
-                    builder->CreateStore(lbs[i],
+                    builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)),
                                          get_lower_bound(target_dim_des, false));
                     builder->CreateStore(dim_length,
                                          get_dimension_size(target_dim_des, false));

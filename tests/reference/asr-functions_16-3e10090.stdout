@@ -114,7 +114,6 @@
                                         .false.
                                         .false.
                                         []
-                                        []
                                         .false.
                                     )
                                     []
@@ -226,7 +225,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
                                         []
                                         .false.
                                     )
@@ -340,7 +338,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     2 compare_less
@@ -440,7 +437,6 @@
                                             .false.
                                             .false.
                                             []
-                                            []
                                             .false.
                                         )]
                                         ()
@@ -452,7 +448,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
                                         []
                                         .false.
                                     )
@@ -638,8 +633,32 @@
                                         (SubroutineCall
                                             2 quicksort
                                             ()
-                                            [((Var 6 list))
-                                            ((Var 6 idx))
+                                            [((ArrayPhysicalCast
+                                                (Var 6 list)
+                                                DescriptorArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Struct
+                                                        2 toml_key
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))
+                                            ((ArrayPhysicalCast
+                                                (Var 6 idx)
+                                                DescriptorArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))
                                             ((Var 6 low))
                                             ((IntegerBinOp
                                                 (Var 6 pivot)
@@ -654,8 +673,32 @@
                                         (SubroutineCall
                                             2 quicksort
                                             ()
-                                            [((Var 6 list))
-                                            ((Var 6 idx))
+                                            [((ArrayPhysicalCast
+                                                (Var 6 list)
+                                                DescriptorArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Struct
+                                                        2 toml_key
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))
+                                            ((ArrayPhysicalCast
+                                                (Var 6 idx)
+                                                DescriptorArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))
                                             ((IntegerBinOp
                                                 (Var 6 pivot)
                                                 Add
@@ -712,7 +755,6 @@
                                                         .false.
                                                         .false.
                                                         .false.
-                                                        []
                                                         []
                                                         .false.
                                                     )
@@ -906,7 +948,6 @@
                                             .false.
                                             .false.
                                             []
-                                            []
                                             .false.
                                         )]
                                         ()
@@ -918,7 +959,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
                                         []
                                         .false.
                                     )
@@ -1137,7 +1177,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
                                         []
                                         .false.
                                     )

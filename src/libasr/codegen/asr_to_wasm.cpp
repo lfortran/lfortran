@@ -744,17 +744,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Program(const ASR::Program_t &x) {
-        // Generate the bodies of functions and subroutines
-        declare_all_functions(*x.m_symtab);
-
         // Generate main program code
         if (main_func == nullptr) {
-            main_func = (ASR::Function_t *)ASRUtils::make_Function_t_util(
+            main_func = ASR::down_cast2<ASR::Function_t>(ASRUtils::make_Function_t_util(
                 m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_start"),
                 nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
-                nullptr, 0, nullptr, 0, false, false, false);
+                nullptr, 0, false, false, false));
         }
         this->visit_Function(*main_func);
     }
@@ -1096,6 +1093,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        declare_all_functions(*x.m_symtab);
         if (is_unsupported_function(x)) {
             return;
         }

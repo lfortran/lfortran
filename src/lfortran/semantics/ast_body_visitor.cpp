@@ -1527,7 +1527,7 @@ public:
             current_procedure_abi_type,
             s_access, deftype, nullptr,
             false, false, false, false, false,
-             nullptr, 0, nullptr, 0,
+            nullptr, 0,
             is_requirement, false, false);
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp_));
 
@@ -1953,7 +1953,7 @@ public:
             /* n_body */ body.size(),
             /* a_return_var */ to_return,
             ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
-            nullptr, false, false, false, false, false, nullptr, 0, nullptr, 0,
+            nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
         current_function_dependencies.clear(al);
         parent_scope->add_or_overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));

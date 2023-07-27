@@ -72,7 +72,7 @@ class ReplaceIntrinsicFunction: public ASR::BaseExprReplacer<ReplaceIntrinsicFun
             arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
         }
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
-            global_scope, arg_types, new_args, x->m_overload_id, x->m_value);
+            global_scope, arg_types, x->m_type, new_args, x->m_overload_id, x->m_value);
         ASR::expr_t* func_call = current_expr_;
         if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*(*current_expr)) ) {
             ASR::ArrayPhysicalCast_t* array_physical_cast_t = ASR::down_cast<ASR::ArrayPhysicalCast_t>(*current_expr);

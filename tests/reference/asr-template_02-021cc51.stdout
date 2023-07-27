@@ -153,7 +153,6 @@
                                         .false.
                                         .false.
                                         []
-                                        []
                                         .false.
                                     )
                                     [~neq_intrinsic_character]
@@ -470,7 +469,6 @@
                                         .false.
                                         .false.
                                         []
-                                        []
                                         .false.
                                     )
                                     [~neq_intrinsic_integer]
@@ -729,7 +727,6 @@
                                         .false.
                                         .false.
                                         []
-                                        []
                                         .false.
                                     )
                                     []
@@ -819,7 +816,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        []
                                         []
                                         .false.
                                     )
@@ -1120,7 +1116,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .false.
                                                     )
                                                     [ne]
@@ -1371,7 +1366,6 @@
                                                         .false.
                                                         .false.
                                                         []
-                                                        []
                                                         .true.
                                                     )
                                                     []
@@ -1492,7 +1486,6 @@
                                                         .false.
                                                         .false.
                                                         .false.
-                                                        []
                                                         []
                                                         .true.
                                                     )
