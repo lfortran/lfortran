@@ -2582,7 +2582,7 @@ namespace MaxLoc {
         fill_func_arg("array", arg_types[0]);
         ASR::ttype_t *return_type = nullptr;
 
-        // TODO: Remove this after the return_type PR is merged
+        // TODO: Remove this after the return_type PR is merged {
         ASR::expr_t *result_length = nullptr;
         ASR::dimension_t *m_dims;
         int n_dims = extract_dimensions_from_ttype(expr_type(m_args[0].m_value), m_dims);
@@ -2608,6 +2608,7 @@ namespace MaxLoc {
             dims.push_back(al, dim);
             return_type = duplicate_type(al, expr_type(m_args[0].m_value), &dims);
         }
+        // TODO: Remove }
 
         auto result = declare("result", return_type, ReturnVar);
         if (n_dims == 1) {
@@ -2627,15 +2628,11 @@ namespace MaxLoc {
                 }, {}),
                 Assignment(i, iAdd(i, i32(1)))
             }));
-            if (is_array(return_type)) {
-                body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
-            } else {
-                body.push_back(al, Assignment(result, max_index));
-            }
+            body.push_back(al, Assignment(is_array(return_type)
+                ? b.ArrayItem(result, {i32(1)}) : result, max_index));
             body.push_back(al, Return());
         } else {
             LCOMPILERS_ASSERT(false)
-            // int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
             // TODO: 2D array
             // max_index = maxloc(reshape(arr, 1D_size))
             // return convert_to_2d_idx(max_index, shape(arr))
