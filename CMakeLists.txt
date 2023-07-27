@@ -367,7 +367,7 @@ if (WITH_RUNTIME_LIBRARY)
 
   add_custom_target(build_runtime
     ALL
-    COMMAND "${CMAKE_COMMAND}" --build  "${CMAKE_BINARY_DIR}/src/runtime"
+    COMMAND "${CMAKE_COMMAND}" --build  "${CMAKE_BINARY_DIR}/src/runtime" -j1
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
 
   add_dependencies(build_runtime configure_runtime)
