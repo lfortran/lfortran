@@ -156,6 +156,10 @@ namespace LCompilers {
                     llvm::Value* arr, int n_dims) = 0;
 
                 virtual
+                void reset_array_details(
+                    llvm::Value* arr, llvm::Value* source_arr, int n_dims) = 0;
+
+                virtual
                 void fill_descriptor_for_array_section(
                     llvm::Value* value_desc, llvm::Value* target,
                     llvm::Value** lbs, llvm::Value** ubs,
@@ -363,6 +367,10 @@ namespace LCompilers {
                 virtual
                 void fill_dimension_descriptor(
                     llvm::Value* arr, int n_dims);
+
+                virtual
+                void reset_array_details(
+                    llvm::Value* arr, llvm::Value* source_arr, int n_dims);
 
                 virtual
                 void fill_descriptor_for_array_section(
