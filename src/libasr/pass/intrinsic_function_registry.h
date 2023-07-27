@@ -220,6 +220,7 @@ class ASRBuilder {
 
     // Types -------------------------------------------------------------------
     #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
+    #define int64        TYPE(ASR::make_Integer_t(al, loc, 8))
     #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
     #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr))
@@ -2535,6 +2536,7 @@ namespace MaxLoc {
         ASR::dimension_t *m_dims;
         int n_dims = extract_dimensions_from_ttype(expr_type(args[0]), m_dims);
         if (n_dims == 1 || n_dims == 2) {
+            ASR::expr_t *result_length = nullptr;
             if (args[1]) {
                 int dim = 0;
                 if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
@@ -2546,23 +2548,21 @@ namespace MaxLoc {
                     err("`dim` argument of `maxloc` is out of array index range", loc);
                 }
                 if (n_dims == 1) {
-                    return_type = int32;
+                    int kind = extract_kind_from_ttype_t(expr_type(args[0]));
+                    return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
                 } else {
-                    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-                    ASR::dimension_t _dim;
-                    _dim.loc = args[0]->base.loc;
-                    _dim.m_start = i32(1);
-                    _dim.m_length = m_dims[n_dims - dim].m_length;
-                    dims.push_back(al, _dim);
-                    return_type = duplicate_type(al, expr_type(args[0]), &dims);
+                    result_length = m_dims[n_dims - dim].m_length; // 2D
                 }
                 m_args.push_back(al, args[1]);
             } else {
+                result_length = i32(n_dims);
+            }
+            if (result_length) {
                 Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                 ASR::dimension_t dim;
                 dim.loc = args[0]->base.loc;
                 dim.m_start = i32(1);
-                dim.m_length = i32(n_dims);
+                dim.m_length = result_length;
                 dims.push_back(al, dim);
                 return_type = duplicate_type(al, expr_type(args[0]), &dims);
             }
@@ -2579,22 +2579,36 @@ namespace MaxLoc {
             Vec<ASR::ttype_t*>& arg_types, Vec<ASR::call_arg_t>& m_args,
             int64_t /*overload_id*/, ASR::expr_t* compile_time_value) {
         declare_basic_variables("_lcompilers_maxloc")
-        int n_dims = extract_n_dims_from_ttype(arg_types[0]);
         fill_func_arg("array", arg_types[0]);
         ASR::ttype_t *return_type = nullptr;
-        // TODO: Use default kind as `array` as return type kind
-        if (m_args.size() == 1) {
+
+        // TODO: Remove this after the return_type PR is merged
+        ASR::expr_t *result_length = nullptr;
+        ASR::dimension_t *m_dims;
+        int n_dims = extract_dimensions_from_ttype(expr_type(m_args[0].m_value), m_dims);
+        if (m_args.n > 1) {
+            int dim = 0;
+            ASRUtils::extract_value(ASRUtils::expr_value(m_args[1].m_value), dim);
+            if (n_dims == 1) {
+                int kind = extract_kind_from_ttype_t(expr_type(m_args[0].m_value));
+                return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
+            } else {
+                result_length = m_dims[n_dims - dim].m_length; // 2D
+            }
+            fill_func_arg("dim", arg_types[1]);
+        } else {
+            result_length = i32(n_dims);
+        }
+        if (result_length) {
             Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
             ASR::dimension_t dim;
             dim.loc = m_args[0].m_value->base.loc;
             dim.m_start = i32(1);
-            dim.m_length = i32(n_dims);
+            dim.m_length = result_length;
             dims.push_back(al, dim);
             return_type = duplicate_type(al, expr_type(m_args[0].m_value), &dims);
-        } else {
-            fill_func_arg("dim", arg_types[1]);
-            return_type = int32;
         }
+
         auto result = declare("result", return_type, ReturnVar);
         if (n_dims == 1) {
             auto max_index = declare("max_index", int32, Local);
@@ -2613,7 +2627,7 @@ namespace MaxLoc {
                 }, {}),
                 Assignment(i, iAdd(i, i32(1)))
             }));
-            if (m_args.size() == 1) {
+            if (is_array(return_type)) {
                 body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
             } else {
                 body.push_back(al, Assignment(result, max_index));
