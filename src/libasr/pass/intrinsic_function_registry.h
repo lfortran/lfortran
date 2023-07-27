@@ -2534,36 +2534,13 @@ namespace MaxLoc {
             ASR::expr_t* compile_time_value) {
         declare_basic_variables("_lcompilers_maxloc")
         fill_func_arg("array", arg_types[0]);
-        ASR::ttype_t *return_type = nullptr;
 
-        // TODO: Remove this after the return_type PR is merged {
-        ASR::expr_t *result_length = nullptr;
         ASR::dimension_t *m_dims;
         int n_dims = extract_dimensions_from_ttype(expr_type(m_args[0].m_value), m_dims);
         if (m_args.n > 1) {
-            int dim = 0;
-            ASRUtils::extract_value(ASRUtils::expr_value(m_args[1].m_value), dim);
-            if (n_dims == 1) {
-                int kind = extract_kind_from_ttype_t(expr_type(m_args[0].m_value));
-                return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
-            } else {
-                result_length = m_dims[n_dims - dim].m_length; // 2D
-            }
+            // TODO: Use overload_id
             fill_func_arg("dim", arg_types[1]);
-        } else {
-            result_length = i32(n_dims);
         }
-        if (result_length) {
-            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-            ASR::dimension_t dim;
-            dim.loc = m_args[0].m_value->base.loc;
-            dim.m_start = i32(1);
-            dim.m_length = result_length;
-            dims.push_back(al, dim);
-            return_type = duplicate_type(al, expr_type(m_args[0].m_value), &dims);
-        }
-        // TODO: Remove }
-
         auto result = declare("result", return_type, ReturnVar);
         if (n_dims == 1) {
             auto max_index = declare("max_index", int32, Local);
@@ -2588,56 +2565,54 @@ namespace MaxLoc {
         } else {
             // max_index = maxloc(reshape(arr, 1D_size))
             // return convert_to_2d_idx(max_index, shape(arr))
-        int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
-        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-        ASR::dimension_t dim;
-        dim.loc = m_args[0].m_value->base.loc;
-        dim.m_length = i32(1);
-        dim.m_start = i32(1);
-        dims.push_back(al, dim);
-        ASR::ttype_t *shape_type = make_Array_t_util(al, loc, int32, dims.p, dims.n);
-        ASR::ttype_t *shape_type2 = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-            int32, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
-        Vec<ASR::expr_t *> shape_expr; shape_expr.reserve(al, 1);
-        shape_expr.push_back(al, i32(size));
+            int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = m_args[0].m_value->base.loc;
+            dim.m_length = i32(1);
+            dim.m_start = i32(1);
+            dims.push_back(al, dim);
+            ASR::ttype_t *shape_type = make_Array_t_util(al, loc, int32, dims.p, dims.n);
+            ASR::ttype_t *shape_type2 = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                int32, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+            Vec<ASR::expr_t *> shape_expr; shape_expr.reserve(al, 1);
+            shape_expr.push_back(al, i32(size));
 
-        ASR::expr_t *shape = EXPR(ASR::make_ArrayConstant_t(al, loc,
-            shape_expr.p, 1, shape_type, ASR::arraystorageType::ColMajor));
+            ASR::expr_t *shape = EXPR(ASR::make_ArrayConstant_t(al, loc,
+                shape_expr.p, 1, shape_type, ASR::arraystorageType::ColMajor));
 
-        shape = EXPR(ASR::make_ArrayPhysicalCast_t(al, loc, shape,
-            ASR::array_physical_typeType::FixedSizeArray,
-            ASR::array_physical_typeType::DescriptorArray, shape_type2, nullptr));
+            shape = EXPR(ASR::make_ArrayPhysicalCast_t(al, loc, shape,
+                ASR::array_physical_typeType::FixedSizeArray,
+                ASR::array_physical_typeType::DescriptorArray, shape_type2, nullptr));
 
 
 
-        ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
-            args[0], shape, shape_type2, nullptr));
-        auto tmp_array = declare("tmp_array", shape_type, Local);
-        body.push_back(al, Assignment(tmp_array, reshape_expr));
-        {
-            auto max_index = declare("max_index", int32, Local);
-            auto i = declare("i", int32, Local);
-            body.push_back(al, Assignment(max_index, i32(1)));
-            body.push_back(al, Assignment(i, i32(2)));
-            ASR::expr_t *test;
-            if (is_real(*arg_types[0])) {
-                test = fGt(b.ArrayItem(tmp_array, {i}), b.ArrayItem(tmp_array, {max_index}));
-            } else {
-                test = iGt(b.ArrayItem(tmp_array, {i}), b.ArrayItem(tmp_array, {max_index}));
+            ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
+                args[0], shape, shape_type2, nullptr));
+            auto tmp_array = declare("tmp_array", shape_type, Local);
+            body.push_back(al, Assignment(tmp_array, reshape_expr));
+            {
+                auto max_index = declare("max_index", int32, Local);
+                auto i = declare("i", int32, Local);
+                body.push_back(al, Assignment(max_index, i32(1)));
+                body.push_back(al, Assignment(i, i32(2)));
+                ASR::expr_t *test;
+                if (is_real(*arg_types[0])) {
+                    test = fGt(b.ArrayItem(tmp_array, {i}), b.ArrayItem(tmp_array, {max_index}));
+                } else {
+                    test = iGt(b.ArrayItem(tmp_array, {i}), b.ArrayItem(tmp_array, {max_index}));
+                }
+                body.push_back(al, b.While(iLtE(i, ArraySize(tmp_array, i32(1))), {
+                    b.If(test, {
+                        Assignment(max_index, i)
+                    }, {}),
+                    Assignment(i, iAdd(i, i32(1)))
+                }));
+                // body.push_back(al, Assignment(is_array(return_type)
+                //     ? b.ArrayItem(result, {i32(1)}) : result, max_index));
+                body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
+                body.push_back(al, Return());
             }
-            body.push_back(al, b.While(iLtE(i, ArraySize(tmp_array, i32(1))), {
-                b.If(test, {
-                    Assignment(max_index, i)
-                }, {}),
-                Assignment(i, iAdd(i, i32(1)))
-            }));
-            // body.push_back(al, Assignment(is_array(return_type)
-            //     ? b.ArrayItem(result, {i32(1)}) : result, max_index));
-            body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
-            body.push_back(al, Return());
-        }
-std::cout << extract_n_dims_from_ttype(EXPR2VAR(result)->m_type) << "_";
-std::cout << extract_n_dims_from_ttype(return_type) << "\n";
             // LCOMPILERS_ASSERT(false)
             // TODO: 2D array
             // TODO: implement shape intrinsic and use it here
