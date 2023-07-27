@@ -1739,7 +1739,7 @@ static inline bool is_generic_function(ASR::symbol_t *x) {
                     return true;
                 }
             }
-            return func_type->m_return_var_type 
+            return func_type->m_return_var_type
                    && is_type_parameter(*func_type->m_return_var_type);
         }
         default: return false;
@@ -3915,8 +3915,13 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
     }
 
     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(ASRUtils::expr_type(a_arg)) == a_old);
-    if( a_old == a_new ) {
-        return (ASR::asr_t*) a_arg;
+    // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
+    // later on
+    if( (a_old == a_new && a_old != ASR::array_physical_typeType::DescriptorArray) ||
+        (a_old == a_new && a_old == ASR::array_physical_typeType::DescriptorArray &&
+         (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(a_arg)) ||
+         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(a_arg)))) ) {
+            return (ASR::asr_t*) a_arg;
     }
 
     return ASR::make_ArrayPhysicalCast_t(al, a_loc, a_arg, a_old, a_new, a_type, a_value);
@@ -4097,7 +4102,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         if( ASRUtils::is_array(arg_type) && ASRUtils::is_array(orig_arg_type) ) {
             ASR::Array_t* arg_array_t = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_const(arg_type));
             ASR::Array_t* orig_arg_array_t = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_const(orig_arg_type));
-            if( arg_array_t->m_physical_type != orig_arg_array_t->m_physical_type ) {
+            if( (arg_array_t->m_physical_type != orig_arg_array_t->m_physical_type) ||
+                (arg_array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray &&
+                 arg_array_t->m_physical_type == orig_arg_array_t->m_physical_type &&
+                 !ASRUtils::is_intrinsic_symbol(a_name_)) ) {
                 ASR::call_arg_t physical_cast_arg;
                 physical_cast_arg.loc = arg->base.loc;
                 Vec<ASR::dimension_t>* dimensions = nullptr;
