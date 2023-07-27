@@ -145,18 +145,6 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_set_argv(i32 %0, i8** %1)
   %__1_k = alloca i32, align 4
   %b = alloca [3 x i32], align 4
-  %2 = alloca <3 x i32>, align 16
-  %3 = getelementptr <3 x i32>, <3 x i32>* %2, i32 0, i32 0
-  store i32 10, i32* %3, align 4
-  %4 = getelementptr <3 x i32>, <3 x i32>* %2, i32 0, i32 1
-  store i32 20, i32* %4, align 4
-  %5 = getelementptr <3 x i32>, <3 x i32>* %2, i32 0, i32 2
-  store i32 30, i32* %5, align 4
-  %6 = getelementptr <3 x i32>, <3 x i32>* %2, i32 0, i32 0
-  %7 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 0
-  %8 = bitcast i32* %7 to i8*
-  %9 = bitcast i32* %6 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %8, i8* %9, i32 12, i1 false)
   %n = alloca i32, align 4
   store i32 3, i32* %n, align 4
   br i1 true, label %then, label %else
@@ -169,43 +157,38 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %10 = load i32, i32* %array_bound, align 4
-  store i32 %10, i32* %__1_k, align 4
-  %11 = load i32, i32* %__1_k, align 4
-  %12 = sub i32 %11, 1
-  %13 = mul i32 1, %12
-  %14 = add i32 0, %13
-  %15 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 %14
-  store i32 10, i32* %15, align 4
-  %16 = load i32, i32* %__1_k, align 4
-  %17 = add i32 %16, 1
-  store i32 %17, i32* %__1_k, align 4
-  %18 = load i32, i32* %__1_k, align 4
-  %19 = sub i32 %18, 1
-  %20 = mul i32 1, %19
-  %21 = add i32 0, %20
-  %22 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 %21
-  store i32 20, i32* %22, align 4
-  %23 = load i32, i32* %__1_k, align 4
-  %24 = add i32 %23, 1
-  store i32 %24, i32* %__1_k, align 4
-  %25 = load i32, i32* %__1_k, align 4
-  %26 = sub i32 %25, 1
-  %27 = mul i32 1, %26
-  %28 = add i32 0, %27
-  %29 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 %28
-  store i32 30, i32* %29, align 4
-  %30 = load i32, i32* %__1_k, align 4
-  %31 = add i32 %30, 1
-  store i32 %31, i32* %__1_k, align 4
-  %32 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 0
-  call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* %32, i32* %n)
+  %2 = load i32, i32* %array_bound, align 4
+  store i32 %2, i32* %__1_k, align 4
+  %3 = load i32, i32* %__1_k, align 4
+  %4 = sub i32 %3, 1
+  %5 = mul i32 1, %4
+  %6 = add i32 0, %5
+  %7 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 %6
+  store i32 10, i32* %7, align 4
+  %8 = load i32, i32* %__1_k, align 4
+  %9 = add i32 %8, 1
+  store i32 %9, i32* %__1_k, align 4
+  %10 = load i32, i32* %__1_k, align 4
+  %11 = sub i32 %10, 1
+  %12 = mul i32 1, %11
+  %13 = add i32 0, %12
+  %14 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 %13
+  store i32 20, i32* %14, align 4
+  %15 = load i32, i32* %__1_k, align 4
+  %16 = add i32 %15, 1
+  store i32 %16, i32* %__1_k, align 4
+  %17 = load i32, i32* %__1_k, align 4
+  %18 = sub i32 %17, 1
+  %19 = mul i32 1, %18
+  %20 = add i32 0, %19
+  %21 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 %20
+  store i32 30, i32* %21, align 4
+  %22 = load i32, i32* %__1_k, align 4
+  %23 = add i32 %22, 1
+  store i32 %23, i32* %__1_k, align 4
+  %24 = getelementptr [3 x i32], [3 x i32]* %b, i32 0, i32 0
+  call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* %24, i32* %n)
   ret i32 0
 }
 
 declare void @_lpython_set_argv(i32, i8**)
-
-; Function Attrs: argmemonly nounwind willreturn
-declare void @llvm.memcpy.p0i8.p0i8.i32(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i32, i1 immarg) #0
-
-attributes #0 = { argmemonly nounwind willreturn }
