@@ -222,6 +222,7 @@ class ASRBuilder {
     #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
     #define int64        TYPE(ASR::make_Integer_t(al, loc, 8))
     #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
+    #define real64       TYPE(ASR::make_Real_t(al, loc, 8))
     #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr))
     #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
@@ -241,6 +242,7 @@ class ASRBuilder {
     #define i32_neg(x, t) EXPR(ASR::make_IntegerUnaryMinus_t(al, loc, x, t, nullptr))
 
     #define f(x, t)   EXPR(ASR::make_RealConstant_t(al, loc, x, t))
+    #define f32(x) EXPR(ASR::make_RealConstant_t(al, loc, x, real32))
     #define f32_neg(x, t) EXPR(ASR::make_RealUnaryMinus_t(al, loc, x, t, nullptr))
 
     #define bool32(x)  EXPR(ASR::make_LogicalConstant_t(al, loc, x, logical))
@@ -259,8 +261,13 @@ class ASRBuilder {
 
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
         ASR::binopType::Add, right, int32, nullptr))
+    #define iMul(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
+        ASR::binopType::Mul, right, int32, nullptr))
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
         ASR::binopType::Sub, right, int32, nullptr))
+    // #define iDiv(left, right)
+    //         EXPR(ASR::make_RealBinOp_t(al, loc, left,      \
+    //     ASR::binopType::Div, right, real32, nullptr))
 
     #define And(x, y) EXPR(ASR::make_LogicalBinOp_t(al, loc, x,                 \
         ASR::logicalbinopType::And, y, logical, nullptr))
@@ -2564,15 +2571,15 @@ namespace MaxLoc {
             body.push_back(al, Return());
         } else {
             // max_index = maxloc(reshape(arr, 1D_size))
-            // return convert_to_2d_idx(max_index, shape(arr))
             int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
             Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
             ASR::dimension_t dim;
             dim.loc = m_args[0].m_value->base.loc;
-            dim.m_length = i32(1);
             dim.m_start = i32(1);
+            dim.m_length = i32(1);
             dims.push_back(al, dim);
-            ASR::ttype_t *shape_type = make_Array_t_util(al, loc, int32, dims.p, dims.n);
+            ASR::ttype_t *shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                int32, dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
             ASR::ttype_t *shape_type2 = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 int32, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
             Vec<ASR::expr_t *> shape_expr; shape_expr.reserve(al, 1);
@@ -2585,12 +2592,22 @@ namespace MaxLoc {
                 ASR::array_physical_typeType::FixedSizeArray,
                 ASR::array_physical_typeType::DescriptorArray, shape_type2, nullptr));
 
-
-
             ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
                 args[0], shape, shape_type2, nullptr));
-            auto tmp_array = declare("tmp_array", shape_type, Local);
+
+
+            dims.p = nullptr; dims.n = 0; dims.reserve(al, 1);
+            dim.loc = m_args[0].m_value->base.loc;
+            dim.m_start = i32(1);
+            dim.m_length = i32(size);
+            dims.push_back(al, dim);
+std::cout << dims.n << "_\n";
+            ASR::ttype_t *shape_type3 = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                int32, dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
+            auto tmp_array = declare("tmp_array", shape_type3, Local);
             body.push_back(al, Assignment(tmp_array, reshape_expr));
+
+            // ASR::expr_t *maxIndex;
             {
                 auto max_index = declare("max_index", int32, Local);
                 auto i = declare("i", int32, Local);
@@ -2608,12 +2625,31 @@ namespace MaxLoc {
                     }, {}),
                     Assignment(i, iAdd(i, i32(1)))
                 }));
+                // maxIndex = max_index;
+                ASR::expr_t *left = EXPR(ASR::make_Cast_t(al, loc, iSub(max_index, i32(1)),
+                    ASR::cast_kindType::IntegerToReal, real32, nullptr));
+                ASR::expr_t *right = EXPR(ASR::make_Cast_t(al, loc, m_dims[0].m_length,
+                    ASR::cast_kindType::IntegerToReal, real32, nullptr));
+                // index % row;
+                // index / row;
+                body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), iAdd(iSub(iSub(max_index, i32(1)), iMul(EXPR(ASR::make_Cast_t(al, loc, EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, real32, nullptr)), ASR::cast_kindType::RealToInteger, int32, nullptr)), m_dims[0].m_length)), i32(1))));
+                body.push_back(al, Assignment(b.ArrayItem(result, {i32(2)}), iAdd(EXPR(ASR::make_Cast_t(al, loc, EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, real32, nullptr)), ASR::cast_kindType::RealToInteger, int32, nullptr)), i32(1))));
+                // body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), EXPR(ASR::make_Cast_t(al, loc, EXPR(ASR::make_RealBinOp_t(al, loc, left, ASR::binopType::Div, right, real32, nullptr)), ASR::cast_kindType::RealToInteger, int32, nullptr))));
+
+                // iSub(max_index, i32(1));
                 // body.push_back(al, Assignment(is_array(return_type)
                 //     ? b.ArrayItem(result, {i32(1)}) : result, max_index));
-                body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
-                body.push_back(al, Return());
+                // body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}), max_index));
+                Vec<ASR::expr_t *> x_exprs; x_exprs.reserve(al, 1);
+                x_exprs.push_back(al, max_index);
+                x_exprs.push_back(al, b.ArrayItem(result, {i32(1)}));
+                x_exprs.push_back(al, b.ArrayItem(result, {i32(2)}));
+                // x_exprs.push_back(al, ArraySize(tmp_array, i32(1)));
+                body.push_back(al, STMT(ASR::make_Print_t(al, loc, nullptr, x_exprs.p, x_exprs.n, nullptr, nullptr)));
             }
+
             // LCOMPILERS_ASSERT(false)
+            body.push_back(al, Return());
             // TODO: 2D array
             // TODO: implement shape intrinsic and use it here
         }
