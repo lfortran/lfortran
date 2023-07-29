@@ -2636,30 +2636,40 @@ namespace MaxLoc {
             auto max_index = declare("max_index", int32, Local);
             maxloc(al, loc, fn_symtab, args[0], max_index, body,
                 is_real(*arg_types[0]));
-            body.push_back(al, Assignment(is_array(return_type)
-                ? b.ArrayItem(result, {i32(1)}) : result, max_index));
+            ASR::expr_t *res;
+            if (is_array(return_type)) {
+                res = b.ArrayItem(result, {i32(1)});
+            } else  {
+                res = result;
+            }
+            body.push_back(al, Assignment(res, max_index));
         } else {
-            // max_1d_index = maxloc(reshape(arr, [1D_size]))
-            int size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
-            ASR::expr_t* shape = b.ArrayConstant({size});
-            ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
-                args[0], shape, expr_type(shape), nullptr));
+            if (m_args.n == 1) {
+                // _1d_array = reshape(arr, [_1d_array_size])
+                // max_1d_index = maxloc(_1d_array)
+                int size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
+                ASR::expr_t* _1d_array_size = b.ArrayConstant({size});
+                ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
+                    args[0], _1d_array_size, expr_type(_1d_array_size), nullptr));
+                auto _1d_array = declare("_1d_array", b.Array({size}, int32), Local);
+                body.push_back(al, Assignment(_1d_array, reshape_expr));
 
-            auto tmp_array = declare("tmp_array", b.Array({size}, int32), Local);
-            body.push_back(al, Assignment(tmp_array, reshape_expr));
+                auto max_index = declare("max_index", int32, Local);
+                maxloc(al, loc, fn_symtab, _1d_array, max_index, body);
 
-            auto max_index = declare("max_index", int32, Local);
-            maxloc(al, loc, fn_symtab, tmp_array, max_index, body);
-            body.push_back(al, Assignment(max_index, iSub(max_index, i32(1))));
-            // 2d_n_column = max_1d_i % arr_n_column
-            // r(1) = (max_1d_i - (int(max_1d_i / arr_n_column) * arr_n_column)) + 1
-            body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}),
-                iAdd(iSub(max_index, iMul(iDiv(max_index, m_dims[0].m_length),
-                m_dims[0].m_length)), i32(1))));
-            // 2d_n_row = max_1d_i / arr_n_column
-            // r(2) = (max_i / arr_n_column) + 1
-            body.push_back(al, Assignment(b.ArrayItem(result, {i32(2)}),
-                iAdd(iDiv(max_index, m_dims[0].m_length), i32(1))));
+                body.push_back(al, Assignment(max_index, iSub(max_index, i32(1))));
+                // 2d_n_column = max_1d_i % arr_n_column
+                // r(1) = (max_1d_i - (int(max_1d_i / arr_n_column) * arr_n_column)) + 1
+                body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}),
+                    iAdd(iSub(max_index, iMul(iDiv(max_index, m_dims[0].m_length),
+                    m_dims[0].m_length)), i32(1))));
+                // 2d_n_row = max_1d_i / arr_n_column
+                // r(2) = (max_i / arr_n_column) + 1
+                body.push_back(al, Assignment(b.ArrayItem(result, {i32(2)}),
+                    iAdd(iDiv(max_index, m_dims[0].m_length), i32(1))));
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
         }
         body.push_back(al, Return());
         ASR::symbol_t *fn_sym = make_Function_t(fn_name, fn_symtab, dep, args,
