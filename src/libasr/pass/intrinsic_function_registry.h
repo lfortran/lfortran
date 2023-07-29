@@ -276,6 +276,9 @@ class ASRBuilder {
         ASR::cast_kindType::RealToInteger, int32, nullptr))
     #define i2r(x) EXPR(ASR::make_Cast_t(al, loc, x,                            \
         ASR::cast_kindType::IntegerToReal, real32, nullptr))
+    #define i2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                            \
+        ASR::cast_kindType::IntegerToInteger, int64, nullptr))
+
 
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
@@ -542,8 +545,11 @@ class ASRBuilder {
 
     // Statements --------------------------------------------------------------
     #define Return() STMT(ASR::make_Return_t(al, loc))
-    #define Assignment(lhs, rhs) ASRUtils::STMT(ASR::make_Assignment_t(al, loc, \
-        lhs, rhs, nullptr))
+    ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t*rhs) {
+        LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
+        return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
+    }
+
 
     template <typename LOOP_BODY>
     ASR::stmt_t* create_do_loop(
@@ -720,7 +726,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             body_1, return_var_1, BindC, Interface, s2c(al, c_func_name));
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
-        body.push_back(al, Assignment(result, b.Call(s, args, arg_type)));
+        body.push_back(al, b.Assignment(result, b.Call(s, args, arg_type)));
     }
 
     ASR::symbol_t *new_symbol = make_Function_t(fn_name, fn_symtab, dep, args,
@@ -768,58 +774,58 @@ static inline ASR::symbol_t *create_KMP_function(Allocator &al,
     auto flag = declare("flag", logical, Local);
     auto lps = declare("lps", List(int32), Local);
 
-    body.push_back(al, Assignment(s_len, StringLen(args[0])));
-    body.push_back(al, Assignment(pat_len, StringLen(args[1])));
-    body.push_back(al, Assignment(result, i32_n(-1)));
+    body.push_back(al, b.Assignment(s_len, StringLen(args[0])));
+    body.push_back(al, b.Assignment(pat_len, StringLen(args[1])));
+    body.push_back(al, b.Assignment(result, i32_n(-1)));
     body.push_back(al, b.If(iEq(pat_len, i32(0)), {
-            Assignment(result, i32(0)), Return()
+            b.Assignment(result, i32(0)), Return()
         }, {
             b.If(iEq(s_len, i32(0)), { Return() }, {})
         }));
-    body.push_back(al, Assignment(lps,
+    body.push_back(al, b.Assignment(lps,
         EXPR(ASR::make_ListConstant_t(al, loc, nullptr, 0, List(int32)))));
-    body.push_back(al, Assignment(i, i32(0)));
+    body.push_back(al, b.Assignment(i, i32(0)));
     body.push_back(al, b.While(iLtE(i, iSub(pat_len, i32(1))), {
-        Assignment(i, iAdd(i, i32(1))),
+        b.Assignment(i, iAdd(i, i32(1))),
         ListAppend(lps, i32(0))
     }));
-    body.push_back(al, Assignment(flag, bool32(false)));
-    body.push_back(al, Assignment(i, i32(1)));
-    body.push_back(al, Assignment(pi_len, i32(0)));
+    body.push_back(al, b.Assignment(flag, bool32(false)));
+    body.push_back(al, b.Assignment(i, i32(1)));
+    body.push_back(al, b.Assignment(pi_len, i32(0)));
     body.push_back(al, b.While(iLt(i, pat_len), {
         b.If(sEq(StringItem(args[1], iAdd(i, i32(1))),
                  StringItem(args[1], iAdd(pi_len, i32(1)))), {
-            Assignment(pi_len, iAdd(pi_len, i32(1))),
-            Assignment(ListItem(lps, i, int32), pi_len),
-            Assignment(i, iAdd(i, i32(1)))
+            b.Assignment(pi_len, iAdd(pi_len, i32(1))),
+            b.Assignment(ListItem(lps, i, int32), pi_len),
+            b.Assignment(i, iAdd(i, i32(1)))
         }, {
             b.If(iNotEq(pi_len, i32(0)), {
-                Assignment(pi_len, ListItem(lps, iSub(pi_len, i32(1)), int32))
+                b.Assignment(pi_len, ListItem(lps, iSub(pi_len, i32(1)), int32))
             }, {
-                Assignment(i, iAdd(i, i32(1)))
+                b.Assignment(i, iAdd(i, i32(1)))
             })
         })
     }));
-    body.push_back(al, Assignment(j, i32(0)));
-    body.push_back(al, Assignment(i, i32(0)));
+    body.push_back(al, b.Assignment(j, i32(0)));
+    body.push_back(al, b.Assignment(i, i32(0)));
     body.push_back(al, b.While(And(iGtE(iSub(s_len, i),
             iSub(pat_len, j)), Not(flag)), {
         b.If(sEq(StringItem(args[1], iAdd(j, i32(1))),
                 StringItem(args[0], iAdd(i, i32(1)))), {
-            Assignment(i, iAdd(i, i32(1))),
-            Assignment(j, iAdd(j, i32(1)))
+            b.Assignment(i, iAdd(i, i32(1))),
+            b.Assignment(j, iAdd(j, i32(1)))
         }, {}),
         b.If(iEq(j, pat_len), {
-            Assignment(result, iSub(i, j)),
-            Assignment(flag, bool32(true)),
-            Assignment(j, ListItem(lps, iSub(j, i32(1)), int32))
+            b.Assignment(result, iSub(i, j)),
+            b.Assignment(flag, bool32(true)),
+            b.Assignment(j, ListItem(lps, iSub(j, i32(1)), int32))
         }, {
             b.If(And(iLt(i, s_len), sNotEq(StringItem(args[1], iAdd(j, i32(1))),
                     StringItem(args[0], iAdd(i, i32(1))))), {
                 b.If(iNotEq(j, i32(0)), {
-                    Assignment(j, ListItem(lps, iSub(j, i32(1)), int32))
+                    b.Assignment(j, ListItem(lps, iSub(j, i32(1)), int32))
                 }, {
-                    Assignment(i, iAdd(i, i32(1)))
+                    b.Assignment(i, iAdd(i, i32(1)))
                 })
             }, {})
         })
@@ -1062,9 +1068,9 @@ namespace Abs {
             }
 
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-            if_body.push_back(al, Assignment(result, args[0]));
+            if_body.push_back(al, b.Assignment(result, args[0]));
             Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
-            else_body.push_back(al, Assignment(result, negative_x));
+            else_body.push_back(al, b.Assignment(result, negative_x));
             body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                 if_body.p, if_body.n, else_body.p, else_body.n)));
         } else {
@@ -1120,7 +1126,7 @@ namespace Abs {
 
             bin_op_1 = b.ElementalAdd(bin_op_1, bin_op_2, loc);
 
-            body.push_back(al, Assignment(result,
+            body.push_back(al, b.Assignment(result,
                 b.ElementalPow(bin_op_1, constant_point_five, loc)));
         }
 
@@ -1209,22 +1215,22 @@ namespace Sign {
         if (is_real(*arg_types[0])) {
             ASR::expr_t *zero = f(0, arg_types[0]);
             body.push_back(al, b.If(fGtE(args[0], zero), {
-                Assignment(result, args[0])
+                b.Assignment(result, args[0])
             }, /* else */ {
-                Assignment(result, f32_neg(args[0], arg_types[0]))
+                b.Assignment(result, f32_neg(args[0], arg_types[0]))
             }));
             body.push_back(al, b.If(fLt(args[1], zero), {
-                Assignment(result, f32_neg(result, arg_types[0]))
+                b.Assignment(result, f32_neg(result, arg_types[0]))
             }, {}));
         } else {
             ASR::expr_t *zero = i(0, arg_types[0]);
             body.push_back(al, b.If(iGtE(args[0], zero), {
-                Assignment(result, args[0])
+                b.Assignment(result, args[0])
             }, /* else */  {
-                Assignment(result, i32_neg(args[0], arg_types[0]))
+                b.Assignment(result, i32_neg(args[0], arg_types[0]))
             }));
             body.push_back(al, b.If(iLt(args[1], zero), {
-                Assignment(result, i32_neg(result, arg_types[0]))
+                b.Assignment(result, i32_neg(result, arg_types[0]))
             }, {}));
         }
 
@@ -1588,16 +1594,16 @@ static inline void generate_body_for_scalar_output(Allocator& al, const Location
     Vec<ASR::stmt_t*> doloop_body;
     builder.generate_reduction_intrinsic_stmts_for_scalar_output(loc,
         array, fn_scope, fn_body, idx_vars, doloop_body,
-        [=, &al, &fn_body] () {
+        [=, &al, &fn_body, &builder] () {
             ASR::expr_t* logical_false = make_ConstantWithKind(
                 make_LogicalConstant_t, make_Logical_t, false, 4, loc);
-            ASR::stmt_t* return_var_init = Assignment(return_var, logical_false);
+            ASR::stmt_t* return_var_init = builder.Assignment(return_var, logical_false);
             fn_body.push_back(al, return_var_init);
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
             ASR::expr_t* logical_or = builder.Or(return_var, array_ref, loc);
-            ASR::stmt_t* loop_invariant = Assignment(return_var, logical_or);
+            ASR::stmt_t* loop_invariant = builder.Assignment(return_var, logical_or);
             doloop_body.push_back(al, loop_invariant);
         }
     );
@@ -1612,17 +1618,17 @@ static inline void generate_body_for_array_output(Allocator& al, const Location&
     builder.generate_reduction_intrinsic_stmts_for_array_output(
         loc, array, dim, fn_scope, fn_body,
         idx_vars, target_idx_vars, doloop_body,
-        [=, &al, &fn_body] {
+        [=, &al, &fn_body, &builder] {
             ASR::expr_t* logical_false = make_ConstantWithKind(
                 make_LogicalConstant_t, make_Logical_t, false, 4, loc);
-            ASR::stmt_t* result_init = Assignment(result, logical_false);
+            ASR::stmt_t* result_init = builder.Assignment(result, logical_false);
             fn_body.push_back(al, result_init);
         },
         [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &result, &builder] () {
             ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
             ASR::expr_t* logical_or = builder.ElementalOr(result_ref, array_ref, loc);
-            ASR::stmt_t* loop_invariant = Assignment(result_ref, logical_or);
+            ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, logical_or);
             doloop_body.push_back(al, loop_invariant);
         });
 }
@@ -1822,11 +1828,11 @@ namespace Max {
         auto result = declare(fn_name, return_type, ReturnVar);
 
         ASR::expr_t* test;
-        body.push_back(al, Assignment(result, args[0]));
+        body.push_back(al, b.Assignment(result, args[0]));
         for (size_t i = 1; i < args.size(); i++) {
             test = make_Compare(make_IntegerCompare_t, args[i], Gt, result);
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-            if_body.push_back(al, Assignment(result, args[i]));
+            if_body.push_back(al, b.Assignment(result, args[i]));
             body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                 if_body.p, if_body.n, nullptr, 0)));
         }
@@ -1934,12 +1940,12 @@ namespace Min {
         auto result = declare(fn_name, return_type, ReturnVar);
 
         ASR::expr_t* test;
-        body.push_back(al, Assignment(result, args[0]));
+        body.push_back(al, b.Assignment(result, args[0]));
         if (return_type->type == ASR::ttypeType::Integer) {
             for (size_t i = 1; i < args.size(); i++) {
                 test = make_Compare(make_IntegerCompare_t, args[i], Lt, result);
                 Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-                if_body.push_back(al, Assignment(result, args[i]));
+                if_body.push_back(al, b.Assignment(result, args[i]));
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
@@ -1947,7 +1953,7 @@ namespace Min {
             for (size_t i = 1; i < args.size(); i++) {
                 test = make_Compare(make_RealCompare_t, args[i], Lt, result);
                 Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-                if_body.push_back(al, Assignment(result, args[i]));
+                if_body.push_back(al, b.Assignment(result, args[i]));
                 body.push_back(al, STMT(ASR::make_If_t(al, loc, test,
                     if_body.p, if_body.n, nullptr, 0)));
             }
@@ -2206,17 +2212,17 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
     Vec<ASR::stmt_t*> doloop_body;
     builder.generate_reduction_intrinsic_stmts_for_scalar_output(loc,
         array, fn_scope, fn_body, idx_vars, doloop_body,
-        [=, &al, &fn_body] {
+        [=, &al, &fn_body, &builder] {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
             ASR::expr_t* initial_val = get_initial_value(al, element_type);
-            ASR::stmt_t* return_var_init = Assignment(return_var, initial_val);
+            ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
             fn_body.push_back(al, return_var_init);
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
             ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref, loc, nullptr);
-            ASR::stmt_t* loop_invariant = Assignment(return_var, elemental_operation_val);
+            ASR::stmt_t* loop_invariant = builder.Assignment(return_var, elemental_operation_val);
             doloop_body.push_back(al, loop_invariant);
     });
 }
@@ -2229,18 +2235,18 @@ static inline void generate_body_for_array_mask_input(Allocator& al, const Locat
     Vec<ASR::stmt_t*> doloop_body;
     builder.generate_reduction_intrinsic_stmts_for_scalar_output(loc,
         array, fn_scope, fn_body, idx_vars, doloop_body,
-        [=, &al, &fn_body] {
+        [=, &al, &fn_body, &builder] {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
             ASR::expr_t* initial_val = get_initial_value(al, element_type);
-            ASR::stmt_t* return_var_init = Assignment(return_var, initial_val);
+            ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
             fn_body.push_back(al, return_var_init);
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
             ASR::expr_t* mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
             ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref, loc, nullptr);
-            ASR::stmt_t* loop_invariant = Assignment(return_var, elemental_operation_val);
+            ASR::stmt_t* loop_invariant = builder.Assignment(return_var, elemental_operation_val);
             Vec<ASR::stmt_t*> if_mask;
             if_mask.reserve(al, 1);
             if_mask.push_back(al, loop_invariant);
@@ -2262,17 +2268,17 @@ static inline void generate_body_for_array_dim_input(
     builder.generate_reduction_intrinsic_stmts_for_array_output(
         loc, array, dim, fn_scope, fn_body,
         idx_vars, target_idx_vars, doloop_body,
-        [=, &al, &fn_body] () {
+        [=, &al, &fn_body, &builder] () {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::expr_t* initial_val = get_initial_value(al, array_type);
-            ASR::stmt_t* result_init = Assignment(result, initial_val);
+            ASR::stmt_t* result_init = builder.Assignment(result, initial_val);
             fn_body.push_back(al, result_init);
         },
         [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &builder, &result] () {
             ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
             ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(result_ref, array_ref, loc, nullptr);
-            ASR::stmt_t* loop_invariant = Assignment(result_ref, elemental_operation_val);
+            ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, elemental_operation_val);
             doloop_body.push_back(al, loop_invariant);
         });
 }
@@ -2289,10 +2295,10 @@ static inline void generate_body_for_array_dim_mask_input(
     builder.generate_reduction_intrinsic_stmts_for_array_output(
         loc, array, dim, fn_scope, fn_body,
         idx_vars, target_idx_vars, doloop_body,
-        [=, &al, &fn_body] () {
+        [=, &al, &fn_body, &builder] () {
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::expr_t* initial_val = get_initial_value(al, array_type);
-            ASR::stmt_t* result_init = Assignment(result, initial_val);
+            ASR::stmt_t* result_init = builder.Assignment(result, initial_val);
             fn_body.push_back(al, result_init);
         },
         [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &builder, &result] () {
@@ -2300,7 +2306,7 @@ static inline void generate_body_for_array_dim_mask_input(
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
             ASR::expr_t* mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
             ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(result_ref, array_ref, loc, nullptr);
-            ASR::stmt_t* loop_invariant = Assignment(result_ref, elemental_operation_val);
+            ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, elemental_operation_val);
             Vec<ASR::stmt_t*> if_mask;
             if_mask.reserve(al, 1);
             if_mask.push_back(al, loop_invariant);
@@ -2601,8 +2607,8 @@ namespace MaxLoc {
          */
         ASRBuilder b(al, loc);
         auto i = declare("i", int32, Local);
-        body.push_back(al, Assignment(max_index, i32(1)));
-        body.push_back(al, Assignment(i, i32(2)));
+        body.push_back(al, b.Assignment(max_index, i32(1)));
+        body.push_back(al, b.Assignment(i, i32(2)));
         ASR::expr_t *test;
         if (is_real) {
             test = fGt(b.ArrayItem(array, {i}),
@@ -2612,8 +2618,8 @@ namespace MaxLoc {
                        b.ArrayItem(array, {max_index}));
         }
         body.push_back(al, b.While(iLtE(i, ArraySize(array, i32(1))), {
-            b.If(test, { Assignment(max_index, i) }, {}),
-            Assignment(i, iAdd(i, i32(1)))
+            b.If(test, { b.Assignment(max_index, i) }, {}),
+            b.Assignment(i, iAdd(i, i32(1)))
         }));
     }
 
@@ -2642,9 +2648,12 @@ namespace MaxLoc {
             } else  {
                 res = result;
             }
-            body.push_back(al, Assignment(res, max_index));
+            if(extract_kind_from_ttype_t(return_type) == 8) {
+                max_index = i2i64(max_index);
+            }
+            body.push_back(al, b.Assignment(res, max_index));
         } else {
-            if (m_args.n == 1) {
+            if (m_args.n == 1 && is_fixed_size_array(arg_types[0])) {
                 // _1d_array = reshape(arr, [_1d_array_size])
                 // max_1d_index = maxloc(_1d_array)
                 int size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
@@ -2652,20 +2661,20 @@ namespace MaxLoc {
                 ASR::expr_t *reshape_expr = EXPR(ASR::make_ArrayReshape_t(al, loc,
                     args[0], _1d_array_size, expr_type(_1d_array_size), nullptr));
                 auto _1d_array = declare("_1d_array", b.Array({size}, int32), Local);
-                body.push_back(al, Assignment(_1d_array, reshape_expr));
+                body.push_back(al, b.Assignment(_1d_array, reshape_expr));
 
                 auto max_index = declare("max_index", int32, Local);
                 maxloc(al, loc, fn_symtab, _1d_array, max_index, body);
 
-                body.push_back(al, Assignment(max_index, iSub(max_index, i32(1))));
+                body.push_back(al, b.Assignment(max_index, iSub(max_index, i32(1))));
                 // 2d_n_column = max_1d_i % arr_n_column
                 // r(1) = (max_1d_i - (int(max_1d_i / arr_n_column) * arr_n_column)) + 1
-                body.push_back(al, Assignment(b.ArrayItem(result, {i32(1)}),
+                body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(1)}),
                     iAdd(iSub(max_index, iMul(iDiv(max_index, m_dims[0].m_length),
                     m_dims[0].m_length)), i32(1))));
                 // 2d_n_row = max_1d_i / arr_n_column
                 // r(2) = (max_i / arr_n_column) + 1
-                body.push_back(al, Assignment(b.ArrayItem(result, {i32(2)}),
+                body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(2)}),
                     iAdd(iDiv(max_index, m_dims[0].m_length), i32(1))));
             } else {
                 LCOMPILERS_ASSERT(false);
@@ -2747,11 +2756,11 @@ namespace MinLoc {
         fill_func_arg("array", arg_types[0]);
         fill_func_arg("dim", arg_types[1]);
         auto result = declare("result", return_type, ReturnVar);
-        body.push_back(al, Assignment(result, i32(1)));
+        body.push_back(al, b.Assignment(result, i32(1)));
         int n_dims = extract_n_dims_from_ttype(arg_types[0]);
         if (n_dims == 1) {
             auto i = declare("i", int32, Local);
-            body.push_back(al, Assignment(i, i32(2)));
+            body.push_back(al, b.Assignment(i, i32(2)));
             ASR::expr_t *test;
             if (is_real(*arg_types[0])) {
                 test = fLt(b.ArrayItem(args[0], {i}), b.ArrayItem(args[0], {result}));
@@ -2760,9 +2769,9 @@ namespace MinLoc {
             }
             body.push_back(al, b.While(iLtE(i, ArraySize(args[0], i32(1))), {
                 b.If(test, {
-                    Assignment(result, i)
+                    b.Assignment(result, i)
                 }, {}),
-                Assignment(i, iAdd(i, i32(1)))
+                b.Assignment(i, iAdd(i, i32(1)))
             }));
             body.push_back(al, Return());
         } else {
@@ -2774,7 +2783,7 @@ namespace MinLoc {
         scope->add_symbol(fn_name, fn_sym);
         return b.Call(fn_sym, m_args, return_type, compile_time_value);
     }
-} // namespace MaxLoc
+} // namespace MinLoc
 
 namespace Partition {
 
@@ -2868,15 +2877,15 @@ namespace Partition {
 
         auto result = declare("result", return_type, ReturnVar);
         auto index = declare("index", int32, Local);
-        body.push_back(al, Assignment(index, b.Call(UnaryIntrinsicFunction::
+        body.push_back(al, b.Assignment(index, b.Call(UnaryIntrinsicFunction::
             create_KMP_function(al, loc, scope), args, int32)));
         body.push_back(al, b.If(iEq(index, i32_n(-1)), {
-                Assignment(result, b.TupleConstant({ args[0],
+                b.Assignment(result, b.TupleConstant({ args[0],
                     StringConstant("", character(0)),
                     StringConstant("", character(0)) },
                 b.Tuple({character(-2), character(0), character(0)})))
             }, {
-                Assignment(result, b.TupleConstant({
+                b.Assignment(result, b.TupleConstant({
                     StringSection(args[0], i32(0), index), args[1],
                     StringSection(args[0], iAdd(index, StringLen(args[1])),
                         StringLen(args[0]))}, return_type))
@@ -3038,9 +3047,9 @@ namespace Merge {
 
         {
             Vec<ASR::stmt_t *> if_body; if_body.reserve(al, 1);
-            if_body.push_back(al, Assignment(result, tsource_arg));
+            if_body.push_back(al, b.Assignment(result, tsource_arg));
             Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
-            else_body.push_back(al, Assignment(result, fsource_arg));
+            else_body.push_back(al, b.Assignment(result, fsource_arg));
             body.push_back(al, STMT(ASR::make_If_t(al, loc, mask_arg,
                 if_body.p, if_body.n, else_body.p, else_body.n)));
         }
