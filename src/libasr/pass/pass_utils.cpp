@@ -971,7 +971,7 @@ namespace LCompilers {
                 #define increment_by_one(var, body) ASR::expr_t* inc_by_one = builder.ElementalAdd(var, \
                     make_ConstantWithType(make_IntegerConstant_t, 1, \
                         ASRUtils::expr_type(var), loc), loc); \
-                    ASR::stmt_t* assign_inc = Assignment(var, inc_by_one); \
+                    ASR::stmt_t* assign_inc = builder.Assignment(var, inc_by_one); \
                     body->push_back(al, assign_inc); \
 
             const Location& loc = arr_var->base.loc;
@@ -996,7 +996,7 @@ namespace LCompilers {
                             ASR::expr_t* ref = PassUtils::create_array_ref(curr_init, idx_vars, al,
                                 current_scope, perform_cast, cast_kind, casted_type);
                             ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
-                            ASR::stmt_t* assign = Assignment(res, ref);
+                            ASR::stmt_t* assign = builder.Assignment(res, ref);
                             doloop_body.push_back(al, assign);
                             increment_by_one(idx_var, (&doloop_body))
                         }, current_scope, result_vec);
@@ -1006,7 +1006,7 @@ namespace LCompilers {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
                                 al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
                         }
-                        ASR::stmt_t* assign = Assignment(res, curr_init);
+                        ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                         result_vec->push_back(al, assign);
                         increment_by_one(idx_var, result_vec)
                     }
@@ -1019,7 +1019,7 @@ namespace LCompilers {
                         ASR::expr_t* ref = PassUtils::create_array_ref(array_section, idx_vars,
                             al, perform_cast, cast_kind, casted_type);
                         ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
-                        ASR::stmt_t* assign = Assignment(res, ref);
+                        ASR::stmt_t* assign = builder.Assignment(res, ref);
                         doloop_body.push_back(al, assign);
                         increment_by_one(idx_var, (&doloop_body))
                     }, current_scope, result_vec);
@@ -1030,7 +1030,7 @@ namespace LCompilers {
                         curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
                             al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
                     }
-                    ASR::stmt_t* assign = Assignment(res, curr_init);
+                    ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                     result_vec->push_back(al, assign);
                     increment_by_one(idx_var, result_vec)
                 }

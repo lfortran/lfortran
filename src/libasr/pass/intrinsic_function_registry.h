@@ -272,13 +272,22 @@ class ASRBuilder {
     #define StringLen(s) EXPR(ASR::make_StringLen_t(al, loc, s, int32, nullptr))
 
     // Cast --------------------------------------------------------------------
-    #define r2i(x) EXPR(ASR::make_Cast_t(al, loc, x,                            \
+    #define r2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::RealToInteger, int32, nullptr))
-    #define i2r(x) EXPR(ASR::make_Cast_t(al, loc, x,                            \
+    #define r2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::RealToInteger, int64, nullptr))
+    #define i2r32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::IntegerToReal, real32, nullptr))
-    #define i2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                            \
+    #define i2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::IntegerToReal, real64, nullptr))
+    #define i2i64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
         ASR::cast_kindType::IntegerToInteger, int64, nullptr))
-
+    #define i2i32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::IntegerToInteger, int32, nullptr))
+    #define r2r32(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::RealToReal, real32, nullptr))
+    #define r2r64(x) EXPR(ASR::make_Cast_t(al, loc, x,                          \
+        ASR::cast_kindType::RealToReal, real64, nullptr))
 
     // Binop -------------------------------------------------------------------
     #define iAdd(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
@@ -287,8 +296,8 @@ class ASRBuilder {
         ASR::binopType::Mul, right, int32, nullptr))
     #define iSub(left, right) EXPR(ASR::make_IntegerBinOp_t(al, loc, left,      \
         ASR::binopType::Sub, right, int32, nullptr))
-    #define iDiv(left, right) r2i(EXPR(ASR::make_RealBinOp_t(al, loc, i2r(left),\
-        ASR::binopType::Div, i2r(right), real32, nullptr)))
+    #define iDiv(left, right) r2i32(EXPR(ASR::make_RealBinOp_t(al, loc, i2r32(left),\
+        ASR::binopType::Div, i2r32(right), real32, nullptr)))
 
     #define rDiv(left, right) EXPR(ASR::make_RealBinOp_t(al, loc, left,         \
         ASR::binopType::Div, right, real32, nullptr))
@@ -546,6 +555,34 @@ class ASRBuilder {
     // Statements --------------------------------------------------------------
     #define Return() STMT(ASR::make_Return_t(al, loc))
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t*rhs) {
+        ASR::ttype_t *lhs_type = expr_type(lhs);
+        ASR::ttype_t *rhs_type = expr_type(rhs);
+        if (!is_array(lhs_type)) {
+            int lhs_kind = extract_kind_from_ttype_t(lhs_type);
+            int rhs_kind = extract_kind_from_ttype_t(rhs_type);
+            if (lhs_kind != rhs_kind) {
+                switch(lhs_type->type) {
+                    case ASR::Integer : {
+                        if (lhs_kind == 4) {
+                            rhs = i2i32(rhs);
+                        } else if (lhs_kind == 8) {
+                            rhs = i2i64(rhs);
+                        }
+                        break;
+                    }
+                    case ASR::Real : {
+                        if (lhs_kind == 4) {
+                            rhs = r2r32(rhs);
+                        } else if (lhs_kind == 8) {
+                            rhs = r2r64(rhs);
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+        }
         LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
         return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
     }
@@ -2676,6 +2713,14 @@ namespace MaxLoc {
                 // r(2) = (max_i / arr_n_column) + 1
                 body.push_back(al, b.Assignment(b.ArrayItem(result, {i32(2)}),
                     iAdd(iDiv(max_index, m_dims[0].m_length), i32(1))));
+
+                Vec<ASR::expr_t *> x_exprs; x_exprs.reserve(al, 1);
+                x_exprs.push_back(al, _1d_array);
+                // x_exprs.push_back(al, max_index);
+                // x_exprs.push_back(al, b.ArrayItem(result, {i32(1)}));
+                // x_exprs.push_back(al, b.ArrayItem(result, {i32(2)}));
+                // x_exprs.push_back(al, ArraySize(tmp_array, i32(1)));
+                body.push_back(al, STMT(ASR::make_Print_t(al, loc, nullptr, x_exprs.p, x_exprs.n, nullptr, nullptr)));
             } else {
                 LCOMPILERS_ASSERT(false);
             }
